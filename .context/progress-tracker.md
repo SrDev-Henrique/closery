@@ -56,3 +56,4 @@
 - **2026-11-20** — Projeto criado; contexto escrito; planilha analisada; brainstorm concluído
   (D1–D18) e spec escrita em `docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`.
 - **2026-11-20** — Fases 0 e 1 concluídas: fundação de testes (Vitest, PGlite, Testing Library, Playwright) e acesso por convite (Better Auth, papéis por setor, telas e shell). Plano em `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
+- **2026-11-20** — Correções da revisão final: renovação da sessão (servidor lê sem refresh, `SessionKeepAlive` renova banco e cookie), limite de tentativas 30/10 com mensagem própria (`RATE_LIMITED`), link "Entrar" nos convites e no e-mail já cadastrado, testes de escalonamento, guarda de páginas `appPagesAuth.test.ts` (no lugar do `RequireUser`) e pendências P11–P22.

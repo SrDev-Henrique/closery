@@ -257,6 +257,16 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `requireAdmin`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
+### SessionKeepAlive
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/SessionKeepAlive.tsx`
+- **Propósito:** renovar o cookie de sessão de quem usa o app (a leitura no Server Component
+  estende o banco mas não grava cookie).
+- **Como funciona:** `"use client"`; `useEffect` chama `authClient.getSession()` uma vez ao montar;
+  erros em silêncio; renderiza `null`. Montado em `src/app/(app)/layout.tsx`, fora de `<Suspense>`.
+- **Usa:** `authClient`.
+- **Histórico:** 2026-11-20 — criado na revisão final da Fase 1.
+
 ### SocialButtons
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/auth/SocialButtons.tsx`
@@ -298,16 +308,6 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   autofill de passkey vive no campo de e-mail.
 - **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
-
-### SessionKeepAlive
-- **Status:** ✅ pronto (2026-11-20)
-- **Local:** `src/components/app-shell/SessionKeepAlive.tsx`
-- **Propósito:** renovar o cookie de sessão de quem usa o app (a leitura no Server Component
-  estende o banco mas não grava cookie).
-- **Como funciona:** `"use client"`; `useEffect` chama `authClient.getSession()` uma vez ao montar;
-  erros em silêncio; renderiza `null`. Montado em `src/app/(app)/layout.tsx`, fora de `<Suspense>`.
-- **Usa:** `authClient`.
-- **Histórico:** 2026-11-20 — criado na revisão final da Fase 1.
 
 ### PasskeyOffer
 - **Status:** ✅ pronto (2026-11-20)

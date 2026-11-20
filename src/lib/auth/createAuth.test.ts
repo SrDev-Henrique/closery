@@ -406,7 +406,8 @@ describe("campos protegidos: input false vale também no updateUser", () => {
     const when = new Date("2026-01-01T00:00:00.000Z");
     await db.update(user).set({ deactivatedAt: when });
 
-    // `null` é descartado antes da checagem do campo: 400 "No fields to update".
+    // O ramo `input: false` ignora valores falsy (`null`): 400 "No fields to
+    // update". Com `input: true`, `null` reativaria o usuário.
     await expect(
       update(headers, { deactivatedAt: null }),
     ).rejects.toMatchObject({ statusCode: 400 });

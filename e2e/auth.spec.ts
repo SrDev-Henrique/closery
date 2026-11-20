@@ -23,9 +23,9 @@ import { addVirtualAuthenticator } from "./virtual-authenticator";
 const PASSWORD = "senha-de-teste-123";
 
 // O app roda em produção (`next start`), então o rate limit do Better Auth
-// (cadastro: 5 por 60 s por IP; login por e-mail: 10 por 60 s) está ligado. Os 6
-// cenários com cadastro estourariam o limite sem IP próprio: cada teste chega
-// com um IP próprio no x-forwarded-for, como chegaria atrás da Vercel.
+// (cadastro: 10 por 60 s por IP; login por e-mail: 30 por 60 s) está ligado. O
+// IP próprio de cada teste (x-forwarded-for, como chegaria atrás da Vercel)
+// mantém os cenários independentes do limite, qualquer que seja a contagem.
 // A base aleatória evita reaproveitar um IP já contado numa execução anterior.
 const ipPrefix = `10.${Math.floor(Math.random() * 200) + 20}.${Math.floor(Math.random() * 250)}`;
 let nextClientIp = 1;

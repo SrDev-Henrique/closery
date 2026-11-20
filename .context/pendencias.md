@@ -68,84 +68,84 @@
 **Estado:** Aberto, não triado
 **Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/session.ts`
 **Impacto:** uma pessoa desativada com sessão já aberta ainda consegue chamar `/api/auth/*` (adicionar passkey, mudar nome, listar sessões); as páginas recusam, a API de auth não.
-**Correção:** a ação "desativar" da Fase 2 deve apagar as sessões do usuário na mesma transação em que preenche `deactivatedAt`.
+**Correção:** — (opção: a ação "desativar" da Fase 2 deve apagar as sessões do usuário na mesma transação em que preenche `deactivatedAt`)
 **Registrado em:** 2026-11-20
 
 #### P12 — Tamanhos gerados pelo shadcn abaixo do mínimo de toque 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
 **Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
-**Correção:** aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes.
+**Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
 **Registrado em:** 2026-11-20
 
 #### P13 — chart-5 ("Outros") quase invisível no tema escuro 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/app/globals.css` (`--chart-5`) · `src/app/chartPalette.test.ts`
 **Impacto:** `chart-5` tem 1,19:1 de contraste sobre o card no tema escuro; uma fatia "Outros" some.
-**Correção:** resolver antes de qualquer gráfico com fatia "Outros" (Fase 5): escolher valor com contraste ≥ 3:1 e medir no guarda.
+**Correção:** — (opção: resolver antes de qualquer gráfico com fatia "Outros" (Fase 5): escolher valor com contraste ≥ 3:1 e medir no guarda)
 **Registrado em:** 2026-11-20
 
 #### P14 — Destino perdido no login: depois de entrar a pessoa cai em / 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/proxy.ts` · `src/components/auth/SignInPanel.tsx`
 **Impacto:** o proxy manda para `/entrar` sem guardar a rota pedida; depois do login a pessoa cai em `/`, mesmo vindo de um link para outra página.
-**Correção:** parâmetro de retorno validado (só caminho relativo da mesma origem) lido pelo `SignInPanel` — Fase 3.
+**Correção:** — (opção: parâmetro de retorno validado (só caminho relativo da mesma origem) lido pelo `SignInPanel` — Fase 3)
 **Registrado em:** 2026-11-20
 
 #### P15 — Token bruto do convite gravado em verification.value pelo estado do OAuth 🟠
 **Estado:** Aberto, não triado
 **Arquivos:** `src/components/auth/InviteSignup.tsx` · `src/lib/auth/createAuth.ts`
 **Impacto:** `errorCallbackURL: /convite/<token>` com `storeStateStrategy` "database" grava o token bruto em `verification.value`; fica até 7 dias se o fluxo for abandonado.
-**Correção:** opções: rota de erro sem token ou `account.storeStateStrategy: "cookie"`.
+**Correção:** — (opção: rota de erro sem token ou `account.storeStateStrategy: "cookie"`)
 **Registrado em:** 2026-11-20
 
 #### P16 — Cookie closery_invite não é limpo depois do cadastro 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/inviteCookie.ts`
 **Impacto:** o cookie com o token do convite fica 1 h no navegador depois do cadastro (aparelho compartilhado).
-**Correção:** expirar em `user.create.after` com `ctx.setCookie(INVITE_COOKIE, "", { maxAge: 0, path: "/" })`.
+**Correção:** — (opção: expirar em `user.create.after` com `ctx.setCookie(INVITE_COOKIE, "", { maxAge: 0, path: "/" })`)
 **Registrado em:** 2026-11-20
 
 #### P17 — Tema escuro nunca é ativado 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/app/globals.css` · `src/app/layout.tsx` · `src/components/ui/sonner.tsx`
 **Impacto:** `globals.css` usa a classe `.dark`, mas nada a aplica (sem ThemeProvider) e o Sonner chama `useTheme` sem provider; o tema escuro dos tokens nunca aparece.
-**Correção:** seguir o sistema ou adicionar `next-themes` com `ThemeProvider`.
+**Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
 **Registrado em:** 2026-11-20
 
 #### P18 — user.role e invite.role sem CHECK no banco 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/db/schema/auth.ts` · `src/db/schema/invites.ts`
 **Impacto:** `toAuthz` falha fechado, mas as escritas de admin da Fase 2 ganham com a garantia no banco.
-**Correção:** uma migração com `CHECK (role IN ('admin','operator'))` nas duas colunas.
+**Correção:** — (opção: uma migração com `CHECK (role IN ('admin','operator'))` nas duas colunas)
 **Registrado em:** 2026-11-20
 
 #### P19 — Erro e 404 dentro do app derrubam o shell inteiro 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/app/error.tsx` · `src/app/not-found.tsx`
 **Impacto:** os boundaries só existem na raiz: um erro ou 404 numa página do grupo `(app)` troca o shell (barra lateral) pela página de erro.
-**Correção:** considerar `(app)/error.tsx` e `(app)/not-found.tsx` sem `<main>` próprio.
+**Correção:** — (opção: considerar `(app)/error.tsx` e `(app)/not-found.tsx` sem `<main>` próprio)
 **Registrado em:** 2026-11-20
 
 #### P20 — Login social: ajustes antes de ligar 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/lib/auth/createAuth.ts` · `src/components/auth/SignInPanel.tsx` · `src/components/auth/InviteSignup.tsx`
 **Impacto:** depende de P10 e P7. Erros antes do `state` (`state_not_found`, `invalid_callback_request`) caem na página padrão `/api/auth/error`, em inglês; os botões podem ficar travados ao voltar do provedor pelo bfcache; tokens OAuth ficam em texto puro em `account`.
-**Correção:** configurar `onAPIError.errorURL = "/entrar"`; handler `pageshow` com `persisted` que zera `pending`; `account.encryptOAuthTokens: true`.
+**Correção:** — (opção: configurar `onAPIError.errorURL = "/entrar"`; handler `pageshow` com `persisted` que zera `pending`; `account.encryptOAuthTokens: true`)
 **Registrado em:** 2026-11-20
 
 #### P21 — Lacunas do E2E de acesso 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `e2e/auth.spec.ts`
 **Impacto:** o cenário "desativado" não afirma a ausência de cookie de sessão; login por passkey depois da desativação não é testado; o caminho do autofill de passkey não tem E2E.
-**Correção:** acrescentar as três verificações ao E2E.
+**Correção:** — (opção: acrescentar as três verificações ao E2E)
 **Registrado em:** 2026-11-20
 
 #### P22 — Limite de tentativas no piloto: confirmar IP e números 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/lib/auth/createAuth.ts` (`rateLimit`)
 **Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
-**Correção:** Fase 6: confirmar na Vercel e ajustar os números.
+**Correção:** — (opção: confirmar na Vercel e ajustar os números)
 **Registrado em:** 2026-11-20
 
 ## 2. Triado, plano pronto

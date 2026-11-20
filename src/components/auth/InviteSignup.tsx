@@ -14,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
 import type { SocialProvider } from "@/lib/auth/env";
-import { authErrorMessage } from "@/lib/auth/errors";
 import {
   type AuthFormError,
   authFormError,
@@ -28,6 +27,14 @@ type InviteSignupProps = {
   defaultName: string;
   initialErrorCode: string | null;
 };
+
+// O código do erro fica junto da mensagem: decisões de interface (o link
+// "Entrar") usam o código, nunca o texto.
+type SignupError = AuthFormError & { code: string | null };
+
+function signupError(code: string | null | undefined): SignupError {
+  return { ...authFormError(code), code: code ?? null };
+}
 
 export function InviteSignup({
   token,
@@ -43,8 +50,8 @@ export function InviteSignup({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<AuthFormError | null>(
-    initialErrorCode ? authFormError(initialErrorCode) : null,
+  const [error, setError] = useState<SignupError | null>(
+    initialErrorCode ? signupError(initialErrorCode) : null,
   );
 
   const errorId = `${uid}-error`;
@@ -53,7 +60,7 @@ export function InviteSignup({
   async function arm(): Promise<boolean> {
     const armed = await armInvite(token);
     if (!armed.ok) {
-      setError({ message: armed.message, field: null });
+      setError({ message: armed.message, field: null, code: null });
       return false;
     }
     return true;
@@ -75,14 +82,14 @@ export function InviteSignup({
         password,
       });
       if (signUpError) {
-        setError(authFormError(errorCodeOf(signUpError)));
+        setError(signupError(errorCodeOf(signUpError)));
         setPending(false);
         return;
       }
       // Sucesso: o botão fica travado até a navegação terminar.
       router.push("/bem-vindo");
     } catch {
-      setError(authFormError(null));
+      setError(signupError(null));
       setPending(false);
     }
   }
@@ -104,20 +111,20 @@ export function InviteSignup({
         errorCallbackURL: `/convite/${token}`,
       });
       if (socialError) {
-        setError(authFormError(errorCodeOf(socialError)));
+        setError(signupError(errorCodeOf(socialError)));
         setPending(false);
       }
       // Sem erro, o navegador está indo para o provedor: mantém travado.
     } catch {
-      setError(authFormError(null));
+      setError(signupError(null));
       setPending(false);
     }
   }
 
   // Quem já tem conta precisa de uma saída, não de um beco sem saída.
   const showSignInLink =
-    error?.field === "email" &&
-    error.message === authErrorMessage("USER_ALREADY_EXISTS");
+    error?.code === "USER_ALREADY_EXISTS" ||
+    error?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL";
 
   const fieldError = (field: "email" | "password") =>
     error?.field === field ? error : null;
