@@ -11,7 +11,16 @@ export type TestDb = PgliteDatabase<Schema>;
 
 // Todas as tabelas do schema "public". test/db.test.ts garante que esta lista
 // bate com o banco migrado: tabela nova sem entrada aqui reprova o teste.
-export const TABLES: readonly string[] = ["sector"];
+export const TABLES: readonly string[] = [
+  "sector",
+  "user",
+  "session",
+  "account",
+  "verification",
+  "passkey",
+  "rate_limit",
+  "invite",
+];
 
 // O dump migrado é lido uma vez por processo de worker.
 let dump: Blob | undefined;
