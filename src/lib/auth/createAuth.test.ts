@@ -337,6 +337,100 @@ describe("login e sessão", () => {
   });
 });
 
+// Better Auth 1.7.27: campo com `input: false` no corpo é 400 FIELD_NOT_ALLOWED.
+const FIELD_NOT_ALLOWED = {
+  statusCode: 400,
+  body: { code: "FIELD_NOT_ALLOWED" },
+};
+
+describe("campos protegidos: input false vale também no updateUser", () => {
+  async function signedInOperator() {
+    const sector = await insertSector(db);
+    const { token } = await insertInvite(db, {
+      role: "operator",
+      sectorId: sector.id,
+    });
+    const { headers } = (await auth.api.signUpEmail({
+      body: newPerson("op@example.com"),
+      headers: new Headers({ cookie: `${INVITE_COOKIE}=${token}` }),
+      returnHeaders: true,
+    })) as { headers: Headers };
+    return {
+      sector,
+      headers: new Headers({ cookie: sessionCookieOf(headers) }),
+    };
+  }
+
+  async function row() {
+    const [created] = await db.select().from(user);
+    if (!created) throw new Error("usuário sumiu");
+    return created;
+  }
+
+  // O tipo de `body` só aceita campos com `input` ligado; o ataque real manda
+  // qualquer JSON, então o teste também.
+  function update(headers: Headers, body: Record<string, unknown>) {
+    return auth.api.updateUser({ headers, body: body as { name?: string } });
+  }
+
+  it("operador não vira admin por updateUser", async () => {
+    const { headers } = await signedInOperator();
+    await expect(update(headers, { role: "admin" })).rejects.toMatchObject(
+      FIELD_NOT_ALLOWED,
+    );
+    expect((await row()).role).toBe("operator");
+  });
+
+  it("operador não troca de setor por updateUser", async () => {
+    const { headers, sector } = await signedInOperator();
+    const other = await insertSector(db);
+    await expect(update(headers, { sectorId: other.id })).rejects.toMatchObject(
+      FIELD_NOT_ALLOWED,
+    );
+    expect((await row()).sectorId).toBe(sector.id);
+  });
+
+  it.each([
+    ["Date", new Date()],
+    ["ISO string", new Date().toISOString()],
+  ])("operador não se desativa por updateUser (%s)", async (_label, value) => {
+    const { headers } = await signedInOperator();
+    await expect(
+      update(headers, { deactivatedAt: value }),
+    ).rejects.toMatchObject(FIELD_NOT_ALLOWED);
+    expect((await row()).deactivatedAt).toBeNull();
+  });
+
+  it("usuário desativado com sessão viva não se reativa por updateUser", async () => {
+    const { headers } = await signedInOperator();
+    const when = new Date("2026-01-01T00:00:00.000Z");
+    await db.update(user).set({ deactivatedAt: when });
+
+    // `null` é descartado antes da checagem do campo: 400 "No fields to update".
+    await expect(
+      update(headers, { deactivatedAt: null }),
+    ).rejects.toMatchObject({ statusCode: 400 });
+    await expect(
+      update(headers, { deactivatedAt: "2026-02-02T00:00:00.000Z" }),
+    ).rejects.toMatchObject(FIELD_NOT_ALLOWED);
+    expect((await row()).deactivatedAt).toEqual(when);
+  });
+
+  it("cadastro com deactivatedAt no corpo: 400 FIELD_NOT_ALLOWED e nenhum usuário criado", async () => {
+    const { token } = await insertInvite(db, { role: "admin" });
+    await expect(
+      auth.api.signUpEmail({
+        body: {
+          ...newPerson("novo@example.com"),
+          deactivatedAt: new Date().toISOString(),
+        } as ReturnType<typeof newPerson>,
+        headers: new Headers({ cookie: `${INVITE_COOKIE}=${token}` }),
+      }),
+    ).rejects.toMatchObject(FIELD_NOT_ALLOWED);
+    expect(await allUsers()).toHaveLength(0);
+  });
+});
+
 describe("configuração", () => {
   it("sem variáveis sociais, nenhum provedor está ligado", () => {
     expect(optionsOf(auth).socialProviders).toEqual({});
