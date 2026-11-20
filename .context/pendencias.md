@@ -40,12 +40,12 @@
 | P1 | Banco Neon não provisionado | 🟠 | Resolvido |
 | P2 | Uso da marca LATAM sem autorização confirmada | 🟡 | Bloqueado no dono |
 | P3 | Tamanhos do Button abaixo do alvo mínimo de toque | 🟡 | Aberto, não triado |
-| P4 | Paleta de gráficos em cinza e sem tokens de status | 🟡 | Triado, plano pronto |
+| P4 | Paleta de gráficos em cinza e sem tokens de status | 🟡 | Resolvido |
 | P5 | Glossário do domínio ULD é interpretação, não confirmação | 🟡 | Bloqueado no dono |
 | P6 | Login com Apple exige conta paga de desenvolvedor e domínio HTTPS | 🟡 | Bloqueado no dono |
 | P7 | Login com Facebook exige app da Meta publicado | 🟡 | Bloqueado no dono |
 | P8 | Sem provedor de e-mail, "esqueci a senha" não funciona | 🟠 | Bloqueado no dono |
-| P9 | Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn | ⚪ | Aberto, não triado |
+| P9 | Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn | ⚪ | Resolvido |
 
 ---
 
@@ -59,30 +59,9 @@
 **Correção:** —
 **Registrado em:** 2026-11-20
 
-#### P9 — Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn ⚪
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/globals.css` (quando os tokens da D16 entrarem)
-**Impacto:** no klauve, `chart-1..4` passou por teste de contraste ≥3:1 sobre o card e de
-distinção para daltonismo, medido contra os cards **do klauve** (`#fefefe` / `#1e1e21`). Os cards
-do shadcn neutral são próximos (branco / `oklch(0.205 0 0)`), mas não iguais — a garantia não se
-transfere automaticamente.
-**Correção:** — (opção: portar o `chartPaletteGuard.test.ts` do klauve e rodar contra o
-`globals.css` daqui)
-**Registrado em:** 2026-11-20
-
 ## 2. Triado, plano pronto
 
-#### P4 — Paleta de gráficos em cinza e sem tokens de status 🟡
-**Estado:** Triado, plano pronto
-**Arquivos:** `src/app/globals.css` (`--chart-1..5`)
-**Impacto:** o dashboard é central e os tokens `chart-*` do preset são tons de cinza — séries
-indistinguíveis. Não existem `success`/`warning` para status de item e de solicitação.
-**Correção:** copiar do klauve `chart-1..4`, `success`, `warning`, `info` (+ `-foreground`), claro e
-escuro, para o `globals.css` e o `@theme inline` (D16; valores em `ui-tokens.md §2`).
-**Registrado em:** 2026-11-20
-**Atualização (2026-11-20):** triada no brainstorm — D14 manteve o shadcn padrão e D16 trouxe do
-klauve os tokens que faltavam.
-
+*(nenhuma)*
 
 ## 3. Bloqueado no dono
 
@@ -151,4 +130,34 @@ connection strings (com e sem pooler) para `.env.local`.
 também com `verify-full`.
 **Atualização (2026-11-20):** o local passou para a branch de **desenvolvimento** do Neon; as URLs de
 produção ficaram comentadas no `.env.local` — mover para a Vercel e apagar de lá.
+
+#### P4 — Paleta de gráficos em cinza e sem tokens de status 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/globals.css` (`--chart-1..5`)
+**Impacto:** o dashboard é central e os tokens `chart-*` do preset são tons de cinza — séries
+indistinguíveis. Não existem `success`/`warning` para status de item e de solicitação.
+**Correção:** copiar do klauve `chart-1..4`, `success`, `warning`, `info` (+ `-foreground`), claro e
+escuro, para o `globals.css` e o `@theme inline` (D16; valores em `ui-tokens.md §2`).
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-20):** triada no brainstorm — D14 manteve o shadcn padrão e D16 trouxe do
+klauve os tokens que faltavam.
+**Atualização (2026-11-20):** `chart-1..4`, `success`, `warning`, `info` (+ `-foreground`) entraram no
+`src/app/globals.css` (claro e escuro) e no `@theme inline`, com os valores do klauve copiados como
+estão (D16). `chart-5` ficou como o shadcn gerou. `ui-tokens.md §2` agora descreve tokens que existem.
+
+#### P9 — Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn ⚪
+**Estado:** Resolvido
+**Arquivos:** `src/app/globals.css` (quando os tokens da D16 entrarem)
+**Impacto:** no klauve, `chart-1..4` passou por teste de contraste ≥3:1 sobre o card e de
+distinção para daltonismo, medido contra os cards **do klauve** (`#fefefe` / `#1e1e21`). Os cards
+do shadcn neutral são próximos (branco / `oklch(0.205 0 0)`), mas não iguais — a garantia não se
+transfere automaticamente.
+**Correção:** — (opção: portar o `chartPaletteGuard.test.ts` do klauve e rodar contra o
+`globals.css` daqui)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-20):** o guarda do klauve foi portado para `src/app/chartPalette.test.ts` (lê
+hex e `oklch`) e roda contra o `globals.css` daqui: a série `chart-1..4` passa todos os pisos nos dois
+temas contra os cards do shadcn, sem ajuste de cor (contraste ≥ 3,71:1; ΔE2000 mínimo 17,5 em
+deuteranopia). Números completos em `ui-tokens.md §2`. Ressalva registrada lá: `chart-5` ("Outros") não é
+medido e some no tema escuro (1,19:1 sobre o card).
 
