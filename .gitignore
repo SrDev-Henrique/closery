@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# env de exemplo é versionado
+!.env.example
+
+# artefatos do Playwright MCP
+.playwright-mcp/
