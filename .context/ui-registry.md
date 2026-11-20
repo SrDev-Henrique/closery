@@ -257,6 +257,34 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Usa:** `requireAdmin`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
+### SocialButtons
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/SocialButtons.tsx`
+- **Propósito:** botões "Continuar com Google/Facebook", só dos provedores habilitados no env.
+- **Como funciona:** `"use client"`; props `providers`, `onSelect`, `disabled`; lista vazia não
+  renderiza nada; separador "ou".
+- **Usa:** `Button` (`outline`, `lg`), `FieldSeparator`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### InviteUnavailable
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/InviteUnavailable.tsx`
+- **Propósito:** convite expirado, usado, cancelado ou inexistente.
+- **Como funciona:** Server Component; `reason` → texto de `inviteMessages.ts` + "Peça um novo
+  convite a quem te convidou."; sem formulário.
+- **Usa:** `Card*`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### InviteSignup
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/InviteSignup.tsx`
+- **Propósito:** cadastro por convite (nome, e-mail, senha e social).
+- **Como funciona:** `"use client"`; estado controlado; `armInvite` antes de
+  `signUp.email`/`signIn.social` (`requestSignUp: true`); erro só por `authFormError`, com
+  `aria-invalid`/`aria-describedby` no campo; trava duplo clique.
+- **Usa:** `Field*`, `Input`, `Button`, `SocialButtons`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
