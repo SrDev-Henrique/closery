@@ -118,6 +118,20 @@ describe("getAuthz", () => {
     expect(await getAuthz()).toMatchObject({ role: "admin", sectorId: null });
   });
 
+  it("lê a sessão sem renovar: getSession recebe disableRefresh (a renovação é do SessionKeepAlive)", async () => {
+    await signUpAndLogin("admin", "admin@example.com");
+    const auth = holder.auth;
+    if (!auth) throw new Error("auth não montado");
+    const spy = vi.spyOn(auth.api, "getSession");
+
+    await getAuthz();
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ query: { disableRefresh: true } }),
+    );
+    spy.mockRestore();
+  });
+
   it("desativar a pessoa vale na próxima leitura, com a sessão ainda aberta", async () => {
     await signUpAndLogin("admin", "admin@example.com");
     expect(await getAuthz()).not.toBeNull();
