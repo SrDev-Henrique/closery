@@ -31,6 +31,18 @@ Leia nesta ordem antes de qualquer implementação:
 
 `memory.md` (raiz) é o handoff entre sessões: leia quando retomar um trabalho de várias sessões.
 
+## Comandos
+
+| Comando | Para quê |
+|---|---|
+| `bun run dev` | servidor de desenvolvimento (http://localhost:3000) |
+| `bun run check-types` · `bun run lint` · `bun run format` | tipos · Biome (só verifica) · Biome (grava) |
+| `bun run test` · `bun run test:watch` | Vitest (PGlite + Testing Library). **Nunca `bun test`** |
+| `bun run test:e2e` | Playwright com banco efêmero (pglite-socket) e build de produção; cerca de 1 min |
+| `bun run build` | build de produção (exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET` no `.env.local`) |
+| `bun run db:generate` → revisar → `bun run db:migrate` | migração versionada do Drizzle |
+| `bun run admin:invite` | gera o link de convite do primeiro administrador |
+
 ## Regras que nunca mudam
 
 - **Regra de ouro: se aumenta o atrito de quem passa ou recebe o turno, está errado.** A

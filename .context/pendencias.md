@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P10.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P11.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -46,6 +46,7 @@
 | P7 | Login com Facebook exige app da Meta publicado | 🟡 | Bloqueado no dono |
 | P8 | Sem provedor de e-mail, "esqueci a senha" não funciona | 🟠 | Bloqueado no dono |
 | P9 | Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn | ⚪ | Resolvido |
+| P10 | Credenciais OAuth do Google não criadas | 🟡 | Bloqueado no dono |
 
 ---
 
@@ -78,31 +79,47 @@ agrupamentos do sistema confundem quem opera.
 
 #### P6 — Login com Apple exige conta paga de desenvolvedor e domínio HTTPS 🟡
 **Estado:** Bloqueado no dono
-**Arquivos:** — (configuração do Better Auth, ainda não instalado)
+**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/env.ts`
 **Impacto:** "Entrar com Apple" depende do Apple Developer Program (anuidade paga), de um Services
 ID com domínio verificado e de URL de retorno HTTPS — não funciona em `localhost`. Sem isso, o
 botão não pode ir ao ar.
 **Correção:** decidir se a conta Apple Developer existe ou será criada; se não, lançar sem Apple
 e adicionar depois (o resto não depende dela).
 **Registrado em:** 2026-11-20
+**Atualização (2026-11-20):** o Better Auth já está instalado (Fase 1) e o fluxo de convite não depende de Apple. Apple ficou fora da Fase 1 e entra na Fase 6, junto do domínio HTTPS e da conta de desenvolvedor; continua bloqueada.
 
 #### P7 — Login com Facebook exige app da Meta publicado 🟡
 **Estado:** Bloqueado no dono
-**Arquivos:** — (configuração do Better Auth, ainda não instalado)
+**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/env.ts`
 **Impacto:** o app da Meta só aceita usuários fora da lista de testadores em modo Live, que exige
 URL de política de privacidade e instrução de exclusão de dados. Contas do Facebook podem não ter
 e-mail — o cadastro precisa tratar e-mail ausente.
 **Correção:** criar o app na Meta, publicar as duas páginas (privacidade, exclusão de dados) e
 tratar `email` nulo no cadastro.
 **Registrado em:** 2026-11-20
+**Atualização (2026-11-20):** o botão "Continuar com Facebook" já existe e só aparece com `FACEBOOK_CLIENT_ID` e `FACEBOOK_CLIENT_SECRET`; e-mail ausente volta como `email_not_found` ("Essa conta não informou um e-mail. Use outro jeito de entrar."). Falta o app da Meta publicado (privacidade e exclusão de dados); continua bloqueada.
 
 #### P8 — Sem provedor de e-mail, "esqueci a senha" não funciona 🟠
 **Estado:** Bloqueado no dono
-**Arquivos:** — (configuração do Better Auth, ainda não instalado)
+**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/env.ts`
 **Impacto:** quem cadastrou com e-mail + senha e esqueceu a senha fica trancado para fora (a
 passkey ajuda, mas não cobre aparelho novo). Verificação de e-mail também depende disso.
 **Correção:** escolher um provedor transacional (sugestão: Resend, plano gratuito cobre o volume)
 e um domínio remetente.
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-20):** o Better Auth está sem `sendResetPassword` e a tela `/entrar` não oferece "esqueci a senha" (a passkey cobre quem a criou). Continua bloqueada até haver provedor de e-mail.
+
+#### P10 — Credenciais OAuth do Google não criadas 🟡
+**Estado:** Bloqueado no dono
+**Arquivos:** `.env.example` · `src/lib/auth/env.ts` · `src/components/auth/SocialButtons.tsx`
+**Impacto:** sem `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` o botão "Continuar com Google" não aparece
+(o botão é condicional ao env) e o login social não tem teste ao vivo: que o cookie `closery_invite`
+chega ao hook no callback do Google é dedução do código do Better Auth, não observação.
+**Correção:** criar o projeto no Google Cloud, configurar a tela de consentimento e um ID de cliente
+OAuth do tipo Web com os URIs de redirecionamento `http://localhost:3000/api/auth/callback/google` e
+`https://<domínio>/api/auth/callback/google`; preencher as duas variáveis no `.env.local` e na Vercel;
+rodar o checklist manual de login social (spec §12), incluindo convite novo, usuário existente e
+usuário sem conta (deve voltar com "Conta não encontrada. Peça um convite.").
 **Registrado em:** 2026-11-20
 
 ## 4. Teto aceito

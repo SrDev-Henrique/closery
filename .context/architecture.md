@@ -33,9 +33,10 @@ Princípios estruturais:
 | ORM / migrações | **Drizzle ORM** + drizzle-kit | 0.45.4 · 0.31.11 |
 | Lint/format | **Biome** | 2.4.2 |
 | Gerenciador | **Bun** | 1.3.3 |
-| Validação | Zod — *a instalar com o primeiro formulário* | — |
-| Testes | Vitest + Testing Library; Playwright para E2E — *a instalar na Fase 0* | — |
-| Auth | *🟡 decidir no brainstorm* | — |
+| Validação | **Zod 4** (env de acesso, contratos das Server Actions) | 4.x |
+| Testes (unidade, integração, componente) | **Vitest** (projects `node` e `dom`) + jsdom + Testing Library + **PGlite** (Postgres em processo, com as migrações reais) | Vitest 5.1.1 · jsdom 28 (sem `matchMedia`: polyfill em `test/setup-dom.ts`) · Testing Library react 16.3 · PGlite 0.5.17 |
+| Testes E2E | **Playwright** (Chromium) + PGlite servido por **pglite-socket** | Playwright 1.65.1 · pglite-socket 0.2.20 |
+| Auth | **Better Auth** (adapter Drizzle) + plugin **passkey** | better-auth 1.7.27 · @better-auth/passkey 1.7.27 |
 | Hospedagem | *🟡 provável Vercel (par natural de Next + Neon) — confirmar* | — |
 
 ## 3. Princípios de domínio · 🟢 definido
@@ -63,10 +64,16 @@ src/
   features/
     <domínio>/            fatia vertical: queries, actions, schemas Zod, componentes do domínio
   db/
-    index.ts              conexão Drizzle + Neon (server-only)
-    schema.ts             tabelas (quebrar em schema/ quando crescer)
+    index.ts              singleton do pool + db (server-only)
+    client.ts             createPool/createDb (sem server-only: scripts e E2E)
+    types.ts              Db (tipo comum a pg e PGlite)
+    schema/               tabelas por área (sectors, auth, invites) + index.ts
   lib/                    utilitários puros (camelCase)
+    auth/                 Better Auth: createAuth, env, erros, cliente, sessão
 drizzle/                  migrações SQL geradas (versionadas)
+test/                     helpers do Vitest (PGlite, fixtures, auth de teste)
+e2e/                      Playwright (banco efêmero, autenticador virtual, specs)
+scripts/                  scripts do desenvolvedor (admin:invite)
 .context/                 documentação viva do projeto
 ```
 
@@ -92,7 +99,7 @@ drizzle/                  migrações SQL geradas (versionadas)
 - **Migrações:** `bun run db:generate` → revisar o SQL em `drizzle/` → `bun run db:migrate`.
   `db:push` só em banco de dev descartável.
 
-## 6. Modelo de dados · 🟡 a fechar na spec (decisões em `build-plan.md §5`)
+## 6. Modelo de dados · 🟡 em construção (acesso e convite ✅ na Fase 1)
 
 Entidades que as decisões já implicam: **setor**, **turno** (por setor, com horário — D9),
 **item** (por setor, com unidade e tipo controle/estoque — D1), **destino** de solicitação (D7),
@@ -101,7 +108,18 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
 **congelados** na entrega — D1), **solicitação** + **histórico de status** + **comentários**
 (D6–D8), e as tabelas do Better Auth + **convite** (D2–D4). Sem fotos (D10).
 
-## 7. Autenticação e autorização · 🟢 métodos definidos (D2) / 🟡 convite e papéis em aberto
+**Tabelas criadas até a Fase 1** (migrações versionadas em `drizzle/`):
+
+| Tabela | O que guarda | Chave |
+|---|---|---|
+| `sector` | setor: nome único, `active` | `uuid` |
+| `user` | pessoa (Better Auth) + `role` (`admin`/`operator`), `sector_id` (FK `sector`, `restrict`), `deactivated_at`; check `user_operator_needs_sector` (operador exige setor) | `text` |
+| `session`, `account`, `verification`, `passkey`, `rate_limit` | tabelas do Better Auth, cópia fiel da CLI 1.7.27 | `text` |
+| `invite` | convite: `token_hash` único, `role`, `sector_id`, `invitee_label`, `invited_by`, `expires_at`, `used_at`, `used_by`, `cancelled_at`; check `invite_operator_needs_sector` | `uuid` |
+
+As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do domínio (`sector`, `invite`) usam `timestamptz`. As demais entidades acima chegam nas Fases 2 a 4.
+
+## 7. Autenticação e autorização · 🟢 implementado na Fase 1 (Apple na Fase 6)
 
 - **Better Auth** (self-hosted, adapter Drizzle, tabelas no mesmo Neon).
 - **Cadastro só por convite.** O bloqueio mora num ponto único:
@@ -123,6 +141,20 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
   setor dele no servidor** (nunca pelo filtro da tela). Só `admin` convida, desativa e mexe em
   setores e itens. Usuário desativado não loga, mas continua referenciado pelas passagens.
 
+### Como ficou implementado (Fase 1)
+
+- **Fábrica única.** `createAuth(db, env)` (`src/lib/auth/createAuth.ts`) monta o Better Auth; o app (`src/lib/auth/index.ts`, `server-only`), os testes (`test/auth.ts`) e o E2E usam a mesma fábrica. O env passa por `parseAuthEnv` (Zod): `BETTER_AUTH_SECRET` (mínimo 32 caracteres) e `BETTER_AUTH_URL` são obrigatórios e **o `next build` falha sem eles**; Google e Facebook só ligam com `*_CLIENT_ID` + `*_CLIENT_SECRET` (os dois ou nenhum).
+- **Ids.** As tabelas do Better Auth usam `text` (32 caracteres gerados pela lib); as do domínio usam `uuid`. `user.sector_id` é `uuid` com FK para `sector`, por isso o schema de auth é escrito à mão em `src/db/schema/auth.ts` (copiando a saída da CLI `auth generate` 1.7.27) e um teste guarda, com `getAuthTables`, prova que ele bate com o que a lib espera.
+- **Consumo do convite.** No `databaseHooks.user.create.before`: `UPDATE invite SET used_at … WHERE token_hash = … AND used_at IS NULL AND cancelled_at IS NULL AND expires_at > now RETURNING role, sector_id` (atômico no banco). O hook injeta `role`, `sector_id` e `emailVerified: true`; `user.create.after` grava `used_by`. O cadastro por e-mail checa e-mail repetido **antes** do hook, então e-mail já cadastrado não gasta convite. Sem `ctx` (fora de uma requisição) o hook recusa (fail-closed). Todo erro de hook é `APIError` com `code` (`SIGNUP_INVITE_ONLY`, `ACCOUNT_DEACTIVATED`).
+- **Cookie `closery_invite`.** Token bruto, `httpOnly`, `SameSite=Lax` (volta no callback OAuth), `Secure` em produção, `path=/`, 1 h. Só a Server Action `armInvite` grava; a página `/convite/[token]` apenas lê (prefetch e scanner de link não gastam convite). A rota responde com `Referrer-Policy: no-referrer`.
+- **Sem `cookieCache`.** A sessão é lida do banco a cada requisição (`getAuthz`, com `cache()` do React) para que desativação e mudança de papel ou setor valham na hora; `session.create.before` barra usuário desativado em e-mail, social e passkey. Sem `nextCookies()`: cadastro e login vão pelo `authClient` (HTTP), onde o rate limit atua.
+- **Rate limit** do Better Auth com `storage: "database"` (tabela `rate_limit`): rate limit ligado só em produção: `/sign-in/email` 10 por 60 s e `/sign-up/email` 5 por 60 s (`customRules` da `createAuth`); os demais `/sign-in*` e `/sign-up*` (social, passkey) seguem a regra padrão do Better Auth, 3 por 10 s; o resto, 100 por 10 s. Por IP (primeiro valor de `x-forwarded-for`).
+- **Autorização.** `toAuthz` (puro) produz `Authz`; `requireUser()` redireciona para `/entrar`; `requireAdmin()` chama `notFound()` para operador, que vê "Página não encontrada" (com streaming o status HTTP é 200 e o HTML traz `noindex`; `/admin` não exporta `metadata`, para o `<title>` não revelar a rota); `scopeToSector(authz, coluna)` escopa as queries por setor. `src/proxy.ts` só faz o redirecionamento otimista pelo cookie; a regra real vive no servidor.
+- **Passkey.** `rpID` e origem vêm de `BETTER_AUTH_URL` (passkey de `localhost` não vale em produção); criada em `/bem-vindo` ou `/conta` (exige sessão recente); login pelo autofill do campo de e-mail e pelo botão "Entrar com passkey".
+- **Primeiro administrador.** `bun run admin:invite` (`scripts/adminInvite.ts`) gera o link do convite de administrador.
+- **Vínculo de contas desligado.** `account.accountLinking.disableImplicitLinking: true`: o convite marca o e-mail como verificado, e vincular login social pelo e-mail abriria tomada de conta. Quem criou conta por e-mail e tenta Google recebe `account_not_linked` ("Entre como da primeira vez").
+- **Erros do WebAuthn.** O cliente de passkey repassa o código do `@simplewebauthn/browser` (fechar o diálogo = `ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`); `passkeyErrorCode` (`src/components/auth/passkeyErrorCode.ts`) traduz para `AUTH_CANCELLED`/`REGISTRATION_CANCELLED`/`PREVIOUSLY_REGISTERED` antes do mapa de mensagens.
+
 ## 8. Dados pessoais (LGPD) · 🟢 baseline
 
 - O sistema guarda **nome e e-mail de funcionários**, **autoria de passagens** e **comentários**.
@@ -135,8 +167,16 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
 
 | Rota | O que é | Status |
 |---|---|---|
-| `/` | placeholder | ✅ scaffold |
+| `/entrar` | login: e-mail e senha, passkey (autofill e botão), Google/Facebook se habilitados. Pública | ✅ Fase 1 |
+| `/convite/[token]` | convite (válido, expirado, usado, cancelado, inexistente) + cadastro; `armInvite` grava o cookie. Pública | ✅ Fase 1 |
+| `/bem-vindo` | oferta de passkey logo depois do cadastro | ✅ Fase 1 |
+| `/` | Início: saudação (a passagem de turno entra na Fase 3) | ✅ Fase 1 |
+| `/conta` | passkeys (criar e remover) e "Sair" | ✅ Fase 1 |
+| `/admin` | Administração (placeholder até a Fase 2); operador vê "Página não encontrada" | ✅ Fase 1 |
+| `/api/auth/[...all]` | handler do Better Auth. Pública | ✅ Fase 1 |
 | `/api/health` | `GET` — `select 1` dentro de transação; `200 {status:"ok"}` ou `503 {status:"error"}` sem detalhe (o erro vai só para o log). Pública | ✅ 2026-11-20 |
+
+Rotas públicas: `/entrar`, `/convite/[token]`, `/api/auth/*` e `/api/health`. Todo o resto exige sessão (`src/proxy.ts` + `requireUser()`).
 
 ## 10. Log de evolução (ADR leve)
 
@@ -175,3 +215,11 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
   produção **comentadas** no arquivo até irem para a Vercel. Channel binding ligado no pool.
   Verificado de novo: as duas URLs da branch conectam com `verify-full` + channel binding; `build`
   verde; `/api/health` 200 (168 ms na primeira conexão, 22 ms com o pool aberto).
+
+### 2026-11-20 — Fase 0 + Fase 1: fundação de testes e acesso
+
+- **Decisão:** Vitest 5 com dois projects (`node` para domínio e servidor, `dom` para componentes) e PGlite com as migrações reais (dump migrado uma vez por execução); Playwright com o app em `next build` + `next start` sobre PGlite servido por pglite-socket. Better Auth 1.7.27 com cadastro só por convite (cookie `closery_invite` + hook `user.create.before` que consome o convite com `UPDATE … RETURNING`), e-mail e senha, passkey e Google/Facebook condicionais ao env; papéis `admin`/`operator` escopados por setor no servidor.
+- **Por quê:** o domínio recebe `db` por parâmetro, então os mesmos testes valem com PGlite e com `pg`; o convite consumido no banco é atômico e não depende de estado da aplicação; ler a sessão fresca do banco faz a desativação valer na hora (spec §4.1).
+- **Trade-offs aceitos:** (1) PGlite tem uma conexão só e serializa tudo, então os testes provam lógica, SQL e constraints, **não** corrida; a atomicidade vem do `UPDATE … RETURNING` e é revisada na forma da query. (2) Sem `cookieCache`: uma ida ao banco por requisição em troca de desativação imediata. (3) O E2E compila e sobe o app de produção (cerca de 1 min), por isso o rate limit está ligado (cadastro: 5 por 60 s por IP) e cada teste usa um IP próprio. (4) Apple fica para a Fase 6 (P6); Google sem credenciais (P10), então o login social não tem teste ao vivo (checklist manual da spec §12).
+- **Desvios e detalhes registrados:** (a) `/entrar` mostra o formulário de e-mail primeiro, e não a passkey como na spec §4.3: o autofill de passkey vive no campo de e-mail, então a passkey continua sendo a primeira oferta. (b) As tabelas do Better Auth usam `timestamp` sem fuso (fiel à CLI); o Drizzle grava `toISOString()` e lê como UTC, então não há deslocamento por fuso do processo. (c) `/admin` para operador responde 200 com "Página não encontrada" (streaming), não 404 de status. (d) `Db = PgDatabase<PgQueryResultHKT, Schema>`: a união `NodePgDatabase | PgliteDatabase` quebra `.returning({ … })`. (e) jsdom 28 (o 31 exige Node ≥ 22.22.2) e `package.json` com `"type": "module"`. (f) `check-types` = `next typegen && tsc --noEmit` e `.gitattributes` com LF.
+- **Verificado:** `check-types`, `lint`, `test`, `test:e2e` (7 passed) e `build` verdes.
