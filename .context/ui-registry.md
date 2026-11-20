@@ -285,6 +285,17 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Usa:** `Field*`, `Input`, `Button`, `SocialButtons`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
+### SignInPanel
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/SignInPanel.tsx`
+- **Propósito:** tela de entrada (e-mail e senha, passkey, social).
+- **Como funciona:** `"use client"`; autofill condicional de passkey no mount (silencioso, não
+  trava botões); botão "Entrar com passkey"; social com `requestSignUp: false`; erro inicial de
+  `?error=`; erros por `authFormError`/`passkeyErrorCode`. O formulário vem primeiro porque o
+  autofill de passkey vive no campo de e-mail.
+- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
