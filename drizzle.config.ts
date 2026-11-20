@@ -10,7 +10,7 @@ loadEnvConfig(process.cwd());
 const { migration } = resolveDatabaseUrls(process.env);
 
 export default defineConfig({
-  schema: "./src/db/schema.ts",
+  schema: "./src/db/schema/index.ts",
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: { url: migration ?? "" },
