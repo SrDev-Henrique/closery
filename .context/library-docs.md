@@ -81,6 +81,7 @@
   para o drizzle-kit — e aceita as duas convenções de nome do Neon. Sempre `sslmode=verify-full`.
 - **Channel binding** é `enableChannelBinding: true` no `Pool` — o `pg` não lê o
   `channel_binding=require` da URL.
+- **Datas do Better Auth:** as tabelas dele usam `timestamp` sem fuso; o Drizzle grava e lê em UTC (`toISOString`), então não há deslocamento; `defaultNow()` nessas colunas depende do `TimeZone` da sessão do Postgres (o Neon usa UTC).
 - **Local = branch de desenvolvimento do Neon;** produção só na Vercel.
 - **Pool em dev** fica no `globalThis` para o HMR não vazar conexões.
 - **Testes: `drizzle-orm/pglite`** (`@electric-sql/pglite`), Postgres em processo, aplicando as

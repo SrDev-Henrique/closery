@@ -270,4 +270,16 @@ describe("PasskeyManager", () => {
     await user.click(button);
     expect(mocks.deletePasskey).toHaveBeenCalledTimes(1);
   });
+
+  it("com remoção pendente, 'Criar passkey' fica desabilitado", async () => {
+    mocks.deletePasskey.mockReturnValue(new Promise(() => {}));
+    setup(
+      listState({ data: [{ id: "p1", name: "Notebook", createdAt: null }] }),
+    );
+    const user = userEvent.setup();
+    const create = screen.getByRole("button", { name: "Criar passkey" });
+    expect(create).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Remover passkey" }));
+    await waitFor(() => expect(create).toBeDisabled());
+  });
 });

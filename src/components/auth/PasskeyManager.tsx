@@ -81,7 +81,7 @@ export function PasskeyManager() {
         <Button
           type="button"
           variant="outline"
-          disabled={creating}
+          disabled={busy}
           onClick={handleCreate}
         >
           Criar passkey

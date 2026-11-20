@@ -12185,7 +12185,7 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **Primeiro administrador:** `bun run admin:invite` imprime o link do convite.
 - **Driver é `pg` + `attachDatabasePool`** (D18), não `neon-serverless`. Escrita multi-statement em
   `db.transaction()`; nada de `db.batch`.
-- **`.env.local` aponta para a branch de DESENVOLVIMENTO do Neon** (`ep-blue-voice-…`); as URLs de
+- **`.env.local` aponta para a branch de DESENVOLVIMENTO do Neon**; as URLs de
   produção estão comentadas até irem para a Vercel. Usa `DATABASE_URL` (direta) + `DATABASE_URL_POOLED`
   (o contrário da convenção do `neon env pull`); `src/db/databaseUrl.ts` aceita as duas. Sempre `sslmode=verify-full`.
 - **A CLI `neon` está com a sessão expirada** (`neon login` resolve).

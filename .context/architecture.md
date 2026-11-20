@@ -87,7 +87,7 @@ scripts/                  scripts do desenvolvedor (admin:invite)
   **channel binding** ligado no pool (`enableChannelBinding: true` — o `pg` ignora o
   `channel_binding=require` da URL).
 - **Branches do Neon:** o `.env.local` aponta para a branch de **desenvolvimento**
-  (`ep-blue-voice-…`, `sa-east-1`). A branch **production** só existe nas variáveis da Vercel —
+  (`sa-east-1`). A branch **production** só existe nas variáveis da Vercel —
   migração local nunca toca produção. Migração nova é testada na branch de desenvolvimento antes
   de ir para produção (recomendação da skill `neon-postgres`).
 - **Driver (D18): `node-postgres` (`pg`)** com `Pool` (`max: 10`) + **`attachDatabasePool`**
@@ -164,7 +164,7 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
   fixture — só dados fictícios.
 - **Sem upload de arquivos** no MVP (D10) — nenhum armazenamento de mídia.
 
-## 9. Rotas · 🟡 a preencher conforme os marcos
+## 9. Rotas · 🟢 rotas da Fase 1 prontas (as seguintes entram a cada marco)
 
 | Rota | O que é | Status |
 |---|---|---|

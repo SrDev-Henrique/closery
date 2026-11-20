@@ -30,7 +30,7 @@
 
 ## 1. Primitivos (shadcn `base-nova` / Base UI) — `src/components/ui`
 
-Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
+Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 
 ### Button
 - **Status:** ✅ pronto (scaffold, 2026-11-20)
