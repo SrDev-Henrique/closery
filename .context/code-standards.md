@@ -44,6 +44,11 @@
 - **Cache Components ligado** (`next.config.ts`): dado é **dinâmico por padrão**. Cache é opt-in
   com `"use cache"` + `cacheTag`/`cacheLife`. Acesso a dado dinâmico fica dentro de `<Suspense>`.
   Detalhes em `library-docs.md §1`.
+- **Portão de autenticação.** Toda página do grupo `(app)` fica atrás do `RequireUser` do layout
+  (`<Suspense><RequireUser>{children}</RequireUser></Suspense>`; `appLayoutAuth.test.ts` guarda).
+  Mesmo assim, toda Server Action e todo route handler chama `requireUser`/`requireAdmin` (ou
+  `getAuthz`) **e** `scopeToSector`/`canAccessSector` por conta própria: Server Actions podem ser
+  chamadas de qualquer rota e `/api` não passa pelo proxy.
 - Entry files de rota (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`) usam default export;
   o resto, named export.
 - Código de banco só em módulo servidor — `src/db` importa `server-only`.
