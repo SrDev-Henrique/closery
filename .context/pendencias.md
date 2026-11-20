@@ -39,7 +39,7 @@
 |---|---|---|---|
 | P1 | Banco Neon não provisionado | 🟠 | Resolvido |
 | P2 | Uso da marca LATAM sem autorização confirmada | 🟡 | Bloqueado no dono |
-| P3 | Tamanhos do Button abaixo do alvo mínimo de toque | 🟡 | Aberto, não triado |
+| P3 | Tamanhos do Button abaixo do alvo mínimo de toque | 🟡 | Resolvido |
 | P4 | Paleta de gráficos em cinza e sem tokens de status | 🟡 | Resolvido |
 | P5 | Glossário do domínio ULD é interpretação, não confirmação | 🟡 | Bloqueado no dono |
 | P6 | Login com Apple exige conta paga de desenvolvedor e domínio HTTPS | 🟡 | Bloqueado no dono |
@@ -51,13 +51,7 @@
 
 ## 1. Aberto, não triado
 
-#### P3 — Tamanhos do Button abaixo do alvo mínimo de toque 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/components/ui/button.tsx:22-32`
-**Impacto:** `default` (h-8), `xs`, `sm` e `icon` ficam abaixo de h-9 / 44px no celular
-(`ui-rules.md §1.4`) — toque errado na correria do fim de turno.
-**Correção:** —
-**Registrado em:** 2026-11-20
+*(nenhuma)*
 
 ## 2. Triado, plano pronto
 
@@ -130,6 +124,22 @@ connection strings (com e sem pooler) para `.env.local`.
 também com `verify-full`.
 **Atualização (2026-11-20):** o local passou para a branch de **desenvolvimento** do Neon; as URLs de
 produção ficaram comentadas no `.env.local` — mover para a Vercel e apagar de lá.
+
+#### P3 — Tamanhos do Button abaixo do alvo mínimo de toque 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/components/ui/button.tsx` · `src/components/ui/input.tsx` ·
+`src/components/ui/sidebar.tsx` · `src/components/ui/button.test.ts`
+**Impacto:** `default` (h-8), `xs`, `sm` e `icon` ficavam abaixo de h-9 / 44px no celular
+(`ui-rules.md §1.4`) — toque errado na correria do fim de turno.
+**Correção:** cada tamanho do `Button` sobe para h-9 / size-9 no desktop e ganha `max-md:h-11` /
+`max-md:size-11` (44px abaixo de `md`); `lg` e `icon-lg` já são 44px. O mesmo vale para o `Input`
+(`h-9 max-md:h-11`) e para o `SidebarMenuButton` default.
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-20):** resolvida na Fase 1. Testes guardam as classes (`button.test.ts`,
+`input.test.tsx`, `sidebar.test.tsx`): se um `shadcn add` sobrescrever o arquivo e perder o ajuste,
+o teste falha. O modificador `max-md:` sobrevive a overrides de altura em `className` (o `cn`
+não o remove). Tamanhos `xs`/`sm`/`icon-xs`/`icon-sm` foram mantidos (usados por `input-group`,
+`sheet` e `sidebar`) e também chegam a 44px no celular.
 
 #### P4 — Paleta de gráficos em cinza e sem tokens de status 🟡
 **Estado:** Resolvido

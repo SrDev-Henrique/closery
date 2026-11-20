@@ -37,12 +37,166 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Local:** `src/components/ui/button.tsx`
 - **Propósito:** toda ação clicável.
 - **Como funciona:** `@base-ui/react/button` + `cva`. Variantes `default`, `outline`, `secondary`,
-  `ghost`, `destructive`, `link`; tamanhos `default`, `xs`, `sm`, `lg` (h-9), `icon`, `icon-xs`,
+  `ghost`, `destructive`, `link`; tamanhos `default`, `xs`, `sm`, `lg` (h-11), `icon`, `icon-xs`,
   `icon-sm`, `icon-lg`. Composição com `render`, não `asChild`.
-- **Atenção:** os tamanhos gerados (`default`, `xs`, `sm`, `icon`) ficam abaixo do mínimo do
-  `ui-rules.md §1.4` (h-9+, 44px no celular) — ajuste pendente (P3 em `pendencias.md`).
+- **Atenção:** todo tamanho tem h-9 / size-9 no desktop e `max-md:h-11` / `max-md:size-11` no
+  celular (`lg` e `icon-lg` são 44px sempre). Teste: `button.test.ts`. Para navegação use
+  `<Link className={buttonVariants()}>` (continua role link); `render={<Link />}` (com
+  `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
 - **Usa:** tokens `primary`, `border`, `muted`, `ring`, `destructive`.
-- **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração).
+- **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
+  toque (h-9 desktop, 44px no celular).
+
+### Input
+- **Status:** ✏️ estendido
+- **Local:** `src/components/ui/input.tsx`
+- **Propósito:** campo de texto de uma linha.
+- **Como funciona:** `@base-ui/react/input`; `text-base` no celular (16px, sem zoom do iOS) e
+  `md:text-sm`; estilo `aria-invalid` pronto. Altura `h-9 max-md:h-11`.
+- **Usa:** tokens `input`, `ring`, `destructive`, `muted-foreground`.
+- **Histórico:** 2026-11-20 — `shadcn add`; altura sobe de h-8 para `h-9 max-md:h-11` (P3).
+
+### Label
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/label.tsx`
+- **Propósito:** rótulo de campo (`<label>` simples).
+- **Como funciona:** HTML puro; use `htmlFor` casando com o `id` do campo. Dentro de formulário,
+  prefira `FieldLabel`.
+- **Usa:** tokens de texto.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Field (FieldGroup, FieldLabel, FieldDescription, FieldError…)
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/field.tsx`
+- **Propósito:** estrutura de formulário acessível: rótulo, campo, ajuda e erro.
+- **Como funciona:** HTML puro; **não** liga `id`/`aria-*` sozinho — passe `htmlFor`/`id`,
+  `aria-invalid` no `Input` e `aria-describedby` apontando para o `FieldError`. `Field
+  data-invalid` pinta o rótulo de `destructive`. `FieldError` renderiza `role="alert"` e retorna
+  `null` se vazio.
+- **Usa:** `Label`, `Separator`; tokens `destructive`, `muted-foreground`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### InputGroup
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/input-group.tsx` (traz `textarea.tsx`)
+- **Propósito:** campo com adornos (ícone, texto, botão) dentro da mesma borda.
+- **Como funciona:** `InputGroup`, `InputGroupAddon`, `InputGroupButton`, `InputGroupText`,
+  `InputGroupInput`, `InputGroupTextarea`. O `InputGroupButton` sobrescreve a altura do `Button`,
+  mas o `max-md:` do P3 sobrevive: no celular o botão pode ficar mais alto que o campo.
+- **Usa:** `Button`, `Input`, `Textarea`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Textarea
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/textarea.tsx`
+- **Propósito:** campo de texto de várias linhas (veio como dependência do `InputGroup`).
+- **Como funciona:** `<textarea>` estilizado igual ao `Input`.
+- **Usa:** tokens `input`, `ring`, `destructive`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Card
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/card.tsx`
+- **Propósito:** superfície que agrupa um bloco de conteúdo.
+- **Como funciona:** `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`,
+  `CardContent`, `CardFooter`; HTML puro.
+- **Usa:** tokens `card`, `card-foreground`, `border`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Separator
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/separator.tsx`
+- **Propósito:** linha divisória horizontal ou vertical.
+- **Como funciona:** `@base-ui/react/separator`; prop `orientation`.
+- **Usa:** token `border`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Sidebar
+- **Status:** ✏️ estendido
+- **Local:** `src/components/ui/sidebar.tsx` (traz `src/hooks/use-mobile.ts`)
+- **Propósito:** navegação lateral do app; vira gaveta (`Sheet`) no celular.
+- **Como funciona:** `SidebarProvider` > `Sidebar` > `SidebarHeader`/`SidebarContent`/
+  `SidebarFooter`, com `SidebarInset` ao lado e `SidebarTrigger` (Ctrl/Cmd+B). `SidebarMenuButton`
+  aceita `isActive` e `render={<Link />}`; `useSidebar().setOpenMobile(false)` fecha a gaveta
+  após navegar. Breakpoint do celular: 768px (igual ao `md`). O primeiro render é sempre desktop
+  (`useIsMobile` começa `false`). Exige `TooltipProvider` acima. Ler `cookies()` para
+  `defaultOpen` exigiria `Suspense`; use `defaultOpen` fixo.
+- **Usa:** `Button`, `Input`, `Separator`, `Sheet`, `Skeleton`, `Tooltip`; tokens `sidebar-*`.
+- **Histórico:** 2026-11-20 — `shadcn add`; `SidebarMenuButton` default sobe de h-8 para
+  `h-9 max-md:h-11` (P3).
+
+### Sheet
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/sheet.tsx`
+- **Propósito:** painel que desliza da borda (gaveta de navegação no celular, painéis laterais).
+- **Como funciona:** `@base-ui/react/dialog`; `side` = `top|right|bottom|left`; `SheetHeader`,
+  `SheetTitle`, `SheetDescription`, `SheetFooter`, `SheetClose`. O botão de fechar usa
+  `Button size="icon-sm"` (44px no celular).
+- **Usa:** `Button`; tokens `background`, `border`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Tooltip
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/tooltip.tsx`
+- **Propósito:** rótulo curto de controle só com ícone (regra do `AGENTS.md`).
+- **Como funciona:** `@base-ui/react/tooltip`; `TooltipProvider` uma vez no layout raiz
+  (sem ele o Base UI lança erro); `TooltipTrigger render={<Button … />}`.
+- **Usa:** tokens `foreground`, `background`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Sonner (Toaster)
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/sonner.tsx`
+- **Propósito:** toasts de confirmação ("Passkey criada.").
+- **Como funciona:** um `<Toaster />` no layout raiz; dispare com `toast.success(...)` de
+  `sonner`. Lê o tema via `next-themes` (sem `ThemeProvider` cai em `system`).
+- **Usa:** tokens `popover`, `border`.
+- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`).
+
+### Avatar
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/avatar.tsx`
+- **Propósito:** foto ou iniciais de uma pessoa.
+- **Como funciona:** `Avatar`, `AvatarImage`, `AvatarFallback`, `AvatarGroup`, `AvatarBadge`;
+  `size` = `default|sm|lg`.
+- **Usa:** `@base-ui/react/avatar`; tokens `muted`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### DropdownMenu
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/dropdown-menu.tsx`
+- **Propósito:** menu de ações de um botão.
+- **Como funciona:** `@base-ui/react/menu`. `DropdownMenuLabel` precisa estar dentro de
+  `DropdownMenuGroup`. `DropdownMenuItem` aceita `render={<Link />}` direto (não é nativo).
+- **Usa:** tokens `popover`, `accent`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Skeleton
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/skeleton.tsx`
+- **Propósito:** estado de carregamento (fallback de `Suspense`).
+- **Como funciona:** `div` pulsante; dê o tamanho por `className`.
+- **Usa:** token `muted`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Alert
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/alert.tsx`
+- **Propósito:** aviso em linha dentro da tela (erro de formulário, informação).
+- **Como funciona:** `Alert`, `AlertTitle`, `AlertDescription`, `AlertAction`; variantes
+  `default` e `destructive` apenas. Status `success`/`warning`/`info` pedem classes com os tokens
+  novos, sempre com ícone + texto.
+- **Usa:** tokens `card`, `destructive`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Badge
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/ui/badge.tsx`
+- **Propósito:** etiqueta curta de estado ou papel.
+- **Como funciona:** variantes `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`;
+  aceita `render`.
+- **Usa:** tokens `primary`, `secondary`, `destructive`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
 
 ## 2. Componentes de aplicação — `src/components/<área>`
 
