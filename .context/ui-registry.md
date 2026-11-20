@@ -219,7 +219,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** Server Component assíncrono; `requireUser()` e devolve `<AppSidebar />`.
   Sempre dentro de `<Suspense fallback={<SidebarSkeleton />}>` no layout `(app)`.
 - **Usa:** `AppSidebar`, `requireUser`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-20 — o `RequireUser` (portão no layout) foi tentado e removido na re-revisão: o Next não deixa o layout controlar a página; o portão é `requireUser`/`requireAdmin` em cada página, guardado por `appPagesAuth.test.ts`.
 
 ### SidebarSkeleton
 - **Status:** ✅ pronto (2026-11-20)
@@ -228,25 +228,6 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** só no desktop (`hidden md:flex`), `aria-hidden`, largura `--sidebar-width`.
 - **Usa:** `Skeleton`; token `sidebar`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
-
-### RequireUser
-- **Status:** ✅ pronto (2026-11-20)
-- **Local:** `src/components/app-shell/RequireUser.tsx`
-- **Propósito:** portão estrutural de autenticação do grupo `(app)`.
-- **Como funciona:** Server Component assíncrono; `await requireUser()` (redireciona para
-  `/entrar` sem sessão) e devolve `children`. O layout o usa dentro de
-  `<Suspense fallback={<PageSkeleton />}>` em volta de `{children}`; `appLayoutAuth.test.ts` falha
-  se o layout deixar de usá-lo.
-- **Usa:** `requireUser`.
-- **Histórico:** 2026-11-20 — criado na revisão final da Fase 1.
-
-### PageSkeleton
-- **Status:** ✅ pronto (2026-11-20)
-- **Local:** `src/components/app-shell/PageSkeleton.tsx`
-- **Propósito:** reserva o lugar da página enquanto o `RequireUser` lê a sessão.
-- **Como funciona:** `aria-hidden`; duas barras `Skeleton` (título e linha de texto).
-- **Usa:** `Skeleton`.
-- **Histórico:** 2026-11-20 — criado na revisão final da Fase 1.
 
 ### MenuToggle
 - **Status:** ✅ pronto (2026-11-20)
