@@ -123,7 +123,7 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
   `defaultOpen` exigiria `Suspense`; use `defaultOpen` fixo.
 - **Usa:** `Button`, `Input`, `Separator`, `Sheet`, `Skeleton`, `Tooltip`; tokens `sidebar-*`.
 - **Histórico:** 2026-11-20 — `shadcn add`; `SidebarMenuButton` default sobe de h-8 para
-  `h-9 max-md:h-11` (P3).
+  `h-9 max-md:h-11` (P3); textos acessíveis em pt-BR ("Alternar menu", gaveta "Menu").
 
 ### Sheet
 - **Status:** ✅ pronto (2026-11-20)
@@ -133,7 +133,7 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
   `SheetTitle`, `SheetDescription`, `SheetFooter`, `SheetClose`. O botão de fechar usa
   `Button size="icon-sm"` (44px no celular).
 - **Usa:** `Button`; tokens `background`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar".
 
 ### Tooltip
 - **Status:** ✅ pronto (2026-11-20)
@@ -200,7 +200,62 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 
 ## 2. Componentes de aplicação — `src/components/<área>`
 
-*(nenhum ainda)*
+### AppSidebar
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
+- **Propósito:** navegação lateral do app autenticado: Início, Conta e, só para admin, Administração.
+- **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
+  `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
+  `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
+  gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
+  atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
+- **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### AuthedSidebar
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/AuthedSidebar.tsx`
+- **Propósito:** liga a sessão ao menu.
+- **Como funciona:** Server Component assíncrono; `requireUser()` e devolve `<AppSidebar />`.
+  Sempre dentro de `<Suspense fallback={<SidebarSkeleton />}>` no layout `(app)`.
+- **Usa:** `AppSidebar`, `requireUser`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### SidebarSkeleton
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/SidebarSkeleton.tsx`
+- **Propósito:** reserva o espaço da barra lateral enquanto a sessão carrega.
+- **Como funciona:** só no desktop (`hidden md:flex`), `aria-hidden`, largura `--sidebar-width`.
+- **Usa:** `Skeleton`; token `sidebar`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### MenuToggle
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/MenuToggle.tsx`
+- **Propósito:** botão do cabeçalho que abre e fecha a barra lateral.
+- **Como funciona:** `"use client"`; `SidebarTrigger` (só ícone) dentro de `TooltipTrigger render`,
+  com `aria-label` e tooltip "Alternar menu". Testado com `fireEvent.pointerEnter/mouseEnter`.
+- **Usa:** `SidebarTrigger`, `Tooltip*`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### Greeting
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/Greeting.tsx`
+- **Propósito:** título "Olá, {primeiro nome}" e texto do Início.
+- **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
+  `src/lib/names.ts`. Dentro de `<Suspense>` na página.
+- **Usa:** `requireUser`, `greetingTitle`.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold).
+
+### AdminOverview
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/AdminOverview.tsx`
+- **Propósito:** conteúdo provisório de `/admin` e portão de acesso.
+- **Como funciona:** Server Component assíncrono; `requireAdmin()` (operador cai em `notFound()`).
+  O título fica dentro do `<Suspense>` para o operador não ver "Administração" antes do 404, e a
+  página não exporta `metadata` (o `<title>` revelaria a rota; T12).
+- **Usa:** `requireAdmin`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
