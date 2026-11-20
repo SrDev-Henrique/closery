@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { AuthedSidebar } from "@/components/app-shell/AuthedSidebar";
 import { MenuToggle } from "@/components/app-shell/MenuToggle";
+import { SessionKeepAlive } from "@/components/app-shell/SessionKeepAlive";
 import { SidebarSkeleton } from "@/components/app-shell/SidebarSkeleton";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
@@ -10,6 +11,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <SidebarProvider>
+      <SessionKeepAlive />
       <Suspense fallback={<SidebarSkeleton />}>
         <AuthedSidebar />
       </Suspense>

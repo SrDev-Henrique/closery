@@ -373,4 +373,31 @@ describe("SignInPanel", () => {
       ).toBeEnabled();
     });
   });
+
+  describe("bloqueio por excesso de tentativas (429)", () => {
+    const tooMany = { status: 429, statusText: "Too Many Requests" };
+
+    it("e-mail e senha: 429 sem code mostra a mensagem do limite", async () => {
+      mocks.signInEmail.mockResolvedValue({ data: null, error: tooMany });
+      setup();
+      await fillAndSubmit();
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Muitas tentativas nesta rede. Espere um minuto e tente de novo.",
+      );
+      expect(screen.getByRole("button", { name: "Entrar" })).toBeEnabled();
+    });
+
+    it("social: 429 sem code mostra a mensagem do limite", async () => {
+      mocks.signInSocial.mockResolvedValue({ data: null, error: tooMany });
+      setup({ providers: ["google"] });
+      await userEvent.click(
+        screen.getByRole("button", { name: "Continuar com Google" }),
+      );
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Muitas tentativas nesta rede. Espere um minuto e tente de novo.",
+      );
+    });
+  });
 });

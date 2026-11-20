@@ -48,4 +48,19 @@ describe("errorCodeOf", () => {
     expect(errorCodeOf({ code: 42 })).toBeNull();
     expect(errorCodeOf({})).toBeNull();
   });
+
+  it("429 sem code vira RATE_LIMITED", () => {
+    expect(errorCodeOf({ status: 429, statusText: "Too Many Requests" })).toBe(
+      "RATE_LIMITED",
+    );
+  });
+
+  it("429 com code mantém o code", () => {
+    expect(errorCodeOf({ status: 429, code: "OUTRO" })).toBe("OUTRO");
+  });
+
+  it("outros status sem code continuam null", () => {
+    expect(errorCodeOf({ status: 500 })).toBeNull();
+    expect(errorCodeOf({ status: 429.5 })).toBeNull();
+  });
 });

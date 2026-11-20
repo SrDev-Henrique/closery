@@ -28,6 +28,9 @@ export const AUTH_ERROR_MESSAGES: Readonly<Record<string, string>> =
     PREVIOUSLY_REGISTERED: "Esta passkey já está cadastrada.",
     AUTHENTICATION_FAILED: "Não foi possível entrar com a passkey.",
     PASSKEY_NOT_FOUND: "Passkey não encontrada.",
+    // Código só do cliente: o Better Auth responde 429 sem `code`.
+    RATE_LIMITED:
+      "Muitas tentativas nesta rede. Espere um minuto e tente de novo.",
   });
 
 // Sempre devolve texto do mapa ou o fallback: o texto cru do servidor (por

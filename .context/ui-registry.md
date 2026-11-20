@@ -271,8 +271,9 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Local:** `src/components/auth/InviteUnavailable.tsx`
 - **Propósito:** convite expirado, usado, cancelado ou inexistente.
 - **Como funciona:** Server Component; `reason` → texto de `inviteMessages.ts` + "Peça um novo
-  convite a quem te convidou."; sem formulário.
-- **Usa:** `Card*`.
+  convite a quem te convidou." + "Já tem conta?" e o link `Entrar` (para `/entrar`, com cara de
+  botão `outline` `lg`); sem formulário.
+- **Usa:** `Card*`, `buttonVariants`, `next/link`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
 ### InviteSignup
@@ -280,9 +281,11 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Local:** `src/components/auth/InviteSignup.tsx`
 - **Propósito:** cadastro por convite (nome, e-mail, senha e social).
 - **Como funciona:** `"use client"`; estado controlado; `armInvite` antes de
-  `signUp.email`/`signIn.social` (`requestSignUp: true`); erro só por `authFormError`, com
-  `aria-invalid`/`aria-describedby` no campo; trava duplo clique.
-- **Usa:** `Field*`, `Input`, `Button`, `SocialButtons`.
+  `signUp.email`/`signIn.social` (`requestSignUp: true`); erros do cadastro por
+  `authFormError(errorCodeOf(erro))` (429 vira `RATE_LIMITED`), os de estado do convite vêm do
+  `message` do `armInvite`; `aria-invalid`/`aria-describedby` no campo; trava duplo clique. Com
+  `USER_ALREADY_EXISTS*` mostra o link `Entrar` (para `/entrar`) abaixo da mensagem.
+- **Usa:** `Field*`, `Input`, `Button`, `buttonVariants`, `SocialButtons`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
 ### SignInPanel
@@ -291,10 +294,20 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Propósito:** tela de entrada (e-mail e senha, passkey, social).
 - **Como funciona:** `"use client"`; autofill condicional de passkey no mount (silencioso, não
   trava botões); botão "Entrar com passkey"; social com `requestSignUp: false`; erro inicial de
-  `?error=`; erros por `authFormError`/`passkeyErrorCode`. O formulário vem primeiro porque o
+  `?error=`; erros por `authFormError(errorCodeOf(erro))`/`passkeyErrorCode`. O formulário vem primeiro porque o
   autofill de passkey vive no campo de e-mail.
 - **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### SessionKeepAlive
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/app-shell/SessionKeepAlive.tsx`
+- **Propósito:** renovar o cookie de sessão de quem usa o app (a leitura no Server Component
+  estende o banco mas não grava cookie).
+- **Como funciona:** `"use client"`; `useEffect` chama `authClient.getSession()` uma vez ao montar;
+  erros em silêncio; renderiza `null`. Montado em `src/app/(app)/layout.tsx`, fora de `<Suspense>`.
+- **Usa:** `authClient`.
+- **Histórico:** 2026-11-20 — criado na revisão final da Fase 1.
 
 ### PasskeyOffer
 - **Status:** ✅ pronto (2026-11-20)

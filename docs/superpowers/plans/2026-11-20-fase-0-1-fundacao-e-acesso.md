@@ -306,7 +306,7 @@ export type Auth = ReturnType<typeof createAuth>;
 export const AUTH_USER_ADDITIONAL_FIELDS: { role: …; sectorId: …; deactivatedAt: … }; // usados também pelo teste guarda
 ```
 Erros lançados nos hooks: `APIError("FORBIDDEN", { message, code: "SIGNUP_INVITE_ONLY" })` e `APIError("FORBIDDEN", { message, code: "ACCOUNT_DEACTIVATED" })`.
-Também: `account.accountLinking.disableImplicitLinking: true` (T13) e rate limit ligado só em produção, `storage: "database"`, com `customRules` `/sign-in/email` 10 por 60 s e `/sign-up/email` 5 por 60 s, por IP (primeiro valor de `x-forwarded-for`). Os demais `/sign-in*` e `/sign-up*` (social, passkey) seguem a regra padrão do Better Auth, 3 por 10 s; o resto, 100 por 10 s.
+Também: `account.accountLinking.disableImplicitLinking: true` (T13) e rate limit ligado só em produção, `storage: "database"`, com `customRules` `/sign-in/email` 30 por 60 s e `/sign-up/email` 10 por 60 s, por IP. Os demais `/sign-in*` e `/sign-up*` (social) seguem o padrão do Better Auth, 3 por 10 s; os endpoints de passkey ficam em `/passkey/*` e caem no padrão geral de 100 por 10 s. A janela conta a partir da **última** requisição permitida. IP: sem `trustedProxies`, o Better Auth só confia em `x-forwarded-for` quando ele tem um único valor; com vários valores todos caem num balde compartilhado por caminho (`no-trusted-ip|<path>`); na Vercel o cabeçalho tem um valor só. No bloqueio (429) a tela mostra `Muitas tentativas nesta rede. Espere um minuto e tente de novo.`
 
 ### `src/lib/auth/index.ts` (`server-only`)
 ```ts
@@ -381,7 +381,7 @@ export async function deactivateUserByEmail(db: Db, email: string, now?: Date): 
 **`/entrar`:** título `Entrar no Closery` · rótulos `E-mail`, `Senha` · botão `Entrar` · botão `Entrar com passkey` · botões `Continuar com Google` / `Continuar com Facebook` (só se habilitados) · rodapé `O acesso é só por convite.`
 
 **`/convite/[token]` válido:** título `Você foi convidado` · frase `{quem convidou} te convidou para o setor {setor} como {papel}.` (admin: `… te convidou como Administrador.`; script sem convidante: `Você foi convidado como Administrador.`, `Você foi convidado para o setor {setor} como Operador.` e, sem nome de setor, `Você foi convidado como Operador.`) · papéis `Administrador`, `Operador` · rótulos `Nome`, `E-mail`, `Senha` · botão `Criar conta` · botões sociais `Continuar com Google` / `Continuar com Facebook`.
-**Estados inválidos (título `Convite indisponível`):** `expired` → `Este convite expirou.` · `used` → `Este convite já foi usado.` · `cancelled` → `Este convite foi cancelado.` · inexistente/malformado → `Convite não encontrado.` · sempre seguido de `Peça um novo convite a quem te convidou.`
+**Estados inválidos (título `Convite indisponível`):** `expired` → `Este convite expirou.` · `used` → `Este convite já foi usado.` · `cancelled` → `Este convite foi cancelado.` · inexistente/malformado → `Convite não encontrado.` · sempre seguido de `Peça um novo convite a quem te convidou.`, `Já tem conta?` e o link com cara de botão `Entrar` (vai para `/entrar`). No cadastro, `USER_ALREADY_EXISTS*` mostra o mesmo link `Entrar` abaixo da mensagem
 
 **`/bem-vindo`:** título `Conta criada` · texto `Quer entrar mais rápido da próxima vez? Crie uma passkey: você entra com a digital, o rosto ou o PIN do aparelho.` · botão `Criar passkey` e link com cara de botão `Agora não` (vai para `/`) · sucesso: toast `Passkey criada.` e vai para `/`.
 
@@ -416,6 +416,7 @@ export async function deactivateUserByEmail(db: Db, email: string, now?: Date): 
 | `PREVIOUSLY_REGISTERED` | `Esta passkey já está cadastrada.` |
 | `AUTHENTICATION_FAILED` | `Não foi possível entrar com a passkey.` |
 | `PASSKEY_NOT_FOUND` | `Passkey não encontrada.` |
+| `RATE_LIMITED` | `Muitas tentativas nesta rede. Espere um minuto e tente de novo.` (código só do cliente: `errorCodeOf` o deduz de `status === 429`) |
 | *(fallback)* | `Não foi possível concluir. Tente de novo.` |
 
 Os códigos crus do WebAuthn (`ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`, `ERROR_CEREMONY_ABORTED`, `ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED`) **não** entram neste mapa: `passkeyErrorCode` os traduz para `AUTH_CANCELLED`, `REGISTRATION_CANCELLED` e `PREVIOUSLY_REGISTERED` antes de `authFormError` (T14).
@@ -4684,7 +4685,7 @@ describe("authErrorMessage", () => {
     );
   });
 
-  it("o mapa tem exatamente os 19 códigos do contrato", () => {
+  it("o mapa tem exatamente os 20 códigos do contrato", () => {
     expect(Object.keys(AUTH_ERROR_MESSAGES).sort()).toEqual(
       EXPECTED.map(([code]) => code).sort(),
     );
@@ -5333,8 +5334,8 @@ describe("configuração", () => {
         window: 10,
         max: 100,
         customRules: {
-          "/sign-in/email": { window: 60, max: 10 },
-          "/sign-up/email": { window: 60, max: 5 },
+          "/sign-in/email": { window: 60, max: 30 },
+          "/sign-up/email": { window: 60, max: 10 },
         },
       });
     } finally {
@@ -5629,8 +5630,8 @@ export function createAuth(db: Db, env: AuthEnv) {
       window: 10,
       max: 100,
       customRules: {
-        "/sign-in/email": { window: 60, max: 10 },
-        "/sign-up/email": { window: 60, max: 5 },
+        "/sign-in/email": { window: 60, max: 30 },
+        "/sign-up/email": { window: 60, max: 10 },
       },
     },
 
@@ -11257,7 +11258,7 @@ EOF
 Decisões desta tarefa (verificadas no clone, ver notas de validação):
 - `webServer` aceita **array**; os itens sobem **em ordem** e cada um espera o anterior ficar pronto. O banco usa `port` (espera TCP em `127.0.0.1`/`::1`); a doc 1.65 marca `port` como obsoleto, mas `url` exige resposta HTTP e o banco fala o protocolo do Postgres, então `port` é o único jeito. Com array, `use.baseURL` precisa ser explícito.
 - O `env` do `webServer` é mesclado a `process.env`, e o Next **não sobrescreve** variável que já existe no ambiente (nem string vazia). Por isso `DATABASE_URL*` apontam para o socket (o E2E nunca toca o Neon) e `GOOGLE_*`/`FACEBOOK_*` = `""` desligam o login social mesmo com credenciais no `.env.local`.
-- O app roda com `next start` (`NODE_ENV=production`), então o **rate limit do Better Auth está ligado**: `/sign-in/email` 10 por 60 s e `/sign-up/email` 5 por 60 s por IP (`customRules` da Tarefa 6); os demais `/sign-in*` e `/sign-up*` (social, passkey) seguem o padrão do Better Auth, 3 por 10 s. A suíte faz 6 cadastros em menos de 60 s, então cada teste chega com um IP próprio no header `x-forwarded-for` (fixture `clientIp`); sem isso o 6º cadastro recebe 429 e a UI mostra a mensagem de fallback.
+- O app roda com `next start` (`NODE_ENV=production`), então o **rate limit do Better Auth está ligado**: `/sign-in/email` 30 por 60 s e `/sign-up/email` 10 por 60 s por IP (`customRules` da Tarefa 6); os demais `/sign-in*` e `/sign-up*` (social, passkey) seguem o padrão do Better Auth, 3 por 10 s. A suíte faz 6 cadastros em menos de 60 s, então cada teste chega com um IP próprio no header `x-forwarded-for` (fixture `clientIp`); sem isso o 6º cadastro recebe 429 e a UI mostra a mensagem de fallback.
 - "Agora não" é `<Link className={buttonVariants()}>` (role link, regra das Global Constraints e da Tarefa 11); o spec usa `getByRole("link", { name: "Agora não" })`. Itens da sidebar também são `link`.
 - Com autenticador virtual o autofill (conditional UI) de `/entrar` entra sozinho ao abrir a página e corre contra o clique em "Entrar com passkey" (flaky). O teste de passkey desliga `PublicKeyCredential.isConditionalMediationAvailable` com `addInitScript` para exercitar o botão de forma determinística.
 
@@ -11458,7 +11459,7 @@ import { addVirtualAuthenticator } from "./virtual-authenticator";
 const PASSWORD = "senha-de-teste-123";
 
 // O app roda em produção (`next start`), então o rate limit do Better Auth
-// (cadastro: 5 por 60 s por IP; login por e-mail: 10 por 60 s) está ligado. Os 6
+// (cadastro: 10 por 60 s por IP; login por e-mail: 30 por 60 s) está ligado. Os 6
 // cenários com cadastro estourariam o limite sem IP próprio: cada teste chega
 // com um IP próprio no x-forwarded-for, como chegaria atrás da Vercel.
 // A base aleatória evita reaproveitar um IP já contado numa execução anterior.
@@ -11881,7 +11882,7 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 - **Consumo do convite.** No `databaseHooks.user.create.before`: `UPDATE invite SET used_at … WHERE token_hash = … AND used_at IS NULL AND cancelled_at IS NULL AND expires_at > now RETURNING role, sector_id` (atômico no banco). O hook injeta `role`, `sector_id` e `emailVerified: true`; `user.create.after` grava `used_by`. O cadastro por e-mail checa e-mail repetido **antes** do hook, então e-mail já cadastrado não gasta convite. Sem `ctx` (fora de uma requisição) o hook recusa (fail-closed). Todo erro de hook é `APIError` com `code` (`SIGNUP_INVITE_ONLY`, `ACCOUNT_DEACTIVATED`).
 - **Cookie `closery_invite`.** Token bruto, `httpOnly`, `SameSite=Lax` (volta no callback OAuth), `Secure` em produção, `path=/`, 1 h. Só a Server Action `armInvite` grava; a página `/convite/[token]` apenas lê (prefetch e scanner de link não gastam convite). A rota responde com `Referrer-Policy: no-referrer`.
 - **Sem `cookieCache`.** A sessão é lida do banco a cada requisição (`getAuthz`, com `cache()` do React) para que desativação e mudança de papel ou setor valham na hora; `session.create.before` barra usuário desativado em e-mail, social e passkey. Sem `nextCookies()`: cadastro e login vão pelo `authClient` (HTTP), onde o rate limit atua.
-- **Rate limit** do Better Auth com `storage: "database"` (tabela `rate_limit`): rate limit ligado só em produção: `/sign-in/email` 10 por 60 s e `/sign-up/email` 5 por 60 s (`customRules` da `createAuth`); os demais `/sign-in*` e `/sign-up*` (social, passkey) seguem a regra padrão do Better Auth, 3 por 10 s; o resto, 100 por 10 s. Por IP (primeiro valor de `x-forwarded-for`).
+- **Rate limit** do Better Auth com `storage: "database"` (tabela `rate_limit`): rate limit ligado só em produção: `/sign-in/email` 30 por 60 s e `/sign-up/email` 10 por 60 s (`customRules` da `createAuth`); os demais `/sign-in*` e `/sign-up*` (social) seguem o padrão do Better Auth, 3 por 10 s; os endpoints de passkey ficam em `/passkey/*` e caem no padrão geral de 100 por 10 s. A janela conta a partir da **última** requisição permitida. IP: sem `trustedProxies`, o Better Auth só confia em `x-forwarded-for` quando ele tem um único valor; com vários valores todos caem num balde compartilhado por caminho (`no-trusted-ip|<path>`); na Vercel o cabeçalho tem um valor só. No bloqueio (429) a tela mostra `Muitas tentativas nesta rede. Espere um minuto e tente de novo.`
 - **Autorização.** `toAuthz` (puro) produz `Authz`; `requireUser()` redireciona para `/entrar`; `requireAdmin()` chama `notFound()` para operador, que vê "Página não encontrada" (com streaming o status HTTP é 200 e o HTML traz `noindex`; `/admin` não exporta `metadata`, para o `<title>` não revelar a rota); `scopeToSector(authz, coluna)` escopa as queries por setor. `src/proxy.ts` só faz o redirecionamento otimista pelo cookie; a regra real vive no servidor.
 - **Passkey.** `rpID` e origem vêm de `BETTER_AUTH_URL` (passkey de `localhost` não vale em produção); criada em `/bem-vindo` ou `/conta` (exige sessão recente); login pelo autofill do campo de e-mail e pelo botão "Entrar com passkey".
 - **Primeiro administrador.** `bun run admin:invite` (`scripts/adminInvite.ts`) gera o link do convite de administrador.
@@ -11963,7 +11964,7 @@ por
 - **Adapter sem `transaction` (T6).** Ligado, o hook consultaria fora da transação e o PGlite (uma conexão) travaria.
 - **`APIError` com `code`.** Em hook, todo `throw` é `APIError` de `better-auth/api` com `code`; `Error` comum vira 500 sem corpo, e no callback OAuth só `APIError` com `code` vira redirect `?error=<code>`. Na tela, **nunca** renderize `error_description` (texto do servidor na URL): use só `authErrorMessage(code)` (mapa `AUTH_ERROR_MESSAGES`, com fallback).
 - **Sem `cookieCache` e sem `nextCookies()` (T7).** Desativação vale na hora. Cadastro, login e passkey vão pelo `authClient` (HTTP, onde o rate limit atua); nenhum `auth.api.sign*` roda em Server Action.
-- **Rate limit (T8).** `storage: "database"` (tabela `rate_limit`); rate limit ligado só em produção: `/sign-in/email` 10 por 60 s e `/sign-up/email` 5 por 60 s (`customRules` da `createAuth`); os demais `/sign-in*` e `/sign-up*` (social, passkey) seguem a regra padrão do Better Auth, 3 por 10 s; o resto, 100 por 10 s. Por IP (primeiro valor de `x-forwarded-for`). Atua só no router HTTP (`/api/auth/*`), nunca em `auth.api.*` chamado direto. Uma `customRules` com a mesma path sobrescreve a regra especial padrão.
+- **Rate limit (T8).** `storage: "database"` (tabela `rate_limit`); rate limit ligado só em produção: `/sign-in/email` 30 por 60 s e `/sign-up/email` 10 por 60 s (`customRules` da `createAuth`); os demais `/sign-in*` e `/sign-up*` (social) seguem o padrão do Better Auth, 3 por 10 s; os endpoints de passkey ficam em `/passkey/*` e caem no padrão geral de 100 por 10 s. A janela conta a partir da **última** requisição permitida. IP: sem `trustedProxies`, o Better Auth só confia em `x-forwarded-for` quando ele tem um único valor; com vários valores todos caem num balde compartilhado por caminho (`no-trusted-ip|<path>`); na Vercel o cabeçalho tem um valor só. No bloqueio (429) a tela mostra `Muitas tentativas nesta rede. Espere um minuto e tente de novo.` Atua só no router HTTP (`/api/auth/*`), nunca em `auth.api.*` chamado direto. Uma `customRules` com a mesma path sobrescreve a regra especial padrão.
 - **Vínculo implícito desligado (T13).** `account.accountLinking.disableImplicitLinking: true`; o código `account_not_linked` está no mapa de mensagens.
 - **Códigos do WebAuthn (T14).** `signIn.passkey` e `addPasskey` devolvem o código cru do `@simplewebauthn/browser` quando a cerimônia falha no navegador; traduza com `passkeyErrorCode(code, "authenticate" | "register")` antes de `authFormError`. Não acrescente esses códigos ao `AUTH_ERROR_MESSAGES` (os testes da Tarefa 6 comparam as chaves por igualdade).
 - **Social (T9).** `disableImplicitSignUp: true`. Em `/entrar` use `requestSignUp: false` (sem conta: `?error=signup_disabled`); no convite use `requestSignUp: true` com o cookie já gravado. Facebook sem e-mail volta `email_not_found`. Apple só na Fase 6 (P6).
@@ -11992,7 +11993,7 @@ por
 - **`playwright.config.ts`:** `webServer` em **array** e em ordem: (1) `bun e2e/start-db.ts` com `port: 54329` (espera TCP; `port` consta como obsoleto na doc, mas o banco não fala HTTP), `reuseExistingServer: false`; (2) `bun run build && bun run start -p 3200` com `url` em `/api/health`, timeout de 300 s. `use.baseURL` explícito (obrigatório com array) e `workers: 1` (um PGlite serializa tudo).
 - **Env do `webServer`** é mesclado a `process.env` e o Next não sobrescreve variável já definida (nem string vazia): `DATABASE_URL` e `DATABASE_URL_POOLED` apontam para o socket (o E2E nunca toca o Neon) e `GOOGLE_*`/`FACEBOOK_*` = `""` desligam o social mesmo com credenciais no `.env.local`.
 - **pglite-socket:** `maxConnections` precisa ser maior que o `max` do Pool do app (10) mais as conexões do teste (usamos 20); com o padrão (1), a segunda conexão cai com `Connection terminated unexpectedly`. Banco em memória, descartado a cada execução.
-- **Produção no E2E.** O app roda com `next start` (`NODE_ENV=production`), então o rate limit está ligado (cadastro por e-mail: 5 por 60 s por IP; a suíte faz 6 cadastros): cada teste manda `x-forwarded-for` próprio (fixture `clientIp`).
+- **Produção no E2E.** O app roda com `next start` (`NODE_ENV=production`), então o rate limit está ligado (cadastro por e-mail: 10 por 60 s por IP; a suíte faz 6 cadastros): cada teste manda `x-forwarded-for` próprio (fixture `clientIp`).
 - **Passkey:** autenticador virtual via CDP (`e2e/virtual-authenticator.ts`), só Chromium, criado **antes** do clique que dispara o WebAuthn. Com ele o autofill de `/entrar` entra sozinho ao abrir a página; o teste do botão desliga `isConditionalMediationAvailable` com `addInitScript`.
 - **Base UI:** navegação com cara de botão é `<Link className={buttonVariants()}>` (role link); `Button render={<Link />}` daria role=button e não é usado para navegação. No spec: `getByRole("link")` para "Agora não" e para os itens da sidebar.
 - **`/admin` do operador:** confira o texto "Página não encontrada" e o `<title>`, nunca o status (com streaming é 200).
@@ -12169,8 +12170,8 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **PGlite não prova corrida:** uma conexão só, serializa tudo. Atomicidade vai no SQL (`UPDATE … RETURNING`).
 - **`next build` exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET`** (≥ 32 caracteres) no `.env.local` e
   na Vercel; sem eles falha com `Failed to collect page data for /api/health`.
-- **O E2E roda o app em produção:** o rate limit do Better Auth está ligado (`/sign-up/email` 5 por
-  60 s e `/sign-in/email` 10 por 60 s, por IP); cada teste manda um `x-forwarded-for` próprio. O env do
+- **O E2E roda o app em produção:** o rate limit do Better Auth está ligado (`/sign-up/email` 10 por
+  60 s e `/sign-in/email` 30 por 60 s, por IP); cada teste manda um `x-forwarded-for` próprio. O env do
   `webServer` vence o `.env.local`, então o E2E nunca toca o Neon.
 - **Better Auth:** schema de auth escrito à mão (`src/db/schema/auth.ts`) com teste guarda; erro de
   hook é sempre `APIError` com `code`; sem `cookieCache` e sem `nextCookies()`; cadastro e login pelo

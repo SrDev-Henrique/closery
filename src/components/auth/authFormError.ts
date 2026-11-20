@@ -21,7 +21,10 @@ export function authFormError(code: string | null | undefined): AuthFormError {
   return { message: authErrorMessage(code), field };
 }
 
-// Alguns erros do Better Auth (ex.: signIn.passkey) vêm sem `code` no tipo.
+// Alguns erros do Better Auth (ex.: signIn.passkey) vêm sem `code` no tipo, e
+// o bloqueio do limite de tentativas (429) vem sem `code` algum.
 export function errorCodeOf(error: object): string | null {
-  return "code" in error && typeof error.code === "string" ? error.code : null;
+  if ("code" in error && typeof error.code === "string") return error.code;
+  if ("status" in error && error.status === 429) return "RATE_LIMITED";
+  return null;
 }

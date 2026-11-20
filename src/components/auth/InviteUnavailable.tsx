@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -25,10 +27,17 @@ export function InviteUnavailable({
         </CardTitle>
         <CardDescription>{inviteUnavailableMessage(reason)}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
           {INVITE_UNAVAILABLE_HINT}
         </p>
+        <p className="text-sm text-muted-foreground">Já tem conta?</p>
+        <Link
+          href="/entrar"
+          className={buttonVariants({ variant: "outline", size: "lg" })}
+        >
+          Entrar
+        </Link>
       </CardContent>
     </Card>
   );

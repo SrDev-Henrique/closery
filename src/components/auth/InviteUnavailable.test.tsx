@@ -24,4 +24,18 @@ describe("InviteUnavailable", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("E-mail")).not.toBeInTheDocument();
   });
+
+  it.each([
+    "expired",
+    "used",
+    "cancelled",
+    "not_found",
+  ] as const)("%s oferece o link Entrar para quem já tem conta", (reason) => {
+    render(<InviteUnavailable reason={reason} />);
+    expect(screen.getByText("Já tem conta?")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+      "href",
+      "/entrar",
+    );
+  });
 });

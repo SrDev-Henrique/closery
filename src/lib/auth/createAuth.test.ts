@@ -409,8 +409,8 @@ describe("configuração", () => {
         window: 10,
         max: 100,
         customRules: {
-          "/sign-in/email": { window: 60, max: 10 },
-          "/sign-up/email": { window: 60, max: 5 },
+          "/sign-in/email": { window: 60, max: 30 },
+          "/sign-up/email": { window: 60, max: 10 },
         },
       });
     } finally {

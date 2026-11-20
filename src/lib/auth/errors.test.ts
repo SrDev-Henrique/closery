@@ -47,6 +47,10 @@ const EXPECTED: ReadonlyArray<readonly [string, string]> = [
   ["PREVIOUSLY_REGISTERED", "Esta passkey já está cadastrada."],
   ["AUTHENTICATION_FAILED", "Não foi possível entrar com a passkey."],
   ["PASSKEY_NOT_FOUND", "Passkey não encontrada."],
+  [
+    "RATE_LIMITED",
+    "Muitas tentativas nesta rede. Espere um minuto e tente de novo.",
+  ],
 ];
 
 describe("authErrorMessage", () => {
@@ -56,7 +60,7 @@ describe("authErrorMessage", () => {
     );
   });
 
-  it("o mapa tem exatamente os 19 códigos do contrato", () => {
+  it("o mapa tem exatamente os 20 códigos do contrato", () => {
     expect(Object.keys(AUTH_ERROR_MESSAGES).sort()).toEqual(
       EXPECTED.map(([code]) => code).sort(),
     );

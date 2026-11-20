@@ -301,4 +301,65 @@ describe("InviteSignup", () => {
       ).toBeDisabled(),
     );
   });
+
+  describe("bloqueio por excesso de tentativas (429)", () => {
+    const tooMany = { status: 429, statusText: "Too Many Requests" };
+
+    it("cadastro: 429 sem code mostra a mensagem do limite", async () => {
+      mocks.signUpEmail.mockResolvedValue({ data: null, error: tooMany });
+      setup();
+      await fillAndSubmit();
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Muitas tentativas nesta rede. Espere um minuto e tente de novo.",
+      );
+      expect(screen.getByRole("button", { name: "Criar conta" })).toBeEnabled();
+    });
+
+    it("social: 429 sem code mostra a mensagem do limite", async () => {
+      mocks.signInSocial.mockResolvedValue({ data: null, error: tooMany });
+      setup({ providers: ["google"] });
+      await userEvent.click(
+        screen.getByRole("button", { name: "Continuar com Google" }),
+      );
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "Muitas tentativas nesta rede. Espere um minuto e tente de novo.",
+      );
+    });
+  });
+
+  describe("saída para Entrar de quem já tem conta", () => {
+    it.each([
+      "USER_ALREADY_EXISTS",
+      "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL",
+    ])("%s mostra o link Entrar para /entrar", async (code) => {
+      mocks.signUpEmail.mockResolvedValue({ data: null, error: { code } });
+      setup();
+      await fillAndSubmit();
+
+      await screen.findByRole("alert");
+      expect(screen.getByRole("link", { name: "Entrar" })).toHaveAttribute(
+        "href",
+        "/entrar",
+      );
+    });
+
+    it("outros erros não mostram o link", async () => {
+      mocks.signUpEmail.mockResolvedValue({
+        data: null,
+        error: { code: "PASSWORD_TOO_SHORT" },
+      });
+      setup();
+      await fillAndSubmit();
+
+      await screen.findByRole("alert");
+      expect(screen.queryByRole("link", { name: "Entrar" })).toBeNull();
+    });
+
+    it("sem erro não mostra o link", () => {
+      setup();
+      expect(screen.queryByRole("link", { name: "Entrar" })).toBeNull();
+    });
+  });
 });

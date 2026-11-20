@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useId, useState } from "react";
 import { armInvite } from "@/app/(auth)/convite/[token]/actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Field,
   FieldError,
@@ -13,7 +14,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/client";
 import type { SocialProvider } from "@/lib/auth/env";
-import { type AuthFormError, authFormError } from "./authFormError";
+import { authErrorMessage } from "@/lib/auth/errors";
+import {
+  type AuthFormError,
+  authFormError,
+  errorCodeOf,
+} from "./authFormError";
 import { SocialButtons } from "./SocialButtons";
 
 type InviteSignupProps = {
@@ -69,7 +75,7 @@ export function InviteSignup({
         password,
       });
       if (signUpError) {
-        setError(authFormError(signUpError.code));
+        setError(authFormError(errorCodeOf(signUpError)));
         setPending(false);
         return;
       }
@@ -98,7 +104,7 @@ export function InviteSignup({
         errorCallbackURL: `/convite/${token}`,
       });
       if (socialError) {
-        setError(authFormError(socialError.code));
+        setError(authFormError(errorCodeOf(socialError)));
         setPending(false);
       }
       // Sem erro, o navegador está indo para o provedor: mantém travado.
@@ -107,6 +113,11 @@ export function InviteSignup({
       setPending(false);
     }
   }
+
+  // Quem já tem conta precisa de uma saída, não de um beco sem saída.
+  const showSignInLink =
+    error?.field === "email" &&
+    error.message === authErrorMessage("USER_ALREADY_EXISTS");
 
   const fieldError = (field: "email" | "password") =>
     error?.field === field ? error : null;
@@ -143,6 +154,14 @@ export function InviteSignup({
             />
             {fieldError("email") && (
               <FieldError id={errorId}>{error?.message}</FieldError>
+            )}
+            {showSignInLink && (
+              <Link
+                href="/entrar"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                Entrar
+              </Link>
             )}
           </Field>
 

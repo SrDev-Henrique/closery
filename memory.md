@@ -33,8 +33,8 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **PGlite não prova corrida:** uma conexão só, serializa tudo. Atomicidade vai no SQL (`UPDATE … RETURNING`).
 - **`next build` exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET`** (≥ 32 caracteres) no `.env.local` e
   na Vercel; sem eles falha com `Failed to collect page data for /api/health`.
-- **O E2E roda o app em produção:** o rate limit do Better Auth está ligado (`/sign-up/email` 5 por
-  60 s e `/sign-in/email` 10 por 60 s, por IP); cada teste manda um `x-forwarded-for` próprio. O env do
+- **O E2E roda o app em produção:** o rate limit do Better Auth está ligado (`/sign-up/email` 10 por
+  60 s e `/sign-in/email` 30 por 60 s, por IP); cada teste manda um `x-forwarded-for` próprio. O env do
   `webServer` vence o `.env.local`, então o E2E nunca toca o Neon.
 - **Better Auth:** schema de auth escrito à mão (`src/db/schema/auth.ts`) com teste guarda; erro de
   hook é sempre `APIError` com `code`; sem `cookieCache` e sem `nextCookies()`; cadastro e login pelo

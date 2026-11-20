@@ -85,7 +85,7 @@ export function SignInPanel({ providers, initialErrorCode }: SignInPanelProps) {
         password,
       });
       if (signInError) {
-        setError(authFormError(signInError.code));
+        setError(authFormError(errorCodeOf(signInError)));
         setPending(false);
         return;
       }
@@ -130,7 +130,7 @@ export function SignInPanel({ providers, initialErrorCode }: SignInPanelProps) {
         errorCallbackURL: "/entrar",
       });
       if (socialError) {
-        setError(authFormError(socialError.code));
+        setError(authFormError(errorCodeOf(socialError)));
         setPending(false);
       }
       // Sem erro, o navegador está indo para o provedor: mantém travado.

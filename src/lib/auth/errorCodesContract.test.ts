@@ -26,6 +26,10 @@ const PASSKEY_CODES = [
   "PASSKEY_NOT_FOUND",
 ] as const;
 
+// Código só do cliente: authFormError.errorCodeOf o deduz de status 429 (o
+// Better Auth responde 429 sem `code`).
+const CLIENT_CODES = ["RATE_LIMITED"] as const;
+
 // Códigos nossos (lançados em createAuth) e de redirect do OAuth (texto fixo no
 // Better Auth, sem objeto de erro exportado).
 const OWN_OR_OAUTH_CODES = [
@@ -53,7 +57,12 @@ describe("contrato dos códigos de erro do Better Auth", () => {
   });
 
   it("todo código do mapa é coberto por um dos grupos acima (e vice-versa)", () => {
-    const covered = [...CORE_CODES, ...PASSKEY_CODES, ...OWN_OR_OAUTH_CODES];
+    const covered = [
+      ...CORE_CODES,
+      ...PASSKEY_CODES,
+      ...OWN_OR_OAUTH_CODES,
+      ...CLIENT_CODES,
+    ];
     expect(Object.keys(AUTH_ERROR_MESSAGES).sort()).toEqual(
       [...covered].sort(),
     );
