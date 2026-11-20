@@ -296,6 +296,35 @@ Adicionados pelo CLI (`bunx shadcn@latest add <nome>`), em kebab-case.
 - **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
+### PasskeyOffer
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/PasskeyOffer.tsx`
+- **Propósito:** oferta de passkey em `/bem-vindo`.
+- **Como funciona:** `"use client"`; "Criar passkey" (toast "Passkey criada." e vai para `/`);
+  "Agora não" é `<Link className={buttonVariants()}>` (role link); erros por
+  `passkeyErrorCode(…, "register")` + `authFormError`.
+- **Usa:** `Card*`, `Button`, `buttonVariants`, `FieldError`, `sonner`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### PasskeyManager
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/PasskeyManager.tsx`
+- **Propósito:** lista, cria e remove passkeys em `/conta`.
+- **Como funciona:** `"use client"`; `authClient.useListPasskeys()` (atualiza sozinho pelo sinal
+  do plugin); estados carregando/vazio/erro com "Tentar de novo"; remover = botão de ícone com
+  `aria-label` + Tooltip "Remover passkey"; ações travadas enquanto pendentes; toasts.
+- **Usa:** `Button`, `Tooltip*`, `Skeleton`, `FieldError`, `sonner`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### SignOutButton
+- **Status:** ✅ pronto (2026-11-20)
+- **Local:** `src/components/auth/SignOutButton.tsx`
+- **Propósito:** botão "Sair".
+- **Como funciona:** `"use client"`; `authClient.signOut()` → `/entrar` + `router.refresh()`; erro
+  mostra o fallback.
+- **Usa:** `Button`, `FieldError`.
+- **Histórico:** 2026-11-20 — criado na Fase 1.
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
