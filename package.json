@@ -16,7 +16,8 @@
     "db:studio": "drizzle-kit studio",
     "admin:invite": "bun scripts/adminInvite.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -42,7 +43,9 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.2",
     "@electric-sql/pglite": "^0.5.17",
+    "@electric-sql/pglite-socket": "^0.2.20",
     "@next/env": "16.4.6",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/turbopack": "4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^8.0.0",
