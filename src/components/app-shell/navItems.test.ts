@@ -7,9 +7,10 @@ import {
 } from "@/components/app-shell/navItems";
 
 describe("visibleNavItems", () => {
-  it("operador vê Início e Conta, sem Administração", () => {
+  it("operador vê Início, Passagens e Conta, sem Administração", () => {
     expect(visibleNavItems(false).map((item) => item.label)).toEqual([
       "Início",
+      "Passagens",
       "Conta",
     ]);
   });
@@ -17,6 +18,7 @@ describe("visibleNavItems", () => {
   it("admin vê também Administração, por último", () => {
     expect(visibleNavItems(true).map((item) => item.label)).toEqual([
       "Início",
+      "Passagens",
       "Conta",
       "Administração",
     ]);
@@ -25,6 +27,7 @@ describe("visibleNavItems", () => {
   it("as rotas são as do contrato", () => {
     expect(NAV_ITEMS.map((item) => item.href)).toEqual([
       "/",
+      "/passagens",
       "/conta",
       "/admin",
     ]);
@@ -48,6 +51,13 @@ describe("isNavItemActive", () => {
     expect(isNavItemActive("/conta", "/conta")).toBe(true);
     expect(isNavItemActive("/admin", "/admin")).toBe(true);
     expect(isNavItemActive("/admin/setores", "/admin")).toBe(true);
+  });
+
+  it("Passagens fica ativo na lista, na nova passagem e no resumo", () => {
+    expect(isNavItemActive("/passagens", "/passagens")).toBe(true);
+    expect(isNavItemActive("/passagens/nova", "/passagens")).toBe(true);
+    expect(isNavItemActive("/passagens/abc", "/passagens")).toBe(true);
+    expect(isNavItemActive("/", "/passagens")).toBe(false);
   });
 
   it("prefixo parecido que não é subrota não é ativo", () => {

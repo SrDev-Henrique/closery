@@ -10,7 +10,7 @@ export async function Greeting() {
         {greetingTitle(authz.name)}
       </h1>
       <p className="text-muted-foreground">
-        Em breve: passagem de turno, solicitações e dashboard.
+        Em breve: solicitações e dashboard.
       </p>
     </div>
   );

@@ -270,7 +270,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold).
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`.
 
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)
@@ -652,6 +652,52 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Como funciona:** `"use client"`; botão "Cancelar convite" (`aria-label` `Cancelar convite {nome ou "sem nome"}`) abre `ConfirmDialog` ("O link deixa de funcionar. Não dá para desfazer."); sucesso = toast "Convite cancelado." e diálogo fechado; recusa (convite que já não está pendente) aparece no diálogo, que fica aberto.
 - **Usa:** `ConfirmDialog`, `useAdminAction`, `Button`.
 - **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+
+### Passagem de turno — `src/components/passagens/*` (Fase 3)
+
+Componentes da passagem. Regras comuns: só tokens de cor, tema claro e escuro, situação sempre com
+ícone e texto, alvo de toque ≥ 44px no celular. Quem escolhe o setor é o admin (`SectorPicker`);
+o operador usa o próprio setor e nunca vê o seletor.
+
+### SectorPicker
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/SectorPicker.tsx`
+- **Propósito:** o admin escolher o setor no Início, na Nova passagem e no Histórico (D-F3-3).
+- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
+- **Usa:** `Button`, `FieldSet`, `FieldLegend`, `chooseSectorAction`, `sonner`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### HandoverStatusBadge
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverStatusBadge.tsx`
+- **Propósito:** mostrar a situação da passagem (aguardando, confirmada, não confirmada, sem passagem) e o selo "Corrigida".
+- **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-muted`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
+- **Usa:** `Badge`, tokens `info`, `success`, `warning`, `muted`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### PendingHandoverCard
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/PendingHandoverCard.tsx`
+- **Propósito:** cartão do topo do Início "Passagem para confirmar".
+- **Como funciona:** Server-safe. Mostra `{turno} · {dd/mm/aaaa}`, "Entregue às {HH:mm} por {nome}", o bloco "Fica para o próximo turno" em destaque (trecho do texto ou "Nada registrado para o próximo turno.") e o link-botão "Ver passagem" (`/passagens/{id}`). Não confirma aqui: a confirmação é no resumo.
+- **Usa:** `Card`, `buttonVariants`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### MyShiftCard
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/MyShiftCard.tsx`
+- **Propósito:** cartão "Passagem do meu turno" do Início, nos cinco estados.
+- **Como funciona:** Server-safe. Mostra `{turno} · {início}–{fim} · {data}` (horário com `tabular-nums`) e "Turno sugerido pelo horário de agora.". `start` → "Começar passagem"; `continue` → "Rascunho salvo às {HH:mm} por {nome}" + "Continuar passagem"; `delivered` → "Entregue às … Aguardando recebimento." + "Ver passagem"; `confirmed` → "Entregue por … Confirmada por …" + "Ver passagem"; `no-shifts` → "Nenhum turno neste setor." (admin: link "Ir para Turnos"). Todos, menos `no-shifts`, trazem o link "Ver todas as passagens". Admin leva `&setor=` no link de começar.
+- **Usa:** `Card`, `buttonVariants`, `newHandoverHref`, `handoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### HomeHandovers
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HomeHandovers.tsx`
+- **Propósito:** os cartões de passagem do Início.
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveHandoverSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Sem cartão de solicitações (Fase 4).
+- **Usa:** `getHomeHandovers`, `resolveHandoverSector`, `readRememberedSector`, `EmptyState`, `SectorPicker`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
