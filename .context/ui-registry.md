@@ -535,6 +535,39 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
 - **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
 
+### ShiftsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/shifts/ShiftsAdmin.tsx`
+- **Propósito:** conteúdo da página `/admin/turnos`: cadastro e lista de turnos por setor.
+- **Como funciona:** Server Component async; chama `requireAdmin()`, lê `?setor=` e `?pagina=`, mostra o seletor de setor
+  (`SectorSwitcher`), o cartão "Novo turno" com os padrões de `getShiftFormDefaults` e a lista paginada. Cada linha mostra
+  nome, `{início}–{fim}` (`tabular-nums`), selo "Atravessa a meia-noite", o aviso persistente "Sobrepõe o turno …" (ícone de
+  alerta + texto) e "Inativo". Sem setor ativo, mostra o estado vazio com link "Ir para Setores". O formulário remonta (`key`)
+  a cada criação para trazer o próximo padrão.
+- **Usa:** `AdminPageHeader`, `SectorSwitcher`, `AdminListRow`, `EmptyState`, `Pagination`, `Card`, `Badge`, token `warning-foreground`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ShiftForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/shifts/ShiftForm.tsx`
+- **Propósito:** criar e editar turno (mesmo formulário).
+- **Como funciona:** client, controlado; `initial.id` presente = edição (`updateShiftAction`), ausente = criação
+  (`createShiftAction`). Valida com o mesmo schema Zod do servidor antes de enviar; erros por campo (`fieldErrors`) e erro geral
+  ficam inline e o digitado nunca se perde. `<Input type="time" step={60}>` (≥16px); dica fixa "Fim menor que o início atravessa
+  a meia-noite." e dica ao vivo "Atravessa a meia-noite.". Depois do sucesso: toast ("Turno criado." / "Alterações salvas.") e
+  um `toast.warning` por sobreposição (máximo 3).
+- **Usa:** `Field`, `Input`, `Button`, `useAdminAction`, `sonner`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ShiftRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/shifts/ShiftRowActions.tsx`
+- **Propósito:** ações de uma linha de turno.
+- **Como funciona:** client; `MoveButtons` (↑ ↓ pela posição absoluta no setor; sem toast no sucesso), `EditDialog` "Editar turno"
+  com `ShiftForm` e `ActiveToggleButton` (reativar mostra os avisos de sobreposição em toast).
+- **Usa:** `MoveButtons`, `EditDialog`, `ActiveToggleButton`, `ShiftForm`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
