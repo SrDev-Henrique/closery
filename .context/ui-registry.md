@@ -792,8 +792,8 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Local:** `src/components/passagens/HandoverDetail.tsx`
 - **Propósito:** resumo de `/passagens/[id]` na ordem do briefing (F3-10).
 - **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens".
-- **Usa:** `getHandoverSummary`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverStatusBadge`, `buttonVariants`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+- **Usa:** `getHandoverSummary`, `getHandoverFormStateById`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverForm`, `CorrectionForm`, `HandoverStatusBadge`, `buttonVariants`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo.
 
 ### HandoverHistory
 - **Status:** ✅ pronto (2026-11-21)
@@ -818,6 +818,14 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Como funciona:** reaproveita `AdminListRow`. Título `dd/mm/aaaa · {turno}` (data com `tabular-nums`); subtítulo com o setor (só quando `showSector`) e "Entregue por {nome} às {HH:mm}" (ausente em "sem passagem"); `HandoverStatusBadge` com o selo "Corrigida" quando há correção. Link da linha: "Abrir" (`aria-label` "Abrir passagem de {turno} em {data}") para a passagem; em "sem passagem" o link é "Entregar turno" ou, se há rascunho, "Continuar passagem", para o turno e o dia daquela linha (o setor da linha vai em `?setor=` só para o admin).
 - **Usa:** `AdminListRow`, `HandoverStatusBadge`, `buttonVariants`, `handoverHref`, `newHandoverHref`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+
+### CorrectionForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/CorrectionForm.tsx`
+- **Propósito:** o admin corrige uma passagem já confirmada, com motivo e rastro (D13).
+- **Como funciona:** `"use client"`; reaproveita `HandoverFields` com estado local (sem salvamento automático: nada é gravado até o envio) e acrescenta `Textarea` "Motivo da correção" (obrigatório, 500 caracteres); "Registrar correção" (pendente: "Registrando…") valida com `correctHandoverSchema` e manda o estado completo desejado; o servidor calcula o diff. Sucesso = toast "Correção registrada." e volta ao resumo (que mostra o selo "Corrigida"); recusa (motivo, `NO_CHANGES`, `FORBIDDEN`) aparece inline, sem toast, e nada do que foi digitado se perde. Link "Cancelar" volta ao resumo.
+- **Usa:** `HandoverFields`, `useAdminAction`, `Button`, `Field*`, `Textarea`, `sonner`, `useRouter`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 11).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

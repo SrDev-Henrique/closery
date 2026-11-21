@@ -2,6 +2,7 @@
 
 import type { AdminResult } from "@/features/admin/result";
 import { type Confirmed, confirmHandover } from "@/features/handovers/confirm";
+import { correctHandover } from "@/features/handovers/correction";
 import type { Delivered } from "@/features/handovers/deliver";
 import { deliverHandover } from "@/features/handovers/deliver";
 import type { SavedField } from "@/features/handovers/draft";
@@ -9,6 +10,7 @@ import { saveHandoverField } from "@/features/handovers/draft";
 import { runHandoverAction } from "@/features/handovers/runHandoverAction";
 import {
   confirmHandoverSchema,
+  correctHandoverSchema,
   deliverHandoverSchema,
   saveFieldSchema,
 } from "@/features/handovers/schemas";
@@ -54,5 +56,18 @@ export async function confirmHandoverAction(
     input,
     revalidate: true,
     run: ({ db, now, actor, input }) => confirmHandover(db, actor, input, now),
+  });
+}
+
+export async function correctHandoverAction(
+  input: unknown,
+): Promise<AdminResult<{ changes: number }>> {
+  const actor = await requireUser();
+  return runHandoverAction({
+    actor,
+    schema: correctHandoverSchema,
+    input,
+    revalidate: true,
+    run: ({ db, now, actor, input }) => correctHandover(db, actor, input, now),
   });
 }

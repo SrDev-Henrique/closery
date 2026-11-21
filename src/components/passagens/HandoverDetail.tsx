@@ -1,20 +1,28 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/db";
 import { idSchema } from "@/features/admin/schemas";
+import { isAdmin } from "@/features/authz/authz";
+import { getHandoverFormStateById } from "@/features/handovers/formState";
+import { MAX_DAYS_BACK } from "@/features/handovers/limits";
 import {
+  addDays,
   formatDateBR,
   formatTimeBR,
   saoPauloParts,
+  todayInSaoPaulo,
 } from "@/features/handovers/saoPaulo";
 import { getHandoverSummary } from "@/features/handovers/summary";
 import { handoverHref, newHandoverHref } from "@/features/handovers/urls";
 import { requireUser } from "@/lib/auth/session";
 
 import { ConfirmReceiptForm } from "./ConfirmReceiptForm";
+import { CorrectionForm } from "./CorrectionForm";
 import { CorrectionsTimeline } from "./CorrectionsTimeline";
+import { HandoverForm } from "./HandoverForm";
 import { HandoverStatusBadge } from "./HandoverStatusBadge";
 import { SummaryItemList } from "./SummaryItemList";
 
@@ -27,7 +35,33 @@ function dateAndTime(value: Date): string {
   return `em ${formatDateBR(saoPauloParts(value).date)} às ${formatTimeBR(value)}`;
 }
 
-export async function HandoverDetail({ id }: HandoverDetailProps) {
+function EditShell({
+  description,
+  context,
+  children,
+}: {
+  description: string;
+  context: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <header className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Corrigir passagem
+        </h1>
+        <p className="text-muted-foreground">{description}</p>
+        <p className="text-sm text-muted-foreground">{context}</p>
+      </header>
+      {children}
+    </div>
+  );
+}
+
+export async function HandoverDetail({
+  id,
+  searchParams,
+}: HandoverDetailProps) {
   const actor = await requireUser();
   // Id malformado nem chega ao banco (uuid inválido estouraria no Postgres).
   if (!idSchema.safeParse(id).success) notFound();
@@ -39,6 +73,47 @@ export async function HandoverDetail({ id }: HandoverDetailProps) {
   // Rascunho não tem resumo: o lugar dele é o formulário daquele turno e dia.
   if (summary.status === "draft") {
     redirect(newHandoverHref(summary.ref, summary.ref.sectorId));
+  }
+
+  // ?editar=1: o formulário só aparece para quem pode (quem entregou e o admin
+  // na entregue; só o admin, com motivo, na confirmada). Quem não pode cai no
+  // resumo, sem aviso de que a opção existe.
+  const params = await searchParams;
+  if (params.editar === "1") {
+    const editable = await getHandoverFormStateById(db, actor, id);
+    if (editable.ok) {
+      const { state } = editable;
+      const context = `${state.sectorName} · ${state.shiftName} · ${formatDateBR(state.ref.operationalDate)}`;
+      if (state.mode === "edit") {
+        const today = todayInSaoPaulo(new Date());
+        return (
+          <EditShell
+            description="As alterações valem na hora. Quem recebe vê a versão atual."
+            context={context}
+          >
+            <HandoverForm
+              key={`${state.ref.shiftId}:${state.ref.operationalDate}`}
+              state={{ ...state, mode: state.mode }}
+              shifts={[]}
+              today={today}
+              minDate={addDays(today, -MAX_DAYS_BACK)}
+              sectorParam={null}
+              canManageCatalog={isAdmin(actor)}
+            />
+          </EditShell>
+        );
+      }
+      if (state.mode === "correction") {
+        return (
+          <EditShell
+            description="Esta passagem já foi confirmada. A correção fica registrada com o motivo."
+            context={context}
+          >
+            <CorrectionForm state={{ ...state, mode: state.mode }} />
+          </EditShell>
+        );
+      }
+    }
   }
 
   const { capabilities } = summary;
