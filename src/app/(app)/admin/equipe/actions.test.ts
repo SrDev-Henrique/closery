@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth/session", () => ({ requireAdmin: mocks.requireAdmin }));
+vi.mock("@/lib/auth", () => ({
+  authEnv: { baseURL: "https://closery.example.test" },
+}));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidatePath }));
 vi.mock("@/db", async () => {
   const { createTestDb } = await import("../../../../../test/db");

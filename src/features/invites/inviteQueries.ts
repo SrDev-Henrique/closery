@@ -137,3 +137,27 @@ export async function recordInviteUser(
       and(eq(invite.tokenHash, hashInviteToken(token)), isNull(invite.usedBy)),
     );
 }
+
+// Cancelamento atômico: um único UPDATE condicional (mesma regra de validade de
+// consumeInvite). `false` = não estava pendente (usado, expirado, cancelado ou
+// inexistente): quem chama decide a mensagem.
+export async function cancelInvite(
+  db: Db,
+  id: string,
+  now: Date,
+): Promise<boolean> {
+  const [cancelled] = await db
+    .update(invite)
+    .set({ cancelledAt: now })
+    .where(
+      and(
+        eq(invite.id, id),
+        isNull(invite.usedAt),
+        isNull(invite.cancelledAt),
+        gt(invite.expiresAt, now),
+      ),
+    )
+    .returning({ id: invite.id });
+
+  return cancelled !== undefined;
+}

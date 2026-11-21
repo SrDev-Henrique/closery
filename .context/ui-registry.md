@@ -602,10 +602,10 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 ### TeamAdmin
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/TeamAdmin.tsx` (+ `roleOptions.ts`: `ROLE_LABELS`, `ROLE_OPTIONS`)
-- **Propósito:** conteúdo de `/admin/equipe`: as pessoas do sistema com papel, setor e situação.
-- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`) e `listActiveSectors`. A própria conta mostra o selo "Você" e o texto de ajuda, **sem botões**; pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; estado vazio e `Pagination`.
-- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `PersonRowActions`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+- **Propósito:** conteúdo de `/admin/equipe`: convidar, acompanhar convites pendentes e gerir as pessoas do sistema.
+- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`), `listPendingInvites` (`?convites=`) e `listActiveSectors`. Ordem na tela: `InviteForm`, "Convites pendentes" (só válidos, com `PendingInviteActions`) e "Pessoas". A própria conta mostra o selo "Você" e o texto de ajuda, **sem botões**; pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; duas `Pagination` independentes (cada uma preserva o parâmetro da outra); estados vazios.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `InviteForm`, `PendingInviteActions`, `PersonRowActions`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9, só Pessoas); Tarefa 10 acrescenta convites.
 
 ### PersonForm
 - **Status:** ✅ pronto (2026-11-21)
@@ -622,6 +622,30 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões.
 - **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `useAdminAction`, `Button`.
 - **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+
+### InviteForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/InviteForm.tsx`
+- **Propósito:** gerar convite de entrada (operador ou administrador) em `/admin/equipe`.
+- **Como funciona:** `"use client"`; cartão "Convidar pessoa"; formulário controlado e nunca em branco (papel Operador, setor = primeiro ativo, nome de referência opcional); `ChoiceGroup` "Papel", `SelectField` "Setor" só para Operador; valida com `createInviteSchema`; erro de campo no campo, o resto no pé; sem setor ativo e papel Operador mostra o aviso e o link "Ir para Setores" no lugar do botão; no sucesso troca o formulário por `InviteLinkCard`; "Gerar outro convite" limpa só o nome (mantém papel e setor).
+- **Usa:** `Card`, `Field*`, `Input`, `ChoiceGroup`, `SelectField`, `InviteLinkCard`, `useAdminAction`, `buttonVariants`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+
+### InviteLinkCard
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/InviteLinkCard.tsx`
+- **Propósito:** mostrar o link do convite **uma vez** (só o hash fica no banco) para copiar ou compartilhar.
+- **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`.
+- **Usa:** `Button`, `Input`, `sonner`, `formatDateTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+
+### PendingInviteActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/PendingInviteActions.tsx`
+- **Propósito:** cancelar um convite pendente na lista da Equipe.
+- **Como funciona:** `"use client"`; botão "Cancelar convite" (`aria-label` `Cancelar convite {nome ou "sem nome"}`) abre `ConfirmDialog` ("O link deixa de funcionar. Não dá para desfazer."); sucesso = toast "Convite cancelado." e diálogo fechado; recusa (convite que já não está pendente) aparece no diálogo, que fica aberto.
+- **Usa:** `ConfirmDialog`, `useAdminAction`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

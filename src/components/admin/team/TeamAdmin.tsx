@@ -7,7 +7,14 @@ import { db } from "@/db";
 import { parsePage } from "@/features/admin/pagination";
 import { listPeople, type PersonRow } from "@/features/admin/people";
 import { listActiveSectors } from "@/features/admin/sectors";
+import {
+  listPendingInvites,
+  type PendingInviteRow,
+} from "@/features/admin/teamInvites";
 import { requireAdmin } from "@/lib/auth/session";
+import { formatDateTimeBR } from "@/lib/dateTime";
+import { InviteForm } from "./InviteForm";
+import { PendingInviteActions } from "./PendingInviteActions";
 import { PersonRowActions } from "./PersonRowActions";
 import { ROLE_LABELS } from "./roleOptions";
 
@@ -24,6 +31,12 @@ function sectorText(person: PersonRow): string | null {
     : person.sectorName;
 }
 
+function inviteRoleText(invite: PendingInviteRow): string {
+  return invite.role === "admin" || !invite.sectorName
+    ? ROLE_LABELS.admin
+    : `${ROLE_LABELS.operator} · ${invite.sectorName}`;
+}
+
 export async function TeamAdmin({
   searchParams,
 }: {
@@ -31,10 +44,17 @@ export async function TeamAdmin({
 }) {
   const actor = await requireAdmin();
   const params = await searchParams;
-  const [people, sectors] = await Promise.all([
+  // Depois do portão: a hora só é lida em render dinâmico.
+  const now = new Date();
+  const [people, invites, sectors] = await Promise.all([
     listPeople(db, { page: parsePage(params.pagina) }),
+    listPendingInvites(db, { page: parsePage(params.convites) }, now),
     listActiveSectors(db),
   ]);
+  const pageParams = {
+    pagina: single(params.pagina),
+    convites: single(params.convites),
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -43,6 +63,55 @@ export async function TeamAdmin({
         description="Pessoas, papéis e convites."
         backHref="/admin"
       />
+
+      <InviteForm sectors={sectors} />
+
+      <section
+        className="flex flex-col gap-3"
+        aria-labelledby="pending-invites-title"
+      >
+        <h2 id="pending-invites-title" className="text-base font-medium">
+          Convites pendentes
+        </h2>
+        {invites.rows.length === 0 ? (
+          <EmptyState title="Nenhum convite pendente." />
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {invites.rows.map((invite) => (
+              <AdminListRow
+                key={invite.id}
+                title={invite.inviteeLabel ?? "Sem nome de referência"}
+                badges={
+                  <Badge variant="outline">{inviteRoleText(invite)}</Badge>
+                }
+                subtitle={
+                  <div className="flex flex-col">
+                    <span>Válido até {formatDateTimeBR(invite.expiresAt)}</span>
+                    <span>
+                      {invite.inviterName
+                        ? `Convidado por ${invite.inviterName}`
+                        : "Convidado pelo sistema"}
+                    </span>
+                  </div>
+                }
+                actions={
+                  <PendingInviteActions
+                    id={invite.id}
+                    label={invite.inviteeLabel ?? "sem nome"}
+                  />
+                }
+              />
+            ))}
+          </ul>
+        )}
+        <Pagination
+          page={invites.page}
+          pageCount={invites.pageCount}
+          pathname="/admin/equipe"
+          params={pageParams}
+          param="convites"
+        />
+      </section>
 
       <section className="flex flex-col gap-3" aria-labelledby="people-title">
         <h2 id="people-title" className="text-base font-medium">
@@ -95,7 +164,7 @@ export async function TeamAdmin({
           page={people.page}
           pageCount={people.pageCount}
           pathname="/admin/equipe"
-          params={{ pagina: single(params.pagina) }}
+          params={pageParams}
         />
       </section>
     </div>

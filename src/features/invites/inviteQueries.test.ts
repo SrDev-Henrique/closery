@@ -14,6 +14,7 @@ import { invite } from "@/db/schema/invites";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import { insertInvite, insertSector, insertUser } from "../../../test/fixtures";
 import {
+  cancelInvite,
   consumeInvite,
   createInvite,
   findInviteByToken,
@@ -444,5 +445,76 @@ describe("constraints do banco", () => {
     await client.query('DELETE FROM "user" WHERE id = $1', [admin.id]);
 
     expect((await readInvite(id)).invitedBy).toBeNull();
+  });
+});
+
+describe("cancelInvite", () => {
+  it("cancela convite pendente, grava a hora e devolve true", async () => {
+    const { id } = await insertInvite(db, { now: NOW });
+
+    expect(await cancelInvite(db, id, NOW)).toBe(true);
+
+    expect((await readInvite(id)).cancelledAt).toEqual(NOW);
+  });
+
+  it("depois de cancelar, o link deixa de funcionar", async () => {
+    const { id, token } = await insertInvite(db, { now: NOW });
+
+    await cancelInvite(db, id, NOW);
+
+    expect((await findInviteByToken(db, token, NOW))?.state).toBe("cancelled");
+    expect(await consumeInvite(db, token, NOW)).toBeNull();
+  });
+
+  it("segundo cancelamento devolve false e mantém a primeira hora", async () => {
+    const { id } = await insertInvite(db, { now: NOW });
+    const later = new Date(NOW.getTime() + ONE_MINUTE);
+
+    expect(await cancelInvite(db, id, NOW)).toBe(true);
+    expect(await cancelInvite(db, id, later)).toBe(false);
+
+    expect((await readInvite(id)).cancelledAt).toEqual(NOW);
+  });
+
+  it("convite já usado não é cancelado", async () => {
+    const { id } = await insertInvite(db, { now: NOW, usedAt: NOW });
+
+    expect(await cancelInvite(db, id, NOW)).toBe(false);
+    expect((await readInvite(id)).cancelledAt).toBeNull();
+  });
+
+  it("convite expirado não é cancelado, nem no instante exato da expiração", async () => {
+    const expiresAt = new Date(NOW.getTime() + ONE_MINUTE);
+    const { id } = await insertInvite(db, { now: NOW, expiresAt });
+
+    expect(await cancelInvite(db, id, expiresAt)).toBe(false);
+    expect(await cancelInvite(db, id, new Date(expiresAt.getTime() + 1))).toBe(
+      false,
+    );
+    expect((await readInvite(id)).cancelledAt).toBeNull();
+  });
+
+  it("um instante antes de expirar ainda cancela", async () => {
+    const expiresAt = new Date(NOW.getTime() + ONE_MINUTE);
+    const { id } = await insertInvite(db, { now: NOW, expiresAt });
+
+    expect(await cancelInvite(db, id, new Date(expiresAt.getTime() - 1))).toBe(
+      true,
+    );
+  });
+
+  it("id inexistente devolve false", async () => {
+    expect(
+      await cancelInvite(db, "00000000-0000-4000-8000-000000000000", NOW),
+    ).toBe(false);
+  });
+
+  it("só cancela o convite pedido", async () => {
+    const target = await insertInvite(db, { now: NOW });
+    const other = await insertInvite(db, { now: NOW });
+
+    await cancelInvite(db, target.id, NOW);
+
+    expect((await readInvite(other.id)).cancelledAt).toBeNull();
   });
 });
