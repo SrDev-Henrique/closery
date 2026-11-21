@@ -1,9 +1,16 @@
 import { randomUUID } from "node:crypto";
 
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { session, user } from "@/db/schema/auth";
 import { destination, type ItemKind, item, shift } from "@/db/schema/catalog";
+import {
+  type CorrectionField,
+  type HandoverStatus,
+  handover,
+  handoverCorrection,
+  handoverItem,
+} from "@/db/schema/handovers";
 import { invite } from "@/db/schema/invites";
 import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
@@ -25,7 +32,8 @@ export async function insertSector(
   return created;
 }
 
-// Turno do setor. Padrões: nome único, 06:00–14:00, ordem = maior do setor + 1.
+// Turno do setor. Padrões: nome único, 06:00–14:00, ordem = maior do setor + 1;
+// `createdAt` opcional simula um turno antigo (o histórico só gera "sem passagem" a partir dele).
 export async function insertShift(
   db: Db,
   input: {
@@ -35,6 +43,7 @@ export async function insertShift(
     endsAt?: string;
     sortOrder?: number;
     active?: boolean;
+    createdAt?: Date;
   },
 ): Promise<{ id: string; name: string }> {
   const [created] = await db
@@ -48,6 +57,7 @@ export async function insertShift(
         input.sortOrder ??
         sql`(select coalesce(max(${shift.sortOrder}), 0) + 1 from ${shift} where ${shift.sectorId} = ${input.sectorId})`,
       active: input.active ?? true,
+      ...(input.createdAt ? { createdAt: input.createdAt } : {}),
     })
     .returning({ id: shift.id, name: shift.name });
   if (!created) throw new Error("fixture: turno não criado");
@@ -176,4 +186,159 @@ export async function insertInvite(
     .returning({ id: invite.id });
   if (!created) throw new Error("fixture: convite não criado");
   return { id: created.id, token };
+}
+
+const DEFAULT_DELIVERED_AT = new Date("2026-11-20T17:00:00Z");
+const HOUR_MS = 60 * 60 * 1000;
+
+// Passagem direto na tabela. Lança para estado impossível (o banco também
+// recusaria): rascunho com entrega/confirmação, entregue sem quem entregou,
+// confirmada sem quem confirmou, quem confirmou = quem entregou. Para provar
+// os CHECKs do banco, insira com SQL cru.
+export async function insertHandover(
+  db: Db,
+  input: {
+    sectorId: string;
+    shiftId: string;
+    operationalDate?: string;
+    status?: HandoverStatus;
+    occurrencesText?: string;
+    nextShiftText?: string;
+    deliveredBy?: string;
+    deliveredAt?: Date;
+    confirmedBy?: string;
+    confirmedAt?: Date;
+    confirmationNote?: string;
+    updatedBy?: string;
+    shiftNameSnapshot?: string;
+  },
+): Promise<{ id: string }> {
+  const status = input.status ?? "draft";
+  if (status === "draft") {
+    if (input.deliveredBy || input.deliveredAt) {
+      throw new Error("fixture: rascunho não tem entrega");
+    }
+    if (input.confirmedBy || input.confirmedAt || input.confirmationNote) {
+      throw new Error("fixture: rascunho não tem confirmação");
+    }
+  } else {
+    if (!input.deliveredBy) {
+      throw new Error(`fixture: passagem ${status} exige deliveredBy`);
+    }
+    if (status === "delivered") {
+      if (input.confirmedBy || input.confirmedAt || input.confirmationNote) {
+        throw new Error("fixture: passagem entregue não tem confirmação");
+      }
+    } else {
+      if (!input.confirmedBy) {
+        throw new Error("fixture: passagem confirmed exige confirmedBy");
+      }
+      if (input.confirmedBy === input.deliveredBy) {
+        throw new Error("fixture: quem entregou não confirma");
+      }
+    }
+  }
+  const deliveredAt =
+    status === "draft" ? null : (input.deliveredAt ?? DEFAULT_DELIVERED_AT);
+  const confirmedAt =
+    status === "confirmed" && deliveredAt
+      ? (input.confirmedAt ?? new Date(deliveredAt.getTime() + HOUR_MS))
+      : null;
+  const [created] = await db
+    .insert(handover)
+    .values({
+      sectorId: input.sectorId,
+      shiftId: input.shiftId,
+      operationalDate: input.operationalDate ?? "2026-11-20",
+      status,
+      occurrencesText: input.occurrencesText ?? "",
+      nextShiftText: input.nextShiftText ?? "",
+      deliveredBy: status === "draft" ? null : (input.deliveredBy ?? null),
+      deliveredAt,
+      confirmedBy: status === "confirmed" ? (input.confirmedBy ?? null) : null,
+      confirmedAt,
+      confirmationNote: input.confirmationNote ?? null,
+      updatedBy: input.updatedBy ?? null,
+      shiftNameSnapshot: input.shiftNameSnapshot ?? null,
+    })
+    .returning({ id: handover.id });
+  if (!created) throw new Error("fixture: passagem não criada");
+  return created;
+}
+
+// Linha de item da passagem. `snapshot: true` copia nome, unidade e tipo do
+// item (o que a entrega faz).
+export async function insertHandoverItem(
+  db: Db,
+  input: {
+    handoverId: string;
+    itemId: string;
+    quantity?: number;
+    note?: string | null;
+    snapshot?: boolean;
+  },
+): Promise<void> {
+  let snapshot: {
+    itemNameSnapshot: string;
+    itemUnitSnapshot: string;
+    itemKindSnapshot: ItemKind;
+  } | null = null;
+  if (input.snapshot) {
+    const [source] = await db
+      .select({ name: item.name, unit: item.unit, kind: item.kind })
+      .from(item)
+      .where(eq(item.id, input.itemId));
+    if (!source) throw new Error("fixture: item do snapshot não existe");
+    snapshot = {
+      itemNameSnapshot: source.name,
+      itemUnitSnapshot: source.unit,
+      itemKindSnapshot: source.kind,
+    };
+  }
+  await db.insert(handoverItem).values({
+    handoverId: input.handoverId,
+    itemId: input.itemId,
+    quantity: input.quantity ?? 0,
+    note: input.note ?? null,
+    ...(snapshot ?? {}),
+  });
+}
+
+// Linha de correção. Campo de item exige itemId; campo de texto não aceita.
+export async function insertHandoverCorrection(
+  db: Db,
+  input: {
+    handoverId: string;
+    field: CorrectionField;
+    itemId?: string;
+    oldValue?: string;
+    newValue?: string;
+    reason?: string;
+    correctedBy: string;
+    correctedAt?: Date;
+  },
+): Promise<{ id: string }> {
+  const isItemField =
+    input.field === "item_quantity" || input.field === "item_note";
+  if (isItemField && !input.itemId) {
+    throw new Error(`fixture: o campo ${input.field} exige itemId`);
+  }
+  if (!isItemField && input.itemId) {
+    throw new Error(`fixture: o campo ${input.field} não aceita itemId`);
+  }
+  const [created] = await db
+    .insert(handoverCorrection)
+    .values({
+      handoverId: input.handoverId,
+      field: input.field,
+      itemId: input.itemId ?? null,
+      oldValue: input.oldValue ?? "antes",
+      newValue: input.newValue ?? "depois",
+      reason: input.reason ?? "Motivo de teste",
+      correctedBy: input.correctedBy,
+      ...(input.correctedAt ? { correctedAt: input.correctedAt } : {}),
+    })
+    .returning({ id: handoverCorrection.id });
+  if (!created) throw new Error("fixture: correção não criada");
+  return created;
 }
