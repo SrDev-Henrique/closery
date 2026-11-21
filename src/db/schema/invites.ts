@@ -41,6 +41,7 @@ export const invite = pgTable(
     index("invite_sector_id_idx").on(table.sectorId),
     index("invite_invited_by_idx").on(table.invitedBy),
     index("invite_used_by_idx").on(table.usedBy),
+    check("invite_role_valid", sql`${table.role} in ('admin', 'operator')`),
     check(
       "invite_operator_needs_sector",
       sql`${table.role} = 'admin' or ${table.sectorId} is not null`,

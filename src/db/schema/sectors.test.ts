@@ -63,6 +63,18 @@ describe("tabela sector", () => {
     expect(sqlState(attempt)).toBe("23505");
   });
 
+  it('recusa nome que só difere na caixa: "Uld" depois de "ULD" (23505)', async () => {
+    await db.insert(sector).values({ name: "ULD" });
+    const attempt = await db
+      .insert(sector)
+      .values({ name: "Uld" })
+      .then(
+        () => null,
+        (error: unknown) => error,
+      );
+    expect(sqlState(attempt)).toBe("23505");
+  });
+
   it("recusa nome nulo", async () => {
     const attempt = await client
       .query("INSERT INTO sector (name) VALUES (NULL)")

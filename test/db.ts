@@ -20,6 +20,9 @@ export const TABLES: readonly string[] = [
   "passkey",
   "rate_limit",
   "invite",
+  "shift",
+  "item",
+  "destination",
 ];
 
 // O dump migrado é lido uma vez por processo de worker.
