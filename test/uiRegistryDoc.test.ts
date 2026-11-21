@@ -33,13 +33,17 @@ function nameOf(file: string): string {
 }
 
 const adminFiles = sourceFiles(join("src", "components", "admin"));
+const handoverFiles = sourceFiles(join("src", "components", "passagens"));
 const primitiveFiles = ["toggle", "toggle-group", "native-select", "dialog"]
   .map((name) => join("src", "components", "ui", `${name}.tsx`))
   .filter((file) => existsSync(file));
 
-describe("ui-registry.md cobre os componentes da Fase 2", () => {
+describe("ui-registry.md cobre os componentes das Fases 2 e 3", () => {
   it.each(
-    [...adminFiles, ...primitiveFiles].map((file) => [file, nameOf(file)]),
+    [...adminFiles, ...handoverFiles, ...primitiveFiles].map((file) => [
+      file,
+      nameOf(file),
+    ]),
   )("%s está no catálogo", (file, name) => {
     expect(
       new RegExp(String.raw`\b${name}\b`, "i").test(registry),
