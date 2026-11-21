@@ -78,7 +78,7 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
   const pages = findPages(APP_GROUP);
 
   it("encontra as páginas do grupo", () => {
-    expect(pages.length).toBeGreaterThanOrEqual(9);
+    expect(pages.length).toBeGreaterThanOrEqual(12);
   });
 
   it("inclui a página de cada rota de /admin", () => {
@@ -102,6 +102,7 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
       relative(APP_GROUP, file).replaceAll("\\", "/"),
     );
     for (const route of [
+      "passagens/page.tsx",
       "passagens/nova/page.tsx",
       "passagens/[id]/page.tsx",
     ]) {

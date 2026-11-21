@@ -795,6 +795,30 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Usa:** `getHandoverSummary`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverStatusBadge`, `buttonVariants`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
 
+### HandoverHistory
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverHistory.tsx` (server, async)
+- **Propósito:** conteúdo de `/passagens`: o histórico de passagens, do dia mais recente ao mais antigo.
+- **Como funciona:** chama `requireUser()`, interpreta os filtros da URL (`parseHistoryFilters`, dia de hoje em São Paulo) e lê `listHandoverHistory` (50 por página, `?pagina=` clampada). Operador usa o próprio setor e nunca vê o seletor; admin vê o `SectorPicker` com "Todos os setores" (que não grava cookie) e o setor vem de `?setor=`, do cookie ou do primeiro ativo. Ordem na tela: título, seletor (admin), `HistoryFilters`, "Período: dd/mm/aaaa a dd/mm/aaaa", lista de `HistoryRowItem` (ou o estado vazio "Nenhuma passagem neste período.") e `Pagination` com os filtros e o setor preservados. Setor inativo (operador) ou nenhum setor ativo (admin) mostram `EmptyState`.
+- **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+
+### HistoryFilters
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HistoryFilters.tsx`
+- **Propósito:** filtros do histórico (período, turno, situação) que vivem na URL.
+- **Como funciona:** `"use client"`; formulário controlado que nunca começa em branco (os valores vêm da URL já interpretada: 7 dias, todos os turnos, todas as situações). `SelectField` "Período" (Últimos 7 dias, Últimos 30 dias, Intervalo), "Turno" (só quando há turnos do setor: some em "Todos os setores"), "Situação" e, no Intervalo, `De` e `Até` (`type="date"`, já preenchidos com o período atual). "Aplicar filtros" navega com `router.push(buildHistoryHref(…))` (volta à página 1 e preserva o setor do admin); "Limpar filtros" é um `<Link>` para `/passagens` (preserva só `?setor=`).
+- **Usa:** `SelectField`, `Field`, `Input`, `Button`, `buttonVariants`, `buildHistoryHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+
+### HistoryRowItem
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HistoryRowItem.tsx` (server-safe)
+- **Propósito:** uma linha do histórico: o dia, o turno, quem entregou e a situação.
+- **Como funciona:** reaproveita `AdminListRow`. Título `dd/mm/aaaa · {turno}` (data com `tabular-nums`); subtítulo com o setor (só quando `showSector`) e "Entregue por {nome} às {HH:mm}" (ausente em "sem passagem"); `HandoverStatusBadge` com o selo "Corrigida" quando há correção. Link da linha: "Abrir" (`aria-label` "Abrir passagem de {turno} em {data}") para a passagem; em "sem passagem" o link é "Entregar turno" ou, se há rascunho, "Continuar passagem", para o turno e o dia daquela linha (o setor da linha vai em `?setor=` só para o admin).
+- **Usa:** `AdminListRow`, `HandoverStatusBadge`, `buttonVariants`, `handoverHref`, `newHandoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
