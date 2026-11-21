@@ -14,6 +14,7 @@ import {
 import { invite, user } from "@/db/schema";
 import { enabledSocialProviders } from "@/lib/auth/env";
 import { INVITE_COOKIE } from "@/lib/auth/inviteCookie";
+import type { Role } from "@/lib/roles";
 import {
   createTestAuth,
   sessionCookieOf,
@@ -22,7 +23,7 @@ import {
 } from "../../../test/auth";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import { insertInvite, insertSector, insertUser } from "../../../test/fixtures";
-import { createAuth } from "./createAuth";
+import { createAuth, inviteSignupData } from "./createAuth";
 
 const PASSWORD = "senha-segura-123";
 
@@ -96,7 +97,7 @@ describe("cadastro: o convite é o portão", () => {
     expect(await allUsers()).toHaveLength(0);
   });
 
-  it("convite de admin: user.role admin, sectorId null, e-mail verificado, convite gasto e ligado ao usuário", async () => {
+  it("convite de admin: user.role admin, sectorId null, e-mail NÃO verificado, convite gasto e ligado ao usuário", async () => {
     const { id, token } = await insertInvite(db, {
       role: "admin",
       now: new Date(),
@@ -105,11 +106,13 @@ describe("cadastro: o convite é o portão", () => {
     await signUpWithInvite(auth, token, newPerson("admin@example.com"));
 
     const [created] = await allUsers();
+    // O convite não é atrelado a um endereço: quem cadastra por e-mail e senha
+    // pode digitar qualquer e-mail, então ele não vira "verificado".
     expect(created).toMatchObject({
       email: "admin@example.com",
       role: "admin",
       sectorId: null,
-      emailVerified: true,
+      emailVerified: false,
       deactivatedAt: null,
     });
     const row = await inviteRow(id);
@@ -511,5 +514,41 @@ describe("configuração", () => {
     } finally {
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe("inviteSignupData (dados que o portão do convite grava)", () => {
+  const grant: { role: Role; sectorId: string | null } = {
+    role: "operator",
+    sectorId: "11111111-1111-4111-8111-111111111111",
+  };
+
+  it("login social com e-mail verificado pelo provedor continua verificado", () => {
+    const data = inviteSignupData(
+      { email: "a@example.com", emailVerified: true },
+      grant,
+    );
+    expect(data.emailVerified).toBe(true);
+  });
+
+  it("e-mail não verificado continua não verificado (o convite não verifica e-mail)", () => {
+    const data = inviteSignupData(
+      { email: "a@example.com", emailVerified: false },
+      grant,
+    );
+    expect(data.emailVerified).toBe(false);
+  });
+
+  it("papel e setor vêm sempre do convite, nunca do que chegou no cadastro", () => {
+    const data = inviteSignupData(
+      {
+        email: "a@example.com",
+        emailVerified: false,
+        role: "admin",
+        sectorId: null,
+      },
+      grant,
+    );
+    expect(data).toMatchObject({ role: "operator", sectorId: grant.sectorId });
   });
 });

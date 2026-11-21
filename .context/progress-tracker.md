@@ -38,6 +38,7 @@
 - ✅ Setup de testes: Vitest 5 (projects `node` e `dom`) + PGlite com dump migrado + Testing Library + Playwright com pglite-socket (2026-11-20)
 - ✅ Tokens da D16 (`chart-1..4`, `success`, `warning`, `info`) no `globals.css`, com guarda de paleta (P4 e P9 resolvidas) (2026-11-20)
 - ✅ Remoto do Git: GitHub, branch `main` (2026-11-20)
+- ✅ CI no GitHub Actions: tipos, lint, Vitest e E2E (com `next build`) em todo PR e push na `main` (2026-11-20)
 - ⬜ Deploy na Vercel (movido para a Fase 6 — Produção)
 
 ## Fase 1 — Acesso · ✅

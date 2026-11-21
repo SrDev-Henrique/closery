@@ -126,7 +126,7 @@
 
 - **Fábrica, não singleton (T1).** `createAuth(db, env)` recebe o banco; o singleton `auth` de `src/lib/auth/index.ts` só existe no app. Teste e E2E usam a fábrica.
 - **Schema à mão + guarda (T3).** `src/db/schema/auth.ts` copia a saída da CLI, trocando `user.sector_id` por `uuid` com FK. A CLI não consegue importar a config (cadeia `server-only` + schema), então o teste guarda com `getAuthTables` compara o schema com o que a lib espera: ao atualizar o Better Auth, rode a CLI numa pasta à parte, compare e ajuste o arquivo.
-- **Convite no `user.create.before` (T4, T5).** Consome o convite lido do cookie e injeta `role`, `sectorId` e `emailVerified`; o `after` grava `used_by`. Sem `ctx` o hook recusa. Cadastro por e-mail já existente falha **antes** do hook e não gasta convite (há teste).
+- **Convite no `user.create.before` (T4, T5).** Consome o convite lido do cookie e injeta `role` e `sectorId` (`inviteSignupData`); **não** força `emailVerified` (o convite não prova o e-mail: fica `false` no e-mail e senha e com o valor do provedor no social); o `after` grava `used_by`. Sem `ctx` o hook recusa. Cadastro por e-mail já existente falha **antes** do hook e não gasta convite (há teste).
 - **Adapter sem `transaction` (T6).** Ligado, o hook consultaria fora da transação e o PGlite (uma conexão) travaria.
 - **`APIError` com `code`.** Em hook, todo `throw` é `APIError` de `better-auth/api` com `code`; `Error` comum vira 500 sem corpo, e no callback OAuth só `APIError` com `code` vira redirect `?error=<code>`. Na tela, **nunca** renderize `error_description` (texto do servidor na URL): use só `authErrorMessage(code)` (mapa `AUTH_ERROR_MESSAGES`, com fallback).
 - **Sem `cookieCache` e sem `nextCookies()` (T7).** Desativação vale na hora. Cadastro, login e passkey vão pelo `authClient` (HTTP, onde o rate limit atua); nenhum `auth.api.sign*` roda em Server Action.
@@ -165,6 +165,25 @@
 - **`/admin` do operador:** confira o texto "Página não encontrada" e o `<title>`, nunca o status (com streaming é 200).
 - Cada teste cria os próprios dados (e-mail único, nomes fictícios). Login social ao vivo é checklist manual.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
+
+## 11. GitHub Actions (CI)
+
+- **Arquivo:** `.github/workflows/ci.yml`. Roda em todo `pull_request` e em `push` na `main`;
+  `permissions: contents: read`; um push novo cancela a execução anterior do mesmo ref.
+- **Dois jobs em paralelo (Ubuntu):** `checks` (`check-types`, `lint`, `test`) e `e2e`
+  (`playwright install --with-deps chromium` + `test:e2e`, que já inclui o `next build`). O
+  relatório do Playwright vira artefato por 7 dias.
+- **Versões:** Bun `1.3.3` (igual ao `packageManager`) e Node 22 (Vitest 5 exige ≥ 22.12).
+  Ações do GitHub pela tag de major (`checkout@v7`, `setup-node@v7`, `cache@v6`,
+  `upload-artifact@v7`); ação de terceiro (`oven-sh/setup-bun`) **fixada por SHA de commit**.
+  Ao atualizar, troque o SHA e o comentário da versão juntos.
+- **Sem segredos.** O CI não usa o Neon nem credencial nenhuma: os testes usam PGlite e o E2E usa o
+  `env` do `playwright.config.ts`. Nunca adicione `DATABASE_URL` real como secret do CI para
+  testes.
+- **Cache:** `~/.bun/install/cache` e `~/.cache/ms-playwright` pela hash do `bun.lock`;
+  `.next/cache` pela hash de `bun.lock` + `src/**` + `next.config.ts`.
+- **Linux pega o que o Windows esconde:** caminho de import com caixa errada passa no Windows e
+  quebra no CI. Se o CI falhar e local passar, desconfie primeiro disso.
 
 ## Como adicionar uma biblioteca nova
 

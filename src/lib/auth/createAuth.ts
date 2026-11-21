@@ -11,6 +11,7 @@ import {
   consumeInvite,
   recordInviteUser,
 } from "@/features/invites/inviteQueries";
+import type { Role } from "@/lib/roles";
 
 import type { AuthEnv } from "./env";
 import { INVITE_COOKIE } from "./inviteCookie";
@@ -26,6 +27,17 @@ export const AUTH_USER_ADDITIONAL_FIELDS = {
   sectorId: { type: "string", required: false, input: false },
   deactivatedAt: { type: "date", required: false, input: false },
 } satisfies Record<string, DBFieldAttribute>;
+
+// O que o portão do convite grava no usuário novo: papel e setor vêm sempre do
+// convite. `emailVerified` fica como o método de cadastro trouxe (false no
+// e-mail e senha; o valor do provedor no login social): o convite não é
+// atrelado a um endereço, então não serve de prova de que o e-mail é da pessoa.
+export function inviteSignupData<T extends object>(
+  newUser: T,
+  grant: { role: Role; sectorId: string | null },
+): T & { role: Role; sectorId: string | null } {
+  return { ...newUser, role: grant.role, sectorId: grant.sectorId };
+}
 
 function inviteOnlyError(): APIError {
   return new APIError("FORBIDDEN", {
@@ -85,8 +97,8 @@ export function createAuth(db: Db, env: AuthEnv) {
         : {}),
     },
 
-    // Login social nunca vincula sozinho a uma conta existente: o e-mail dos
-    // convidados é marcado como verificado pelo convite, então vincular pelo
+    // Login social nunca vincula sozinho a uma conta existente: o e-mail de
+    // quem cadastrou por e-mail e senha não é verificado, então vincular pelo
     // e-mail abriria tomada de conta. Quem tem conta entra "como da primeira
     // vez" (erro account_not_linked).
     account: { accountLinking: { disableImplicitLinking: true } },
@@ -111,14 +123,7 @@ export function createAuth(db: Db, env: AuthEnv) {
             if (!token) throw inviteOnlyError();
             const consumed = await consumeInvite(db, token, new Date());
             if (!consumed) throw inviteOnlyError();
-            return {
-              data: {
-                ...newUser,
-                role: consumed.role,
-                sectorId: consumed.sectorId,
-                emailVerified: true,
-              },
-            };
+            return { data: inviteSignupData(newUser, consumed) };
           },
           after: async (createdUser, ctx) => {
             const token = ctx?.getCookie(INVITE_COOKIE);

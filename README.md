@@ -1,5 +1,7 @@
 # Closery
 
+[![CI](https://github.com/SrDev-Henrique/closery/actions/workflows/ci.yml/badge.svg)](https://github.com/SrDev-Henrique/closery/actions/workflows/ci.yml)
+
 Passagem de turno simples, detalhada e rastreável para a operação de carga aérea (setor ULD).
 Substitui a planilha de passagem e alimenta um dashboard de quantidades e solicitações.
 
