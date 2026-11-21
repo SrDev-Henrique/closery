@@ -568,6 +568,37 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Usa:** `MoveButtons`, `EditDialog`, `ActiveToggleButton`, `ShiftForm`.
 - **Histórico:** 2026-11-21 — criado (Fase 2).
 
+### ItemsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/items/ItemsAdmin.tsx`
+- **Propósito:** conteúdo da página `/admin/itens`: cadastro e lista de itens por setor.
+- **Como funciona:** Server Component async; chama `requireAdmin()`, lê `?setor=` e `?pagina=`, mostra o seletor de setor, o
+  cartão "Novo item" (padrões de `ITEM_FORM_DEFAULTS`) e a lista paginada. Cada linha mostra nome, unidade, selo do tipo
+  ("Controle"/"Estoque") e "Inativo". Sem setor ativo, mostra o estado vazio com link "Ir para Setores". O formulário remonta
+  (`key`) a cada criação para voltar limpo.
+- **Usa:** `AdminPageHeader`, `SectorSwitcher`, `AdminListRow`, `EmptyState`, `Pagination`, `Card`, `Badge`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ItemForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/items/ItemForm.tsx`
+- **Propósito:** criar e editar item (mesmo formulário).
+- **Como funciona:** client, controlado; `initial.id` presente = edição. "Unidade" é `SelectField` (unidade, rolo, par, pacote,
+  caixa, saco, metro, kg e "Outro…"); com "Outro…" aparece "Outra unidade" (texto livre, ≤ 20). "Tipo" é `ChoiceGroup`
+  (Controle | Estoque, nunca fica vazio) com a ajuda do tipo escolhido. Valida com o mesmo schema Zod do servidor; erros por
+  campo e erro geral ficam inline e o digitado nunca se perde.
+- **Usa:** `Field`, `Input`, `Button`, `SelectField`, `ChoiceGroup`, `useAdminAction`, `sonner`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ItemRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/items/ItemRowActions.tsx`
+- **Propósito:** ações de uma linha de item.
+- **Como funciona:** client; `MoveButtons` (↑ ↓ pela posição absoluta no setor), `EditDialog` "Editar item" com `ItemForm`
+  (a unidade vem de `splitUnit`: fora da lista abre em "Outro…" com o texto) e `ActiveToggleButton`.
+- **Usa:** `MoveButtons`, `EditDialog`, `ActiveToggleButton`, `ItemForm`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
