@@ -363,6 +363,130 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `Button`, `FieldError`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
 
+### Cadastros do admin — `src/components/admin/*` (Fase 2)
+
+Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/destinos` e `/equipe`. "Server-safe" = sem `"use client"`. Antes de criar outro componente de lista ou formulário de cadastro, estenda estes.
+
+### AdminPageHeader
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/AdminPageHeader.tsx` (server-safe)
+- **Propósito:** cabeçalho de toda página de `/admin/**`: título, descrição e, nas subpáginas, o caminho de volta.
+- **Como funciona:** `<h1>` + texto; com `backHref="/admin"` mostra o link "Voltar para Administração" (`buttonVariants` ghost, ícone `ChevronLeft` `aria-hidden`). O `<h1>` fica dentro do `<Suspense>` da página (o operador não pode ver o título antes do `notFound()`).
+- **Usa:** `buttonVariants`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### AdminListRow
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/AdminListRow.tsx` (server-safe)
+- **Propósito:** linha de lista de cadastro (no lugar de tabela: funciona no celular).
+- **Como funciona:** `<li>` card com título, selos (`badges`), subtítulo, avisos (`notes`) e ações à direita (embaixo no celular). `inactive` esmaece o título (`text-muted-foreground`) e mostra o `InactiveBadge`.
+- **Usa:** `InactiveBadge`; tokens `card`, `border`, `muted-foreground`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### AdminListSkeleton
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/AdminListSkeleton.tsx` (server-safe)
+- **Propósito:** fallback de `<Suspense>` das listas do admin.
+- **Como funciona:** `<ul aria-busy="true" aria-label="Carregando">` com `rows` (padrão 4) `Skeleton h-16`.
+- **Usa:** `Skeleton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### EmptyState
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/EmptyState.tsx` (server-safe)
+- **Propósito:** lista vazia que explica o que é e oferece o próximo passo (ui-rules §3).
+- **Como funciona:** caixa tracejada com `<h2>`, descrição e, opcional, `action` como `<Link className={buttonVariants({ variant: "outline" })}>` (role link).
+- **Usa:** `buttonVariants`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### InactiveBadge
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/InactiveBadge.tsx` (server-safe)
+- **Propósito:** selo "Inativo" (nada se apaga; só desativa).
+- **Como funciona:** `<Badge variant="secondary">Inativo</Badge>`; sempre texto, nunca só cor.
+- **Usa:** `Badge`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### Pagination
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/Pagination.tsx` (server-safe)
+- **Propósito:** paginação das listas (toda lista é paginada).
+- **Como funciona:** `<nav aria-label="Paginação">` com "Anterior", "Página {n} de {m}" (`tabular-nums`) e "Próxima"; `param` (padrão `pagina`; `convites` na Equipe) e `params` preservam os demais parâmetros da URL via `buildPageHref`; página 1 remove o parâmetro. Na borda o botão é um `<span aria-disabled="true">` (não é link). Com `pageCount <= 1` renderiza `null`.
+- **Usa:** `buttonVariants`, `buildPageHref`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### SectorSwitcher
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/SectorSwitcher.tsx` (server-safe)
+- **Propósito:** escolher o setor das telas por setor (Turnos e Itens) pela URL (`?setor=<id>`).
+- **Como funciona:** `<nav aria-label="Setor">` com um link por setor ativo; o escolhido é `default` com `aria-current="page"`, os demais `outline`. Navegação real (link), então funciona sem JS e preserva o histórico.
+- **Usa:** `buttonVariants`, `next/link`, tipo `SectorChoice`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### MoveButtons
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/MoveButtons.tsx` (client)
+- **Propósito:** ordem de turnos e itens por botões ↑ ↓ (D-F2-3), sem arrastar.
+- **Como funciona:** dois botões `icon` (`ChevronUp`/`ChevronDown`) com `aria-label` "Subir {nome}"/"Descer {nome}" e tooltip "Subir"/"Descer"; desabilitados na borda (`canMoveUp`/`canMoveDown`) e enquanto `pending`.
+- **Usa:** `Button`, `Tooltip*`, `SortDirection`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### ChoiceGroup
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/ChoiceGroup.tsx` (client)
+- **Propósito:** escolha entre poucas opções (Papel: Operador | Administrador; Tipo do item: Controle | Estoque).
+- **Como funciona:** `<fieldset>` com `<legend>` + `ToggleGroup` único (`outline`, `lg`); **nunca fica sem seleção**: clicar no item escolhido é ignorado. Genérico no tipo do valor (sem `as`). `description` liga ao grupo por `aria-describedby`.
+- **Usa:** `FieldSet`, `FieldLegend`, `FieldDescription`, `ToggleGroup`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### SelectField
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/SelectField.tsx` (client)
+- **Propósito:** escolha de um conjunto maior (setor, unidade) com o seletor do aparelho.
+- **Como funciona:** `Field` + `FieldLabel htmlFor` + `NativeSelect` + `FieldDescription` + `FieldError` (`role="alert"`); `aria-invalid` e `aria-describedby` ligados (descrição e erro). `id` opcional (senão `useId`).
+- **Usa:** `Field*`, `NativeSelect`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### EditDialog
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/EditDialog.tsx` (client)
+- **Propósito:** "Editar" de uma linha em diálogo.
+- **Como funciona:** gatilho `<Button variant="outline" size="sm">Editar</Button>` com `aria-label` "Editar {nome}"; o diálogo tem título e o nome como descrição; `children(close)` recebe a função que fecha (o formulário a chama ao salvar). Fechar sem salvar descarta o digitado (o conteúdo desmonta). Foco entra no diálogo e volta ao gatilho; `Esc` fecha.
+- **Usa:** `Dialog*`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### ConfirmDialog
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/ConfirmDialog.tsx` (client)
+- **Propósito:** confirmar ação sem volta fácil (desativar pessoa, cancelar convite).
+- **Como funciona:** `trigger` é o elemento do gatilho (via `render`); botões `confirmLabel` (`destructive` opcional) e `cancelLabel` (padrão "Voltar"). Só fecha no **sucesso**: se `onConfirm` devolver falha ou lançar, mostra a mensagem (`FieldError`) dentro do diálogo e continua aberto; trava os botões e o `Esc` enquanto roda; reabrir limpa o erro. Sem botão X (os dois botões bastam).
+- **Usa:** `Dialog*`, `Button`, `FieldError`, `AdminResult`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### NameForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/NameForm.tsx` (client)
+- **Propósito:** criar ou renomear setor e destino (um único campo de nome).
+- **Como funciona:** controlado; rótulo "Nome do setor"/"Nome do destino"; valida no cliente com `validateName` (as mesmas mensagens do servidor); `onSubmit(nomeNormalizado)`. **Limpa só no sucesso** (criar: volta a vazio; editar: mantém o nome salvo) e chama `onDone`. Se o servidor recusar mostra `fieldErrors.name` (ou a mensagem geral) em `FieldError` ligado ao campo e **preserva o que foi digitado**; o erro some ao digitar; botão travado enquanto envia.
+- **Usa:** `Field*`, `Input`, `Button`, `useAdminAction`, `validateName`.
+- **Histórico:** 2026-11-21 — criado na Fase 2. Exceção documentada a "nunca em branco" (F2-9): o nome é a identidade do registro.
+
+### ActiveToggleButton
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/ActiveToggleButton.tsx` (client)
+- **Propósito:** "Desativar"/"Reativar" de uma linha de cadastro.
+- **Como funciona:** ativo = botão `outline` "Desativar"; inativo = `default` "Reativar"; `aria-label` "{ação} {nome}"; chama `onToggle(!active)`; toast `{Setor|Turno|Item|Destino} desativado.`/`reativado.` no sucesso, toast de erro com a mensagem do servidor na falha; travado enquanto roda.
+- **Usa:** `Button`, `useAdminAction`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### useAdminAction
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/useAdminAction.ts` (client)
+- **Propósito:** chamar uma Server Action de cadastro com `pending`, toasts e erro tratado.
+- **Como funciona:** `run(action, { success?, showError? })` devolve sempre um `AdminResult` (nunca lança): exceção vira `fail("INTERNAL", INTERNAL_ERROR_MESSAGE)`. `success` dispara `toast.success`; erro vira `toast.error(message)` a menos que `showError: false` (formulários mostram o erro inline).
+- **Usa:** `sonner`, `AdminResult`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*

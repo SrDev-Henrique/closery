@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom/vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach } from "vitest";
 
 // Sem `globals: true` o Testing Library não registra o cleanup sozinho.
@@ -25,3 +25,7 @@ if (typeof window.matchMedia !== "function") {
     }),
   });
 }
+
+// Com a suíte inteira rodando em paralelo (PGlite incluso) a máquina fica lenta;
+// o padrão de 1s do findBy*/waitFor gera falha intermitente em diálogos e formulários.
+configure({ asyncUtilTimeout: 4000 });
