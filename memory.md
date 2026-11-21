@@ -1,6 +1,6 @@
-# Memory — Fases 0 e 1 concluídas; o próximo passo é o plano da Fase 2
+# Memory — Fases 0, 1 e 2 concluídas; o próximo passo é o plano da Fase 3
 
-Last updated: 2026-11-20 (UTC-3)
+Last updated: 2026-11-21 (UTC-3)
 
 ---
 
@@ -10,7 +10,13 @@ Last updated: 2026-11-20 (UTC-3)
 (Vitest com PGlite e Testing Library; Playwright com banco efêmero via pglite-socket) e acesso completo: cadastro só
 por convite (e-mail e senha, Google e Facebook condicionais ao env), login com passkey, papéis
 admin/operador escopados por setor, telas `/entrar`, `/convite/[token]`, `/bem-vindo`, `/conta`,
-Início, `/admin` (placeholder) e o shell com sidebar.
+Início, `/admin` e o shell com sidebar.
+
+**Cadastros prontos (Fase 2).** `/admin` tem os cinco cartões e as telas `/admin/setores`,
+`/admin/turnos`, `/admin/itens`, `/admin/destinos` e `/admin/equipe`: nada se apaga (só desativa),
+turno avisa sobreposição, ordem por botões ↑ ↓, unidade do item por escolha com "Outro", equipe com
+papel, setor, desativação (que derruba as sessões, P11) e convites com link para copiar ou compartilhar.
+Plano executado em `docs/superpowers/plans/2026-11-21-fase-2-cadastros.md`.
 
 O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
 18 decisões em `.context/build-plan.md §5`) e o plano executado em
@@ -18,8 +24,10 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 
 ## O que está esperando
 
-- **Plano da Fase 2 (skill `writing-plans`):** Cadastros — setores, turnos, itens, destinos de
-  solicitação, equipe. O `/admin` já existe como placeholder.
+- **Plano da Fase 3 (skill `writing-plans`):** Passagem — rascunho, entregar, receber, corrigir,
+  histórico. Usa os setores, turnos e itens já cadastrados; ainda não há tela de operador para eles.
+- **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
+- **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
   **P6/P7/P8:** Apple Developer, app da Meta, provedor de e-mail — só travam Apple, Facebook e "esqueci a senha".
 - **Suposições a validar com o usuário final:** spec §15 (glossário, horários dos turnos, o que é
@@ -55,3 +63,15 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **Componentes KokonutUI vêm com cor crua e em inglês** — adaptar na instalação (`library-docs.md §6`).
 - O Playwright MCP grava artefatos em `.playwright-mcp/` (ignorado no git).
 - **Nenhum dado real da planilha** (nomes das pessoas) entra em commit, seed ou teste.
+- **Server Actions de `/admin`:** `requireAdmin()` na primeira linha de **cada** função exportada (guarda
+  `actionsAuth.test.ts`); `actions.ts` só exporta funções `async`; o formulário é controlado e chama a action
+  com objeto tipado; `runAdminAction` devolve `AdminResult` (`library-docs.md §12`).
+- **`/admin` não tem `layout.tsx` nem `metadata`:** os dois sairiam antes do `notFound()` e revelariam a
+  rota ao operador. `<h1>` sempre dentro do `<Suspense>`.
+- **`shadcn add dialog` reinstala `button.tsx`** e trava no prompt sem `--overwrite`: rode com `--overwrite`
+  e depois `git checkout -- src/components/ui/button.tsx` (customização da P3).
+- **`time` é texto** (`"HH:mm:ss"` do banco, `"HH:mm"` no app) e o erro do driver vem embrulhado em
+  `error.cause` (SQLSTATE em `error.cause.code`).
+- **PGlite não prova o "último admin"**: a garantia é `SELECT … FOR UPDATE` no SQL, provada em sequência.
+- **Neon de dev:** collation `C.UTF-8`; `lower('ÁGUA') = lower('água')`, então nomes acentuados colidem
+  sem diferença de caixa também em produção.

@@ -100,7 +100,7 @@ scripts/                  scripts do desenvolvedor (admin:invite)
 - **Migrações:** `bun run db:generate` → revisar o SQL em `drizzle/` → `bun run db:migrate`.
   `db:push` só em banco de dev descartável.
 
-## 6. Modelo de dados · 🟡 em construção (acesso e convite ✅ na Fase 1)
+## 6. Modelo de dados · 🟡 em construção (acesso, convite e cadastros ✅ até a Fase 2)
 
 Entidades que as decisões já implicam: **setor**, **turno** (por setor, com horário — D9),
 **item** (por setor, com unidade e tipo controle/estoque — D1), **destino** de solicitação (D7),
@@ -109,16 +109,25 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
 **congelados** na entrega — D1), **solicitação** + **histórico de status** + **comentários**
 (D6–D8), e as tabelas do Better Auth + **convite** (D2–D4). Sem fotos (D10).
 
-**Tabelas criadas até a Fase 1** (migrações versionadas em `drizzle/`):
+**Tabelas criadas até a Fase 2** (migrações versionadas em `drizzle/`):
 
 | Tabela | O que guarda | Chave |
 |---|---|---|
-| `sector` | setor: nome único, `active` | `uuid` |
-| `user` | pessoa (Better Auth) + `role` (`admin`/`operator`), `sector_id` (FK `sector`, `restrict`), `deactivated_at`; check `user_operator_needs_sector` (operador exige setor) | `text` |
+| `sector` | setor: `name` único sem diferença de caixa (índice `sector_name_lower_uq` em `lower(name)`), `active` | `uuid` |
+| `user` | pessoa (Better Auth) + `role` (`admin`/`operator`), `sector_id` (FK `sector`, `restrict`), `deactivated_at`; checks `user_operator_needs_sector` (operador exige setor) e `user_role_valid` (papel só `admin` ou `operator`) | `text` |
 | `session`, `account`, `verification`, `passkey`, `rate_limit` | tabelas do Better Auth, cópia fiel da CLI 1.7.27 | `text` |
-| `invite` | convite: `token_hash` único, `role`, `sector_id`, `invitee_label`, `invited_by`, `expires_at`, `used_at`, `used_by`, `cancelled_at`; check `invite_operator_needs_sector` | `uuid` |
+| `invite` | convite: `token_hash` único, `role`, `sector_id`, `invitee_label`, `invited_by`, `expires_at`, `used_at`, `used_by`, `cancelled_at`; checks `invite_operator_needs_sector` e `invite_role_valid` | `uuid` |
+| `shift` | turno de um setor: `name`, `starts_at` e `ends_at` (`time`; atravessar a meia-noite é permitido), `sort_order`, `active`; índice único `(sector_id, lower(name))`; check `shift_starts_ne_ends` | `uuid` |
+| `item` | item de um setor: `name`, `unit` (texto: a unidade da lista ou o "Outro" digitado), `kind` (`control` ou `stock`; check `item_kind_valid`), `sort_order`, `active`; índice único `(sector_id, lower(name))` | `uuid` |
+| `destination` | destino de solicitação, global: `name`, `active`; índice único `lower(name)` | `uuid` |
 
-As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do domínio (`sector`, `invite`) usam `timestamptz`. As demais entidades acima chegam nas Fases 2 a 4.
+As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do domínio (`sector`, `invite`, `shift`, `item`, `destination`) usam `timestamptz`.
+
+- **Horário de turno** é `time` (sem fuso: o relógio da parede do setor) e trafega no app como texto `"HH:mm"`; o banco devolve `"HH:mm:ss"`.
+- **Nome único sem diferença de caixa** vale por índice em `lower(name)`: global em `sector` e `destination`, por setor em `shift` e `item`. O domínio normaliza o nome (NFC, `trim`, espaços colapsados) antes de gravar.
+- **Nada se apaga:** o cadastro só desativa (`active = false`); as listas de escolha das fases seguintes usam só os ativos, e as FKs para `sector` são `restrict`.
+
+As demais entidades acima (passagem, valores por item, solicitações) chegam nas Fases 3 e 4.
 
 ## 7. Autenticação e autorização · 🟢 implementado na Fase 1 (Apple na Fase 6)
 
@@ -157,6 +166,15 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 - **Vínculo de contas desligado.** `account.accountLinking.disableImplicitLinking: true`: o e-mail de quem cadastrou por e-mail e senha não é verificado, e vincular login social pelo e-mail abriria tomada de conta. Quem criou conta por e-mail e tenta Google recebe `account_not_linked` ("Entre como da primeira vez").
 - **Erros do WebAuthn.** O cliente de passkey repassa o código do `@simplewebauthn/browser` (fechar o diálogo = `ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`); `passkeyErrorCode` (`src/components/auth/passkeyErrorCode.ts`) traduz para `AUTH_CANCELLED`/`REGISTRATION_CANCELLED`/`PREVIOUSLY_REGISTERED` antes do mapa de mensagens.
 
+### Como ficou implementado (Fase 2)
+
+- **Portão em três camadas.** (1) Toda página de `src/app/(app)/admin/**` chama `requireAdmin()` por um componente importado de `@/components/...` (guarda `appPagesAuth.test.ts`, mínimo de 9 páginas). (2) Toda Server Action exportada de `src/app/(app)/admin/**/actions.ts` chama `requireAdmin()` na primeira linha (guarda `actionsAuth.test.ts`; `actionsInventory.test.ts` fixa as 18 actions dos 5 arquivos). (3) O domínio (`src/features/admin/*`) não confia na tela e revalida a regra de negócio: setor ativo, autoedição e último administrador.
+- **Resultado tipado.** O domínio devolve `AdminResult` (`{ ok: true, … }` ou `{ ok: false, code, message, fieldErrors? }`) com mensagem pt-BR pronta, nunca texto do banco. `runAdminAction` faz Zod → domínio → `revalidatePath("/(app)/admin", "layout")` só em sucesso (com route group o caminho é o do arquivo); exceção inesperada vira `INTERNAL`, e `redirect`/`notFound` passam intactos (`unstable_rethrow`).
+- **Equipe.** `updatePerson` muda papel e setor juntos numa transação (operador exige setor ativo; admin grava `sector_id = null`). Nunca se desativa nem se rebaixa o **último administrador ativo**: dentro da transação, `SELECT … FOR UPDATE` nos administradores ativos serializa dois admins que se desativam ao mesmo tempo. Ninguém desativa nem rebaixa a **própria** conta (`SELF_CHANGE`). Desativar apaga as sessões da pessoa na mesma transação (P11). Mudar papel ou setor não encerra sessões: a sessão é lida fresca e vale na próxima requisição.
+- **Convites do admin.** `createTeamInvite` usa `createInvite` com `invitedBy` = admin atual e devolve o link **uma vez** (só o hash fica no banco; link perdido = cancelar e gerar outro). `cancelInvite` é um `UPDATE … WHERE` condicional: só cancela convite ainda pendente.
+- **Desativar setor.** Setor com pessoa ativa ou convite pendente (válido) **não** desativa (`SECTOR_IN_USE`, com as contagens). Turno, item e convite não nascem em setor inativo.
+- **Sem `layout.tsx` e sem `metadata` em `/admin`.** Um layout renderizaria a navegação do admin para o operador antes do `notFound()` da página, e o `<title>` revelaria a rota. Cada página tem o link "Voltar para Administração"; a sidebar já marca "Administração" ativa nas subrotas.
+
 ## 8. Dados pessoais (LGPD) · 🟢 baseline
 
 - O sistema guarda **nome e e-mail de funcionários**, **autoria de passagens** e **comentários**.
@@ -165,7 +183,7 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
   fixture — só dados fictícios.
 - **Sem upload de arquivos** no MVP (D10) — nenhum armazenamento de mídia.
 
-## 9. Rotas · 🟢 rotas da Fase 1 prontas (as seguintes entram a cada marco)
+## 9. Rotas · 🟢 rotas das Fases 1 e 2 prontas (as seguintes entram a cada marco)
 
 | Rota | O que é | Status |
 |---|---|---|
@@ -174,7 +192,12 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 | `/bem-vindo` | oferta de passkey logo depois do cadastro | ✅ Fase 1 |
 | `/` | Início: saudação (a passagem de turno entra na Fase 3) | ✅ Fase 1 |
 | `/conta` | passkeys (criar e remover) e "Sair" | ✅ Fase 1 |
-| `/admin` | Administração (placeholder até a Fase 2); operador vê "Página não encontrada" | ✅ Fase 1 |
+| `/admin` | Administração: cinco cartões (setores, turnos, itens, destinos, equipe) com as contagens de ativos e pendentes; operador vê "Página não encontrada" | ✅ Fase 2 |
+| `/admin/setores` | setores: criar, renomear, desativar e reativar (bloqueia com pessoas ou convites). Admin | ✅ Fase 2 |
+| `/admin/turnos` | turnos por setor (`?setor=`): horário que pode passar da meia-noite, aviso de sobreposição, ordem por botões. Admin | ✅ Fase 2 |
+| `/admin/itens` | itens por setor (`?setor=`): unidade por escolha com "Outro", tipo controle ou estoque, ordem por botões. Admin | ✅ Fase 2 |
+| `/admin/destinos` | destinos de solicitação (valem para todos os setores). Admin | ✅ Fase 2 |
+| `/admin/equipe` | pessoas (papel, setor, desativar) e convites (gerar, copiar ou compartilhar, cancelar); `?pagina=` pagina as pessoas e `?convites=` os convites pendentes. Admin | ✅ Fase 2 |
 | `/api/auth/[...all]` | handler do Better Auth. Pública | ✅ Fase 1 |
 | `/api/health` | `GET` — `select 1` dentro de transação; `200 {status:"ok"}` ou `503 {status:"error"}` sem detalhe (o erro vai só para o log). Pública | ✅ 2026-11-20 |
 
@@ -225,3 +248,11 @@ Rotas públicas: `/entrar`, `/convite/[token]`, `/api/auth/*` e `/api/health`. T
 - **Trade-offs aceitos:** (1) PGlite tem uma conexão só e serializa tudo, então os testes provam lógica, SQL e constraints, **não** corrida; a atomicidade vem do `UPDATE … RETURNING` e é revisada na forma da query. (2) Sem `cookieCache`: uma ida ao banco por requisição em troca de desativação imediata. (3) O E2E compila e sobe o app de produção (cerca de 1 min), por isso o rate limit está ligado (cadastro: 10 por 60 s por IP) e cada teste usa um IP próprio. (4) Apple fica para a Fase 6 (P6); Google sem credenciais (P10), então o login social não tem teste ao vivo (checklist manual da spec §12).
 - **Desvios e detalhes registrados:** (a) `/entrar` mostra o formulário de e-mail primeiro, e não a passkey como na spec §4.3: o autofill de passkey vive no campo de e-mail, então a passkey continua sendo a primeira oferta. (b) As tabelas do Better Auth usam `timestamp` sem fuso (fiel à CLI); o Drizzle grava `toISOString()` e lê como UTC, então não há deslocamento por fuso do processo. (c) `/admin` para operador responde 200 com "Página não encontrada" (streaming), não 404 de status. (d) `Db = PgDatabase<PgQueryResultHKT, Schema>`: a união `NodePgDatabase | PgliteDatabase` quebra `.returning({ … })`. (e) jsdom 28 (o 31 exige Node ≥ 22.22.2) e `package.json` com `"type": "module"`. (f) `check-types` = `next typegen && tsc --noEmit` e `.gitattributes` com LF.
 - **Verificado:** `check-types`, `lint`, `test`, `test:e2e` (7 passed) e `build` verdes.
+
+### 2026-11-21 — Fase 2: cadastros e equipe
+
+- **Decisão:** seis telas em `/admin` (visão geral, setores, turnos, itens, destinos, equipe). Regra de negócio em funções de domínio que recebem `db` e `now` e devolvem `AdminResult`; lógica pura (nome, horário, sobreposição, unidade, paginação, reordenação) em módulos sem I/O; Server Action fina por página (`requireAdmin` → `runAdminAction`). Nada se apaga (só desativa); nome único sem diferença de caixa por índice em `lower(name)`; turnos avisam sobreposição (inclusive à meia-noite) sem bloquear; ordem de turnos e itens por botões ↑ ↓; unidade do item por escolha com "Outro"; desativar setor com gente é bloqueado; equipe com papel, setor, desativação e convites com link. Migração `0002_fase2_cadastros` (tabelas `shift`, `item`, `destination`, índices `lower(name)`, CHECKs de papel, tipo e horário).
+- **Por quê:** a passagem de turno (Fase 3) precisa de setores, turnos e itens para escolher, e de um administrador que consiga gerir a equipe sem mexer no banco. Desativar em vez de apagar preserva o histórico das passagens futuras; bloquear a desativação de setor evita operador num setor inativo e convite órfão; o aviso (e não bloqueio) de sobreposição segue a spec §5.
+- **Trade-offs aceitos:** (1) PGlite não prova concorrência: o "último admin" (`FOR UPDATE`) e o nome repetido (índice único) são garantidos no SQL e provados em sequência. (2) Lista em linhas, não tabela, para funcionar no celular. (3) ↑ ↓ andam entre ativos e inativos; se incomodar na Fase 3, mover só entre ativos. (4) Mudar papel ou setor não encerra sessões (só desativar encerra). (5) A sobreposição de turnos lê até 200 turnos ativos do setor. (6) O ator não é revalidado dentro da transação: um admin desativado milissegundos antes ainda pode concluir uma ação em curso (limite aceito).
+- **Desvios e detalhes registrados:** (a) "mudar papel" e "mudar setor" viraram uma ação `updatePerson` ("Editar"): uma transação evita o estado "operador sem setor". (b) A linha da própria conta do admin não tem botões (botão que sempre falha é atrito); a regra continua no servidor. (c) Formulários controlados chamam a action com objeto tipado, em vez de `useActionState`, para a pessoa não perder o que digitou quando o servidor recusa. (d) O Drizzle 0.45 embrulha o erro do driver: SQLSTATE e nome do índice ficam em `error.cause`. (e) `time` volta como `"HH:mm:ss"`. (f) `db.select({ … })` sem `.from()` não executa nesta versão do Drizzle; a visão geral seleciona de uma tabela de uma linha (`values (1)`) com subconsultas `count(*)`. (g) Verificado no branch de dev do Neon: collation `C.UTF-8` e `lower('ÁGUA') = lower('água')`, então "Água" e "ÁGUA" colidem em produção como no PGlite.
+- **Verificado:** `check-types`, `lint`, `test`, `test:e2e` (13 passed) e `build` verdes. P11 e P18 resolvidas; P23 (editar o nome de uma pessoa) e P24 (ordem alfabética ignora acento) registradas.

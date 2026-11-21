@@ -36,6 +36,7 @@ export const user = pgTable(
   },
   (table) => [
     index("user_sector_id_idx").on(table.sectorId),
+    check("user_role_valid", sql`${table.role} in ('admin', 'operator')`),
     check(
       "user_operator_needs_sector",
       sql`${table.role} = 'admin' or ${table.sectorId} is not null`,

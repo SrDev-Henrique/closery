@@ -11,10 +11,11 @@
 
 ## ▸ Próximo passo
 
-- **2026-11-20 — Fases 0 e 1 concluídas. Próximo: plano de implementação da Fase 2 (Cadastros:
-  setores, turnos, itens, destinos, equipe)** com a skill `writing-plans`, a partir da spec §13
-  (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). O `/admin` já existe
-  como placeholder e recebe as telas; o convite de operador já exige setor (`sector`).
+- **2026-11-21 — Fases 0, 1 e 2 concluídas. Próximo: plano de implementação da Fase 3 (Passagem:
+  rascunho, entregar, receber, corrigir, histórico)** com a skill `writing-plans`, a partir da spec
+  §13 (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). Os cadastros que a
+  passagem usa (setores, turnos, itens, destinos) e a equipe já existem em `/admin`; falta a tela do
+  operador que os usa.
 - **Neon ligado** (P1 resolvida, 2026-11-20). P6/P7/P8 só travam Apple, Facebook e "esqueci a
   senha".
 
@@ -52,9 +53,21 @@
 - ✅ Testes: Vitest (node + dom) e E2E com 7 cenários (convite, usado, senha errada, operador sem Administração, passkey, desativado, redirecionamento). Verificado: `check-types`, `lint`, `test`, `test:e2e` (7 passed) e `build` verdes (2026-11-20)
 - ⬜ Login social ao vivo (checklist manual da spec §12): depende de P10 (Google) e P7 (Facebook); Apple na Fase 6 (P6)
 
+## Fase 2 — Cadastros · ✅
+
+- ✅ Schema: `shift`, `item`, `destination`, índices únicos em `lower(name)`, CHECKs de papel (P18), de tipo do item e de horário + migração `0002_fase2_cadastros` (2026-11-21)
+- ✅ Lógica pura e contrato das actions: nome, horário, sobreposição à meia-noite, unidade, paginação, reordenação, `AdminResult`, `runAdminAction` e os guardas `actionsAuth` e `actionsInventory` (2026-11-21)
+- ✅ Primitivos `toggle-group`, `native-select` e `dialog` com alvos de toque e "Fechar", e a UI compartilhada de `/admin` (2026-11-21)
+- ✅ Setores, destinos, turnos (aviso de sobreposição, ordem por botões) e itens (unidade por escolha com "Outro") (2026-11-21)
+- ✅ Equipe: papel e setor, desativar (derruba as sessões, P11), último admin protegido e convites com link para copiar ou compartilhar (2026-11-21)
+- ✅ Visão geral `/admin` com os cinco cartões e guarda de 9 páginas (2026-11-21)
+- ✅ P11 e P18 resolvidas; pendências novas P23 (editar o nome de uma pessoa) e P24 (ordem alfabética ignora acento) (2026-11-21)
+- ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 13 cenários (7 de acesso e 6 de cadastros). Verificado: `check-types`, `lint`, `test`, `test:e2e` (13 passed) e `build` verdes (2026-11-21)
+
 ## Histórico
 
 - **2026-11-20** — Projeto criado; contexto escrito; planilha analisada; brainstorm concluído
   (D1–D18) e spec escrita em `docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`.
 - **2026-11-20** — Fases 0 e 1 concluídas: fundação de testes (Vitest, PGlite, Testing Library, Playwright) e acesso por convite (Better Auth, papéis por setor, telas e shell). Plano em `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 - **2026-11-20** — Correções da revisão final: renovação da sessão (servidor lê sem refresh, `SessionKeepAlive` renova banco e cookie), limite de tentativas 30/10 com mensagem própria (`RATE_LIMITED`), link "Entrar" nos convites e no e-mail já cadastrado, testes de escalonamento, guarda de páginas `appPagesAuth.test.ts` (no lugar do `RequireUser`) e pendências P11–P22.
+- **2026-11-21** — Fase 2 concluída: cadastros e equipe em `/admin` (setores, turnos, itens, destinos, pessoas e convites), P11 e P18 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-2-cadastros.md`.

@@ -45,7 +45,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
 - **Usa:** tokens `primary`, `border`, `muted`, `ring`, `destructive`.
 - **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
-  toque (h-9 desktop, 44px no celular).
+  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24).
 
 ### Input
 - **Status:** ✏️ estendido
@@ -198,6 +198,31 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** tokens `primary`, `secondary`, `destructive`.
 - **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
 
+### Toggle / ToggleGroup
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/ui/toggle.tsx`, `src/components/ui/toggle-group.tsx`
+- **Propósito:** controle segmentado para um conjunto pequeno e fechado de respostas (papel, tipo do item).
+- **Como funciona:** `@base-ui/react/toggle-group`; `ToggleGroup` (`variant`, `size`, `spacing`) + `ToggleGroupItem`; o item marcado tem `aria-pressed="true"`. No uso do projeto: `variant="outline"`, `size="lg"`. Clicar no item já marcado **desmarca** (lista vazia em `onValueChange`): quem precisa de "nunca vazio" usa o `ChoiceGroup`.
+- **Atenção:** todo tamanho tem `h-9` / `min-w-9` no desktop e `max-md:h-11` / `max-md:min-w-11` no celular. Teste: `touchTargets.test.tsx`.
+- **Usa:** tokens `muted`, `input`, `ring`.
+- **Histórico:** 2026-11-21 — `shadcn add toggle-group` (traz `toggle`); alturas `h-8`/`h-7` viram `h-9 max-md:h-11` (P3).
+
+### NativeSelect
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/ui/native-select.tsx`
+- **Propósito:** escolha de um conjunto conhecido com o seletor do próprio aparelho.
+- **Como funciona:** `<select>` nativo num wrapper com ícone (`NativeSelect`, `NativeSelectOption`, `NativeSelectOptGroup`). `className` vai para o wrapper; as demais props (`id`, `value`, `onChange`, `aria-*`) vão para o `<select>`. Texto `text-base md:text-sm` (16px no celular, sem zoom do iOS); altura `h-9 max-md:h-11`.
+- **Usa:** tokens `input`, `ring`, `destructive`.
+- **Histórico:** 2026-11-21 — `shadcn add native-select`; altura `h-8` vira `h-9 max-md:h-11` e o texto ganha `text-base` (P3); removido o `data-[size=sm]:h-7` (venceria o `max-md:` por especificidade).
+
+### Dialog
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/ui/dialog.tsx`
+- **Propósito:** diálogo modal (editar um registro, confirmar uma ação sem volta fácil).
+- **Como funciona:** `@base-ui/react/dialog`; `Dialog`, `DialogTrigger`, `DialogContent` (botão `Fechar` `sr-only` com `size="icon-sm"`, 44px no celular; `showCloseButton={false}` o remove), `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` (`showCloseButton` acrescenta um "Fechar" `outline`), `DialogClose`. Gatilho por `render`: `<DialogTrigger render={<Button … />}>`. Foco entra no diálogo e volta ao gatilho; `Esc` fecha. Funciona no jsdom sem polyfill.
+- **Usa:** `Button`; tokens `popover`, `muted`.
+- **Histórico:** 2026-11-21 — `shadcn add dialog`; os dois "Close" viram "Fechar" (P12). O CLI sobrescreve `button.tsx` (pergunta mesmo com `--yes`): rode com `--overwrite` e depois `git checkout -- src/components/ui/button.tsx` (F2-24).
+
 ## 2. Componentes de aplicação — `src/components/<área>`
 
 ### AppSidebar
@@ -248,14 +273,20 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold).
 
 ### AdminOverview
-- **Status:** ✅ pronto (2026-11-20)
+- **Status:** ✏️ estendido (2026-11-21)
 - **Local:** `src/components/app-shell/AdminOverview.tsx`
-- **Propósito:** conteúdo provisório de `/admin` e portão de acesso.
-- **Como funciona:** Server Component assíncrono; `requireAdmin()` (operador cai em `notFound()`).
-  O título fica dentro do `<Suspense>` para o operador não ver "Administração" antes do 404, e a
-  página não exporta `metadata` (o `<title>` revelaria a rota; T12).
-- **Usa:** `requireAdmin`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Propósito:** visão geral de `/admin` (cartões dos cadastros) e portão de acesso.
+- **Como funciona:** Server Component assíncrono; `requireAdmin()` (operador cai em `notFound()`),
+  depois `getAdminOverviewCounts(db, new Date())` (um SELECT com subconsultas). Mostra o título
+  "Administração", o texto "Cadastros que a passagem de turno usa." e cinco cartões-link (Setores,
+  Turnos, Itens, Destinos, Equipe) com título, descrição e contagem (`{n} ativos`; Equipe:
+  `{n} pessoas ativas · {m} convites pendentes`), singular e plural por `pluralize`. Grade de uma
+  coluna no celular, duas em `sm` e três em `lg`; o cartão inteiro é o link (foco visível, hover
+  `bg-muted/50`). O título fica dentro do `<Suspense>` para o operador não ver "Administração"
+  antes do 404, e a página não exporta `metadata` (o `<title>` revelaria a rota; T12); enquanto
+  carrega, `page.tsx` mostra um esqueleto (título e cinco cartões).
+- **Usa:** `requireAdmin`, `getAdminOverviewCounts`, `pluralize`, `Card*`, `next/link`.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (placeholder). 2026-11-21 — Fase 2: cartões dos cinco cadastros e contagens.
 
 ### SessionKeepAlive
 - **Status:** ✅ pronto (2026-11-20)
@@ -337,6 +368,290 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   mostra o fallback.
 - **Usa:** `Button`, `FieldError`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### Cadastros do admin — `src/components/admin/*` (Fase 2)
+
+Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/destinos` e `/equipe`. "Server-safe" = sem `"use client"`. Antes de criar outro componente de lista ou formulário de cadastro, estenda estes.
+
+### AdminPageHeader
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/AdminPageHeader.tsx` (server-safe)
+- **Propósito:** cabeçalho de toda página de `/admin/**`: título, descrição e, nas subpáginas, o caminho de volta.
+- **Como funciona:** `<h1>` + texto; com `backHref="/admin"` mostra o link "Voltar para Administração" (`buttonVariants` ghost, ícone `ChevronLeft` `aria-hidden`). O `<h1>` fica dentro do `<Suspense>` da página (o operador não pode ver o título antes do `notFound()`).
+- **Usa:** `buttonVariants`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### AdminListRow
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/AdminListRow.tsx` (server-safe)
+- **Propósito:** linha de lista de cadastro (no lugar de tabela: funciona no celular).
+- **Como funciona:** `<li>` card com título, selos (`badges`), subtítulo, avisos (`notes`) e ações à direita (embaixo no celular). `inactive` esmaece o título (`text-muted-foreground`) e mostra o `InactiveBadge`.
+- **Usa:** `InactiveBadge`; tokens `card`, `border`, `muted-foreground`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### AdminListSkeleton
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/AdminListSkeleton.tsx` (server-safe)
+- **Propósito:** fallback de `<Suspense>` das listas do admin.
+- **Como funciona:** `<ul aria-busy="true" aria-label="Carregando">` com `rows` (padrão 4) `Skeleton h-16`.
+- **Usa:** `Skeleton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### EmptyState
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/EmptyState.tsx` (server-safe)
+- **Propósito:** lista vazia que explica o que é e oferece o próximo passo (ui-rules §3).
+- **Como funciona:** caixa tracejada com `<h2>`, descrição e, opcional, `action` como `<Link className={buttonVariants({ variant: "outline" })}>` (role link).
+- **Usa:** `buttonVariants`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### InactiveBadge
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/InactiveBadge.tsx` (server-safe)
+- **Propósito:** selo "Inativo" (nada se apaga; só desativa).
+- **Como funciona:** `<Badge variant="secondary">Inativo</Badge>`; sempre texto, nunca só cor.
+- **Usa:** `Badge`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### Pagination
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/Pagination.tsx` (server-safe)
+- **Propósito:** paginação das listas (toda lista é paginada).
+- **Como funciona:** `<nav aria-label="Paginação">` com "Anterior", "Página {n} de {m}" (`tabular-nums`) e "Próxima"; `param` (padrão `pagina`; `convites` na Equipe) e `params` preservam os demais parâmetros da URL via `buildPageHref`; página 1 remove o parâmetro. Na borda o botão é um `<span aria-disabled="true">` (não é link). Com `pageCount <= 1` renderiza `null`.
+- **Usa:** `buttonVariants`, `buildPageHref`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### SectorSwitcher
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/SectorSwitcher.tsx` (server-safe)
+- **Propósito:** escolher o setor das telas por setor (Turnos e Itens) pela URL (`?setor=<id>`).
+- **Como funciona:** `<nav aria-label="Setor">` com um link por setor ativo; o escolhido é `default` com `aria-current="page"`, os demais `outline`. Navegação real (link), então funciona sem JS e preserva o histórico.
+- **Usa:** `buttonVariants`, `next/link`, tipo `SectorChoice`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### MoveButtons
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/MoveButtons.tsx` (client)
+- **Propósito:** ordem de turnos e itens por botões ↑ ↓ (D-F2-3), sem arrastar.
+- **Como funciona:** dois botões `icon` (`ChevronUp`/`ChevronDown`) com `aria-label` "Subir {nome}"/"Descer {nome}" e tooltip "Subir"/"Descer"; desabilitados na borda (`canMoveUp`/`canMoveDown`) e enquanto `pending`.
+- **Usa:** `Button`, `Tooltip*`, `SortDirection`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### ChoiceGroup
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/ChoiceGroup.tsx` (client)
+- **Propósito:** escolha entre poucas opções (Papel: Operador | Administrador; Tipo do item: Controle | Estoque).
+- **Como funciona:** `<fieldset>` com `<legend>` + `ToggleGroup` único (`outline`, `lg`); **nunca fica sem seleção**: clicar no item escolhido é ignorado. Genérico no tipo do valor (sem `as`). `description` liga ao grupo por `aria-describedby`.
+- **Usa:** `FieldSet`, `FieldLegend`, `FieldDescription`, `ToggleGroup`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### SelectField
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/SelectField.tsx` (client)
+- **Propósito:** escolha de um conjunto maior (setor, unidade) com o seletor do aparelho.
+- **Como funciona:** `Field` + `FieldLabel htmlFor` + `NativeSelect` + `FieldDescription` + `FieldError` (`role="alert"`); `aria-invalid` e `aria-describedby` ligados (descrição e erro). `id` opcional (senão `useId`).
+- **Usa:** `Field*`, `NativeSelect`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### EditDialog
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/EditDialog.tsx` (client)
+- **Propósito:** "Editar" de uma linha em diálogo.
+- **Como funciona:** gatilho `<Button variant="outline" size="sm">Editar</Button>` com `aria-label` "Editar {nome}"; o diálogo tem título e o nome como descrição; `children(close)` recebe a função que fecha (o formulário a chama ao salvar). Fechar sem salvar descarta o digitado (o conteúdo desmonta). Foco entra no diálogo e volta ao gatilho; `Esc` fecha.
+- **Usa:** `Dialog*`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### ConfirmDialog
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/ConfirmDialog.tsx` (client)
+- **Propósito:** confirmar ação sem volta fácil (desativar pessoa, cancelar convite).
+- **Como funciona:** `trigger` é o elemento do gatilho (via `render`); botões `confirmLabel` (`destructive` opcional) e `cancelLabel` (padrão "Voltar"). Só fecha no **sucesso**: se `onConfirm` devolver falha ou lançar, mostra a mensagem (`FieldError`) dentro do diálogo e continua aberto; trava os botões e o `Esc` enquanto roda; reabrir limpa o erro. Sem botão X (os dois botões bastam).
+- **Usa:** `Dialog*`, `Button`, `FieldError`, `AdminResult`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### NameForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/NameForm.tsx` (client)
+- **Propósito:** criar ou renomear setor e destino (um único campo de nome).
+- **Como funciona:** controlado; rótulo "Nome do setor"/"Nome do destino"; valida no cliente com `validateName` (as mesmas mensagens do servidor); `onSubmit(nomeNormalizado)`. **Limpa só no sucesso** (criar: volta a vazio; editar: mantém o nome salvo) e chama `onDone`. Se o servidor recusar mostra `fieldErrors.name` (ou a mensagem geral) em `FieldError` ligado ao campo e **preserva o que foi digitado**; o erro some ao digitar; botão travado enquanto envia.
+- **Usa:** `Field*`, `Input`, `Button`, `useAdminAction`, `validateName`.
+- **Histórico:** 2026-11-21 — criado na Fase 2. Exceção documentada a "nunca em branco" (F2-9): o nome é a identidade do registro.
+
+### ActiveToggleButton
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/ActiveToggleButton.tsx` (client)
+- **Propósito:** "Desativar"/"Reativar" de uma linha de cadastro.
+- **Como funciona:** ativo = botão `outline` "Desativar"; inativo = `default` "Reativar"; `aria-label` "{ação} {nome}"; chama `onToggle(!active)`; toast `{Setor|Turno|Item|Destino} desativado.`/`reativado.` no sucesso, toast de erro com a mensagem do servidor na falha; travado enquanto roda.
+- **Usa:** `Button`, `useAdminAction`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### useAdminAction
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/useAdminAction.ts` (client)
+- **Propósito:** chamar uma Server Action de cadastro com `pending`, toasts e erro tratado.
+- **Como funciona:** `run(action, { success?, showError? })` devolve sempre um `AdminResult` (nunca lança): exceção vira `fail("INTERNAL", INTERNAL_ERROR_MESSAGE)`. `success` dispara `toast.success`; erro vira `toast.error(message)` a menos que `showError: false` (formulários mostram o erro inline).
+- **Usa:** `sonner`, `AdminResult`.
+- **Histórico:** 2026-11-21 — criado na Fase 2.
+
+### SectorsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/sectors/SectorsAdmin.tsx`
+- **Propósito:** conteúdo de `/admin/setores` (Server Component async).
+- **Como funciona:** `await requireAdmin()` primeiro (operador cai no `notFound()`), lê `?pagina=` e `listSectors` (contagens de pessoas ativas e convites pendentes por subconsulta no SQL), monta `AdminPageHeader` + cartão "Novo setor" + lista de `AdminListRow` (detalhe `{n} pessoas ativas · {m} convites pendentes`, selo "Inativo") + `Pagination`; vazio vira `EmptyState`. A página (`page.tsx`) só embrulha em `<Suspense>` com esqueleto, sem `metadata`.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Card*`, `pluralize`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### SectorCreateForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/sectors/SectorCreateForm.tsx`
+- **Propósito:** criar setor ("Criar setor").
+- **Como funciona:** `"use client"`; `NameForm` (entity "setor", nome começa vazio por ser a identidade do registro) → `createSectorAction`; toast "Setor criado."; erro de nome repetido inline (com o aviso "Ele está inativo: reative-o na lista." quando for o caso).
+- **Usa:** `NameForm`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### SectorRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/sectors/SectorRowActions.tsx`
+- **Propósito:** ações da linha de um setor: "Editar" e "Desativar"/"Reativar".
+- **Como funciona:** `"use client"`; `EditDialog` "Editar setor" com `NameForm` ("Salvar alterações", toast "Alterações salvas.", fecha ao salvar) e `ActiveToggleButton` → `setSectorActiveAction`. Desativar setor com pessoas ativas ou convites pendentes volta `SECTOR_IN_USE` e a mensagem com as contagens aparece em toast.
+- **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### DestinationsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/destinations/DestinationsAdmin.tsx`
+- **Propósito:** conteúdo de `/admin/destinos` (Server Component async).
+- **Como funciona:** igual a `SectorsAdmin`, sem contagens: `requireAdmin()` → `listDestinations` → cabeçalho + cartão "Novo destino" + lista + `Pagination`; vazio vira `EmptyState`.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Card*`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### DestinationCreateForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/destinations/DestinationCreateForm.tsx`
+- **Propósito:** criar destino ("Criar destino").
+- **Como funciona:** `"use client"`; `NameForm` (entity "destino") → `createDestinationAction`; toast "Destino criado.".
+- **Usa:** `NameForm`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### DestinationRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/destinations/DestinationRowActions.tsx`
+- **Propósito:** ações da linha de um destino: "Editar" e "Desativar"/"Reativar".
+- **Como funciona:** `"use client"`; `EditDialog` "Editar destino" com `NameForm` e `ActiveToggleButton` → `setDestinationActiveAction` (idempotente).
+- **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### ShiftsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/shifts/ShiftsAdmin.tsx`
+- **Propósito:** conteúdo da página `/admin/turnos`: cadastro e lista de turnos por setor.
+- **Como funciona:** Server Component async; chama `requireAdmin()`, lê `?setor=` e `?pagina=`, mostra o seletor de setor
+  (`SectorSwitcher`), o cartão "Novo turno" com os padrões de `getShiftFormDefaults` e a lista paginada. Cada linha mostra
+  nome, `{início}–{fim}` (`tabular-nums`), selo "Atravessa a meia-noite", o aviso persistente "Sobrepõe o turno …" (ícone de
+  alerta + texto) e "Inativo". Sem setor ativo, mostra o estado vazio com link "Ir para Setores". O formulário remonta (`key`)
+  a cada criação para trazer o próximo padrão.
+- **Usa:** `AdminPageHeader`, `SectorSwitcher`, `AdminListRow`, `EmptyState`, `Pagination`, `Card`, `Badge`, token `warning-foreground`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ShiftForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/shifts/ShiftForm.tsx`
+- **Propósito:** criar e editar turno (mesmo formulário).
+- **Como funciona:** client, controlado; `initial.id` presente = edição (`updateShiftAction`), ausente = criação
+  (`createShiftAction`). Valida com o mesmo schema Zod do servidor antes de enviar; erros por campo (`fieldErrors`) e erro geral
+  ficam inline e o digitado nunca se perde. `<Input type="time" step={60}>` (≥16px); dica fixa "Fim menor que o início atravessa
+  a meia-noite." e dica ao vivo "Atravessa a meia-noite.". Depois do sucesso: toast ("Turno criado." / "Alterações salvas.") e
+  um `toast.warning` por sobreposição (máximo 3).
+- **Usa:** `Field`, `Input`, `Button`, `useAdminAction`, `sonner`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ShiftRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/shifts/ShiftRowActions.tsx`
+- **Propósito:** ações de uma linha de turno.
+- **Como funciona:** client; `MoveButtons` (↑ ↓ pela posição absoluta no setor; sem toast no sucesso), `EditDialog` "Editar turno"
+  com `ShiftForm` e `ActiveToggleButton` (reativar mostra os avisos de sobreposição em toast).
+- **Usa:** `MoveButtons`, `EditDialog`, `ActiveToggleButton`, `ShiftForm`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ItemsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/items/ItemsAdmin.tsx`
+- **Propósito:** conteúdo da página `/admin/itens`: cadastro e lista de itens por setor.
+- **Como funciona:** Server Component async; chama `requireAdmin()`, lê `?setor=` e `?pagina=`, mostra o seletor de setor, o
+  cartão "Novo item" (padrões de `ITEM_FORM_DEFAULTS`) e a lista paginada. Cada linha mostra nome, unidade, selo do tipo
+  ("Controle"/"Estoque") e "Inativo". Sem setor ativo, mostra o estado vazio com link "Ir para Setores". O formulário remonta
+  (`key`) a cada criação para voltar limpo.
+- **Usa:** `AdminPageHeader`, `SectorSwitcher`, `AdminListRow`, `EmptyState`, `Pagination`, `Card`, `Badge`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ItemForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/items/ItemForm.tsx`
+- **Propósito:** criar e editar item (mesmo formulário).
+- **Como funciona:** client, controlado; `initial.id` presente = edição. "Unidade" é `SelectField` (unidade, rolo, par, pacote,
+  caixa, saco, metro, kg e "Outro…"); com "Outro…" aparece "Outra unidade" (texto livre, ≤ 20). "Tipo" é `ChoiceGroup`
+  (Controle | Estoque, nunca fica vazio) com a ajuda do tipo escolhido. Valida com o mesmo schema Zod do servidor; erros por
+  campo e erro geral ficam inline e o digitado nunca se perde.
+- **Usa:** `Field`, `Input`, `Button`, `SelectField`, `ChoiceGroup`, `useAdminAction`, `sonner`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### ItemRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/items/ItemRowActions.tsx`
+- **Propósito:** ações de uma linha de item.
+- **Como funciona:** client; `MoveButtons` (↑ ↓ pela posição absoluta no setor), `EditDialog` "Editar item" com `ItemForm`
+  (a unidade vem de `splitUnit`: fora da lista abre em "Outro…" com o texto) e `ActiveToggleButton`.
+- **Usa:** `MoveButtons`, `EditDialog`, `ActiveToggleButton`, `ItemForm`.
+- **Histórico:** 2026-11-21 — criado (Fase 2).
+
+### TeamAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/TeamAdmin.tsx` (+ `roleOptions.ts`: `ROLE_LABELS`, `ROLE_OPTIONS`)
+- **Propósito:** conteúdo de `/admin/equipe`: convidar, acompanhar convites pendentes e gerir as pessoas do sistema.
+- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`), `listPendingInvites` (`?convites=`) e `listActiveSectors`. Ordem na tela: `InviteForm`, "Convites pendentes" (só válidos, com `PendingInviteActions`) e "Pessoas". A própria conta mostra o selo "Você" e o texto de ajuda, **sem botões**; pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; duas `Pagination` independentes (cada uma preserva o parâmetro da outra); estados vazios.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `InviteForm`, `PendingInviteActions`, `PersonRowActions`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9, só Pessoas); Tarefa 10 acrescenta convites.
+
+### PersonForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/PersonForm.tsx`
+- **Propósito:** editar o papel e o setor de uma pessoa num só passo (diálogo "Editar pessoa").
+- **Como funciona:** `"use client"`; formulário controlado; `ChoiceGroup` "Papel" (Operador | Administrador) e `SelectField` "Setor" só para Operador (administrador mostra "Administradores veem todos os setores."); nunca em branco (setor atual ou o primeiro ativo); valida com o mesmo `updatePersonSchema` do servidor; erro de campo no campo, o resto no pé do formulário; trava o botão enquanto salva.
+- **Usa:** `ChoiceGroup`, `SelectField`, `useAdminAction`, `FieldError`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+
+### PersonRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/PersonRowActions.tsx`
+- **Propósito:** ações de uma linha de pessoa: editar, desativar (com confirmação) e reativar.
+- **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões.
+- **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `useAdminAction`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+
+### InviteForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/InviteForm.tsx`
+- **Propósito:** gerar convite de entrada (operador ou administrador) em `/admin/equipe`.
+- **Como funciona:** `"use client"`; cartão "Convidar pessoa"; formulário controlado e nunca em branco (papel Operador, setor = primeiro ativo, nome de referência opcional); `ChoiceGroup` "Papel", `SelectField` "Setor" só para Operador; valida com `createInviteSchema`; erro de campo no campo, o resto no pé; sem setor ativo e papel Operador mostra o aviso e o link "Ir para Setores" no lugar do botão; no sucesso troca o formulário por `InviteLinkCard`; "Gerar outro convite" limpa só o nome (mantém papel e setor).
+- **Usa:** `Card`, `Field*`, `Input`, `ChoiceGroup`, `SelectField`, `InviteLinkCard`, `useAdminAction`, `buttonVariants`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+
+### InviteLinkCard
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/InviteLinkCard.tsx`
+- **Propósito:** mostrar o link do convite **uma vez** (só o hash fica no banco) para copiar ou compartilhar.
+- **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`.
+- **Usa:** `Button`, `Input`, `sonner`, `formatDateTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+
+### PendingInviteActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/PendingInviteActions.tsx`
+- **Propósito:** cancelar um convite pendente na lista da Equipe.
+- **Como funciona:** `"use client"`; botão "Cancelar convite" (`aria-label` `Cancelar convite {nome ou "sem nome"}`) abre `ConfirmDialog` ("O link deixa de funcionar. Não dá para desfazer."); sucesso = toast "Convite cancelado." e diálogo fechado; recusa (convite que já não está pendente) aparece no diálogo, que fica aberto.
+- **Usa:** `ConfirmDialog`, `useAdminAction`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
