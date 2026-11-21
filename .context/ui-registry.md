@@ -45,7 +45,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
 - **Usa:** tokens `primary`, `border`, `muted`, `ring`, `destructive`.
 - **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
-  toque (h-9 desktop, 44px no celular).
+  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24).
 
 ### Input
 - **Status:** ✏️ estendido
@@ -197,6 +197,31 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   aceita `render`.
 - **Usa:** tokens `primary`, `secondary`, `destructive`.
 - **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+### Toggle / ToggleGroup
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/ui/toggle.tsx`, `src/components/ui/toggle-group.tsx`
+- **Propósito:** controle segmentado para um conjunto pequeno e fechado de respostas (papel, tipo do item).
+- **Como funciona:** `@base-ui/react/toggle-group`; `ToggleGroup` (`variant`, `size`, `spacing`) + `ToggleGroupItem`; o item marcado tem `aria-pressed="true"`. No uso do projeto: `variant="outline"`, `size="lg"`. Clicar no item já marcado **desmarca** (lista vazia em `onValueChange`): quem precisa de "nunca vazio" usa o `ChoiceGroup`.
+- **Atenção:** todo tamanho tem `h-9` / `min-w-9` no desktop e `max-md:h-11` / `max-md:min-w-11` no celular. Teste: `touchTargets.test.tsx`.
+- **Usa:** tokens `muted`, `input`, `ring`.
+- **Histórico:** 2026-11-21 — `shadcn add toggle-group` (traz `toggle`); alturas `h-8`/`h-7` viram `h-9 max-md:h-11` (P3).
+
+### NativeSelect
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/ui/native-select.tsx`
+- **Propósito:** escolha de um conjunto conhecido com o seletor do próprio aparelho.
+- **Como funciona:** `<select>` nativo num wrapper com ícone (`NativeSelect`, `NativeSelectOption`, `NativeSelectOptGroup`). `className` vai para o wrapper; as demais props (`id`, `value`, `onChange`, `aria-*`) vão para o `<select>`. Texto `text-base md:text-sm` (16px no celular, sem zoom do iOS); altura `h-9 max-md:h-11`.
+- **Usa:** tokens `input`, `ring`, `destructive`.
+- **Histórico:** 2026-11-21 — `shadcn add native-select`; altura `h-8` vira `h-9 max-md:h-11` e o texto ganha `text-base` (P3); removido o `data-[size=sm]:h-7` (venceria o `max-md:` por especificidade).
+
+### Dialog
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/ui/dialog.tsx`
+- **Propósito:** diálogo modal (editar um registro, confirmar uma ação sem volta fácil).
+- **Como funciona:** `@base-ui/react/dialog`; `Dialog`, `DialogTrigger`, `DialogContent` (botão `Fechar` `sr-only` com `size="icon-sm"`, 44px no celular; `showCloseButton={false}` o remove), `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` (`showCloseButton` acrescenta um "Fechar" `outline`), `DialogClose`. Gatilho por `render`: `<DialogTrigger render={<Button … />}>`. Foco entra no diálogo e volta ao gatilho; `Esc` fecha. Funciona no jsdom sem polyfill.
+- **Usa:** `Button`; tokens `popover`, `muted`.
+- **Histórico:** 2026-11-21 — `shadcn add dialog`; os dois "Close" viram "Fechar" (P12). O CLI sobrescreve `button.tsx` (pergunta mesmo com `--yes`): rode com `--overwrite` e depois `git checkout -- src/components/ui/button.tsx` (F2-24).
 
 ## 2. Componentes de aplicação — `src/components/<área>`
 

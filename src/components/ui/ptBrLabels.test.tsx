@@ -2,6 +2,13 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -37,6 +44,35 @@ describe("rótulos acessíveis dos primitivos em pt-BR", () => {
           <SheetDescription>Descrição</SheetDescription>
         </SheetContent>
       </Sheet>,
+    );
+
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument();
+    expect(screen.queryByText("Close")).not.toBeInTheDocument();
+  });
+
+  it("o botão de fechar do Dialog se chama 'Fechar'", () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Título</DialogTitle>
+          <DialogDescription>Descrição</DialogDescription>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument();
+    expect(screen.queryByText("Close")).not.toBeInTheDocument();
+  });
+
+  it("o botão de fechar do rodapé do Dialog se chama 'Fechar'", () => {
+    render(
+      <Dialog open>
+        <DialogContent showCloseButton={false}>
+          <DialogTitle>Título</DialogTitle>
+          <DialogDescription>Descrição</DialogDescription>
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>,
     );
 
     expect(screen.getByRole("button", { name: "Fechar" })).toBeInTheDocument();
