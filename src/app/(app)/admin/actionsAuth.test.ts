@@ -1,10 +1,17 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import {
+  actionsMissingGuard,
+  listSourceFiles,
+  startsWithUseServer,
+} from "../../../../test/actionGuards";
+
 // Guarda das Server Actions do admin. Uma Server Action é um endpoint público:
 // pode ser chamada de qualquer rota, então cada função exportada autoriza por
-// conta própria, com `requireAdmin()` como PRIMEIRA instrução (F2-7).
+// conta própria, com `requireAdmin()` como PRIMEIRA instrução (F2-7). A
+// varredura vive em test/actionGuards.ts, compartilhada com src/app/actionsGuards.test.ts.
 
 const ROOT = process.cwd();
 const ADMIN_DIR = join(ROOT, "src", "app", "(app)", "admin");
@@ -13,92 +20,13 @@ const ADMIN_DIR = join(ROOT, "src", "app", "(app)", "admin");
 // destinos, turnos, itens, equipe).
 const MIN_ACTION_FILES = 5;
 
-const FIRST_STATEMENT_GUARD =
-  /^\s*(?:const\s+[\w$]+\s*=\s*)?await\s+requireAdmin\s*\(\s*\)/;
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
-}
-
-// Índice do `}` que fecha o `{` em `open` (ignora chaves dentro de strings).
-function matchingBrace(source: string, open: number): number {
-  let depth = 0;
-  let quote: string | null = null;
-  for (let i = open; i < source.length; i++) {
-    const char = source.charAt(i);
-    if (quote) {
-      if (char === "\\") i++;
-      else if (char === quote) quote = null;
-      continue;
-    }
-    if (char === '"' || char === "'" || char === "`") quote = char;
-    else if (char === "{") depth++;
-    else if (char === "}" && --depth === 0) return i;
-  }
-  return -1;
-}
-
-// Índice do `{` que abre o corpo da função: depois dos parênteses dos
-// parâmetros, pulando chaves de tipos como `Promise<AdminResult<{ id: string }>>`.
-function bodyStart(source: string, afterName: number): number {
-  const paramsOpen = source.indexOf("(", afterName);
-  if (paramsOpen === -1) return -1;
-  let depth = 0;
-  let i = paramsOpen;
-  for (; i < source.length; i++) {
-    const char = source.charAt(i);
-    if (char === "(") depth++;
-    else if (char === ")" && --depth === 0) break;
-  }
-  let angle = 0;
-  for (i += 1; i < source.length; i++) {
-    const char = source.charAt(i);
-    if (char === "<") angle++;
-    else if (char === ">" && source.charAt(i - 1) !== "=") angle--;
-    else if (char === "{" && angle === 0) return i;
-  }
-  return -1;
-}
-
-/**
- * Nomes dos exports de um actions.ts que não cumprem o contrato: função
- * `export async function` cujo corpo não começa com `requireAdmin()` (comentários
- * removidos), ou qualquer outro export em tempo de execução (`const`,
- * `function` síncrona, `default`, `{ … }`). [] = tudo certo.
- */
+/** Nomes dos exports que não cumprem o contrato do admin ([] = tudo certo). */
 export function actionsMissingAdminGuard(source: string): string[] {
-  const code = stripComments(source);
-  const offenders: string[] = [];
-
-  for (const match of code.matchAll(
-    /^export\s+(async\s+function\s+([\w$]+)|default\b|(?:const|let|var|function|class)\s+([\w$]+)|\{|\*)/gm,
-  )) {
-    const name = match[2] ?? match[3] ?? match[1] ?? "export";
-    if (match[2] === undefined) {
-      offenders.push(name.trim());
-      continue;
-    }
-    const start = match.index + match[0].length;
-    const open = bodyStart(code, start);
-    const close = open === -1 ? -1 : matchingBrace(code, open);
-    const body = open === -1 || close === -1 ? "" : code.slice(open + 1, close);
-    if (!FIRST_STATEMENT_GUARD.test(body)) offenders.push(match[2]);
-  }
-  return offenders;
-}
-
-function startsWithUseServer(source: string): boolean {
-  return /^\s*(["'])use server\1/.test(stripComments(source));
+  return actionsMissingGuard(source, ["requireAdmin"]);
 }
 
 function findActionFiles(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) return findActionFiles(full);
-    return name === "actions.ts" ? [full] : [];
-  });
+  return listSourceFiles(dir, (name) => name === "actions.ts");
 }
 
 describe("todo actions.ts do admin chama requireAdmin() primeiro", () => {
