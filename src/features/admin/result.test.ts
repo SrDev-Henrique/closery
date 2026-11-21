@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  type AdminErrorCode,
   fail,
   INTERNAL_ERROR_MESSAGE,
   INVALID_INPUT_MESSAGE,
@@ -55,5 +56,27 @@ describe("mensagens fixas", () => {
       "Não foi possível concluir. Tente de novo.",
     );
     expect(INVALID_INPUT_MESSAGE).toBe("Confira os campos e tente de novo.");
+  });
+});
+
+describe("códigos da passagem (aditivos)", () => {
+  it("fail aceita os 10 códigos novos e os da Fase 2 continuam valendo", () => {
+    const codes: AdminErrorCode[] = [
+      "SHIFT_INACTIVE",
+      "DATE_OUT_OF_RANGE",
+      "FORBIDDEN",
+      "HANDOVER_LOCKED",
+      "ALREADY_DELIVERED",
+      "NOT_DELIVERED",
+      "ALREADY_CONFIRMED",
+      "OWN_HANDOVER",
+      "NOT_CONFIRMED",
+      "NO_CHANGES",
+      "NOT_FOUND",
+      "INTERNAL",
+    ];
+    for (const code of codes) {
+      expect(fail(code, "x")).toEqual({ ok: false, code, message: "x" });
+    }
   });
 });
