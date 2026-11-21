@@ -599,6 +599,30 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Usa:** `MoveButtons`, `EditDialog`, `ActiveToggleButton`, `ItemForm`.
 - **Histórico:** 2026-11-21 — criado (Fase 2).
 
+### TeamAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/TeamAdmin.tsx` (+ `roleOptions.ts`: `ROLE_LABELS`, `ROLE_OPTIONS`)
+- **Propósito:** conteúdo de `/admin/equipe`: as pessoas do sistema com papel, setor e situação.
+- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`) e `listActiveSectors`. A própria conta mostra o selo "Você" e o texto de ajuda, **sem botões**; pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; estado vazio e `Pagination`.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `PersonRowActions`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+
+### PersonForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/PersonForm.tsx`
+- **Propósito:** editar o papel e o setor de uma pessoa num só passo (diálogo "Editar pessoa").
+- **Como funciona:** `"use client"`; formulário controlado; `ChoiceGroup` "Papel" (Operador | Administrador) e `SelectField` "Setor" só para Operador (administrador mostra "Administradores veem todos os setores."); nunca em branco (setor atual ou o primeiro ativo); valida com o mesmo `updatePersonSchema` do servidor; erro de campo no campo, o resto no pé do formulário; trava o botão enquanto salva.
+- **Usa:** `ChoiceGroup`, `SelectField`, `useAdminAction`, `FieldError`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+
+### PersonRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/team/PersonRowActions.tsx`
+- **Propósito:** ações de uma linha de pessoa: editar, desativar (com confirmação) e reativar.
+- **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões.
+- **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `useAdminAction`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
