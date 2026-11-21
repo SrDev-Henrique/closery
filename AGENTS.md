@@ -43,6 +43,9 @@ Leia nesta ordem antes de qualquer implementação:
 | `bun run db:generate` → revisar → `bun run db:migrate` | migração versionada do Drizzle |
 | `bun run admin:invite` | gera o link de convite do primeiro administrador |
 
+O CI (`.github/workflows/ci.yml`) roda `check-types`, `lint`, `test` e `test:e2e` em todo PR e
+push na `main`; PR só entra com o CI verde (`library-docs.md §11`).
+
 ## Regras que nunca mudam
 
 - **Regra de ouro: se aumenta o atrito de quem passa ou recebe o turno, está errado.** A

@@ -166,6 +166,25 @@
 - Cada teste cria os próprios dados (e-mail único, nomes fictícios). Login social ao vivo é checklist manual.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
+## 11. GitHub Actions (CI)
+
+- **Arquivo:** `.github/workflows/ci.yml`. Roda em todo `pull_request` e em `push` na `main`;
+  `permissions: contents: read`; um push novo cancela a execução anterior do mesmo ref.
+- **Dois jobs em paralelo (Ubuntu):** `checks` (`check-types`, `lint`, `test`) e `e2e`
+  (`playwright install --with-deps chromium` + `test:e2e`, que já inclui o `next build`). O
+  relatório do Playwright vira artefato por 7 dias.
+- **Versões:** Bun `1.3.3` (igual ao `packageManager`) e Node 22 (Vitest 5 exige ≥ 22.12).
+  Ações do GitHub pela tag de major (`checkout@v7`, `setup-node@v7`, `cache@v6`,
+  `upload-artifact@v7`); ação de terceiro (`oven-sh/setup-bun`) **fixada por SHA de commit**.
+  Ao atualizar, troque o SHA e o comentário da versão juntos.
+- **Sem segredos.** O CI não usa o Neon nem credencial nenhuma: os testes usam PGlite e o E2E usa o
+  `env` do `playwright.config.ts`. Nunca adicione `DATABASE_URL` real como secret do CI para
+  testes.
+- **Cache:** `~/.bun/install/cache` e `~/.cache/ms-playwright` pela hash do `bun.lock`;
+  `.next/cache` pela hash de `bun.lock` + `src/**` + `next.config.ts`.
+- **Linux pega o que o Windows esconde:** caminho de import com caixa errada passa no Windows e
+  quebra no CI. Se o CI falhar e local passar, desconfie primeiro disso.
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.

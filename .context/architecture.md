@@ -36,6 +36,7 @@ Princípios estruturais:
 | Validação | **Zod 4** (env de acesso, contratos das Server Actions) | 4.x |
 | Testes (unidade, integração, componente) | **Vitest** (projects `node` e `dom`) + jsdom + Testing Library + **PGlite** (Postgres em processo, com as migrações reais) | Vitest 5.1.1 · jsdom 28 (sem `matchMedia`: polyfill em `test/setup-dom.ts`) · Testing Library react 16.3 · PGlite 0.5.17 |
 | Testes E2E | **Playwright** (Chromium) + PGlite servido por **pglite-socket** | Playwright 1.65.1 · pglite-socket 0.2.20 |
+| CI | **GitHub Actions** (`.github/workflows/ci.yml`): tipos, lint, Vitest e E2E em todo PR e push na `main` | Ubuntu · Bun 1.3.3 · Node 22 |
 | Auth | **Better Auth** (adapter Drizzle) + plugin **passkey** | better-auth 1.7.27 · @better-auth/passkey 1.7.27 |
 | Hospedagem | *🟡 provável Vercel (par natural de Next + Neon) — confirmar* | — |
 
