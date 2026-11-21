@@ -202,7 +202,7 @@
 
 #### P31 — Higiene de testes e refatorações pequenas da Fase 2 ⚪
 **Estado:** Aberto, não triado
-**Arquivos:** `src/db/migrations.test.ts` (harness) · testes de CHECK de papel · `sqlState` · `ConfirmDialog` · `nameTakenFailure` · `PageSkeleton` · limite de toasts · `e2e/cadastros.spec.ts`
+**Arquivos:** `src/db/schema/migration0002.test.ts` (harness) · `src/db/schema/sectors.test.ts` (`sqlState`) · testes de CHECK de papel · `ConfirmDialog` · `nameTakenFailure` · `PageSkeleton` · limite de toasts · `e2e/cadastros.spec.ts`
 **Impacto:** o comentário do harness de migração afirma paridade com `db:migrate`, que na prática roda tudo numa transação; falta o caso de papel desconhecido em `invite`; os testes de CHECK não iteram `ROLES`; os helpers `sqlState` deveriam ser `sqlErrorOf`; `ConfirmDialog` não reaproveita `useAdminAction`; `nameTakenFailure` e `PageSkeleton` estão duplicados; o limite de toasts está duplicado; os helpers do E2E se repetem.
 **Correção:** — (opção: um commit de refatoração separado, com testes verdes antes e depois, nunca junto de feature)
 **Registrado em:** 2026-11-21
@@ -210,7 +210,7 @@
 #### P32 — Mensagens no feminino e select vazio sem setor ativo ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/components/admin/ActiveToggleButton.tsx` · `src/components/admin/team/PersonForm.tsx`
-**Impacto:** `ActiveToggleButton` usa mensagens no masculino também para entidades femininas (ex.: setor desativado/reativado); com nenhum setor ativo o select de setor do operador aparece vazio.
+**Impacto:** `ActiveToggleButton` fixa o masculino (`${entity} desativado/reativado`): serve para Setor, Turno, Item e Destino, mas erra a concordância com uma entidade feminina futura (ex.: Pessoa → "Pessoa desativada."), então não pode ser reaproveitado na Equipe; com nenhum setor ativo o select de setor do operador aparece vazio.
 **Correção:** — (opção: gênero como parâmetro do botão; com 0 setores ativos, mostrar a explicação e o atalho para Setores como no `InviteForm`)
 **Registrado em:** 2026-11-21
 
