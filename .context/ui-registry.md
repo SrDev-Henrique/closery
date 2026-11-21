@@ -487,6 +487,54 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Usa:** `sonner`, `AdminResult`.
 - **Histórico:** 2026-11-21 — criado na Fase 2.
 
+### SectorsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/sectors/SectorsAdmin.tsx`
+- **Propósito:** conteúdo de `/admin/setores` (Server Component async).
+- **Como funciona:** `await requireAdmin()` primeiro (operador cai no `notFound()`), lê `?pagina=` e `listSectors` (contagens de pessoas ativas e convites pendentes por subconsulta no SQL), monta `AdminPageHeader` + cartão "Novo setor" + lista de `AdminListRow` (detalhe `{n} pessoas ativas · {m} convites pendentes`, selo "Inativo") + `Pagination`; vazio vira `EmptyState`. A página (`page.tsx`) só embrulha em `<Suspense>` com esqueleto, sem `metadata`.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Card*`, `pluralize`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### SectorCreateForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/sectors/SectorCreateForm.tsx`
+- **Propósito:** criar setor ("Criar setor").
+- **Como funciona:** `"use client"`; `NameForm` (entity "setor", nome começa vazio por ser a identidade do registro) → `createSectorAction`; toast "Setor criado."; erro de nome repetido inline (com o aviso "Ele está inativo: reative-o na lista." quando for o caso).
+- **Usa:** `NameForm`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### SectorRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/sectors/SectorRowActions.tsx`
+- **Propósito:** ações da linha de um setor: "Editar" e "Desativar"/"Reativar".
+- **Como funciona:** `"use client"`; `EditDialog` "Editar setor" com `NameForm` ("Salvar alterações", toast "Alterações salvas.", fecha ao salvar) e `ActiveToggleButton` → `setSectorActiveAction`. Desativar setor com pessoas ativas ou convites pendentes volta `SECTOR_IN_USE` e a mensagem com as contagens aparece em toast.
+- **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### DestinationsAdmin
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/destinations/DestinationsAdmin.tsx`
+- **Propósito:** conteúdo de `/admin/destinos` (Server Component async).
+- **Como funciona:** igual a `SectorsAdmin`, sem contagens: `requireAdmin()` → `listDestinations` → cabeçalho + cartão "Novo destino" + lista + `Pagination`; vazio vira `EmptyState`.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Card*`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### DestinationCreateForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/destinations/DestinationCreateForm.tsx`
+- **Propósito:** criar destino ("Criar destino").
+- **Como funciona:** `"use client"`; `NameForm` (entity "destino") → `createDestinationAction`; toast "Destino criado.".
+- **Usa:** `NameForm`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
+### DestinationRowActions
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/admin/destinations/DestinationRowActions.tsx`
+- **Propósito:** ações da linha de um destino: "Editar" e "Desativar"/"Reativar".
+- **Como funciona:** `"use client"`; `EditDialog` "Editar destino" com `NameForm` e `ActiveToggleButton` → `setDestinationActiveAction` (idempotente).
+- **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
