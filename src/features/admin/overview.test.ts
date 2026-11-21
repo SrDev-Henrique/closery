@@ -42,7 +42,7 @@ describe("getAdminOverviewCounts", () => {
     });
   });
 
-  it("conta só ativos: setor, turno, item, destino e pessoa inativos ficam de fora", async () => {
+  it("conta só ativos: setor, turno, item, destino e pessoa inativos ficam de fora, e turnos e itens de setor inativo também (P26)", async () => {
     const uld = await insertSector(db, "ULD");
     const closed = await insertSector(db, "Fechado", { active: false });
     await insertShift(db, { sectorId: uld.id });
@@ -51,6 +51,7 @@ describe("getAdminOverviewCounts", () => {
     await insertShift(db, { sectorId: closed.id });
     await insertItem(db, { sectorId: uld.id });
     await insertItem(db, { sectorId: uld.id, active: false });
+    await insertItem(db, { sectorId: closed.id });
     await insertDestination(db);
     await insertDestination(db);
     await insertDestination(db, { active: false });
@@ -64,7 +65,7 @@ describe("getAdminOverviewCounts", () => {
 
     expect(await getAdminOverviewCounts(db, NOW)).toEqual({
       sectors: 1,
-      shifts: 3,
+      shifts: 2,
       items: 1,
       destinations: 2,
       people: 2,
