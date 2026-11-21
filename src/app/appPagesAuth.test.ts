@@ -101,7 +101,10 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
     const routes = pages.map((file) =>
       relative(APP_GROUP, file).replaceAll("\\", "/"),
     );
-    for (const route of ["passagens/nova/page.tsx"]) {
+    for (const route of [
+      "passagens/nova/page.tsx",
+      "passagens/[id]/page.tsx",
+    ]) {
       expect(routes).toContain(route);
     }
   });

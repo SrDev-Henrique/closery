@@ -1,12 +1,14 @@
 "use server";
 
 import type { AdminResult } from "@/features/admin/result";
+import { type Confirmed, confirmHandover } from "@/features/handovers/confirm";
 import type { Delivered } from "@/features/handovers/deliver";
 import { deliverHandover } from "@/features/handovers/deliver";
 import type { SavedField } from "@/features/handovers/draft";
 import { saveHandoverField } from "@/features/handovers/draft";
 import { runHandoverAction } from "@/features/handovers/runHandoverAction";
 import {
+  confirmHandoverSchema,
   deliverHandoverSchema,
   saveFieldSchema,
 } from "@/features/handovers/schemas";
@@ -39,5 +41,18 @@ export async function deliverHandoverAction(
     revalidate: true,
     run: ({ db, now, actor: who, input: data }) =>
       deliverHandover(db, who, data, now),
+  });
+}
+
+export async function confirmHandoverAction(
+  input: unknown,
+): Promise<AdminResult<Confirmed>> {
+  const actor = await requireUser();
+  return runHandoverAction({
+    actor,
+    schema: confirmHandoverSchema,
+    input,
+    revalidate: true,
+    run: ({ db, now, actor, input }) => confirmHandover(db, actor, input, now),
   });
 }

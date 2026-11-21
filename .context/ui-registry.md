@@ -763,6 +763,38 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `HandoverForm`, `SectorPicker`, `EmptyState`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
 
+### SummaryItemList
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/SummaryItemList.tsx`
+- **Propósito:** lista de itens de uma seção do resumo da passagem (Controles ou Estoque).
+- **Como funciona:** server-safe; `<section aria-labelledby>` com `<h2>` e `<ul>`; cada linha mostra o nome, `{quantidade} {unidade}` à direita com `tabular-nums` (milhar em pt-BR) e a observação em `text-muted-foreground`; sem itens não escreve nada (nem o título).
+- **Usa:** tokens `border`, `muted-foreground`; `formatQuantity`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
+### CorrectionsTimeline
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/CorrectionsTimeline.tsx`
+- **Propósito:** mostrar as correções de uma passagem confirmada (D13) como linha do tempo.
+- **Como funciona:** server-safe; `<ol>` com uma entrada por campo corrigido: rótulo (`correctionFieldLabel`), `antigo → novo` (`(vazio)` para texto vazio), `Motivo: …` e `{nome} · {dd/mm/aaaa, HH:mm}`; ordem recebida (a consulta já ordena por data); sem correções não escreve nada.
+- **Usa:** tokens `border`, `muted-foreground`; `formatDateTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
+### ConfirmReceiptForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/ConfirmReceiptForm.tsx`
+- **Propósito:** confirmar o recebimento de uma passagem entregue, com observação opcional.
+- **Como funciona:** `"use client"`; formulário controlado: `Textarea` "Observação do recebimento (opcional)" (500 caracteres) e botão "Confirmar recebimento" (pendente: "Confirmando…", desabilitado, um envio só); valida com `confirmHandoverSchema` antes de chamar `confirmHandoverAction`; sucesso = toast "Recebimento confirmado." (a action revalida a página, que passa a mostrar a passagem confirmada); recusa aparece inline (no campo, se for da observação; senão abaixo dele) sem toast, e o que foi digitado fica.
+- **Usa:** `useAdminAction`, `Button`, `Field*`, `Textarea`, `sonner`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
+### HandoverDetail
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverDetail.tsx`
+- **Propósito:** resumo de `/passagens/[id]` na ordem do briefing (F3-10).
+- **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens".
+- **Usa:** `getHandoverSummary`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverStatusBadge`, `buttonVariants`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
