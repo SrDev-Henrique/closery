@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P37.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P44.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -73,6 +73,13 @@
 | P34 | "Sem passagem" usa os horários atuais do turno e some com o turno desativado | 🟡 | Aberto, não triado |
 | P35 | Cartão "Passagem para confirmar" não tem teto de idade | 🟡 | Aberto, não triado |
 | P36 | Dois operadores no mesmo rascunho: o último a salvar vence, sem aviso | 🟡 | Aberto, não triado |
+| P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Aberto, não triado |
+| P38 | Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface | ⚪ | Aberto, não triado |
+| P39 | Defesa em profundidade no banco da passagem | ⚪ | Aberto, não triado |
+| P40 | Higiene de refatoração da Fase 3 | ⚪ | Aberto, não triado |
+| P41 | Higiene de testes da Fase 3 | ⚪ | Aberto, não triado |
+| P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
+| P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
 
 ---
 
@@ -230,6 +237,55 @@
 **Arquivos:** `src/features/handovers/draft.ts` · `src/components/passagens/useHandoverAutosave.ts`
 **Impacto:** dois operadores digitando o mesmo campo do mesmo rascunho ao mesmo tempo: o último a salvar sobrescreve o outro por campo, sem aviso de conflito (sem tempo real, spec §6.1); "Último salvamento às HH:mm por {nome}" mostra quem mexeu por último.
 **Correção:** — (opção: só se o piloto mostrar perda: versão por campo com aviso "{nome} alterou este campo", ou tempo real)
+**Registrado em:** 2026-11-21
+
+#### P37 — Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/summary.ts` (`capabilities`) · `src/components/passagens/HandoverDetail.tsx`
+**Impacto:** `capabilities` ignora `sector.active`: num setor inativo o resumo mostra "Confirmar recebimento", "Corrigir" e "Corrigir com motivo", e todos devolvem `SECTOR_INACTIVE`; `?editar=1` volta ao resumo em silêncio. Sem risco de dados, só atrito.
+**Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
+**Registrado em:** 2026-11-21
+
+#### P38 — Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/shiftSuggestion.ts` (`resolveHandoverTarget`) · `src/components/passagens/HistoryRowItem.tsx` · `src/components/passagens/NewHandover.tsx`
+**Impacto:** um rascunho antigo continua editável e entregável no domínio (F3-8b), mas o histórico não oferece mais o link fora da janela e `/passagens/nova` cai no turno sugerido; só quem tem a URL exata chega nele.
+**Correção:** — (opção: abrir rascunhos antigos pelo id em `/passagens/{id}?editar=1`, ou expirá-los de propósito)
+**Registrado em:** 2026-11-21
+
+#### P39 — Defesa em profundidade no banco da passagem ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/handovers.ts` · `drizzle/0003_*.sql`
+**Impacto:** nenhum caminho do domínio mistura setores, mas o banco não impede: passagem, itens e correções não compartilham o setor por chave composta, e `confirmation_note` fora do CHECK permite nota solta em rascunho ou entregue (só a fixture impede).
+**Correção:** — (opção: migração aditiva com FKs compostas (setor) e `confirmation_note` no CHECK `state_consistent`)
+**Registrado em:** 2026-11-21
+
+#### P40 — Higiene de refatoração da Fase 3 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/migration0003.test.ts` e demais testes de migração · `src/features/handovers/*` (`firstValue`, `loaders.ts`, `creationRefusal`) · testes das guardas (`stripComments`, `findPages`) · `HandoverHeader.tsx` (rótulo "Setor")
+**Impacto:** helpers de migração duplicados entre testes; `firstValue` copiado 3 vezes; `stripComments`/`findPages` duplicados; a recusa de criação escrita 2 vezes; `loaders.ts` faz três trabalhos; a regra "awaiting" escrita 3 vezes (hoje equivalentes, sem teste de concordância); o rótulo "Setor" do cabeçalho não tem controle associado (ver P29).
+**Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
+**Registrado em:** 2026-11-21
+
+#### P41 — Higiene de testes da Fase 3 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/migration0003.test.ts` · `src/features/handovers/schemas.test.ts` · `src/features/handovers/history.test.ts` · `src/components/passagens/HandoverHistory.test.tsx`
+**Impacto:** o teste de FK-restrict do setor não isola a FK da passagem; faltam casos-limite de `correctHandoverSchema` e da correção no limite; o desempate de setor não tem teste; o teste de clamp de página é fraco.
+**Correção:** — (opção: reforçar cada um num commit só de testes)
+**Registrado em:** 2026-11-21
+
+#### P42 — Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/actionsGuards.test.ts` · `test/actionGuards.ts` · `src/app/(auth)/convite/[token]/actions.ts`
+**Impacto:** a varredura de exports proíbe um conjunto conhecido (lista negra) em vez de permitir só o esperado; a exceção do convite vale para o arquivo todo, então uma action nova ali escaparia da guarda de sessão.
+**Correção:** — (opção: allowlist por export, com a exceção só para a action de convite)
+**Registrado em:** 2026-11-21
+
+#### P43 — Limites conhecidos do rascunho: item inativo e preenchimento de zeros ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/draft.ts` · `src/features/handovers/formState.ts` · `src/components/passagens/HandoverFields.tsx`
+**Impacto:** a linha de um item desativado depois de salva no rascunho some do formulário mas é entregue com o valor; o preenchimento com zero na entrega não respeita o teto de 200 itens da lista.
+**Correção:** — (opção: aceitar no MVP; ou mostrar a linha inativa no rascunho e limitar itens por setor)
 **Registrado em:** 2026-11-21
 
 ## 2. Triado, plano pronto
