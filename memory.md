@@ -1,4 +1,4 @@
-# Memory — Brainstorm concluído; a spec espera revisão, depois vem o plano
+# Memory — Fases 0 e 1 concluídas; o próximo passo é o plano da Fase 2
 
 Last updated: 2026-11-20 (UTC-3)
 
@@ -6,41 +6,52 @@ Last updated: 2026-11-20 (UTC-3)
 
 ## Onde o projeto está
 
-**Fundação pronta e design fechado.** O app Next.js 16.4.6 compila e passa no lint; shadcn
-(`base-nova`, Base UI) e Drizzle + Neon instalados; `.context/` escrito no formato do klauve.
+**Fundação de testes e acesso prontos.** O app Next.js 16.4.6 tem testes automatizados de verdade
+(Vitest com PGlite e Testing Library; Playwright com banco efêmero via pglite-socket) e acesso completo: cadastro só
+por convite (e-mail e senha, Google e Facebook condicionais ao env), login com passkey, papéis
+admin/operador escopados por setor, telas `/entrar`, `/convite/[token]`, `/bem-vindo`, `/conta`,
+Início, `/admin` (placeholder) e o shell com sidebar.
 
-**O brainstorm terminou** com 18 decisões (`.context/build-plan.md §5`, D1–D18) e 6 seções de
-design aprovadas uma a uma. Tudo está consolidado na spec:
-`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`.
-
-Em uma frase: passagem de turno com rascunho compartilhado, entrega e confirmação de recebimento
-sem bloqueio; solicitações com quadro · lista · tabela e comentários (molde: ocorrências do
-klauve); dashboard semanal/mensal com `metric-card` e `spending-ring` do KokonutUI; acesso por
-Better Auth só com convite; papéis admin e operador escopados por setor.
+O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
+18 decisões em `.context/build-plan.md §5`) e o plano executado em
+`docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 
 ## O que está esperando
 
-- **Revisão da spec pelo dono.** Depois: plano de implementação (skill `writing-plans`), Fase 0.
-- ~~P1~~ **Neon ligado** (2026-11-20): `pg` + `attachDatabasePool`, `/api/health` verde.
-- **P6/P7/P8:** Apple Developer, app da Meta, provedor de e-mail — só travam esses três recursos.
+- **Plano da Fase 2 (skill `writing-plans`):** Cadastros — setores, turnos, itens, destinos de
+  solicitação, equipe. O `/admin` já existe como placeholder.
+- **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
+  **P6/P7/P8:** Apple Developer, app da Meta, provedor de e-mail — só travam Apple, Facebook e "esqueci a senha".
 - **Suposições a validar com o usuário final:** spec §15 (glossário, horários dos turnos, o que é
   solicitação, passagem feita no fim do turno, quem recebe).
-- Nada foi commitado além do commit inicial do `create-next-app` — o dono ainda não pediu commit.
+- **Remoto:** `origin` = GitHub (`main`, repositório **público**). Commit e push só com pedido do dono;
+  nunca `.env.local` nem segredo em commit.
 
 ## Coisas que vão te morder se ninguém avisar
 
-- **Driver é `pg` + `attachDatabasePool`** (D18 atualizada pela skill do Neon para Vercel), não
-  `neon-serverless`. Escrita multi-statement em `db.transaction()`; nada de `db.batch`.
-- **`.env.local` aponta para a branch de DESENVOLVIMENTO do Neon** (`ep-blue-voice-…`); as URLs
-  de produção estão comentadas no arquivo até irem para a Vercel. Channel binding ligado no pool.
-- **`.env.local` usa `DATABASE_URL` (direta) + `DATABASE_URL_POOLED`** — o contrário da convenção do
-  `neon env pull`. `src/db/databaseUrl.ts` aceita as duas. Sempre `sslmode=verify-full`.
-- **A CLI `neon` está com a sessão expirada** (`neon login` resolve). O plugin `neon-postgres` foi
-  instalado no nível do usuário (Claude Code, Codex, Cursor, VS Code) e aparece nas próximas sessões.
-- **Cache Components está ligado:** dado dinâmico por padrão, `"use cache"` é opt-in, acesso
-  dinâmico dentro de `<Suspense>`. Ver `library-docs.md §1`.
-- **É Base UI, não Radix:** `render`, não `asChild`. O `cn` vem do pacote `cn`.
-- **Componentes KokonutUI vêm com cor crua e em inglês** — adaptar na instalação
-  (`library-docs.md §6`).
+- **Testes:** `bun run test` (Vitest) e `bun run test:e2e` (Playwright). **Nunca `bun test`.** Node ≥ 22.12.
+- **PGlite não prova corrida:** uma conexão só, serializa tudo. Atomicidade vai no SQL (`UPDATE … RETURNING`).
+- **`next build` exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET`** (≥ 32 caracteres) no `.env.local` e
+  na Vercel; sem eles falha com `Failed to collect page data for /api/health`.
+- **O E2E roda o app em produção:** o rate limit do Better Auth está ligado (`/sign-up/email` 10 por
+  60 s e `/sign-in/email` 30 por 60 s, por IP); cada teste manda um `x-forwarded-for` próprio. O env do
+  `webServer` vence o `.env.local`, então o E2E nunca toca o Neon.
+- **Better Auth:** schema de auth escrito à mão (`src/db/schema/auth.ts`) com teste guarda; erro de
+  hook é sempre `APIError` com `code`; sem `cookieCache` e sem `nextCookies()`; cadastro e login pelo
+  `authClient` (HTTP). Nunca renderizar `error_description` da URL.
+- **Cache Components:** sessão (`getAuthz`) só dentro de `<Suspense>`, nunca em `"use cache"`.
+- **Base UI, não Radix:** `render`, não `asChild`; navegação com cara de botão é
+  `<Link className={buttonVariants()}>`, porque `Button render={<Link />}` vira `role="button"`.
+- **jsdom 28 + polyfill de `matchMedia`** (`test/setup-dom.ts`); `check-types` roda `next typegen` antes.
+- **Passkey cancelada** chega como `ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`: traduza com `passkeyErrorCode`.
+- **Passkey:** `rpID` vem de `BETTER_AUTH_URL`; passkey de `localhost` não vale em produção.
+- **Primeiro administrador:** `bun run admin:invite` imprime o link do convite.
+- **Driver é `pg` + `attachDatabasePool`** (D18), não `neon-serverless`. Escrita multi-statement em
+  `db.transaction()`; nada de `db.batch`.
+- **`.env.local` aponta para a branch de DESENVOLVIMENTO do Neon**; as URLs de
+  produção estão comentadas até irem para a Vercel. Usa `DATABASE_URL` (direta) + `DATABASE_URL_POOLED`
+  (o contrário da convenção do `neon env pull`); `src/db/databaseUrl.ts` aceita as duas. Sempre `sslmode=verify-full`.
+- **A CLI `neon` está com a sessão expirada** (`neon login` resolve).
+- **Componentes KokonutUI vêm com cor crua e em inglês** — adaptar na instalação (`library-docs.md §6`).
 - O Playwright MCP grava artefatos em `.playwright-mcp/` (ignorado no git).
 - **Nenhum dado real da planilha** (nomes das pessoas) entra em commit, seed ou teste.

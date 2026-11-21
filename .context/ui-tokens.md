@@ -39,14 +39,18 @@ Semânticos do shadcn, definidos em `:root` (claro) e `.dark` (escuro) no `globa
 | `muted` / `muted-foreground` | fundo discreto, texto auxiliar |
 | `accent` / `accent-foreground` | hover, realce |
 | `destructive` | erro, ação destrutiva |
+| `success` / `success-foreground` | estado ok (item conferido, solicitação atendida) — sempre com ícone + texto |
+| `warning` / `warning-foreground` | atenção (pendente, em andamento) — sempre com ícone + texto |
+| `info` / `info-foreground` | informação neutra (solicitação aberta) — sempre com ícone + texto |
 | `border` / `input` / `ring` | bordas, campos, foco |
 | `chart-1..4` | séries de gráfico — **vêm do klauve** (D16); a ordem é a ordem de uso. Máx. 4 séries |
 | `chart-5` | cinza do shadcn — só para "Outros", nunca série com identidade |
 | `sidebar-*` | navegação lateral |
 
-**A adicionar com a primeira tela que usar (D16, valores do klauve):** `success` / `success-foreground`,
-`warning` / `warning-foreground`, `info` / `info-foreground` — claro e escuro, expostos no
-`@theme inline`. Uso: estados de solicitação e de passagem, sempre com ícone + texto junto.
+**Existem desde 2026-11-20 (D16, valores do klauve; P4 resolvida):** `chart-1..4`, `success`,
+`warning`, `info` e os `-foreground`, claro e escuro, expostos no `@theme inline`
+(`bg-success text-success-foreground`). Uso: estados de solicitação e de passagem, sempre com
+ícone + texto junto.
 
 | Token | Claro | Escuro |
 |---|---|---|
@@ -58,8 +62,24 @@ Semânticos do shadcn, definidos em `:root` (claro) e `.dark` (escuro) no `globa
 | `warning` / `-foreground` | `#f5e0bc` / `#6a451b` | `#372d1b` / `#e4bb67` |
 | `info` / `-foreground` | `#cbe4f6` / `#1d4a72` | `#1b2a37` / `#74b1e7` |
 
-A validação da série `chart-1..4` no klauve foi medida contra as superfícies **do klauve**; aqui as
-superfícies são as do shadcn neutral (P9).
+**Guarda de paleta (P9, resolvida 2026-11-20):** `src/app/chartPalette.test.ts` lê o `globals.css`
+(hex e `oklch`) e reprova, nos dois temas, série fora da banda de lightness OKLCH 0,43–0,77, croma
+< 0,06, contraste < 3:1 sobre `--card`, ΔE2000 < 15 entre qualquer par (visão normal, deuteranopia,
+protanopia, tritanopia) e `-foreground` de status < 4,5:1 sobre o fundo do par. Medido contra os
+cards do shadcn neutral (`oklch(1 0 0)` claro, `oklch(0.205 0 0)` escuro):
+
+| | Claro | Escuro |
+|---|---|---|
+| contraste `chart-1..4` sobre o card | 7,42 · 3,71 · 7,57 · 3,74 | 3,95 · 8,07 · 3,90 · 7,61 |
+| ΔE2000 mínimo (normal / deuter. / protan. / tritan.) | 34,5 / 17,6 / 23,2 / 17,7 | 35,6 / 17,5 / 22,4 / 17,6 |
+| `success` / `warning` / `info` (`-foreground` sobre o fundo) | 7,48 · 6,56 · 7,02 | 7,51 · 7,47 · 6,41 |
+
+Mudou um valor de cor? Rode `bun run test -- src/app/chartPalette.test.ts`; piso que reprova se
+corrige no token, nunca no teste. `VITEST_PRINT_PALETTE=1` imprime a matriz.
+
+**Fora da série:** `chart-5` (cinza do shadcn, "Outros") **não** é medido pelo guarda. No tema
+escuro ele tem 1,19:1 sobre o card — some. Antes de qualquer gráfico usar uma fatia "Outros",
+escolher e medir um neutro que passe 3:1 sobre o card e ΔE ≥ 15 da série.
 
 ## 3. Raio
 

@@ -44,6 +44,7 @@
 - **Cache Components ligado** (`next.config.ts`): dado é **dinâmico por padrão**. Cache é opt-in
   com `"use cache"` + `cacheTag`/`cacheLife`. Acesso a dado dinâmico fica dentro de `<Suspense>`.
   Detalhes em `library-docs.md §1`.
+- **Portão de autenticação.** Toda página ou folha do grupo `(app)` que mostra ou lê dados chama `requireUser`/`requireAdmin` dentro de `<Suspense>` (o layout não protege a página: o Next roda a página mesmo que o layout troque o conteúdo, e o layout não re-renderiza na navegação no cliente); `src/app/appPagesAuth.test.ts` reprova página sem a chamada; toda Server Action e todo route handler autoriza por conta própria (`requireUser`/`requireAdmin` ou `getAuthz`, e `scopeToSector`/`canAccessSector`), porque podem ser chamados de qualquer rota e `/api` não passa pelo proxy.
 - Entry files de rota (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`) usam default export;
   o resto, named export.
 - Código de banco só em módulo servidor — `src/db` importa `server-only`.
@@ -109,9 +110,16 @@ apresentação e interação.
 
 Tudo que é construído ganha teste que roda no terminal e reporta pass/fail.
 
-- **Vitest** — lógica de domínio, schemas, queries de agregação, Server Actions.
-- **Vitest + Testing Library** — componentes (comportamento e estados, não implementação).
-- **Playwright** — E2E dos fluxos críticos: entregar um turno, receber/confirmar, ver o dashboard.
+- **Vitest** — `bun run test` (= `vitest run`; `bun run test:watch` enquanto desenvolve). Project `node`
+  (`*.test.ts`: domínio, schemas, queries de agregação, Server Actions, sempre com PGlite e as
+  migrações reais) e project `dom` (`*.test.tsx`: Testing Library — comportamento e estados, não
+  implementação). **Nunca `bun test`** (é o runner do Bun, não o Vitest).
+- **PGlite não prova concorrência** (uma conexão, tudo serializado): a atomicidade vai no SQL
+  (`UPDATE … RETURNING`) e o teste prova a invariante em sequência. Ver `library-docs.md §9`.
+- **Playwright** — `bun run test:e2e`: sobe PGlite (pglite-socket) + `next build` + `next start`
+  (cerca de 1 min) e cobre os fluxos críticos: acesso por convite, passkey, permissão por papel e,
+  nas próximas fases, entregar um turno, receber/confirmar e ver o dashboard. Rode antes de fechar
+  qualquer fase que mexa em rota, login ou permissão. Ver `library-docs.md §10`.
 - **Profundidade mínima por fluxo novo:** caminho feliz **+** entrada inválida **+** limites
   (vazio, `0`, máximo, texto longo/unicode, virada de dia no fuso) **+** permissão negada
   **+** corrida quando houver trava. **Teste que só cobre o caminho feliz não conta.**
