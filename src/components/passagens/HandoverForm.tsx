@@ -77,6 +77,7 @@ export function HandoverForm({
   const [values, setValues] = useState(() => initialValues(state));
   const [delivering, setDelivering] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [switching, setSwitching] = useState(false);
   const autosave = useHandoverAutosave({
     ref: state.ref,
     save: saveHandoverFieldAction,
@@ -123,7 +124,7 @@ export function HandoverForm({
   }
 
   async function deliver() {
-    if (delivering || pending) return;
+    if (delivering || pending || switching) return;
     setError(null);
     setDelivering(true);
     const failure = await submit();
@@ -147,6 +148,7 @@ export function HandoverForm({
           minDate={minDate}
           sectorParam={sectorParam}
           beforeNavigate={autosave.flush}
+          onPendingChange={setSwitching}
         />
       )}
 
@@ -156,6 +158,7 @@ export function HandoverForm({
         values={values}
         onChange={handleChange}
         onCommit={handleCommit}
+        disabled={switching}
         canManageCatalog={canManageCatalog}
         itemsHref={`/admin/itens?setor=${state.ref.sectorId}`}
       />
@@ -172,7 +175,7 @@ export function HandoverForm({
             <Button
               type="button"
               size="lg"
-              disabled={delivering || pending}
+              disabled={delivering || pending || switching}
               onClick={deliver}
             >
               {delivering || pending ? "Entregando…" : "Entregar turno"}

@@ -458,4 +458,33 @@ describe("HandoverForm", () => {
       );
     });
   });
+
+  describe("troca de data pendente", () => {
+    it("com a data alterada e sem blur, 'Entregar turno' fica travado e não entrega o dia antigo", () => {
+      renderForm();
+
+      fireEvent.change(screen.getByLabelText("Data"), {
+        target: { value: "2026-11-19" },
+      });
+
+      expect(deliverButton()).toBeDisabled();
+      fireEvent.click(deliverButton());
+      expect(mocks.deliver).not.toHaveBeenCalled();
+    });
+
+    it("com a data alterada, os campos ficam travados e nada é salvo no dia antigo", async () => {
+      renderForm();
+
+      fireEvent.change(screen.getByLabelText("Data"), {
+        target: { value: "2026-11-19" },
+      });
+
+      expect(screen.getByLabelText("Ocorrências do turno")).toBeDisabled();
+      await userEvent.type(
+        screen.getByLabelText("Ocorrências do turno"),
+        "Chuva",
+      );
+      expect(mocks.save).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HandoverHeader } from "./HandoverHeader";
 
@@ -178,5 +179,55 @@ describe("HandoverHeader", () => {
     await userEvent.selectOptions(screen.getByLabelText("Turno"), MANHA);
 
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  describe("escolha no seletor (sem blur)", () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it("uma única mudança navega uma vez depois do debounce", async () => {
+      setup();
+      fireEvent.change(screen.getByLabelText("Data"), {
+        target: { value: "2026-11-19" },
+      });
+      expect(mocks.push).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(mocks.push).toHaveBeenCalledTimes(1);
+      expect(mocks.push).toHaveBeenCalledWith(
+        `/passagens/nova?turno=${MANHA}&data=2026-11-19`,
+      );
+    });
+
+    it("digitar em sequência dentro do debounce navega só com o valor final", async () => {
+      setup();
+      const date = screen.getByLabelText("Data");
+      fireEvent.change(date, { target: { value: "2026-11-01" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      fireEvent.change(date, { target: { value: "2026-11-15" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+
+      expect(mocks.push).toHaveBeenCalledTimes(1);
+      expect(mocks.push).toHaveBeenCalledWith(
+        `/passagens/nova?turno=${MANHA}&data=2026-11-15`,
+      );
+    });
+
+    it("avisa o formulário que há troca pendente", async () => {
+      const onPendingChange = vi.fn();
+      setup({ onPendingChange });
+      fireEvent.change(screen.getByLabelText("Data"), {
+        target: { value: "2026-11-19" },
+      });
+
+      expect(onPendingChange).toHaveBeenLastCalledWith(true);
+    });
   });
 });
