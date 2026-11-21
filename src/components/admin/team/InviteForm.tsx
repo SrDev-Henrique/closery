@@ -26,6 +26,12 @@ import { ROLE_OPTIONS } from "./roleOptions";
 
 type CreatedInvite = { url: string; expiresAt: Date };
 
+const RENDERED_FIELDS = ["inviteeLabel", "sectorId"] as const;
+
+function hasRenderedFieldError(errors: FieldErrors | undefined): boolean {
+  return RENDERED_FIELDS.some((field) => Boolean(errors?.[field]));
+}
+
 export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
   const uid = useId();
   const { pending, run } = useAdminAction();
@@ -37,6 +43,11 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedInvite | null>(null);
 
+  // O setor guardado pode ter saído da lista (desativado, ou a lista chegou
+  // depois): o select mostra o primeiro, então é ele que vale e que se envia.
+  const effectiveSectorId = sectors.some((sector) => sector.id === sectorId)
+    ? sectorId
+    : (sectors[0]?.id ?? "");
   const needsSector = role === "operator";
   const noSector = needsSector && sectors.length === 0;
 
@@ -48,7 +59,8 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
     const values = {
       inviteeLabel: label,
       role,
-      sectorId: needsSector && sectorId !== "" ? sectorId : null,
+      sectorId:
+        needsSector && effectiveSectorId !== "" ? effectiveSectorId : null,
     };
     const parsed = createInviteSchema.safeParse(values);
     if (!parsed.success) {
@@ -66,7 +78,8 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
       return;
     }
     setFieldErrors(result.fieldErrors ?? {});
-    if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+    // Só some do pé se o erro caiu num campo que este formulário desenha.
+    if (!hasRenderedFieldError(result.fieldErrors)) {
       setFormError(result.message);
     }
   }
@@ -129,7 +142,7 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
               {needsSector && !noSector && (
                 <SelectField
                   label="Setor"
-                  value={sectorId}
+                  value={effectiveSectorId}
                   onValueChange={setSectorId}
                   options={sectors.map((sector) => ({
                     value: sector.id,

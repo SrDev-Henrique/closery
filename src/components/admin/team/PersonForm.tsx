@@ -62,7 +62,7 @@ export function PersonForm({
     }
     setFieldErrors(result.fieldErrors ?? {});
     // Erro de um campo já aparece no campo; o resto vai no pé do formulário.
-    if (!result.fieldErrors || Object.keys(result.fieldErrors).length === 0) {
+    if (!result.fieldErrors?.sectorId) {
       setFormError(result.message);
     }
   }

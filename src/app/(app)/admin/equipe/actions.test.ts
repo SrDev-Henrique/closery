@@ -96,6 +96,23 @@ describe("updatePersonAction", () => {
     expect(result).toMatchObject({ ok: false, code: "INVALID_INPUT" });
   });
 
+  it("actorId vindo do cliente não substitui o da sessão", async () => {
+    const { admin } = await setup();
+    const sector = await insertSector(db);
+
+    // Quem age é o admin da sessão; o cliente tenta se passar por outra conta.
+    const result = await updatePersonAction({
+      userId: admin.id,
+      role: "operator",
+      sectorId: sector.id,
+      actorId: "outra-conta",
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "SELF_CHANGE" });
+    const [row] = await db.select().from(user).where(eq(user.id, admin.id));
+    expect(row?.role).toBe("admin");
+  });
+
   it("admin muda o setor e a tela é revalidada", async () => {
     const { person } = await setup();
     const other = await insertSector(db);

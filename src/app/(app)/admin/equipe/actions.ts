@@ -25,7 +25,7 @@ export async function updatePersonAction(input: unknown): Promise<AdminResult> {
     schema: updatePersonSchema,
     input,
     run: ({ db, actor: current, input: data }) =>
-      updatePerson(db, { actorId: current.userId, ...data }),
+      updatePerson(db, { ...data, actorId: current.userId }),
   });
 }
 
@@ -38,7 +38,7 @@ export async function setPersonActiveAction(
     schema: setPersonActiveSchema,
     input,
     run: ({ db, now, actor: current, input: data }) =>
-      setPersonActive(db, { actorId: current.userId, ...data }, now),
+      setPersonActive(db, { ...data, actorId: current.userId }, now),
   });
 }
 

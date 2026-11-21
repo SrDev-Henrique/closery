@@ -193,6 +193,22 @@ describe("PersonForm", () => {
     expect(mocks.toastError).not.toHaveBeenCalled();
   });
 
+  it("erro do servidor em campo que o formulário não desenha aparece no pé", async () => {
+    mocks.updatePersonAction.mockResolvedValue(
+      fail("NOT_FOUND", "Pessoa não encontrada.", {
+        userId: "Pessoa não encontrada.",
+      }),
+    );
+    const { user, onDone } = setup();
+
+    await user.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Pessoa não encontrada.",
+    );
+    expect(onDone).not.toHaveBeenCalled();
+  });
+
   it("recusa sem campo (último admin) aparece no pé do formulário", async () => {
     mocks.updatePersonAction.mockResolvedValue(
       fail(

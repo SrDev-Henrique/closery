@@ -166,6 +166,66 @@ describe("InviteForm", () => {
     expect(mocks.toastError).not.toHaveBeenCalled();
   });
 
+  it("lista de setores trocada: mostra e envia o primeiro setor disponível", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<InviteForm sectors={[SECTOR_A, SECTOR_B]} />);
+    await user.selectOptions(screen.getByLabelText("Setor"), SECTOR_B.id);
+
+    rerender(<InviteForm sectors={[SECTOR_A]} />);
+
+    expect(screen.getByLabelText("Setor")).toHaveValue(SECTOR_A.id);
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+    await waitFor(() =>
+      expect(mocks.createInviteAction).toHaveBeenCalledWith({
+        inviteeLabel: "",
+        role: "operator",
+        sectorId: SECTOR_A.id,
+      }),
+    );
+  });
+
+  it("setor que só aparece depois do carregamento é enviado, não nulo", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<InviteForm sectors={[]} />);
+
+    rerender(<InviteForm sectors={[SECTOR_B]} />);
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+
+    await waitFor(() =>
+      expect(mocks.createInviteAction).toHaveBeenCalledWith({
+        inviteeLabel: "",
+        role: "operator",
+        sectorId: SECTOR_B.id,
+      }),
+    );
+  });
+
+  it("o link gerado sobrevive a um rerender com props novas (F2-20)", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<InviteForm sectors={[SECTOR_A, SECTOR_B]} />);
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+    expect(await screen.findByLabelText("Link do convite")).toHaveValue(LINK);
+
+    rerender(<InviteForm sectors={[SECTOR_B]} />);
+
+    expect(screen.getByLabelText("Link do convite")).toHaveValue(LINK);
+  });
+
+  it("erro do servidor em campo que o formulário não desenha aparece no pé", async () => {
+    mocks.createInviteAction.mockResolvedValue(
+      fail("INVALID_INPUT", "Convite recusado pelo servidor.", {
+        role: "Papel inválido.",
+      }),
+    );
+    const { user } = setup();
+
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Convite recusado pelo servidor.",
+    );
+  });
+
   it("erro inesperado vira a mensagem padrão no formulário", async () => {
     mocks.createInviteAction.mockRejectedValue(new Error("rede"));
     const { user } = setup();

@@ -316,6 +316,63 @@ describe("updatePerson", () => {
     expect((await readUser(me.id)).role).toBe("admin");
   });
 
+  it("rebaixar um admin já inativo não toca na regra do último admin e vale", async () => {
+    // Único admin ativo é o ator; o alvo está inativo: não conta como "ativo".
+    const actor = await insertUser(db, { role: "admin", sectorId: null });
+    const dormant = await insertUser(db, {
+      role: "admin",
+      sectorId: null,
+      deactivatedAt: NOW,
+    });
+    const setor = await insertSector(db);
+
+    const result = await updatePerson(db, {
+      actorId: actor.id,
+      userId: dormant.id,
+      role: "operator",
+      sectorId: setor.id,
+    });
+
+    expect(result).toEqual({ ok: true });
+    expect(await readUser(dormant.id)).toMatchObject({
+      role: "operator",
+      sectorId: setor.id,
+    });
+    expect((await readUser(actor.id)).role).toBe("admin");
+  });
+
+  it("operador desativado troca para setor ativo e, reativado, segue valendo", async () => {
+    const admin = await insertUser(db, { role: "admin", sectorId: null });
+    const oldSector = await insertSector(db, undefined, { active: false });
+    const newSector = await insertSector(db);
+    const person = await insertUser(db, {
+      role: "operator",
+      sectorId: oldSector.id,
+      deactivatedAt: NOW,
+    });
+
+    const edited = await updatePerson(db, {
+      actorId: admin.id,
+      userId: person.id,
+      role: "operator",
+      sectorId: newSector.id,
+    });
+    expect(edited).toEqual({ ok: true });
+    expect((await readUser(person.id)).deactivatedAt).not.toBeNull();
+
+    const reactivated = await setPersonActive(
+      db,
+      { actorId: admin.id, userId: person.id, active: true },
+      NOW,
+    );
+
+    expect(reactivated).toEqual({ ok: true });
+    expect(await readUser(person.id)).toMatchObject({
+      sectorId: newSector.id,
+      deactivatedAt: null,
+    });
+  });
+
   it("não rebaixa o último admin ativo (LAST_ADMIN), ainda que haja admin inativo", async () => {
     const lonely = await insertUser(db, { role: "admin", sectorId: null });
     await insertUser(db, {

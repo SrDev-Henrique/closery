@@ -79,6 +79,7 @@ async function lockActiveAdmins(
     .select({ id: user.id })
     .from(user)
     .where(and(eq(user.role, "admin"), isNull(user.deactivatedAt)))
+    .orderBy(asc(user.id))
     .for("update");
 }
 
