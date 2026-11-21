@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P25.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P33.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -61,6 +61,14 @@
 | P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Aberto, não triado |
 | P23 | Editar o nome de uma pessoa: falta em /admin/equipe e em /conta | 🟡 | Aberto, não triado |
 | P24 | Ordem alfabética das listas do admin ignora acento | 🟡 | Aberto, não triado |
+| P25 | Corrida entre cadastro por convite e desativação do setor | 🟡 | Aberto, não triado |
+| P26 | Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo | 🟡 | Aberto, não triado |
+| P27 | Guardas de teste aceitam menos do que deveriam | 🟡 | Aberto, não triado |
+| P28 | Formulários de criação perdem o texto digitado ao remontar | ⚪ | Aberto, não triado |
+| P29 | Acessibilidade da Equipe e da paginação | 🟡 | Aberto, não triado |
+| P30 | Regra de convite pendente duplicada em 6 lugares | 🟡 | Aberto, não triado |
+| P31 | Higiene de testes e refatorações pequenas da Fase 2 | ⚪ | Aberto, não triado |
+| P32 | Mensagens no feminino e select vazio sem setor ativo | ⚪ | Aberto, não triado |
 
 ---
 
@@ -148,6 +156,62 @@
 **Arquivos:** `src/features/admin/people.ts` · `src/features/admin/sectors.ts` · `src/features/admin/destinations.ts`
 **Impacto:** com collation `C.UTF-8`, `lower(name)` ordena por ponto de código: nomes com inicial acentuada (Á, É, Ó) vão para o fim das listas e da escolha de setor.
 **Correção:** — (opção: `ORDER BY name COLLATE "pt-BR-x-icu"` se o Neon tiver ICU, ou coluna normalizada sem acento)
+**Registrado em:** 2026-11-21
+
+#### P25 — Corrida entre cadastro por convite e desativação do setor 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/invites/inviteQueries.ts` (`consumeInvite`) · `src/features/admin/sectors.ts` (`setSectorActive`)
+**Impacto:** `consumeInvite` roda no hook `user.create.before`, fora do INSERT do usuário: há uma janela de milissegundos em que `setSectorActive(false)` vê 0 pessoas e 0 convites pendentes e o novo operador cai num setor inativo.
+**Correção:** — (opção: acrescentar `sector.active` ao WHERE de `consumeInvite` para convites de operador, falhando fechado; ou aceitar e registrar)
+**Registrado em:** 2026-11-21
+
+#### P26 — Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/overview.ts:39-40` · `src/app/(app)/admin/turnos` · `src/app/(app)/admin/itens`
+**Impacto:** as contagens do `/admin` incluem turnos e itens ativos de setores inativos, que `/admin/turnos` e `/admin/itens` não conseguem mostrar (o seletor lista só setores ativos). As listas de escolha da Fase 3 (passagem) também precisam filtrar `sector.active`.
+**Correção:** — (opção: juntar `sector` e filtrar `sector.active` nas contagens; registrar o filtro no plano da Fase 3)
+**Registrado em:** 2026-11-21
+
+#### P27 — Guardas de teste aceitam menos do que deveriam 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/appPagesAuth.test.ts:13` · teste de inventário das actions (`actionsAuth`)
+**Impacto:** a guarda de páginas aceita `requireUser` em páginas de `admin/` (basta `require(User|Admin)`), então uma página admin que só chamasse `requireUser` passaria; a guarda das actions só varre arquivos chamados `actions.ts`, e um `"use server"` em outro nome ou inline escaparia.
+**Correção:** — (opção: exigir `requireAdmin` para arquivos sob `admin/`; ampliar a varredura a qualquer `.ts/.tsx` com `"use server"` de arquivo ou inline, na primeira tarefa da Fase 3)
+**Registrado em:** 2026-11-21
+
+#### P28 — Formulários de criação perdem o texto digitado ao remontar ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/admin/shifts/ShiftsAdmin.tsx:79` · `src/components/admin/items/ItemsAdmin.tsx`
+**Impacto:** a `key` de remontagem do formulário de criar muda após ações não relacionadas (em Turnos a chave inclui os padrões, que mudam ao desativar, reativar ou mover; em Itens usa `page.total`) e zera o que a pessoa estava digitando. Baixa frequência.
+**Correção:** — (opção: chave só do que realmente exige reiniciar o formulário, ou reiniciar por evento de sucesso da própria criação)
+**Registrado em:** 2026-11-21
+
+#### P29 — Acessibilidade da Equipe e da paginação 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/admin/equipe/page.tsx` · `src/components/admin/team/TeamAdmin.tsx` · `src/components/admin/team/InviteForm.tsx` · `src/components/admin/Pagination.tsx`
+**Impacto:** `/admin/equipe` pode ter dois `<nav aria-label="Paginação">`; "Convidar pessoa" não é `h2` e há um `h3` órfão; ao trocar entre o formulário e o cartão do link o foco se perde (e o link aparece uma vez só); Anterior/Próxima desativados são `<span aria-disabled>`.
+**Correção:** — (opção: prop opcional `aria-label` em Pagination; revisar níveis de título; mover o foco ao cartão do link e de volta ao formulário; fazer o desativado ser botão `disabled` ou manter o texto lido)
+**Registrado em:** 2026-11-21
+
+#### P30 — Regra de convite pendente duplicada em 6 lugares 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/invites/inviteQueries.ts` (`consumeInvite`, `cancelInvite`) · `src/features/admin/teamInvites.ts` (`pendingWhere`) · `src/features/admin/sectors.ts:42` · `src/features/admin/overview.ts:45` · `inviteState` (JS)
+**Impacto:** a definição de "convite pendente" (não consumido, não cancelado, não expirado) está copiada em seis pontos; mudar uma exige lembrar das outras e o risco é divergirem em silêncio.
+**Correção:** — (opção: um helper SQL único de "pendente" usado pelas consultas e pelo `inviteState` em JS, com teste de paridade)
+**Registrado em:** 2026-11-21
+
+#### P31 — Higiene de testes e refatorações pequenas da Fase 2 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/migrations.test.ts` (harness) · testes de CHECK de papel · `sqlState` · `ConfirmDialog` · `nameTakenFailure` · `PageSkeleton` · limite de toasts · `e2e/cadastros.spec.ts`
+**Impacto:** o comentário do harness de migração afirma paridade com `db:migrate`, que na prática roda tudo numa transação; falta o caso de papel desconhecido em `invite`; os testes de CHECK não iteram `ROLES`; os helpers `sqlState` deveriam ser `sqlErrorOf`; `ConfirmDialog` não reaproveita `useAdminAction`; `nameTakenFailure` e `PageSkeleton` estão duplicados; o limite de toasts está duplicado; os helpers do E2E se repetem.
+**Correção:** — (opção: um commit de refatoração separado, com testes verdes antes e depois, nunca junto de feature)
+**Registrado em:** 2026-11-21
+
+#### P32 — Mensagens no feminino e select vazio sem setor ativo ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/admin/ActiveToggleButton.tsx` · `src/components/admin/team/PersonForm.tsx`
+**Impacto:** `ActiveToggleButton` usa mensagens no masculino também para entidades femininas (ex.: setor desativado/reativado); com nenhum setor ativo o select de setor do operador aparece vazio.
+**Correção:** — (opção: gênero como parâmetro do botão; com 0 setores ativos, mostrar a explicação e o atalho para Setores como no `InviteForm`)
 **Registrado em:** 2026-11-21
 
 ## 2. Triado, plano pronto
