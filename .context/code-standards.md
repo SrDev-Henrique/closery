@@ -37,7 +37,8 @@
 
 - **Server Components por padrão.** `"use client"` só para estado, efeitos, eventos e APIs do
   navegador — fronteira client a menor possível.
-- **Escrita = Server Action** (`"use server"`) dentro de `src/features/<domínio>/actions.ts`.
+- **Escrita = Server Action** (`"use server"`) dentro de `src/features/<domínio>/actions.ts` (exceção: as de `/admin` ficam ao lado
+  da página, ver `library-docs.md §12`).
   Toda action: valida com Zod → checa permissão → grava → `revalidatePath`/`revalidateTag` →
   devolve resultado tipado (`{ ok: true, ... } | { ok: false, error }`). Erro esperado (entrada
   inválida, sem permissão) volta como resultado; `throw` fica para falha interna de verdade.
@@ -92,7 +93,9 @@ apresentação e interação.
 
 - **Estado de servidor** vem de Server Components; estado local com `useState`. Sem store global.
 - **Formulários:** Server Action + `useActionState`; validação Zod no servidor (e no client só
-  para feedback imediato, com o **mesmo** schema).
+  para feedback imediato, com o **mesmo** schema). Quando o servidor pode recusar e a pessoa não
+  pode perder o que digitou (cadastros do admin), o formulário é **controlado** e chama a action
+  com um objeto tipado (`library-docs.md §12`).
 - **Toda lista é paginada** (limite com teto no servidor). Proibido `SELECT` sem limite em tabela
   que cresce (passagens, solicitações, comentários).
 - **Agregação no SQL** (`count`, `sum`, `avg`, `GROUP BY`, janelas de data) — o dashboard nunca

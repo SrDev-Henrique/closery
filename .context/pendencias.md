@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P23.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P25.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -47,29 +47,24 @@
 | P8 | Sem provedor de e-mail, "esqueci a senha" não funciona | 🟠 | Bloqueado no dono |
 | P9 | Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn | ⚪ | Resolvido |
 | P10 | Credenciais OAuth do Google não criadas | 🟡 | Bloqueado no dono |
-| P11 | Sessões abertas de usuário desativado continuam aceitas por /api/auth/* | 🟠 | Aberto, não triado |
+| P11 | Sessões abertas de usuário desativado continuam aceitas por /api/auth/* | 🟠 | Resolvido |
 | P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Aberto, não triado |
 | P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Aberto, não triado |
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
 | P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Aberto, não triado |
 | P17 | Tema escuro nunca é ativado | 🟡 | Aberto, não triado |
-| P18 | user.role e invite.role sem CHECK no banco | 🟡 | Aberto, não triado |
+| P18 | user.role e invite.role sem CHECK no banco | 🟡 | Resolvido |
 | P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Aberto, não triado |
 | P20 | Login social: ajustes antes de ligar | 🟡 | Aberto, não triado |
 | P21 | Lacunas do E2E de acesso | 🟡 | Aberto, não triado |
 | P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Aberto, não triado |
+| P23 | Editar o nome de uma pessoa: falta em /admin/equipe e em /conta | 🟡 | Aberto, não triado |
+| P24 | Ordem alfabética das listas do admin ignora acento | 🟡 | Aberto, não triado |
 
 ---
 
 ## 1. Aberto, não triado
-
-#### P11 — Sessões abertas de usuário desativado continuam aceitas por /api/auth/* 🟠
-**Estado:** Aberto, não triado
-**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/session.ts`
-**Impacto:** uma pessoa desativada com sessão já aberta ainda consegue chamar `/api/auth/*` (adicionar passkey, mudar nome, listar sessões); as páginas recusam, a API de auth não.
-**Correção:** — (opção: a ação "desativar" da Fase 2 deve apagar as sessões do usuário na mesma transação em que preenche `deactivatedAt`)
-**Registrado em:** 2026-11-20
 
 #### P12 — Tamanhos gerados pelo shadcn abaixo do mínimo de toque 🟡
 **Estado:** Aberto, não triado
@@ -113,13 +108,6 @@
 **Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
 **Registrado em:** 2026-11-20
 
-#### P18 — user.role e invite.role sem CHECK no banco 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/db/schema/auth.ts` · `src/db/schema/invites.ts`
-**Impacto:** `toAuthz` falha fechado, mas as escritas de admin da Fase 2 ganham com a garantia no banco.
-**Correção:** — (opção: uma migração com `CHECK (role IN ('admin','operator'))` nas duas colunas)
-**Registrado em:** 2026-11-20
-
 #### P19 — Erro e 404 dentro do app derrubam o shell inteiro 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/app/error.tsx` · `src/app/not-found.tsx`
@@ -147,6 +135,20 @@
 **Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
 **Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
 **Registrado em:** 2026-11-20
+
+#### P23 — Editar o nome de uma pessoa: falta em /admin/equipe e em /conta 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/people.ts` · `src/components/admin/team/PersonForm.tsx` · `src/app/(app)/conta/page.tsx`
+**Impacto:** o nome vem do cadastro por convite e ninguém o corrige depois: nome digitado errado fica na lista da Equipe, na saudação e nas passagens futuras; nem a pessoa (em `/conta`) nem o administrador (em `/admin/equipe`) têm tela para isso.
+**Correção:** — (opção: `renamePerson` no domínio com auditoria quando a Fase 3 passar a citar o nome nas passagens; campo "Nome" no diálogo "Editar pessoa" para o admin e em `/conta` para a própria pessoa)
+**Registrado em:** 2026-11-21
+
+#### P24 — Ordem alfabética das listas do admin ignora acento 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/people.ts` · `src/features/admin/sectors.ts` · `src/features/admin/destinations.ts`
+**Impacto:** com collation `C.UTF-8`, `lower(name)` ordena por ponto de código: nomes com inicial acentuada (Á, É, Ó) vão para o fim das listas e da escolha de setor.
+**Correção:** — (opção: `ORDER BY name COLLATE "pt-BR-x-icu"` se o Neon tiver ICU, ou coluna normalizada sem acento)
+**Registrado em:** 2026-11-21
 
 ## 2. Triado, plano pronto
 
@@ -285,3 +287,18 @@ temas contra os cards do shadcn, sem ajuste de cor (contraste ≥ 3,71:1; ΔE200
 deuteranopia). Números completos em `ui-tokens.md §2`. Ressalva registrada lá: `chart-5` ("Outros") não é
 medido e some no tema escuro (1,19:1 sobre o card).
 
+#### P11 — Sessões abertas de usuário desativado continuam aceitas por /api/auth/* 🟠
+**Estado:** Resolvido
+**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/session.ts`
+**Impacto:** uma pessoa desativada com sessão já aberta ainda consegue chamar `/api/auth/*` (adicionar passkey, mudar nome, listar sessões); as páginas recusam, a API de auth não.
+**Correção:** — (opção: a ação "desativar" da Fase 2 deve apagar as sessões do usuário na mesma transação em que preenche `deactivatedAt`)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-21):** resolvida na Fase 2. `setPersonActive({ active: false })` (`src/features/admin/people.ts`) preenche `deactivated_at` e apaga todas as linhas de `session` da pessoa na mesma transação; as sessões saem até quando a pessoa já estava desativada. Teste de domínio (só as sessões dela somem) e E2E (`countSessionsByEmail` = 0 e a próxima navegação vai para `/entrar`).
+
+#### P18 — user.role e invite.role sem CHECK no banco 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/db/schema/auth.ts` · `src/db/schema/invites.ts`
+**Impacto:** `toAuthz` falha fechado, mas as escritas de admin da Fase 2 ganham com a garantia no banco.
+**Correção:** — (opção: uma migração com `CHECK (role IN ('admin','operator'))` nas duas colunas)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-21):** resolvida na Fase 2. A migração `0002_fase2_cadastros` acrescenta `CHECK` de papel em `user` (`user_role_valid`) e em `invite` (`invite_role_valid`); o teste de schema prova que o banco recusa um papel fora de `admin`/`operator` (SQLSTATE 23514).

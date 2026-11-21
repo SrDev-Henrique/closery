@@ -43,6 +43,15 @@
   um paralelo.
 - `cn` vem do pacote **`cn`** (utilitário oficial do shadcn, substitui `clsx` + `tailwind-merge`),
   reexportado em `@/lib/utils`.
+- **Fase 2: `toggle-group` (traz `toggle`), `native-select` e `dialog`.** Comando:
+  `bunx shadcn add toggle-group native-select dialog --yes --overwrite` e depois
+  `git checkout -- src/components/ui/button.tsx`. O `dialog` reinstala o `button.tsx` e o CLI
+  pergunta se pode sobrescrever mesmo com `--yes`: sem `--overwrite` o comando trava, e o
+  `button.tsx` sobrescrito perde a customização da P3. Os gerados saem com `h-8`/`h-7` e `"Close"`
+  em inglês: ajuste para `h-9 max-md:h-11` (ou `size-9 max-md:size-11`), `text-base md:text-sm` no
+  select nativo e `"Fechar"` (`touchTargets.test.tsx` e `ptBrLabels.test.tsx` guardam). Não usamos
+  `table`, `select` (Base UI), `radio-group` nem `alert-dialog`: lista em linhas, `<select>` nativo
+  (abre o seletor do aparelho, 16px) e `Dialog` para confirmar.
 
 ## 3. Tailwind CSS v4
 
@@ -88,6 +97,29 @@
   migrações de `drizzle/` com o migrator do PGlite. Mesma API de `db.transaction()` — o módulo de
   banco é trocado no teste, o código de domínio não muda.
 - **Não use `db.batch`**: ele não existe no driver de teste.
+- **`time` é texto.** O Drizzle e o `pg` devolvem `time` como `"HH:mm:ss"` e aceitam `"HH:mm"` na
+  entrada; o app trafega `"HH:mm"` (`fromDbTime`/`toDbTime` em `src/features/admin/timeOfDay.ts`).
+  `CHECK` violado = SQLSTATE `23514`; índice único violado = `23505`.
+- **Erro do driver embrulhado.** O Drizzle 0.45 coloca o erro do driver em `error.cause`: o SQLSTATE
+  e o nome do índice estão em `error.cause.code` e `error.cause.constraint`. Use `sqlStateOf`,
+  `constraintOf` e `isUniqueViolation` (`src/features/admin/dbErrors.ts`), nunca `error.code` direto.
+- **Nome único sem diferença de caixa** = ``uniqueIndex("…").on(sql`lower(${t.name})`)``; composto por
+  setor: ``.on(t.sectorId, sql`lower(${t.name})`)`` (esse índice já cobre a FK `sector_id`, então não
+  há `index()` separado). Verificado no Neon de dev: `datcollate = datctype = C.UTF-8` e
+  `lower('ÁGUA') = lower('água')`, então "Água" e "ÁGUA" colidem em produção como no PGlite.
+- **`FOR UPDATE`:** `tx.select(…).from(t).where(…).for("update")` roda no `pg` e no PGlite; o domínio
+  usa para trancar os administradores ativos (último admin) e as linhas de um setor (reordenar).
+- **`db.select({ … })` sem `.from()` não executa** nesta versão do Drizzle (o builder não é
+  "thenable"). Para um SELECT só de subconsultas use ``.from(sql`(values (1)) as one(n)`)``
+  (`getAdminOverviewCounts`). `count(*)` volta como `bigint` (texto no driver): converta com
+  `.mapWith(Number)` ou use o `count()` do `drizzle-orm`.
+- **Subconsulta correlacionada:** num `SELECT` de uma tabela só o Drizzle tira o prefixo das colunas; dentro de
+  ``sql`(select … where u.sector_id = ${sector.id})` `` o `"id"` resolveria para a tabela de dentro. Escreva
+  a coluna externa por extenso (`"sector"."id"`) ou use JOIN/GROUP BY, e teste com dois registros de
+  contagens diferentes (`listSectors`).
+- **`FOR SHARE`:** a checagem de "setor ativo" (`updatePerson`, `setPersonActive`, `createTeamInvite`,
+  `createShift`, `createItem`) lê o setor com `.for("share")` dentro de `db.transaction`; serializa com o
+  `FOR UPDATE` de `setSectorActive`. Fora de transação a trava some no fim do statement.
 - Convenções de schema: ids `uuid` com `defaultRandom()` (ou `text` se houver motivo); timestamps
   `timestamptz` com `defaultNow()`; `index()` em toda FK e coluna de filtro; nomes de tabela e
   coluna em `snake_case` no banco (`casing: "snake_case"` se adotado — decidir na primeira tabela).
@@ -119,6 +151,10 @@
 - Fonte da verdade dos contratos das Server Actions; tipos com `z.infer`.
 - O **mesmo** schema valida no servidor e dá feedback no client.
 - Em uso: `parseAuthEnv` (`src/lib/auth/env.ts`). API do Zod 4: `z.url()` (não `z.string().url()`) e mensagem por `{ error: "…" }`.
+- **Fase 2:** os schemas das Server Actions de `/admin` ficam em `src/features/admin/schemas.ts` (sem
+  `server-only`): o mesmo schema valida no formulário e na action. `firstFieldErrors(error)` percorre
+  `error.issues` e guarda a 1ª mensagem por campo (`issue.path[0]`; `z.flattenError` tiparia `fieldErrors` como `{}`); `.refine` com `path` marca o campo certo
+  (`endsAt`, `sectorId`, `unitOther`).
 
 ## 8. Better Auth 1.7 + passkey
 
@@ -148,10 +184,16 @@
 - **Dump migrado.** `test/global-setup.ts` migra `./drizzle` uma vez e grava `node_modules/.cache/closery-test/migrated.tar`; `createTestDb()` carrega o dump (~1,4 s contra 3 a 6 s de `initdb` + migrate) e é regerado a cada execução. Um PGlite por arquivo de teste (`beforeAll`/`afterAll`).
 - **`resetDb(client)`** apaga as linhas de `TABLES` com `session_replication_role = replica`; o teste `test/db.test.ts` compara `TABLES` com `pg_tables`: tabela nova no schema exige atualizar `TABLES`.
 - **PGlite não prova concorrência.** É uma conexão só e serializa tudo: `Promise.all` de dois consumos passa até com `SELECT` + `UPDATE` não atômico. Escreva a atomicidade no SQL (um `UPDATE … RETURNING`), teste a invariante em sequência (o segundo consumo devolve 0 linhas) e revise a forma da query; corrida real só contra um Postgres de verdade (branch do Neon), registrada como limite aceito.
-- **Injeção de `db`** é o padrão; `vi.mock("@/db", async () => …createTestDb)` (factory assíncrona, `vi.mock` é içado) só para a camada fina (actions e route handlers).
+- **Injeção de `db`** é o padrão; `vi.mock("@/db", async () => …createTestDb)` (factory assíncrona, `vi.mock` é içado) para a camada fina (actions e route handlers) e para os Server Components de lista que leem o PGlite (`ShiftsAdmin`, `ItemsAdmin`); o projeto `dom` roda o mesmo `globalSetup`, com timeouts de 15 s/30 s.
 - **Componentes:** `@testing-library/react` + `user-event` + `@testing-library/jest-dom/vitest`, com `cleanup()` no `afterEach` (sem `globals`). Página assíncrona não renderiza no Vitest; folha assíncrona pode ser testada com `render(await Componente())` e sessão mockada; a composição fica no Playwright.
 - **jsdom 28** (o 31 exige Node ≥ 22.22.2). jsdom não tem `window.matchMedia`, que o `useIsMobile` do sidebar chama: `test/setup-dom.ts` faz o polyfill (desktop por padrão). O `hover` do user-event não abre o Tooltip do Base UI: use `fireEvent.pointerEnter` + `mouseEnter`.
 - **Auth em teste:** `createTestAuth(db)` e `signUpWithInvite(auth, token, …)` (o convite vai no header `cookie: closery_invite=…`). O rate limit não afeta `auth.api.*`.
+- **Permissão em teste de domínio e de action:** `authzOf({ role, … })` (`test/authz.ts`) monta o
+  `Authz` (admin sempre com `sectorId` nulo); a action de operador, com `requireAdmin` mockado para
+  lançar `notFound`, não toca o banco. **Guardas estáticos** que leem arquivos: `appPagesAuth.test.ts`
+  (páginas), `actionsAuth.test.ts` e `actionsInventory.test.ts` (actions), `pendenciasDoc.test.ts`
+  (índice, seções e próximo id de `pendencias.md`) e `uiRegistryDoc.test.ts` (todo componente de
+  `/admin` aparece em `ui-registry.md`).
 
 ## 10. Playwright + pglite-socket
 
@@ -159,11 +201,15 @@
 - **`playwright.config.ts`:** `webServer` em **array** e em ordem: (1) `bun e2e/start-db.ts` com `port: 54329` (espera TCP; `port` consta como obsoleto na doc, mas o banco não fala HTTP), `reuseExistingServer: false`; (2) `bun run build && bun run start -p 3200` com `url` em `/api/health`, timeout de 300 s. `use.baseURL` explícito (obrigatório com array) e `workers: 1` (um PGlite serializa tudo).
 - **Env do `webServer`** é mesclado a `process.env` e o Next não sobrescreve variável já definida (nem string vazia): `DATABASE_URL` e `DATABASE_URL_POOLED` apontam para o socket (o E2E nunca toca o Neon) e `GOOGLE_*`/`FACEBOOK_*` = `""` desligam o social mesmo com credenciais no `.env.local`.
 - **pglite-socket:** `maxConnections` precisa ser maior que o `max` do Pool do app (10) mais as conexões do teste (usamos 20); com o padrão (1), a segunda conexão cai com `Connection terminated unexpectedly`. Banco em memória, descartado a cada execução.
-- **Produção no E2E.** O app roda com `next start` (`NODE_ENV=production`), então o rate limit está ligado (cadastro por e-mail: 10 por 60 s por IP; a suíte faz 6 cadastros): cada teste manda `x-forwarded-for` próprio (fixture `clientIp`).
+- **Produção no E2E.** O app roda com `next start` (`NODE_ENV=production`), então o rate limit está ligado (cadastro por e-mail: 10 por 60 s por IP): cada teste manda `x-forwarded-for` próprio (fixture `clientIp`, repetida em `auth.spec.ts` e `cadastros.spec.ts`) e nenhum faz mais de 2 cadastros.
 - **Passkey:** autenticador virtual via CDP (`e2e/virtual-authenticator.ts`), só Chromium, criado **antes** do clique que dispara o WebAuthn. Com ele o autofill de `/entrar` entra sozinho ao abrir a página; o teste do botão desliga `isConditionalMediationAvailable` com `addInitScript`.
 - **Base UI:** navegação com cara de botão é `<Link className={buttonVariants()}>` (role link); `Button render={<Link />}` daria role=button e não é usado para navegação. No spec: `getByRole("link")` para "Agora não" e para os itens da sidebar.
 - **`/admin` do operador:** confira o texto "Página não encontrada" e o `<title>`, nunca o status (com streaming é 200).
 - Cada teste cria os próprios dados (e-mail único, nomes fictícios). Login social ao vivo é checklist manual.
+- **`e2e/cadastros.spec.ts`:** a linha de uma lista é um `<li>` dentro de `<main>` (`rowWith(page, texto)`),
+  para não casar com a barra lateral; o link do convite sai do campo `Link do convite`;
+  `countSessionsByEmail` (`e2e/db.ts`) prova que desativar apaga as sessões (P11). Setor, turno, item
+  e destino de cada teste têm nome único (sufixo aleatório): o banco só é limpo entre execuções.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
 ## 11. GitHub Actions (CI)
@@ -184,6 +230,40 @@
   `.next/cache` pela hash de `bun.lock` + `src/**` + `next.config.ts`.
 - **Linux pega o que o Windows esconde:** caminho de import com caixa errada passa no Windows e
   quebra no CI. Se o CI falhar e local passar, desconfie primeiro disso.
+
+## 12. Server Actions do admin (Fase 2)
+
+- **Onde:** `src/app/(app)/admin/<cadastro>/actions.ts` (`"use server"`), uma por página; a regra de
+  negócio fica em `src/features/admin/<cadastro>.ts` (recebe `db` e `now`). O arquivo só exporta
+  funções `async`: tipos, constantes e schemas vivem fora dele.
+- **Padrão de cada função exportada:** `requireAdmin()` na **primeira linha** (guarda
+  `actionsAuth.test.ts`), depois `runAdminAction`:
+
+  ```ts
+  export async function createSectorAction(input: unknown) {
+    const actor = await requireAdmin();
+    return runAdminAction({
+      actor,
+      schema: createSectorSchema,
+      input,
+      run: ({ db, input }) => createSector(db, input),
+    });
+  }
+  ```
+
+- **`runAdminAction`** (`src/features/admin/runAdminAction.ts`, `server-only`): `schema.safeParse` →
+  falha vira `INVALID_INPUT` com `fieldErrors`; `run({ db, now, actor, input })`; `revalidatePath("/(app)/admin",
+  "layout")` só quando `ok` (com route group o caminho é o do arquivo, como em `revalidatePath.md`); exceção inesperada passa por `unstable_rethrow` (deixa `redirect` e
+  `notFound` seguirem) e, se for outra, vira `INTERNAL` com `console.error` e texto fixo. Nunca devolve
+  texto do banco.
+- **Erro esperado volta como `AdminResult`** (`ok: false`, `code`, `message` pt-BR pronta); `throw` só para
+  falha interna. Erro de nome repetido (23505) consulta o registro conflitante para dizer se ele está
+  inativo.
+- **Formulário controlado:** o componente guarda o estado, chama a action com um **objeto tipado** dentro de
+  `useAdminAction` e só limpa o campo no sucesso; erro de campo vem de `fieldErrors`. Não use
+  `useActionState`/`FormData` aqui: o React 19 limpa o formulário não controlado depois do envio.
+- **Tempo e paginação:** o domínio recebe `now: Date` quando o tempo importa; listas usam `PAGE_SIZE = 50`
+  e `?pagina=`, e a página fora do intervalo é clampada.
 
 ## Como adicionar uma biblioteca nova
 
