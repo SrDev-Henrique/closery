@@ -273,14 +273,20 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold).
 
 ### AdminOverview
-- **Status:** ✅ pronto (2026-11-20)
+- **Status:** ✏️ estendido (2026-11-21)
 - **Local:** `src/components/app-shell/AdminOverview.tsx`
-- **Propósito:** conteúdo provisório de `/admin` e portão de acesso.
-- **Como funciona:** Server Component assíncrono; `requireAdmin()` (operador cai em `notFound()`).
-  O título fica dentro do `<Suspense>` para o operador não ver "Administração" antes do 404, e a
-  página não exporta `metadata` (o `<title>` revelaria a rota; T12).
-- **Usa:** `requireAdmin`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Propósito:** visão geral de `/admin` (cartões dos cadastros) e portão de acesso.
+- **Como funciona:** Server Component assíncrono; `requireAdmin()` (operador cai em `notFound()`),
+  depois `getAdminOverviewCounts(db, new Date())` (um SELECT com subconsultas). Mostra o título
+  "Administração", o texto "Cadastros que a passagem de turno usa." e cinco cartões-link (Setores,
+  Turnos, Itens, Destinos, Equipe) com título, descrição e contagem (`{n} ativos`; Equipe:
+  `{n} pessoas ativas · {m} convites pendentes`), singular e plural por `pluralize`. Grade de uma
+  coluna no celular, duas em `sm` e três em `lg`; o cartão inteiro é o link (foco visível, hover
+  `bg-muted/50`). O título fica dentro do `<Suspense>` para o operador não ver "Administração"
+  antes do 404, e a página não exporta `metadata` (o `<title>` revelaria a rota; T12); enquanto
+  carrega, `page.tsx` mostra um esqueleto (título e cinco cartões).
+- **Usa:** `requireAdmin`, `getAdminOverviewCounts`, `pluralize`, `Card*`, `next/link`.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (placeholder). 2026-11-21 — Fase 2: cartões dos cinco cadastros e contagens.
 
 ### SessionKeepAlive
 - **Status:** ✅ pronto (2026-11-20)

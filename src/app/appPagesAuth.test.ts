@@ -64,7 +64,34 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
   const pages = findPages(APP_GROUP);
 
   it("encontra as páginas do grupo", () => {
-    expect(pages.length).toBeGreaterThanOrEqual(4);
+    expect(pages.length).toBeGreaterThanOrEqual(9);
+  });
+
+  it("inclui a página de cada rota de /admin", () => {
+    const routes = pages.map((file) =>
+      relative(APP_GROUP, file).replaceAll("\\", "/"),
+    );
+    for (const route of [
+      "admin/page.tsx",
+      "admin/setores/page.tsx",
+      "admin/turnos/page.tsx",
+      "admin/itens/page.tsx",
+      "admin/destinos/page.tsx",
+      "admin/equipe/page.tsx",
+    ]) {
+      expect(routes).toContain(route);
+    }
+  });
+
+  it("nenhuma página de /admin exporta metadata (T12)", () => {
+    const adminPages = pages.filter((file) =>
+      relative(APP_GROUP, file).replaceAll("\\", "/").startsWith("admin/"),
+    );
+    for (const file of adminPages) {
+      expect(readFileSync(file, "utf8"), file).not.toMatch(
+        /export\s+(const\s+metadata|(async\s+)?function\s+generateMetadata)\b/,
+      );
+    }
   });
 
   it.each(

@@ -11,7 +11,7 @@ const ADMIN_DIR = join(ROOT, "src", "app", "(app)", "admin");
 
 // Sobe para 5 na Tarefa 11, quando existirem os cinco actions.ts (setores,
 // destinos, turnos, itens, equipe).
-const MIN_ACTION_FILES = 0;
+const MIN_ACTION_FILES = 5;
 
 const FIRST_STATEMENT_GUARD =
   /^\s*(?:const\s+[\w$]+\s*=\s*)?await\s+requireAdmin\s*\(\s*\)/;
