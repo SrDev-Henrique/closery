@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import type { Pool } from "pg";
 
 import { createDb, createPool } from "@/db/client";
-import { user } from "@/db/schema";
+import { session, user } from "@/db/schema";
 import type { Db } from "@/db/types";
 
 // Portas e URLs fixas do E2E: o banco (PGlite via socket) e o app (next start).
@@ -12,7 +12,7 @@ export const E2E_DATABASE_URL = `postgres://postgres:postgres@127.0.0.1:${E2E_DB
 export const E2E_BASE_URL = `http://localhost:${E2E_APP_PORT}`;
 
 export { buildInviteUrl } from "@/features/invites/inviteUrl";
-export { insertInvite, insertSector } from "../test/fixtures";
+export { insertInvite, insertSector, insertUser } from "../test/fixtures";
 
 export function openE2eDb(): { pool: Pool; db: Db } {
   const pool = createPool(E2E_DATABASE_URL);
@@ -32,4 +32,17 @@ export async function deactivateUserByEmail(
   if (rows.length !== 1) {
     throw new Error(`Usuário ${email} não encontrado para desativar.`);
   }
+}
+
+// Quantas sessões abertas a pessoa tem: desativar apaga todas (P11).
+export async function countSessionsByEmail(
+  db: Db,
+  email: string,
+): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(session)
+    .innerJoin(user, eq(session.userId, user.id))
+    .where(eq(user.email, email));
+  return row?.total ?? 0;
 }
