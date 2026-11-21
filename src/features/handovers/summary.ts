@@ -51,7 +51,7 @@ export type HandoverSummary = {
   nextShiftText: string;
   occurrencesText: string;
   highlighted: { controls: SummaryItem[]; stock: SummaryItem[] };
-  zeroed: { count: number; names: string[] };
+  zeroed: { count: number; items: { itemId: string; name: string }[] };
   deliveredByName: string | null;
   deliveredAt: Date | null;
   confirmedByName: string | null;
@@ -193,7 +193,10 @@ export async function getHandoverSummary(
         controls: highlighted.filter((line) => line.kind === "control"),
         stock: highlighted.filter((line) => line.kind === "stock"),
       },
-      zeroed: { count: zeroed.length, names: zeroed.map((line) => line.name) },
+      zeroed: {
+        count: zeroed.length,
+        items: zeroed.map((line) => ({ itemId: line.itemId, name: line.name })),
+      },
       deliveredByName:
         row.deliveredBy === null ? null : (people.get(row.deliveredBy) ?? null),
       deliveredAt: row.deliveredAt,

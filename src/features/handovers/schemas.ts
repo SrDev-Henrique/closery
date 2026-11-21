@@ -48,26 +48,30 @@ export const handoverRefSchema = z.object({
 });
 
 export const saveFieldSchema = z
-  .discriminatedUnion("field", [
-    handoverRefSchema.extend({
-      field: z.literal("occurrences"),
-      value: textSchema,
-    }),
-    handoverRefSchema.extend({
-      field: z.literal("nextShift"),
-      value: textSchema,
-    }),
-    handoverRefSchema.extend({
-      field: z.literal("quantity"),
-      itemId: idSchema,
-      value: z.number({ error: QUANTITY_MESSAGE }),
-    }),
-    handoverRefSchema.extend({
-      field: z.literal("note"),
-      itemId: idSchema,
-      value: textSchema,
-    }),
-  ])
+  .discriminatedUnion(
+    "field",
+    [
+      handoverRefSchema.extend({
+        field: z.literal("occurrences"),
+        value: textSchema,
+      }),
+      handoverRefSchema.extend({
+        field: z.literal("nextShift"),
+        value: textSchema,
+      }),
+      handoverRefSchema.extend({
+        field: z.literal("quantity"),
+        itemId: idSchema,
+        value: z.number({ error: QUANTITY_MESSAGE }),
+      }),
+      handoverRefSchema.extend({
+        field: z.literal("note"),
+        itemId: idSchema,
+        value: textSchema,
+      }),
+    ],
+    { error: INVALID_INPUT_MESSAGE },
+  )
   .transform((input, ctx) => {
     const validated = validateFieldChange(input);
     if (!validated.ok) {
@@ -125,22 +129,25 @@ const longTextSchema = textSchema.transform((raw, ctx) => {
   return text;
 });
 
-const correctionItemSchema = z.object({
-  itemId: idSchema,
-  quantity: z
-    .number({ error: QUANTITY_MESSAGE })
-    .int({ error: QUANTITY_MESSAGE })
-    .min(0, { error: QUANTITY_MESSAGE })
-    .max(MAX_QUANTITY, { error: QUANTITY_MESSAGE }),
-  note: textSchema.transform((raw, ctx) => {
-    const note = normalizeItemNote(raw) ?? "";
-    if (codePointLength(note) > ITEM_NOTE_MAX_LENGTH) {
-      ctx.addIssue({ code: "custom", message: NOTE_TOO_LONG_MESSAGE });
-      return z.NEVER;
-    }
-    return note;
-  }),
-});
+const correctionItemSchema = z.object(
+  {
+    itemId: idSchema,
+    quantity: z
+      .number({ error: QUANTITY_MESSAGE })
+      .int({ error: QUANTITY_MESSAGE })
+      .min(0, { error: QUANTITY_MESSAGE })
+      .max(MAX_QUANTITY, { error: QUANTITY_MESSAGE }),
+    note: textSchema.transform((raw, ctx) => {
+      const note = normalizeItemNote(raw) ?? "";
+      if (codePointLength(note) > ITEM_NOTE_MAX_LENGTH) {
+        ctx.addIssue({ code: "custom", message: NOTE_TOO_LONG_MESSAGE });
+        return z.NEVER;
+      }
+      return note;
+    }),
+  },
+  { error: INVALID_INPUT_MESSAGE },
+);
 
 export const correctHandoverSchema = z.object({
   id: idSchema,
@@ -158,7 +165,9 @@ export const correctHandoverSchema = z.object({
 });
 
 export const chooseSectorSchema = z.object({
-  sectorId: z.union([idSchema, z.literal(ALL_SECTORS)]),
+  sectorId: z.union([idSchema, z.literal(ALL_SECTORS)], {
+    error: INVALID_INPUT_MESSAGE,
+  }),
   path: z.enum(SECTOR_PICKER_PATHS, { error: INVALID_INPUT_MESSAGE }),
 });
 

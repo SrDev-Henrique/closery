@@ -185,8 +185,13 @@ export async function correctHandover(
     await tx
       .update(handover)
       .set({
-        occurrencesText: clean.occurrencesText,
-        nextShiftText: clean.nextShiftText,
+        // Só os textos que o diff traz: o resto fica como estava.
+        ...(changes.some((change) => change.field === "occurrences_text")
+          ? { occurrencesText: clean.occurrencesText }
+          : {}),
+        ...(changes.some((change) => change.field === "next_shift_text")
+          ? { nextShiftText: clean.nextShiftText }
+          : {}),
         updatedAt: now,
         updatedBy: actor.userId,
       })

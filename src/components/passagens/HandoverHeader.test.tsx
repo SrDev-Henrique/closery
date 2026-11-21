@@ -81,11 +81,44 @@ describe("HandoverHeader", () => {
     fireEvent.change(screen.getByLabelText("Data"), {
       target: { value: "2026-11-19" },
     });
+    fireEvent.blur(screen.getByLabelText("Data"));
 
     await waitFor(() =>
       expect(mocks.push).toHaveBeenCalledWith(
         `/passagens/nova?turno=${MANHA}&data=2026-11-19`,
       ),
+    );
+  });
+
+  it("digitar uma data parcial não navega; sair do campo navega uma vez com a data completa", async () => {
+    setup();
+    const date = screen.getByLabelText("Data");
+
+    // Digitando o dia "15": depois do "1" o navegador já emite uma data válida.
+    fireEvent.change(date, { target: { value: "2026-11-01" } });
+    expect(date).toHaveValue("2026-11-01");
+    expect(mocks.push).not.toHaveBeenCalled();
+    fireEvent.change(date, { target: { value: "2026-11-15" } });
+    expect(mocks.push).not.toHaveBeenCalled();
+
+    fireEvent.blur(date);
+
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledTimes(1));
+    expect(mocks.push).toHaveBeenCalledWith(
+      `/passagens/nova?turno=${MANHA}&data=2026-11-15`,
+    );
+  });
+
+  it("Enter confirma a data digitada", async () => {
+    setup();
+    const date = screen.getByLabelText("Data");
+
+    fireEvent.change(date, { target: { value: "2026-11-18" } });
+    fireEvent.keyDown(date, { key: "Enter" });
+
+    await waitFor(() => expect(mocks.push).toHaveBeenCalledTimes(1));
+    expect(mocks.push).toHaveBeenCalledWith(
+      `/passagens/nova?turno=${MANHA}&data=2026-11-18`,
     );
   });
 
@@ -129,6 +162,7 @@ describe("HandoverHeader", () => {
 
     for (const value of ["2026-11-21", "2026-10-19", ""]) {
       fireEvent.change(date, { target: { value } });
+      fireEvent.blur(date);
     }
 
     expect(mocks.push).not.toHaveBeenCalled();
@@ -140,6 +174,7 @@ describe("HandoverHeader", () => {
     fireEvent.change(screen.getByLabelText("Data"), {
       target: { value: "2026-11-20" },
     });
+    fireEvent.blur(screen.getByLabelText("Data"));
     await userEvent.selectOptions(screen.getByLabelText("Turno"), MANHA);
 
     expect(mocks.push).not.toHaveBeenCalled();

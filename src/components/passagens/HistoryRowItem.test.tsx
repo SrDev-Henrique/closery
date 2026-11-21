@@ -29,10 +29,12 @@ function row(overrides: Partial<HistoryRow> = {}): HistoryRow {
   };
 }
 
-function renderRow(props: Parameters<typeof HistoryRowItem>[0]) {
+function renderRow(
+  props: Omit<Parameters<typeof HistoryRowItem>[0], "minDate">,
+) {
   render(
     <ul>
-      <HistoryRowItem {...props} />
+      <HistoryRowItem minDate="2026-10-21" {...props} />
     </ul>,
   );
 }
@@ -161,5 +163,55 @@ describe("HistoryRowItem", () => {
     expect(
       screen.queryByRole("link", { name: /Entregar turno/ }),
     ).not.toBeInTheDocument();
+  });
+
+  describe("fora da janela de 31 dias", () => {
+    const missing = {
+      handoverId: null,
+      situation: "missing" as const,
+      deliveredAt: null,
+      deliveredByName: null,
+      confirmedByName: null,
+      confirmedAt: null,
+    };
+
+    it("no limite (data == minDate): ainda oferece 'Entregar turno'", () => {
+      renderRow({
+        row: row({ ...missing, operationalDate: "2026-10-21" }),
+        showSector: false,
+        sectorParam: null,
+      });
+      expect(
+        screen.getByRole("link", { name: /Entregar turno/ }),
+      ).toBeInTheDocument();
+    });
+
+    it("um dia antes do limite: sem ação, e a linha continua a aparecer", () => {
+      renderRow({
+        row: row({ ...missing, operationalDate: "2026-10-20" }),
+        showSector: false,
+        sectorParam: null,
+      });
+      expect(screen.getByRole("listitem")).toHaveTextContent("Sem passagem");
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+
+    it("rascunho antigo: 'Continuar passagem' também some", () => {
+      renderRow({
+        row: row({ ...missing, hasDraft: true, operationalDate: "2026-10-20" }),
+        showSector: false,
+        sectorParam: null,
+      });
+      expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    });
+
+    it("passagem existente antiga continua com 'Abrir'", () => {
+      renderRow({
+        row: row({ operationalDate: "2026-10-20" }),
+        showSector: false,
+        sectorParam: null,
+      });
+      expect(screen.getByRole("link", { name: /Abrir/ })).toBeInTheDocument();
+    });
   });
 });

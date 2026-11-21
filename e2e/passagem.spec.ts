@@ -383,7 +383,9 @@ test("(c) quem entregou o turno não vê 'Confirmar recebimento' nem o cartão n
     page.getByRole("button", { name: "Confirmar recebimento" }),
   ).toHaveCount(0);
   // Quem entregou ainda corrige, até alguém confirmar.
-  await expect(page.getByRole("link", { name: "Corrigir" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Corrigir", exact: true }),
+  ).toBeVisible();
 });
 
 test("(d) operador de outro setor não vê a passagem nem o setor alheio", async ({

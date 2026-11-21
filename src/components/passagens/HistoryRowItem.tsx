@@ -14,10 +14,15 @@ export function HistoryRowItem({
   row,
   showSector,
   sectorParam,
+  minDate,
 }: {
   row: HistoryRow;
   showSector: boolean;
   sectorParam: string | null;
+  // Dia mais antigo em que ainda se cria ou entrega uma passagem (hoje menos
+  // MAX_DAYS_BACK). Antes disso a linha só informa: o link cairia no turno
+  // sugerido de hoje, sem aviso.
+  minDate: string;
 }) {
   const date = formatDateBR(row.operationalDate);
 
@@ -29,13 +34,15 @@ export function HistoryRowItem({
     );
   }
 
-  let action: { href: string; label: string; ariaLabel: string };
+  let action: { href: string; label: string; ariaLabel: string } | null;
   if (row.handoverId !== null) {
     action = {
       href: handoverHref(row.handoverId),
       label: "Abrir",
       ariaLabel: `Abrir passagem de ${row.shiftName} em ${date}`,
     };
+  } else if (row.operationalDate < minDate) {
+    action = null;
   } else {
     const label = row.hasDraft ? "Continuar passagem" : "Entregar turno";
     action = {
@@ -68,15 +75,17 @@ export function HistoryRowItem({
         />
       }
       actions={
-        <Link
-          href={action.href}
-          aria-label={action.ariaLabel}
-          className={buttonVariants({
-            variant: row.handoverId === null ? "default" : "outline",
-          })}
-        >
-          {action.label}
-        </Link>
+        action === null ? undefined : (
+          <Link
+            href={action.href}
+            aria-label={action.ariaLabel}
+            className={buttonVariants({
+              variant: row.handoverId === null ? "default" : "outline",
+            })}
+          >
+            {action.label}
+          </Link>
+        )
       }
     />
   );

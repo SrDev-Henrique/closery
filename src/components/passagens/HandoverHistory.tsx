@@ -12,9 +12,13 @@ import {
   buildHistoryHref,
   parseHistoryFilters,
 } from "@/features/handovers/historyFilters";
-import { ALL_SECTORS } from "@/features/handovers/limits";
+import { ALL_SECTORS, MAX_DAYS_BACK } from "@/features/handovers/limits";
 import { loadSector } from "@/features/handovers/loaders";
-import { formatDateBR, todayInSaoPaulo } from "@/features/handovers/saoPaulo";
+import {
+  addDays,
+  formatDateBR,
+  todayInSaoPaulo,
+} from "@/features/handovers/saoPaulo";
 import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
 import { readRememberedSector } from "@/features/handovers/sectorCookie";
 import { listActiveShifts } from "@/features/handovers/targets";
@@ -115,12 +119,14 @@ export async function HandoverHistory({ searchParams }: HandoverHistoryProps) {
 
   const extras = sectorParam === null ? {} : { sector: sectorParam };
   const showSector = admin && sectorId === null;
+  const minDate = addDays(todayInSaoPaulo(now), -MAX_DAYS_BACK);
 
   return (
     <div className="flex flex-col gap-6">
       <Header />
       {picker}
       <HistoryFilters
+        key={buildHistoryHref(filters, extras)}
         filters={filters}
         shifts={shifts}
         sectorParam={sectorParam}
@@ -144,6 +150,7 @@ export async function HandoverHistory({ searchParams }: HandoverHistoryProps) {
               row={row}
               showSector={showSector}
               sectorParam={sectorParam}
+              minDate={minDate}
             />
           ))}
         </ul>

@@ -168,8 +168,8 @@ export async function HandoverDetail({
             {`Demais itens: 0 (${summary.zeroed.count})`}
           </summary>
           <ul className="mt-2 flex flex-col gap-1 text-muted-foreground">
-            {summary.zeroed.names.map((name) => (
-              <li key={name}>{name}</li>
+            {summary.zeroed.items.map((line) => (
+              <li key={line.itemId}>{line.name}</li>
             ))}
           </ul>
         </details>

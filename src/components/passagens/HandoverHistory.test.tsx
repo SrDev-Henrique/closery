@@ -217,6 +217,38 @@ describe("HandoverHistory", () => {
     expect(sector.id).not.toBe(other.id);
   });
 
+  it("os controles dos filtros seguem a URL: 'Limpar filtros' e troca de setor não deixam estado velho", async () => {
+    const { sector, other } = await seed();
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+    const first = await HandoverHistory({
+      searchParams: Promise.resolve({ setor: sector.id, periodo: "30" }),
+    });
+    const { rerender } = render(first);
+    expect(screen.getByLabelText("Período")).toHaveValue("30");
+
+    // Mesma tela, URL sem filtros (Limpar filtros): os selects voltam ao padrão.
+    rerender(
+      await HandoverHistory({
+        searchParams: Promise.resolve({ setor: sector.id }),
+      }),
+    );
+    expect(screen.getByLabelText("Período")).toHaveValue("7");
+
+    // Mesma tela, outro setor: o turno do setor novo, não o do antigo.
+    rerender(
+      await HandoverHistory({
+        searchParams: Promise.resolve({ setor: other.id, periodo: "30" }),
+      }),
+    );
+    expect(screen.getByLabelText("Período")).toHaveValue("30");
+    rerender(
+      await HandoverHistory({
+        searchParams: Promise.resolve({ setor: other.id }),
+      }),
+    );
+    expect(screen.getByLabelText("Período")).toHaveValue("7");
+  });
+
   it("sem nenhuma passagem no período: estado vazio com a dica", async () => {
     const { sector } = await seed();
     mocks.requireUser.mockResolvedValue(

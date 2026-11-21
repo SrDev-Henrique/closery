@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { ZodType } from "zod";
 
-import type { FieldErrors } from "@/features/admin/result";
+import {
+  type FieldErrors,
+  INVALID_INPUT_MESSAGE,
+} from "@/features/admin/result";
 import { firstFieldErrors } from "@/features/admin/schemas";
 
 import {
@@ -325,5 +328,36 @@ describe("chooseSectorSchema", () => {
     expect(
       chooseSectorSchema.safeParse({ sectorId: "x", path: "/" }).success,
     ).toBe(false);
+  });
+});
+
+describe("mensagens em pt-BR para entrada adulterada (nunca o inglês do Zod)", () => {
+  function messagesOf(schema: ZodType, input: unknown): string[] {
+    const parsed = schema.safeParse(input);
+    return parsed.success ? [] : parsed.error.issues.map((i) => i.message);
+  }
+
+  it("campo desconhecido no salvamento", () => {
+    expect(
+      messagesOf(saveFieldSchema, { ...REF, field: "inexistente", value: "x" }),
+    ).toEqual([INVALID_INPUT_MESSAGE]);
+  });
+
+  it("linha de item nula na correção", () => {
+    expect(
+      messagesOf(correctHandoverSchema, {
+        id: HANDOVER,
+        reason: "motivo",
+        occurrencesText: "a",
+        nextShiftText: "b",
+        items: [null],
+      }),
+    ).toEqual([INVALID_INPUT_MESSAGE]);
+  });
+
+  it("setor que não é id nem 'todos'", () => {
+    expect(
+      messagesOf(chooseSectorSchema, { sectorId: 123, path: "/" }),
+    ).toEqual([INVALID_INPUT_MESSAGE]);
   });
 });

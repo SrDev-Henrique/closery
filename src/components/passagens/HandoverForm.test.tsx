@@ -393,9 +393,54 @@ describe("HandoverForm", () => {
       expect(
         screen.queryByRole("button", { name: "Entregar turno" }),
       ).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: "Ver resumo" })).toHaveAttribute(
-        "href",
-        "/passagens/h1",
+      expect(
+        screen.getByRole("button", { name: "Ver resumo" }),
+      ).toBeInTheDocument();
+    });
+
+    it("'Ver resumo' espera o salvamento terminar e só então navega", async () => {
+      let finish: (value: ReturnType<typeof savedOk>) => void = () => {};
+      mocks.save.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+      renderForm(EDIT);
+      await userEvent.click(
+        screen.getByRole("button", { name: "Aumentar Fita adesiva" }),
+      );
+      await waitFor(() => expect(mocks.save).toHaveBeenCalledTimes(1));
+
+      await userEvent.click(screen.getByRole("button", { name: "Ver resumo" }));
+      expect(mocks.push).not.toHaveBeenCalled();
+
+      finish(savedOk());
+      await waitFor(() =>
+        expect(mocks.push).toHaveBeenCalledWith("/passagens/h1"),
+      );
+    });
+
+    it("'Ver resumo' com falha de salvamento fica na tela e avisa", async () => {
+      mocks.save.mockResolvedValue(fail("INTERNAL", "Sem rede."));
+      renderForm(EDIT);
+      await userEvent.click(
+        screen.getByRole("button", { name: "Aumentar Fita adesiva" }),
+      );
+
+      await userEvent.click(screen.getByRole("button", { name: "Ver resumo" }));
+
+      expect(await screen.findByText(/Há alterações sem salvar/)).toBeVisible();
+      expect(mocks.push).not.toHaveBeenCalled();
+    });
+
+    it("'Ver resumo' sem nada pendente navega direto", async () => {
+      renderForm(EDIT);
+
+      await userEvent.click(screen.getByRole("button", { name: "Ver resumo" }));
+
+      await waitFor(() =>
+        expect(mocks.push).toHaveBeenCalledWith("/passagens/h1"),
       );
     });
 

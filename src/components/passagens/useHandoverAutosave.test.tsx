@@ -1,4 +1,5 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, render, renderHook } from "@testing-library/react";
+import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type AdminResult, fail, ok } from "@/features/admin/result";
@@ -381,5 +382,37 @@ describe("useHandoverAutosave", () => {
     await advance(2000);
 
     expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  it("Activity: o que terminou com o formulário escondido aparece quando ele volta", async () => {
+    const calls: SaveFieldInput[] = [];
+    const pending: Deferred[] = [];
+    const save = vi.fn((input: SaveFieldInput) => {
+      calls.push(input);
+      return new Promise<AdminResult<SavedField>>((resolve) => {
+        pending.push({ resolve });
+      });
+    });
+    let current: ReturnType<typeof useHandoverAutosave> | undefined;
+    function Probe() {
+      current = useHandoverAutosave({ ref: REF, save, initial: null });
+      return null;
+    }
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <Probe />
+      </Activity>
+    );
+    const { rerender } = render(tree("visible"));
+
+    act(() => current?.commit(quantity(ITEM_A, 3)));
+    expect(current?.status.kind).toBe("saving");
+
+    rerender(tree("hidden"));
+    await settle(pending, 0, saved());
+    rerender(tree("visible"));
+
+    expect(current?.status.kind).toBe("saved");
+    expect(current?.hasUnsaved).toBe(false);
   });
 });

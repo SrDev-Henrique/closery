@@ -40,6 +40,10 @@ export function HandoverHeader({
   const uid = useId();
   const [navigating, startNavigation] = useTransition();
   const [saving, setSaving] = useState(false);
+  // O que a pessoa está digitando no campo de data. Só vira navegação ao sair
+  // do campo ou com Enter: digitando "15", o navegador emite "2026-11-01"
+  // depois do "1", que já é uma data válida.
+  const [draftDate, setDraftDate] = useState<string | null>(null);
 
   async function go(next: { shiftId: string; operationalDate: string }) {
     setSaving(true);
@@ -56,13 +60,16 @@ export function HandoverHeader({
     });
   }
 
-  function handleDate(value: string) {
+  const busy = saving || navigating;
+
+  function commitDate() {
+    const value = draftDate;
+    setDraftDate(null);
+    if (value === null || busy) return;
     // Campo limpo ou fora da janela: ignora (o campo volta ao valor atual).
     if (!isIsoDate(value) || value < minDate || value > today) return;
     if (value !== operationalDate) void go({ shiftId, operationalDate: value });
   }
-
-  const busy = saving || navigating;
 
   return (
     <FieldGroup className="gap-4 sm:grid sm:grid-cols-3">
@@ -91,9 +98,16 @@ export function HandoverHeader({
           type="date"
           min={minDate}
           max={today}
-          value={operationalDate}
+          value={draftDate ?? operationalDate}
           disabled={busy}
-          onChange={(event) => handleDate(event.target.value)}
+          onChange={(event) => setDraftDate(event.target.value)}
+          onBlur={commitDate}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitDate();
+            }
+          }}
         />
       </Field>
     </FieldGroup>

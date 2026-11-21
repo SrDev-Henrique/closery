@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { item } from "@/db/schema/catalog";
+import { sector } from "@/db/schema/sectors";
 import type { Authz } from "@/features/authz/authz";
 import { spDate } from "../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
@@ -163,10 +164,11 @@ describe("getHandoverSummary", () => {
     expect(summary.highlighted.stock.map((line) => line.name)).toEqual([
       "Rolos de fita",
     ]);
-    expect(summary.zeroed).toEqual({
-      count: 2,
-      names: ["Cabos soltos", "Paletes"],
-    });
+    expect(summary.zeroed.count).toBe(2);
+    expect(summary.zeroed.items.map((line) => line.name)).toEqual([
+      "Cabos soltos",
+      "Paletes",
+    ]);
     expect(summary.nextShiftText).toBe("Conferir a rede 7.");
     expect(summary.occurrencesText).toBe("Chuva forte às 10h.");
   });
@@ -183,7 +185,7 @@ describe("getHandoverSummary", () => {
     const summary = await mustSummary(biaAuthz, passagem.id);
 
     expect(summary.highlighted).toEqual({ controls: [], stock: [] });
-    expect(summary.zeroed).toEqual({ count: 0, names: [] });
+    expect(summary.zeroed).toEqual({ count: 0, items: [] });
     expect(summary.corrections).toEqual([]);
     expect(summary.corrected).toBe(false);
   });
@@ -433,6 +435,30 @@ describe("getHandoverSummary", () => {
       canConfirm: true,
       canCorrectWithReason: false,
     });
+  });
+
+  it("setor inativo: a passagem continua legível para o operador do setor e para o admin", async () => {
+    const { uld, ana, root, turno, anaAuthz } = await seed();
+    const passagem = await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: turno.id,
+      status: "delivered",
+      deliveredBy: ana.id,
+    });
+    await db.update(sector).set({ active: false }).where(eq(sector.id, uld.id));
+    const adminAuthz: Authz = {
+      userId: root.id,
+      name: "Admin Teste",
+      email: `${root.id}@example.test`,
+      role: "admin",
+      sectorId: null,
+    };
+
+    const asOperator = await getHandoverSummary(db, anaAuthz, passagem.id);
+    const asAdmin = await getHandoverSummary(db, adminAuthz, passagem.id);
+
+    expect(asOperator.ok).toBe(true);
+    expect(asAdmin.ok).toBe(true);
   });
 
   it("outro setor e id inexistente devolvem NOT_FOUND idêntico", async () => {

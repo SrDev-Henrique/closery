@@ -260,13 +260,21 @@ describe("listHandoverHistory", () => {
       });
 
       const page = await history(ADMIN, {
-        filters: filters({ from: "2026-11-20", to: "2026-11-20" }),
+        // Dois dias: o dia 19 não tem passagem de ninguém, então um turno ou
+        // setor inativo só apareceria ali como "sem passagem" se o filtro
+        // `active` do CTE de pares deixasse de existir.
+        filters: filters({ from: "2026-11-19", to: "2026-11-20" }),
       });
 
       expect(page.rows.map((row) => row.sectorName)).not.toContain("Fechado");
       expect(
-        page.rows.filter((row) => row.shiftName === "Velho"),
-      ).toMatchObject([{ situation: "awaiting" }]);
+        page.rows
+          .filter((row) => row.shiftName === "Velho")
+          .map((row) => ({
+            situation: row.situation,
+            operationalDate: row.operationalDate,
+          })),
+      ).toEqual([{ situation: "awaiting", operationalDate: "2026-11-20" }]);
     });
 
     it("par com rascunho é missing com hasDraft; rascunho de turno em andamento não aparece", async () => {

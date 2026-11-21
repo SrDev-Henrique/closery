@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -9,7 +8,7 @@ import {
   saveHandoverFieldAction,
 } from "@/app/(app)/passagens/actions";
 import { useAdminAction } from "@/components/admin/useAdminAction";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import type { HandoverFormState } from "@/features/handovers/formState";
 import { UNSAVED_DELIVER_MESSAGE } from "@/features/handovers/messages";
@@ -108,6 +107,21 @@ export function HandoverForm({
     return null;
   }
 
+  // No modo de edição o resumo só abre depois que o salvamento terminou: uma
+  // navegação passa na frente de uma action pendente e mostraria o valor velho.
+  async function openSummary() {
+    const handoverId = state.handoverId;
+    if (delivering || !handoverId) return;
+    setError(null);
+    setDelivering(true);
+    if (!(await autosave.flush())) {
+      setError(UNSAVED_DELIVER_MESSAGE);
+      setDelivering(false);
+      return;
+    }
+    router.push(handoverHref(handoverId));
+  }
+
   async function deliver() {
     if (delivering || pending) return;
     setError(null);
@@ -169,12 +183,14 @@ export function HandoverForm({
           </div>
         ) : (
           state.handoverId && (
-            <Link
-              href={handoverHref(state.handoverId)}
-              className={`${buttonVariants({ variant: "outline" })} w-fit`}
+            <Button
+              type="button"
+              variant="outline"
+              disabled={delivering}
+              onClick={openSummary}
             >
               Ver resumo
-            </Link>
+            </Button>
           )
         )}
       </div>

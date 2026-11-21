@@ -185,7 +185,7 @@ export function useHandoverAutosave(options: {
       void flush();
     }
 
-    return { change, commit, flush, retry };
+    return { change, commit, flush, retry, publish };
   }, [core]);
 
   // Reenvia o que falhou quando a rede volta.
@@ -208,11 +208,14 @@ export function useHandoverAutosave(options: {
   // Ao desmontar (trocar de turno, navegar) envia o pendente sem esperar.
   useEffect(() => {
     core.mounted = true;
+    // Escondido (Activity) o publish é suprimido: ao voltar, mostra o estado real.
+    api.publish();
     return () => {
       core.mounted = false;
       void api.flush();
     };
   }, [core, api]);
 
-  return { ...view, ...api };
+  const { change, commit, flush, retry } = api;
+  return { ...view, change, commit, flush, retry };
 }

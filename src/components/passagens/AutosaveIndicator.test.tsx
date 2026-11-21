@@ -103,4 +103,19 @@ describe("AutosaveIndicator", () => {
       screen.queryByRole("button", { name: "Tentar de novo" }),
     ).not.toBeInTheDocument();
   });
+
+  it.each([
+    [{ kind: "idle" }],
+    [{ kind: "saving" }],
+    [{ kind: "saved", at: spDate("2026-11-20", "09:10") }],
+    [{ kind: "error", message: "Sem rede." }],
+  ] as const)("todo estado leva um ícone decorativo ao lado do texto: %o", (status) => {
+    render(
+      <AutosaveIndicator status={status} lastSaved={null} onRetry={vi.fn()} />,
+    );
+
+    const icon = screen.getByRole("status").querySelector("svg");
+    expect(icon).not.toBeNull();
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+  });
 });

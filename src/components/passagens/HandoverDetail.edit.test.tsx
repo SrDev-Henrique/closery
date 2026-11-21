@@ -203,10 +203,9 @@ describe("HandoverDetail com ?editar=1", () => {
       expect(
         screen.getByRole("textbox", { name: "Quantidade de Fita adesiva" }),
       ).toHaveValue("0");
-      expect(screen.getByRole("link", { name: "Ver resumo" })).toHaveAttribute(
-        "href",
-        `/passagens/${id}`,
-      );
+      expect(
+        screen.getByRole("button", { name: "Ver resumo" }),
+      ).toBeInTheDocument();
       expect(
         screen.queryByRole("button", { name: "Entregar turno" }),
       ).not.toBeInTheDocument();

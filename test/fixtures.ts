@@ -191,9 +191,11 @@ export async function insertInvite(
 const DEFAULT_DELIVERED_AT = new Date("2026-11-20T17:00:00Z");
 const HOUR_MS = 60 * 60 * 1000;
 
-// Passagem direto na tabela. Lança para estado impossível (o banco também
-// recusaria): rascunho com entrega/confirmação, entregue sem quem entregou,
-// confirmada sem quem confirmou, quem confirmou = quem entregou. Para provar
+// Passagem direto na tabela. Lança para estado impossível: rascunho com
+// entrega/confirmação, entregue sem quem entregou, confirmada sem quem
+// confirmou, quem confirmou = quem entregou. O banco recusa a maioria (os
+// CHECKs), mas NÃO recusa um `confirmationNote` solto em rascunho/entregue:
+// só esta fixture impede. Para provar
 // os CHECKs do banco, insira com SQL cru.
 export async function insertHandover(
   db: Db,
