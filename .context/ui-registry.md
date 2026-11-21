@@ -260,8 +260,8 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 ### SessionKeepAlive
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/SessionKeepAlive.tsx`
-- **Propósito:** renovar o cookie de sessão de quem usa o app (a leitura no Server Component
-  estende o banco mas não grava cookie).
+- **Propósito:** única renovação da sessão de quem usa o app: o servidor lê sem renovar
+  (`disableRefresh`) e esta chamada HTTP regrava banco e cookie juntos, passado o `updateAge`.
 - **Como funciona:** `"use client"`; `useEffect` chama `authClient.getSession()` uma vez ao montar;
   erros em silêncio; renderiza `null`. Montado em `src/app/(app)/layout.tsx`, fora de `<Suspense>`.
 - **Usa:** `authClient`.

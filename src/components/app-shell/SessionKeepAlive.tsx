@@ -4,10 +4,11 @@ import { useEffect } from "react";
 
 import { authClient } from "@/lib/auth/client";
 
-// O servidor lê a sessão em Server Components, que não gravam cookie: o
-// Better Auth estende `expiresAt` no banco, mas o cookie do navegador
-// continuaria com o Max-Age do login. Uma chamada HTTP a /api/auth/get-session
-// devolve o cookie renovado. Uma vez por montagem; erros ficam em silêncio
+// Única renovação da sessão. O servidor lê a sessão sem renovar
+// (`getAuthz` passa `disableRefresh`), porque Server Component não grava
+// cookie. Esta chamada HTTP a /api/auth/get-session, passado o `updateAge`,
+// estende `expiresAt` no banco e regrava o cookie juntos. Sem ela o cookie
+// morreria 7 dias após o login. Uma vez por montagem; erros ficam em silêncio
 // (a página já está protegida no servidor, isto é só renovação).
 export function SessionKeepAlive() {
   useEffect(() => {

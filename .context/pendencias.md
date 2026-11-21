@@ -145,7 +145,7 @@
 **Estado:** Aberto, não triado
 **Arquivos:** `src/lib/auth/createAuth.ts` (`rateLimit`)
 **Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
-**Correção:** — (opção: confirmar na Vercel e ajustar os números)
+**Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
 **Registrado em:** 2026-11-20
 
 ## 2. Triado, plano pronto
