@@ -29,7 +29,7 @@ export const AUTH_ACTION_FILES: readonly string[] = [
 // varredura parou de enxergar algum arquivo). Sobe para 1 na Tarefa 7
 // (src/app/(app)/actions.ts) e para 2 na Tarefa 8 (passagens/actions.ts).
 const MIN_ADMIN_ACTION_FILES = 5;
-const MIN_APP_ACTION_FILES = 1;
+const MIN_APP_ACTION_FILES = 2;
 
 const APP_PREFIX = "src/app/(app)/";
 const ADMIN_PREFIX = "src/app/(app)/admin/";

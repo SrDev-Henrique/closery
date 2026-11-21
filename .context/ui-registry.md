@@ -699,6 +699,70 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Usa:** `getHomeHandovers`, `resolveHandoverSector`, `readRememberedSector`, `EmptyState`, `SectorPicker`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
 
+### QuantityCounter
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/QuantityCounter.tsx`
+- **Propósito:** contagem inteira de 0 a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
+- **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira 0 e chama `onChange(0)` e `onCommit(0)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
+- **Usa:** `Button` (`icon`), `Input`, `Tooltip`, `sanitizeQuantityInput`, `parseQuantity`, `stepQuantity`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### useHandoverAutosave
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/useHandoverAutosave.ts`
+- **Propósito:** salvamento automático por campo da passagem (F3-3).
+- **Como funciona:** `"use client"`. `change(campo)` agenda o envio com debounce de 800 ms por campo; `commit(campo)` envia já (onBlur, −/+). **Fila serial**: uma requisição em voo por vez, e o valor mais novo de cada campo vence (chave `occurrences`, `nextShift`, `quantity:{item}`, `note:{item}`). Falha (`ok: false` ou exceção) vira `status: error`, mantém o digitado e **para a fila** até `retry()`; o evento `online` também reenvia. `flush()` envia tudo e devolve `true` só se nada ficou sem salvar (o botão "Entregar turno" e a troca de turno/data dependem disso). `beforeunload` só enquanto houver algo não salvo; ao desmontar, envia o pendente sem esperar. Nunca lança. Não revalida a tela: a action de salvar não chama `revalidatePath`.
+- **Usa:** `saveHandoverFieldAction` (injetada), `AUTOSAVE_DEBOUNCE_MS`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### AutosaveIndicator
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/AutosaveIndicator.tsx`
+- **Propósito:** dizer, em texto, o estado do salvamento automático.
+- **Como funciona:** `"use client"`. `<output aria-live="polite">` (papel `status`) com "Salvando…", "Salvo às {HH:mm}", "Último salvamento às {HH:mm} por {nome}" (estado inicial vindo do servidor), "Nada salvo ainda." ou, no erro, "Não salvo." + a mensagem + botão "Tentar de novo" (`outline`, `sm`).
+- **Usa:** `Button`, `formatTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### ItemLineField
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/ItemLineField.tsx`
+- **Propósito:** uma linha de item da passagem: nome, contador e observação opcional.
+- **Como funciona:** `"use client"`; renderiza um `<li>` (a lista é do `HandoverFields`). Nome em `font-medium`, `QuantityCounter` e o botão "Adicionar observação" (`aria-label` `Adicionar observação em {item}`) que revela o campo `Observação de {item}` (`maxLength` 200, `text-base`); a observação já vem aberta quando existe. Digitar chama `onNoteChange`; sair do campo chama `onNoteCommit`.
+- **Usa:** `QuantityCounter`, `Button`, `Input`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### HandoverFields
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverFields.tsx`
+- **Propósito:** o corpo do formulário da passagem, sem estado próprio (reaproveitado pela correção com motivo).
+- **Como funciona:** `"use client"`. Seções Controles ("Soma no período, como redes danificadas.") e Estoque ("Contagem de agora. Vale a última, nunca a soma."), só as que têm itens; sem nenhum item, `EmptyState` "Nenhum item neste setor." (admin: link "Ir para Itens"). Depois "Ocorrências do turno" e "Fica para o próximo turno" (`Textarea` `text-base`, `maxLength` 2.000, contador "{n} de 2.000 caracteres" só a partir de 90%; a segunda com destaque `border-warning-foreground/40 bg-warning/30` e ícone). Valores e eventos (`onChange`, `onCommit`) vêm do pai.
+- **Usa:** `ItemLineField`, `EmptyState`, `Field*`, `Textarea`, tokens `warning`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### HandoverHeader
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverHeader.tsx`
+- **Propósito:** setor, turno e data do formulário (D-F3-2).
+- **Como funciona:** `"use client"`. Setor em texto; `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
+- **Usa:** `SelectField`, `Field*`, `Input`, `newHandoverHref`, `sonner`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### HandoverForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverForm.tsx`
+- **Propósito:** formulário da passagem com salvamento automático e "Entregar turno".
+- **Como funciona:** `"use client"`; o chamador põe `key={turno:data}` para remontar ao trocar. Estado controlado dos valores (nunca em branco: `0` e textos vazios), `useHandoverAutosave`, `HandoverHeader` (modo `draft`), `HandoverFields` e `AutosaveIndicator`. **Entregar turno** faz `flush()` antes; se algo ficou sem salvar, mostra "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo." e não entrega; com sucesso, toast "Turno entregue." e navega para o resumo (o botão fica travado até a navegação); `ALREADY_DELIVERED` e outras falhas aparecem no próprio formulário, sem perder o digitado. Sem diálogo de confirmação. No modo `edit` (passagem entregue) não há cabeçalho nem botão, só o link "Ver resumo".
+- **Usa:** `useHandoverAutosave`, `useAdminAction`, `saveHandoverFieldAction`, `deliverHandoverAction`, `HandoverHeader`, `HandoverFields`, `AutosaveIndicator`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### NewHandover
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/NewHandover.tsx`
+- **Propósito:** a página `/passagens/nova`.
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>`. `requireUser()`; operador usa o próprio setor, admin escolhe (`resolveHandoverSector` + `SectorPicker`). Turno e data vêm de `resolveHandoverTarget` (URL válida ou sugestão pelo horário). **GET nunca escreve**: o rascunho nasce no primeiro salvamento. Combinação já entregue ou confirmada redireciona para o resumo. Estados vazios: sem setor ativo, setor inativo, sem turnos (admin: link "Ir para Turnos").
+- **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `HandoverForm`, `SectorPicker`, `EmptyState`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*

@@ -97,6 +97,15 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
     }
   });
 
+  it("inclui a página de cada rota de /passagens", () => {
+    const routes = pages.map((file) =>
+      relative(APP_GROUP, file).replaceAll("\\", "/"),
+    );
+    for (const route of ["passagens/nova/page.tsx"]) {
+      expect(routes).toContain(route);
+    }
+  });
+
   it("nenhuma página de /admin exporta metadata (T12)", () => {
     for (const file of pages.filter(isAdminPage)) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(
