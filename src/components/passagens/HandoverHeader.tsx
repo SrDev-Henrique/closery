@@ -76,7 +76,9 @@ export function HandoverHeader({
 
   // A pausa sempre chama a versão mais recente (sem reiniciar a cada render).
   const commitRef = useRef(commitDate);
-  commitRef.current = commitDate;
+  useEffect(() => {
+    commitRef.current = commitDate;
+  });
   useEffect(() => {
     if (draftDate === null) return;
     const timer = setTimeout(() => commitRef.current(), DATE_DEBOUNCE_MS);

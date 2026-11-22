@@ -11,7 +11,10 @@ import { useAdminAction } from "@/components/admin/useAdminAction";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import type { HandoverFormState } from "@/features/handovers/formState";
-import { UNSAVED_DELIVER_MESSAGE } from "@/features/handovers/messages";
+import {
+  UNSAVED_DELIVER_MESSAGE,
+  UNSAVED_SUMMARY_MESSAGE,
+} from "@/features/handovers/messages";
 import type {
   FieldChange,
   FieldValues,
@@ -116,7 +119,7 @@ export function HandoverForm({
     setError(null);
     setDelivering(true);
     if (!(await autosave.flush())) {
-      setError(UNSAVED_DELIVER_MESSAGE);
+      setError(UNSAVED_SUMMARY_MESSAGE);
       setDelivering(false);
       return;
     }

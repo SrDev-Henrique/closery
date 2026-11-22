@@ -743,17 +743,17 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverHeader.tsx`
 - **Propósito:** setor, turno e data do formulário (D-F3-2).
-- **Como funciona:** `"use client"`. Setor em texto; `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
+- **Como funciona:** `"use client"`. Setor em texto; `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. A data só vale ao sair do campo, com Enter ou depois de 700 ms sem digitar (digitar "15" pelo teclado não salta para o dia 01). Prop `onPendingChange(pending)` avisa o formulário enquanto uma troca está em andamento. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
 - **Usa:** `SelectField`, `Field*`, `Input`, `newHandoverHref`, `sonner`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: data por blur/Enter/pausa de 700 ms e `onPendingChange`.
 
 ### HandoverForm
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverForm.tsx`
 - **Propósito:** formulário da passagem com salvamento automático e "Entregar turno".
-- **Como funciona:** `"use client"`; o chamador põe `key={turno:data}` para remontar ao trocar. Estado controlado dos valores (nunca em branco: `0` e textos vazios), `useHandoverAutosave`, `HandoverHeader` (modo `draft`), `HandoverFields` e `AutosaveIndicator`. **Entregar turno** faz `flush()` antes; se algo ficou sem salvar, mostra "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo." e não entrega; com sucesso, toast "Turno entregue." e navega para o resumo (o botão fica travado até a navegação); `ALREADY_DELIVERED` e outras falhas aparecem no próprio formulário, sem perder o digitado. Sem diálogo de confirmação. No modo `edit` (passagem entregue) não há cabeçalho nem botão, só o botão "Ver resumo" (espera o `flush()` e então navega; se o salvamento falhar, fica na tela e mostra o aviso de alterações sem salvar).
+- **Como funciona:** `"use client"`; o chamador põe `key={turno:data}` para remontar ao trocar. Estado controlado dos valores (nunca em branco: `0` e textos vazios), `useHandoverAutosave`, `HandoverHeader` (modo `draft`), `HandoverFields` e `AutosaveIndicator`. **Entregar turno** faz `flush()` antes; se algo ficou sem salvar, mostra "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo." e não entrega; com sucesso, toast "Turno entregue." e navega para o resumo (o botão fica travado até a navegação); `ALREADY_DELIVERED` e outras falhas aparecem no próprio formulário, sem perder o digitado. Sem diálogo de confirmação. Enquanto uma troca de turno ou data está em andamento, os campos e "Entregar turno" ficam travados e `deliver()` recusa. No modo `edit` (passagem entregue) não há cabeçalho nem botão, só o botão "Ver resumo" (espera o `flush()` e então navega; se o salvamento falhar, fica na tela e mostra "Há alterações sem salvar. Toque em “Tentar de novo” antes de ver o resumo.").
 - **Usa:** `useHandoverAutosave`, `useAdminAction`, `saveHandoverFieldAction`, `deliverHandoverAction`, `HandoverHeader`, `HandoverFields`, `AutosaveIndicator`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: trava durante a troca de turno/data; "Ver resumo" com mensagem própria.
 
 ### NewHandover
 - **Status:** ✅ pronto (2026-11-21)

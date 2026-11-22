@@ -32,6 +32,7 @@ import {
   SWITCH_FAILED_MESSAGE,
   TEXT_TOO_LONG_MESSAGE,
   UNSAVED_DELIVER_MESSAGE,
+  UNSAVED_SUMMARY_MESSAGE,
 } from "./messages";
 import { formatQuantity } from "./quantity";
 
@@ -86,6 +87,10 @@ describe("mensagens fixas (os testes de tela e o E2E dependem do texto exato)", 
     [
       UNSAVED_DELIVER_MESSAGE,
       "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo.",
+    ],
+    [
+      UNSAVED_SUMMARY_MESSAGE,
+      "Há alterações sem salvar. Toque em “Tentar de novo” antes de ver o resumo.",
     ],
     [
       SWITCH_FAILED_MESSAGE,

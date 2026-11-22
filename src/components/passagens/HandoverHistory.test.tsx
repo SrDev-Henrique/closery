@@ -1,5 +1,6 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/db";
@@ -20,10 +21,12 @@ const mocks = vi.hoisted(
     requireUser: ReturnType<typeof vi.fn>;
     readRememberedSector: ReturnType<typeof vi.fn>;
     client: PGlite | undefined;
+    push: ReturnType<typeof vi.fn>;
   } => ({
     requireUser: vi.fn(),
     readRememberedSector: vi.fn(),
     client: undefined,
+    push: vi.fn(),
   }),
 );
 
@@ -38,7 +41,7 @@ vi.mock("@/db", async () => {
   return { db };
 });
 vi.mock("@/app/(app)/actions", () => ({ chooseSectorAction: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: mocks.push }) }));
 
 // 21/11/2026 14:30 em São Paulo. Só o Date é falso: o PGlite continua real.
 const NOW = spDate("2026-11-21", "14:30");
@@ -84,6 +87,7 @@ describe("HandoverHistory", () => {
     vi.setSystemTime(NOW);
     if (mocks.client) await resetDb(mocks.client);
     mocks.requireUser.mockReset();
+    mocks.push.mockReset();
     mocks.readRememberedSector.mockReset();
     mocks.readRememberedSector.mockResolvedValue(undefined);
   });
@@ -247,6 +251,38 @@ describe("HandoverHistory", () => {
       }),
     );
     expect(screen.getByLabelText("Período")).toHaveValue("7");
+  });
+
+  it("trocar de setor com um turno escolhido mostra os turnos do setor novo com 'Todos os turnos'", async () => {
+    const { sector, other, morning, otherShift } = await seed();
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+    const { rerender } = render(
+      await HandoverHistory({
+        searchParams: Promise.resolve({ setor: sector.id, turno: morning.id }),
+      }),
+    );
+    expect(screen.getByLabelText("Turno")).toHaveValue(morning.id);
+
+    rerender(
+      await HandoverHistory({
+        searchParams: Promise.resolve({ setor: other.id }),
+      }),
+    );
+
+    const next = screen.getByLabelText("Turno");
+    expect(next).toHaveValue("all");
+    expect(
+      within(next).getByRole("option", { name: otherShift.name }),
+    ).toBeInTheDocument();
+    expect(
+      within(next).queryByRole("option", { name: "Turno Manhã" }),
+    ).not.toBeInTheDocument();
+    // O estado não guarda o turno do setor antigo: aplicar não o leva na URL.
+    await userEvent.click(
+      screen.getByRole("button", { name: "Aplicar filtros" }),
+    );
+    expect(mocks.push).toHaveBeenCalledTimes(1);
+    expect(String(mocks.push.mock.calls[0][0])).not.toContain("turno=");
   });
 
   it("sem nenhuma passagem no período: estado vazio com a dica", async () => {

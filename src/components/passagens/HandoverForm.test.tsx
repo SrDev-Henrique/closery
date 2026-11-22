@@ -6,7 +6,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { type AdminResult, fail, ok } from "@/features/admin/result";
 import type { SavedField } from "@/features/handovers/draft";
 import type { HandoverFormState } from "@/features/handovers/formState";
-import { UNSAVED_DELIVER_MESSAGE } from "@/features/handovers/messages";
+import {
+  UNSAVED_DELIVER_MESSAGE,
+  UNSAVED_SUMMARY_MESSAGE,
+} from "@/features/handovers/messages";
 import type { FormMode } from "@/features/handovers/types";
 import { spDate } from "../../../test/clock";
 import { HandoverForm } from "./HandoverForm";
@@ -430,7 +433,8 @@ describe("HandoverForm", () => {
 
       await userEvent.click(screen.getByRole("button", { name: "Ver resumo" }));
 
-      expect(await screen.findByText(/Há alterações sem salvar/)).toBeVisible();
+      expect(await screen.findByText(UNSAVED_SUMMARY_MESSAGE)).toBeVisible();
+      expect(screen.queryByText(UNSAVED_DELIVER_MESSAGE)).toBeNull();
       expect(mocks.push).not.toHaveBeenCalled();
     });
 

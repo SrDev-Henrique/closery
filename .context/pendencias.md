@@ -249,7 +249,7 @@
 #### P38 — Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/handovers/shiftSuggestion.ts` (`resolveHandoverTarget`) · `src/components/passagens/HistoryRowItem.tsx` · `src/components/passagens/NewHandover.tsx`
-**Impacto:** um rascunho antigo continua editável e entregável no domínio (F3-8b), mas o histórico não oferece mais o link fora da janela e `/passagens/nova` cai no turno sugerido; só quem tem a URL exata chega nele.
+**Impacto:** um rascunho antigo continua editável e entregável no domínio (F3-8b), mas nenhuma tela ou URL o abre: o histórico não oferece o link fora da janela, `/passagens/{id}` de um rascunho redireciona para `/passagens/nova` e ali a data antiga é descartada em favor do turno sugerido.
 **Correção:** — (opção: abrir rascunhos antigos pelo id em `/passagens/{id}?editar=1`, ou expirá-los de propósito)
 **Registrado em:** 2026-11-21
 

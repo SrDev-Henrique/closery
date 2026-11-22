@@ -37,6 +37,8 @@ export const INVALID_DATE_MESSAGE = "Data inválida.";
 export const DUPLICATE_ITEM_MESSAGE = "Item repetido. Atualize a página.";
 export const UNSAVED_DELIVER_MESSAGE =
   "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo.";
+export const UNSAVED_SUMMARY_MESSAGE =
+  "Há alterações sem salvar. Toque em “Tentar de novo” antes de ver o resumo.";
 export const SWITCH_FAILED_MESSAGE =
   "Não foi possível salvar. Tente de novo antes de trocar de turno.";
 
