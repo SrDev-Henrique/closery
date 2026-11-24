@@ -2,15 +2,21 @@ import type { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  commentsOf,
   countCorrections,
+  countRequestEvents,
   countSessionsByEmail,
   handoverOf,
+  requestByDescription,
+  requestOf,
   userIdByEmail,
 } from "../e2e/db";
 import { createTestDb, resetDb, type TestDb } from "./db";
 import {
   insertHandover,
   insertHandoverCorrection,
+  insertRequest,
+  insertRequestComment,
   insertSector,
   insertSession,
   insertShift,
@@ -161,5 +167,143 @@ describe("helpers da passagem no E2E", () => {
 
     expect(await countCorrections(db, first.id)).toBe(2);
     expect(await countCorrections(db, second.id)).toBe(0);
+  });
+});
+
+describe("helpers das solicitações no E2E", () => {
+  async function seed() {
+    const sector = await insertSector(db, "Setor Teste");
+    const other = await insertSector(db, "Outro Setor");
+    const ana = await insertUser(db, { role: "operator", sectorId: sector.id });
+    const bia = await insertUser(db, { role: "operator", sectorId: sector.id });
+    const caio = await insertUser(db, { role: "operator", sectorId: other.id });
+    return { sector, other, ana, bia, caio };
+  }
+
+  it("requestOf devolve a solicitação e null quando não existe", async () => {
+    const { sector, ana } = await seed();
+    expect(
+      await requestOf(db, "00000000-0000-4000-8000-000000000000"),
+    ).toBeNull();
+
+    const created = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      description: "Rede para a doca",
+      status: "in_transit",
+    });
+    expect(await requestOf(db, created.id)).toEqual({
+      id: created.id,
+      status: "in_transit",
+      sectorId: sector.id,
+      originHandoverId: null,
+      description: "Rede para a doca",
+    });
+  });
+
+  it("requestOf mostra a passagem de origem", async () => {
+    const { sector, ana } = await seed();
+    const shift = await insertShift(db, { sectorId: sector.id });
+    const origin = await insertHandover(db, {
+      sectorId: sector.id,
+      shiftId: shift.id,
+    });
+    const created = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      originHandoverId: origin.id,
+    });
+    expect((await requestOf(db, created.id))?.originHandoverId).toBe(origin.id);
+  });
+
+  it("requestByDescription acha a mais recente com o texto exato, nunca outra", async () => {
+    const { sector, other, ana, caio } = await seed();
+    expect(await requestByDescription(db, "Rede única")).toBeNull();
+
+    await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      description: "Rede única",
+      createdAt: new Date("2026-11-19T12:00:00Z"),
+    });
+    const newest = await insertRequest(db, {
+      sectorId: other.id,
+      createdBy: caio.id,
+      description: "Rede única",
+      status: "delivered",
+      createdAt: new Date("2026-11-20T12:00:00Z"),
+    });
+    await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      description: "Rede única e mais",
+      createdAt: new Date("2026-11-21T12:00:00Z"),
+    });
+
+    expect(await requestByDescription(db, "Rede única")).toEqual({
+      id: newest.id,
+      status: "delivered",
+      originHandoverId: null,
+    });
+    expect(await requestByDescription(db, "rede única")).toBeNull();
+  });
+
+  it("countRequestEvents conta só os eventos daquela solicitação", async () => {
+    const { sector, ana, bia } = await seed();
+    const created = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+    });
+    const moved = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      status: "delivered",
+      statusChangedBy: bia.id,
+    });
+    const bare = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      events: false,
+    });
+
+    expect(await countRequestEvents(db, created.id)).toBe(1);
+    expect(await countRequestEvents(db, moved.id)).toBe(2);
+    expect(await countRequestEvents(db, bare.id)).toBe(0);
+  });
+
+  it("commentsOf lista do mais antigo ao mais novo, com apagado e motivo marcados", async () => {
+    const { sector, ana, bia } = await seed();
+    const created = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      status: "cancelled",
+      statusChangedBy: bia.id,
+      cancelReason: "Pedido duplicado",
+      statusChangedAt: new Date("2026-11-20T12:00:00Z"),
+    });
+    const empty = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+    });
+    await insertRequestComment(db, {
+      requestId: created.id,
+      authorId: ana.id,
+      body: "Depois",
+      createdAt: new Date("2026-11-20T14:00:00Z"),
+    });
+    await insertRequestComment(db, {
+      requestId: created.id,
+      authorId: bia.id,
+      body: "Apagado",
+      createdAt: new Date("2026-11-20T13:00:00Z"),
+      deletedAt: new Date("2026-11-20T13:30:00Z"),
+    });
+
+    expect(await commentsOf(db, created.id)).toEqual([
+      { body: "Pedido duplicado", deleted: false, isReason: true },
+      { body: "Apagado", deleted: true, isReason: false },
+      { body: "Depois", deleted: false, isReason: false },
+    ]);
+    expect(await commentsOf(db, empty.id)).toEqual([]);
   });
 });

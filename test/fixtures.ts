@@ -12,6 +12,13 @@ import {
   handoverItem,
 } from "@/db/schema/handovers";
 import { invite } from "@/db/schema/invites";
+import {
+  type RequestStatus,
+  request,
+  requestComment,
+  requestItem,
+  requestStatusEvent,
+} from "@/db/schema/requests";
 import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
 import type { CreateInviteInput } from "@/features/invites/inviteQueries";
@@ -342,5 +349,193 @@ export async function insertHandoverCorrection(
     })
     .returning({ id: handoverCorrection.id });
   if (!created) throw new Error("fixture: correção não criada");
+  return created;
+}
+
+const DEFAULT_REQUEST_AT = new Date("2026-11-20T12:00:00Z");
+
+// Solicitação direto na tabela, com o histórico que o domínio gravaria: o
+// evento NULL → requested em `createdAt` e, se o status não é "requested", o
+// evento requested → status em `statusChangedAt` (com o comentário do motivo
+// quando cancelada). Os dois eventos podem ter o mesmo instante: a ordem sai
+// do `seq`. O padrão fixo de datas é para o Vitest (relógio injetado ou
+// falso); o E2E passa sempre createdAt e statusChangedAt relativos a
+// Date.now(). Lança para estado impossível. Para provar os CHECKs do banco,
+// insira com SQL cru.
+export async function insertRequest(
+  db: Db,
+  input: {
+    sectorId: string;
+    createdBy: string;
+    destinationId?: string;
+    destinationOther?: string;
+    description?: string;
+    status?: RequestStatus;
+    createdAt?: Date;
+    statusChangedAt?: Date;
+    statusChangedBy?: string;
+    originHandoverId?: string;
+    cancelReason?: string;
+    events?: boolean;
+  },
+): Promise<{ id: string }> {
+  if (
+    input.destinationId !== undefined &&
+    input.destinationOther !== undefined
+  ) {
+    throw new Error("fixture: destino é o da lista OU o texto do Outro");
+  }
+  const description = input.description ?? "Solicitação de teste";
+  if (description.trim() === "") {
+    throw new Error("fixture: a descrição não pode ser só espaços");
+  }
+  const status = input.status ?? "requested";
+  if (input.cancelReason !== undefined && status !== "cancelled") {
+    throw new Error("fixture: cancelReason só vale com status cancelled");
+  }
+  const createdAt =
+    input.createdAt ?? input.statusChangedAt ?? DEFAULT_REQUEST_AT;
+  const statusChangedAt = input.statusChangedAt ?? createdAt;
+  if (statusChangedAt.getTime() < createdAt.getTime()) {
+    throw new Error(
+      "fixture: statusChangedAt não pode ser anterior a createdAt",
+    );
+  }
+  const withEvents = input.events ?? true;
+  if (
+    withEvents &&
+    status === "requested" &&
+    statusChangedAt.getTime() !== createdAt.getTime()
+  ) {
+    throw new Error(
+      "fixture: solicitação 'requested' com statusChangedAt diferente de createdAt não tem histórico (use events: false)",
+    );
+  }
+  const statusChangedBy = input.statusChangedBy ?? input.createdBy;
+
+  const [created] = await db
+    .insert(request)
+    .values({
+      sectorId: input.sectorId,
+      destinationId: input.destinationId ?? null,
+      destinationOther:
+        input.destinationId === undefined
+          ? (input.destinationOther ?? "Destino Teste")
+          : null,
+      description,
+      status,
+      createdBy: input.createdBy,
+      createdAt,
+      statusChangedAt,
+      originHandoverId: input.originHandoverId ?? null,
+    })
+    .returning({ id: request.id });
+  if (!created) throw new Error("fixture: solicitação não criada");
+
+  if (withEvents) {
+    await insertRequestEvent(db, {
+      requestId: created.id,
+      fromStatus: null,
+      toStatus: "requested",
+      changedBy: input.createdBy,
+      changedAt: createdAt,
+    });
+    if (status !== "requested") {
+      const moved = await insertRequestEvent(db, {
+        requestId: created.id,
+        fromStatus: "requested",
+        toStatus: status,
+        changedBy: statusChangedBy,
+        changedAt: statusChangedAt,
+      });
+      if (status === "cancelled") {
+        await insertRequestComment(db, {
+          requestId: created.id,
+          authorId: statusChangedBy,
+          body: input.cancelReason ?? "Motivo de teste",
+          createdAt: statusChangedAt,
+          statusEventId: moved.id,
+        });
+      }
+    }
+  }
+  return created;
+}
+
+// Item pedido; nome e unidade vêm do cadastro (os snapshots da criação).
+export async function insertRequestItem(
+  db: Db,
+  input: { requestId: string; itemId: string; quantity?: number },
+): Promise<void> {
+  const [source] = await db
+    .select({ name: item.name, unit: item.unit })
+    .from(item)
+    .where(eq(item.id, input.itemId));
+  if (!source) throw new Error("fixture: item do snapshot não existe");
+  await db.insert(requestItem).values({
+    requestId: input.requestId,
+    itemId: input.itemId,
+    itemNameSnapshot: source.name,
+    itemUnitSnapshot: source.unit,
+    quantity: input.quantity ?? 1,
+  });
+}
+
+// Evento de status avulso (a solicitação não muda: use insertRequest para um
+// estado coerente). `changedAt` omitido = agora, no banco.
+export async function insertRequestEvent(
+  db: Db,
+  input: {
+    requestId: string;
+    fromStatus: RequestStatus | null;
+    toStatus: RequestStatus;
+    changedBy: string;
+    changedAt?: Date;
+  },
+): Promise<{ id: string }> {
+  if (input.fromStatus === input.toStatus) {
+    throw new Error("fixture: o evento precisa mudar o status (from = to)");
+  }
+  const [created] = await db
+    .insert(requestStatusEvent)
+    .values({
+      requestId: input.requestId,
+      fromStatus: input.fromStatus,
+      toStatus: input.toStatus,
+      changedBy: input.changedBy,
+      ...(input.changedAt ? { changedAt: input.changedAt } : {}),
+    })
+    .returning({ id: requestStatusEvent.id });
+  if (!created) throw new Error("fixture: evento não criado");
+  return created;
+}
+
+// Comentário. O motivo de cancelamento (statusEventId) nunca vem apagado.
+export async function insertRequestComment(
+  db: Db,
+  input: {
+    requestId: string;
+    authorId: string;
+    body?: string;
+    createdAt?: Date;
+    deletedAt?: Date;
+    statusEventId?: string;
+  },
+): Promise<{ id: string }> {
+  if (input.deletedAt && input.statusEventId) {
+    throw new Error("fixture: o motivo de cancelamento não se apaga");
+  }
+  const [created] = await db
+    .insert(requestComment)
+    .values({
+      requestId: input.requestId,
+      authorId: input.authorId,
+      body: input.body ?? "Comentário de teste",
+      deletedAt: input.deletedAt ?? null,
+      statusEventId: input.statusEventId ?? null,
+      ...(input.createdAt ? { createdAt: input.createdAt } : {}),
+    })
+    .returning({ id: requestComment.id });
+  if (!created) throw new Error("fixture: comentário não criado");
   return created;
 }

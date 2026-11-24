@@ -26,6 +26,10 @@ export const TABLES: readonly string[] = [
   "handover",
   "handover_item",
   "handover_correction",
+  "request",
+  "request_item",
+  "request_status_event",
+  "request_comment",
 ];
 
 // O dump migrado é lido uma vez por processo de worker.
