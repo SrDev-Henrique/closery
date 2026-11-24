@@ -24,6 +24,7 @@ import {
   insertDestination,
   insertItem,
   insertRequest,
+  insertRequestComment,
   insertSector,
   insertShift,
   insertUser,
@@ -48,8 +49,10 @@ vi.mock("@/db", () => ({
 }));
 
 import {
+  addCommentAction,
   cancelRequestAction,
   createRequestAction,
+  deleteCommentAction,
   moveRequestAction,
 } from "./actions";
 
@@ -142,6 +145,8 @@ describe("sem sessão", () => {
     ["createRequestAction", createRequestAction],
     ["moveRequestAction", moveRequestAction],
     ["cancelRequestAction", cancelRequestAction],
+    ["addCommentAction", addCommentAction],
+    ["deleteCommentAction", deleteCommentAction],
   ])("%s redireciona e não toca o banco", async (_name, action) => {
     await expect(action({})).rejects.toBe(REDIRECT);
 
@@ -501,6 +506,205 @@ describe("cancelRequestAction", () => {
       code: "NO_CHANGES",
       message:
         "Esta solicitação já foi cancelada por Ana Teste em 21/11/2026 às 14:05.",
+    });
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("addCommentAction", () => {
+  it("comenta, devolve o id e revalida o layout do app", async () => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+
+    const result = await addCommentAction({
+      requestId: created.id,
+      body: "  Fita separada\r\nna doca  ",
+    });
+
+    expect(result).toMatchObject({ ok: true });
+    const [row] = await db.select().from(requestComment);
+    expect(row).toMatchObject({
+      authorId: ana.id,
+      body: "Fita separada\nna doca",
+    });
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/(app)", "layout");
+  });
+
+  it.each([
+    ["vazio", "", "Escreva o comentário."],
+    ["só espaços", "   ", "Escreva o comentário."],
+    [
+      "2.001 pontos de código",
+      "😀".repeat(2001),
+      "O comentário pode ter no máximo 2.000 caracteres.",
+    ],
+  ])("comentário %s: INVALID_INPUT no campo body, nada gravado", async (_label, body, message) => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+
+    const result = await addCommentAction({ requestId: created.id, body });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "INVALID_INPUT",
+      message,
+      fieldErrors: { body: message },
+    });
+    expect(await db.select().from(requestComment)).toEqual([]);
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("2.000 pontos de código passam", async () => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+
+    const result = await addCommentAction({
+      requestId: created.id,
+      body: "😀".repeat(2000),
+    });
+
+    expect(result).toMatchObject({ ok: true });
+  });
+
+  it("operador de outro setor: NOT_FOUND; setor inativo: SECTOR_INACTIVE; sem revalidar", async () => {
+    const { uld, ana, caio, outro, asAna } = await scenario();
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: caio.id, sectorId: outro.id }),
+    );
+    const stranger = await addCommentAction({
+      requestId: created.id,
+      body: "Intruso",
+    });
+    asAna();
+    await client.exec(
+      `UPDATE "sector" SET "active" = false WHERE "id" = '${uld.id}'`,
+    );
+    const inactive = await addCommentAction({
+      requestId: created.id,
+      body: "Setor parado",
+    });
+
+    expect(stranger).toMatchObject({ ok: false, code: "NOT_FOUND" });
+    expect(inactive).toMatchObject({ ok: false, code: "SECTOR_INACTIVE" });
+    expect(await db.select().from(requestComment)).toEqual([]);
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("deleteCommentAction", () => {
+  it("apaga o próprio comentário e revalida", async () => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+    const own = await insertRequestComment(db, {
+      requestId: created.id,
+      authorId: ana.id,
+    });
+
+    const result = await deleteCommentAction({ id: own.id });
+
+    expect(result).toEqual({ ok: true });
+    const [row] = await db.select().from(requestComment);
+    expect(row?.deletedAt).toEqual(spDate(TODAY, "14:05"));
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/(app)", "layout");
+  });
+
+  it("comentário de outra pessoa: FORBIDDEN, nada muda, sem revalidar", async () => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const colega = await insertUser(db, {
+      role: "operator",
+      sectorId: uld.id,
+      name: "Bia Teste",
+    });
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+    const others = await insertRequestComment(db, {
+      requestId: created.id,
+      authorId: colega.id,
+    });
+
+    const result = await deleteCommentAction({ id: others.id });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "FORBIDDEN",
+      message: "Só quem escreveu o comentário pode apagá-lo.",
+    });
+    const [row] = await db.select().from(requestComment);
+    expect(row?.deletedAt).toBeNull();
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("o motivo do cancelamento: FORBIDDEN até para o autor", async () => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const cancelled = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+      status: "cancelled",
+    });
+    const [reason] = await db
+      .select()
+      .from(requestComment)
+      .where(eq(requestComment.requestId, cancelled.id));
+
+    const result = await deleteCommentAction({ id: reason?.id });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "FORBIDDEN",
+      message: "O motivo do cancelamento não pode ser apagado.",
+    });
+  });
+
+  it("id malformado: INVALID_INPUT; apagar duas vezes: NOT_FOUND", async () => {
+    const { asAna, uld, ana } = await scenario();
+    asAna();
+    const created = await insertRequest(db, {
+      sectorId: uld.id,
+      createdBy: ana.id,
+    });
+    const own = await insertRequestComment(db, {
+      requestId: created.id,
+      authorId: ana.id,
+    });
+    await deleteCommentAction({ id: own.id });
+    mocks.revalidatePath.mockReset();
+
+    const malformed = await deleteCommentAction({ id: "x" });
+    const twice = await deleteCommentAction({ id: own.id });
+
+    expect(malformed).toMatchObject({
+      ok: false,
+      code: "INVALID_INPUT",
+      message: "Registro inválido. Atualize a página.",
+    });
+    expect(twice).toMatchObject({
+      ok: false,
+      code: "NOT_FOUND",
+      message: "Comentário não encontrado. Atualize a página.",
     });
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
