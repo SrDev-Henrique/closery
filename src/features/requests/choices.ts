@@ -142,8 +142,8 @@ export async function mostUsedDestinations(
 }
 
 // F4-21: destinos ativos uma vez e, por setor, os itens de estoque e o destino
-// padrão (o mais usado; sem histórico, o primeiro ativo; sem ativos, null =
-// "Outro"). Ids vazios: só os destinos.
+// padrão (o mais usado, se estiver entre as opções; senão, ou sem histórico, o
+// primeiro ativo; sem ativos, null = "Outro"). Ids vazios: só os destinos.
 export async function getRequestFormChoices(
   db: Db,
   sectorIds: readonly string[],
