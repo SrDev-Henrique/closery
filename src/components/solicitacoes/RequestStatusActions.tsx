@@ -55,7 +55,13 @@ export function RequestStatusActions({
           onClick={() => move(to)}
         />
       ))}
-      {canCancel && <CancelRequestDialog requestId={requestId} from={status} />}
+      {canCancel && (
+        <CancelRequestDialog
+          requestId={requestId}
+          from={status}
+          disabled={pending}
+        />
+      )}
     </div>
   );
 }

@@ -119,6 +119,12 @@ describe("RequestForm", () => {
     for (const mock of Object.values(mocks)) mock.mockReset();
   });
 
+  it("a Descrição mantém 16px também a partir de md (sem zoom no celular)", () => {
+    setup();
+
+    expect(description()).toHaveClass("text-base", "md:text-base");
+  });
+
   describe("nunca começa em branco", () => {
     it("o destino já vem escolhido: o padrão do setor; 'Outro' é a última opção", () => {
       setup();
@@ -203,6 +209,30 @@ describe("RequestForm", () => {
       expect(
         screen.getByRole("textbox", { name: "Quantidade de Fita" }),
       ).toHaveValue("2");
+    });
+
+    it("trocar o item da linha mantém o foco no select e o valor digitado", async () => {
+      setup();
+      await userEvent.click(addItem());
+      const quantity = screen.getByRole("textbox", {
+        name: "Quantidade de Luva",
+      });
+      await userEvent.clear(quantity);
+      await userEvent.type(quantity, "7");
+      await userEvent.tab();
+      expect(
+        screen.getByRole("textbox", { name: "Quantidade de Luva" }),
+      ).toHaveValue("7");
+
+      const select = itemSelects()[0] as HTMLElement;
+      select.focus();
+      fireEvent.change(select, { target: { value: FITA } });
+
+      expect(itemSelects()[0]).toHaveValue(FITA);
+      expect(itemSelects()[0]).toHaveFocus();
+      expect(
+        screen.getByRole("textbox", { name: "Quantidade de Fita" }),
+      ).toHaveValue("7");
     });
 
     it("a quantidade tem mínimo 1: − desativado em 1", async () => {

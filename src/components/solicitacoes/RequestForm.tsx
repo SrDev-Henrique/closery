@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 
 import { createRequestAction } from "@/app/(app)/solicitacoes/actions";
 import { SelectField } from "@/components/admin/SelectField";
@@ -55,6 +55,9 @@ const FORM_FIELDS = [
   "items",
 ] as const;
 
+// Linha de item no estado do cliente; `key` é só para o React e não vai no payload.
+type ItemLine = RequestItemInput & { key: number };
+
 const NO_SECTOR_CHOICES: SectorFormChoices = {
   stockItems: [],
   defaultDestinationId: null,
@@ -90,7 +93,8 @@ export function RequestForm({
   );
   const [destinationOther, setDestinationOther] = useState("");
   const [description, setDescription] = useState("");
-  const [items, setItems] = useState<RequestItemInput[]>([]);
+  const [items, setItems] = useState<ItemLine[]>([]);
+  const nextLineKey = useRef(0);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -119,9 +123,14 @@ export function RequestForm({
 
   function addItem() {
     if (!nextItem) return;
+    const key = nextLineKey.current++;
     setItems((current) => [
       ...current,
-      { itemId: nextItem.id, quantity: REQUEST_ITEM_MIN_QUANTITY },
+      {
+        key,
+        itemId: nextItem.id,
+        quantity: REQUEST_ITEM_MIN_QUANTITY,
+      },
     ]);
   }
 
@@ -152,7 +161,7 @@ export function RequestForm({
       destinationId: isOther ? null : destinationId,
       destinationOther: isOther ? destinationOther : "",
       description,
-      items,
+      items: items.map(({ itemId, quantity }) => ({ itemId, quantity })),
       originRef,
     };
     const parsed = createRequestSchema.safeParse(payload);
@@ -232,6 +241,7 @@ export function RequestForm({
           <FieldLabel htmlFor={`${uid}-description`}>Descrição</FieldLabel>
           <Textarea
             id={`${uid}-description`}
+            className="text-base md:text-base"
             maxLength={DESCRIPTION_MAX_LENGTH}
             value={description}
             disabled={pending}
@@ -273,7 +283,7 @@ export function RequestForm({
                     );
                     return (
                       <li
-                        key={line.itemId}
+                        key={line.key}
                         className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center"
                       >
                         <NativeSelect

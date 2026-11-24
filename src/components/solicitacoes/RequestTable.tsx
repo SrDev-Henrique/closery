@@ -54,9 +54,9 @@ export function RequestTable({
                 <Link
                   href={requestHref(row.id)}
                   scroll={false}
-                  className="line-clamp-2 inline-flex min-h-9 items-center font-medium underline-offset-4 hover:underline max-md:min-h-11"
+                  className="inline-flex min-h-9 items-center font-medium underline-offset-4 hover:underline max-md:min-h-11"
                 >
-                  {row.description}
+                  <span className="line-clamp-2">{row.description}</span>
                 </Link>
               </TableCell>
               {showSector && <TableCell>{row.sectorName}</TableCell>}

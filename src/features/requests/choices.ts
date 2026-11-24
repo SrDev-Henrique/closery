@@ -158,9 +158,13 @@ export async function getRequestFormChoices(
   const fallback = destinations[0]?.id ?? null;
   const bySector: RequestFormChoices["bySector"] = {};
   for (const sectorId of sectorIds) {
+    const used = mostUsed.get(sectorId);
     bySector[sectorId] = {
       stockItems: stock.get(sectorId) ?? [],
-      defaultDestinationId: mostUsed.get(sectorId) ?? fallback,
+      defaultDestinationId:
+        used !== undefined && destinations.some((d) => d.id === used)
+          ? used
+          : fallback,
     };
   }
   return { destinations, bySector };

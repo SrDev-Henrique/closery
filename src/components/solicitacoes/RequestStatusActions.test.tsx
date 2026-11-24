@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -194,5 +194,22 @@ describe("RequestStatusActions", () => {
     expect(mocks.moveRequestAction).toHaveBeenCalledTimes(1);
 
     pending.resolve(ok());
+  });
+
+  it("o gatilho de cancelar também fica desativado durante um movimento e volta depois", async () => {
+    const pending = deferred<ReturnType<typeof ok>>();
+    mocks.moveRequestAction.mockReturnValue(pending.promise);
+    setup("requested");
+    const trigger = () =>
+      screen.getByRole("button", { name: "Cancelar solicitação" });
+    expect(trigger()).toBeEnabled();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Mover para Entregue" }),
+    );
+    expect(trigger()).toBeDisabled();
+
+    pending.resolve(ok());
+    await waitFor(() => expect(trigger()).toBeEnabled());
   });
 });

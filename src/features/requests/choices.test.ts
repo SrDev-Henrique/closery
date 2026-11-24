@@ -317,6 +317,32 @@ describe("getRequestFormChoices", () => {
     });
   });
 
+  it("o destino mais usado fora das opções (teto de CHOICE_LIST_LIMIT) não vira o padrão", async () => {
+    const sector = await insertSector(db);
+    const author = await insertUser(db, {
+      role: "operator",
+      sectorId: sector.id,
+    });
+    for (let i = 0; i < CHOICE_LIST_LIMIT; i++) {
+      await insertDestination(db, {
+        name: `Destino ${String(i).padStart(3, "0")}`,
+      });
+    }
+    const hidden = await insertDestination(db, { name: "zzz Último" });
+    await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: author.id,
+      destinationId: hidden.id,
+    });
+
+    const result = await getRequestFormChoices(db, [sector.id]);
+
+    expect(result.destinations).toHaveLength(CHOICE_LIST_LIMIT);
+    expect(result.destinations.some((row) => row.id === hidden.id)).toBe(false);
+    const chosen = result.bySector[sector.id]?.defaultDestinationId;
+    expect(result.destinations.map((row) => row.id)).toContain(chosen);
+  });
+
   it("sem histórico: o primeiro destino ativo; sem destinos ativos: null (Outro)", async () => {
     const sector = await insertSector(db);
     const first = await insertDestination(db, { name: "Almoxarifado 1" });

@@ -97,6 +97,16 @@ describe("RequestTable", () => {
     expect(within(line).getByText("4")).toBeInTheDocument();
   });
 
+  it("o corte de linhas da descrição fica no elemento que contém o texto", () => {
+    const row = requestListItem({ description: "x".repeat(500) });
+    setup(page([row]));
+
+    const link = screen.getByRole("link", { name: "x".repeat(500) });
+    const text = within(link).getByText("x".repeat(500));
+    expect(text).toHaveClass("line-clamp-2");
+    expect(link).not.toHaveClass("line-clamp-2");
+  });
+
   it("Itens, Criada em e Dias no status ficam à direita com tabular-nums", () => {
     setup(
       page([

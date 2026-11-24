@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { RequestDetail } from "@/components/solicitacoes/RequestDetail";
 import { RequestDetailSkeleton } from "@/components/solicitacoes/RequestDetailSkeleton";
 import { RequestSheet } from "@/components/solicitacoes/RequestSheet";
+import { SheetTitle } from "@/components/ui/sheet";
 import { COMMENTS_PAGE_SIZE } from "@/features/requests/limits";
 
 // Detalhe rápido: a rota interceptada abre o mesmo detalhe num Sheet por cima da
@@ -14,7 +15,14 @@ export default function InterceptedRequestPage({
 }) {
   return (
     <RequestSheet>
-      <Suspense fallback={<RequestDetailSkeleton />}>
+      <Suspense
+        fallback={
+          <>
+            <SheetTitle className="sr-only">Carregando solicitação</SheetTitle>
+            <RequestDetailSkeleton />
+          </>
+        }
+      >
         <Content params={params} />
       </Suspense>
     </RequestSheet>

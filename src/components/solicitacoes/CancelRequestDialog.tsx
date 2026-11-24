@@ -33,9 +33,11 @@ import type { RequestStatus } from "@/lib/requestStatuses";
 export function CancelRequestDialog({
   requestId,
   from,
+  disabled = false,
 }: {
   requestId: string;
   from: RequestStatus;
+  disabled?: boolean;
 }) {
   const router = useRouter();
   const fieldId = useId();
@@ -92,7 +94,10 @@ export function CancelRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button type="button" variant="destructive" />}>
+      <DialogTrigger
+        disabled={disabled}
+        render={<Button type="button" variant="destructive" />}
+      >
         Cancelar solicitação
       </DialogTrigger>
       <DialogContent showCloseButton={false}>
