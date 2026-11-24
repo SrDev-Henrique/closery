@@ -17,6 +17,7 @@ import {
   requestComment,
   requestStatusEvent,
 } from "@/db/schema/requests";
+import { ITEM_QUANTITY_MESSAGE } from "@/features/requests/messages";
 import { authzOf } from "../../../../test/authz";
 import { spDate } from "../../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../../test/db";
@@ -200,11 +201,6 @@ describe("createRequestAction", () => {
   it.each([
     ["descrição vazia", { description: "   " }, "Descreva a solicitação."],
     [
-      "quantidade zero",
-      { items: [{ itemId: "x", quantity: 0 }] },
-      "Registro inválido. Atualize a página.",
-    ],
-    [
       "campo ausente",
       { description: undefined },
       "Confira os campos e tente de novo.",
@@ -217,6 +213,25 @@ describe("createRequestAction", () => {
 
     expect(result).toMatchObject({ ok: false, code: "INVALID_INPUT" });
     if (!result.ok) expect(result.message).toMatch(message);
+    expect(await rows(request)).toBe(0);
+    expect(mocks.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("entrada inválida (quantidade zero de um item real): INVALID_INPUT pela quantidade, nada gravado, sem revalidar", async () => {
+    const { asAna, payload, fita } = await scenario();
+    asAna();
+
+    const result = await createRequestAction(
+      payload({ items: [{ itemId: fita.id, quantity: 0 }] }),
+    );
+
+    expect(result).toMatchObject({ ok: false, code: "INVALID_INPUT" });
+    if (!result.ok) {
+      expect(result.message).not.toMatch(/Registro inválido/);
+      expect(result.fieldErrors?.items ?? result.message).toContain(
+        ITEM_QUANTITY_MESSAGE,
+      );
+    }
     expect(await rows(request)).toBe(0);
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });

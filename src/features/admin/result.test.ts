@@ -82,8 +82,8 @@ describe("códigos da passagem (aditivos)", () => {
 });
 
 describe("códigos da Fase 4 (aditivos)", () => {
-  // Record<AdminErrorCode, true> obriga esta lista a bater com a uniao: um
-  // codigo a mais ou a menos nao compila (bun run check-types).
+  // Record<AdminErrorCode, true> obriga esta lista a bater com a união: um
+  // código a mais ou a menos não compila (bun run check-types).
   const CONTRACT: Record<AdminErrorCode, true> = {
     INVALID_INPUT: true,
     NAME_TAKEN: true,
@@ -109,11 +109,11 @@ describe("códigos da Fase 4 (aditivos)", () => {
     INTERNAL: true,
   };
 
-  it("a lista do contrato tem os 22 codigos, sem repeticao", () => {
+  it("a lista do contrato tem os 22 códigos, sem repetição", () => {
     expect(Object.keys(CONTRACT)).toHaveLength(22);
   });
 
-  it("fail aceita os 2 codigos novos e os de antes continuam valendo", () => {
+  it("fail aceita os 2 códigos novos e os de antes continuam valendo", () => {
     expect(fail("STATUS_CONFLICT", "mudou")).toEqual({
       ok: false,
       code: "STATUS_CONFLICT",

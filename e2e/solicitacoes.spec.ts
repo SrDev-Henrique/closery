@@ -344,6 +344,39 @@ test("(b) o detalhe abre em Sheet sobre o Quadro: comenta, move, fecha, volta e 
   await expect(page).toHaveURL(BOARD_URL);
   await expect(cardOf(transit, description)).toBeVisible();
 
+  // Reabrir e fechar de novo com "Fechar": o Sheet some e a URL volta à do Quadro.
+  await cardLink().click();
+  await expect(page).toHaveURL(detailUrl);
+  const reopened = page.getByRole("dialog", { name: /^Solicitação para / });
+  await expect(reopened).toBeVisible();
+
+  // Escape, ou um clique fora, num diálogo de dentro do Sheet fecha só o
+  // diálogo de dentro: o Sheet e a URL ficam.
+  await reopened.getByRole("button", { name: "Cancelar solicitação" }).click();
+  const cancelDialog = page.getByRole("dialog", {
+    name: "Cancelar solicitação",
+  });
+  await expect(cancelDialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(cancelDialog).toHaveCount(0);
+  await expect(reopened).toBeVisible();
+  await expect(page).toHaveURL(detailUrl);
+
+  await reopened
+    .getByRole("button", { name: /^Apagar comentário de / })
+    .click();
+  const deleteDialog = page.getByRole("dialog", { name: "Apagar comentário?" });
+  await expect(deleteDialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(deleteDialog).toHaveCount(0);
+  await expect(reopened).toBeVisible();
+  await expect(page).toHaveURL(detailUrl);
+  await expect(reopened.getByText(comment, { exact: true })).toBeVisible();
+
+  await reopened.getByRole("button", { name: "Fechar" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page).toHaveURL(BOARD_URL);
+
   // Voltar no histórico também fecha, com o Quadro intacto.
   await cardLink().click();
   await expect(page.getByRole("dialog")).toBeVisible();

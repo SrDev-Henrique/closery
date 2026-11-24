@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Activity } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SheetTitle } from "@/components/ui/sheet";
@@ -78,12 +79,21 @@ describe("RequestSheet", () => {
     expect(mocks.back).toHaveBeenCalledTimes(1);
   });
 
-  it("montar de novo (a Activity revela o slot) libera a trava", async () => {
-    const first = setup();
+  it("a Activity esconde e revela a mesma instância: a trava é liberada", async () => {
+    const tree = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <RequestSheet>
+          <SheetTitle>Solicitação para Doca 3</SheetTitle>
+          <p>Conteúdo do detalhe</p>
+        </RequestSheet>
+      </Activity>
+    );
+    const { rerender } = render(tree("visible"));
     await userEvent.keyboard("{Escape}");
-    first.unmount();
+    expect(mocks.back).toHaveBeenCalledTimes(1);
 
-    setup();
+    rerender(tree("hidden"));
+    rerender(tree("visible"));
     await userEvent.keyboard("{Escape}");
 
     expect(mocks.back).toHaveBeenCalledTimes(2);
