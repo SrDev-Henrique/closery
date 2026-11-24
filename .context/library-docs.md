@@ -50,8 +50,17 @@
   `button.tsx` sobrescrito perde a customização da P3. Os gerados saem com `h-8`/`h-7` e `"Close"`
   em inglês: ajuste para `h-9 max-md:h-11` (ou `size-9 max-md:size-11`), `text-base md:text-sm` no
   select nativo e `"Fechar"` (`touchTargets.test.tsx` e `ptBrLabels.test.tsx` guardam). Não usamos
-  `table`, `select` (Base UI), `radio-group` nem `alert-dialog`: lista em linhas, `<select>` nativo
+  `select` (Base UI), `radio-group` nem `alert-dialog`: lista em linhas, `<select>` nativo
   (abre o seletor do aparelho, 16px) e `Dialog` para confirmar.
+- **`table` (Fase 4).** A Tabela de `/solicitacoes` é a primeira tabela do projeto e vem pelo CLI:
+  `bunx shadcn@latest add table --yes`, depois `git status` e `git checkout -- src/components/ui/<arquivo>.tsx`
+  para qualquer outro primitivo que o CLI tenha tocado, e `bun run format`. O primitivo traz o contêiner com
+  rolagem horizontal própria (a página nunca rola na horizontal, nem no celular); números ficam à direita com
+  `text-right tabular-nums` e a legenda é `<TableCaption className="sr-only">`. Listas de cadastro e de histórico
+  continuam em linhas (`AdminListRow`): a tabela é só para o arquivo de solicitações.
+- **Diálogos e Sheet da Fase 4 usam `showCloseButton={false}`** e um botão com texto ("Voltar" nos diálogos,
+  "Fechar" no Sheet): o X só com ícone do primitivo não tem tooltip, e todo controle só com ícone precisa de um
+  (P47 registra o `EditDialog` da Fase 2, único uso restante).
 
 ## 3. Tailwind CSS v4
 
@@ -118,8 +127,19 @@
   a coluna externa por extenso (`"sector"."id"`) ou use JOIN/GROUP BY, e teste com dois registros de
   contagens diferentes (`listSectors`).
 - **`FOR SHARE`:** a checagem de "setor ativo" (`updatePerson`, `setPersonActive`, `createTeamInvite`,
-  `createShift`, `createItem`) lê o setor com `.for("share")` dentro de `db.transaction`; serializa com o
-  `FOR UPDATE` de `setSectorActive`. Fora de transação a trava some no fim do statement.
+  `createShift`, `createItem` e, na Fase 4, `createRequest`, `moveRequest`, `cancelRequest`, `addComment` e `deleteComment`) lê o setor com `.for("share")` dentro de `db.transaction`; serializa com o
+  `FOR UPDATE` de `setSectorActive`. Fora de transação a trava some no fim do statement. Nas solicitações a leitura é `lockSectorShare` (`features/requests/loaders.ts`), e `createRequest` lê também o destino da lista e os itens de estoque com `.for("share")`.
+- **Identity `ALWAYS` para ordem total (`request_status_event.seq`).** `integer("seq").notNull().generatedAlwaysAsIdentity()`: o
+  banco atribui a ordem de inserção. `changed_at` empata o tempo todo (criação e primeiro movimento com o mesmo `now`; os
+  testes injetam o mesmo relógio) e o `id` é uuid aleatório, então **toda** ordenação de eventos é `changed_at, seq`, nunca
+  `id` (verificado: `DISTINCT ON … ORDER BY changed_at DESC, id DESC` errou o status em 26 de 50 execuções). Na migração
+  gerada a identity fica dentro do `CREATE TABLE` (nenhum `CREATE SEQUENCE` solto) e valor explícito em `seq` é recusado
+  (`428C9`).
+- **`DISTINCT ON` para "o último até um instante"** (`listOpenRequestsAtDelivery`): CTE com
+  `db.$with("last").as(db.selectDistinctOn([requestStatusEvent.requestId], { … }) … .orderBy(requestId, desc(changedAt), desc(seq)))`
+  filtrada por `changed_at <= T`; o filtro "aberta" (`to_status in (…)`) fica na consulta **externa**, nunca dentro do `DISTINCT ON`
+  (dentro, pegaria o último evento aberto de uma solicitação já entregue antes de T). As colunas do CTE entram nos fragmentos
+  de SQL (`daysInStatusSql`, `staleSql`) como colunas, sem `.as()`.
 - Convenções de schema: ids `uuid` com `defaultRandom()` (ou `text` se houver motivo); timestamps
   `timestamptz` com `defaultNow()`; `index()` em toda FK e coluna de filtro; nomes de tabela e
   coluna em `snake_case` no banco (`casing: "snake_case"` se adotado — decidir na primeira tabela).
@@ -193,7 +213,8 @@
   lançar `notFound`, não toca o banco. **Guardas estáticos** que leem arquivos: `appPagesAuth.test.ts`
   (páginas), `actionsAuth.test.ts`, `actionsInventory.test.ts` e `actionsGuards.test.ts` (actions e
   qualquer `"use server"`), `pendenciasDoc.test.ts` (índice, seções e próximo id de `pendencias.md`) e
-  `uiRegistryDoc.test.ts` (todo componente de `/admin` e de `/passagens` aparece em `ui-registry.md`).
+  `uiRegistryDoc.test.ts` (todo componente de `/admin`, `/passagens` e `/solicitacoes` e cada primitivo novo aparece em `ui-registry.md`). Na Fase 4 o `appPagesAuth.test.ts` ganhou a lista fechada `NULL_SLOT_PAGES` (páginas do slot `@detalhe` que só devolvem `null`) e o harness dos testes de migração é `test/migrations.ts`.
+- **Relógio em componente servidor:** `RequestsScreen`, `RequestDetail`, `NewHandover`, `HandoverDetail` e `HomeHandovers` leem `new Date()` (janela de 30 dias, "parada", turno sugerido). O teste usa `vi.useFakeTimers({ toFake: ["Date"] })` + `vi.setSystemTime(spDate(…))` (só o `Date` é falso: PGlite e o resto seguem reais) e restaura com `vi.useRealTimers()` no `afterEach`; nunca depende do dia em que roda.
 
 ## 10. Playwright + pglite-socket
 
@@ -205,6 +226,15 @@
 - **Passkey:** autenticador virtual via CDP (`e2e/virtual-authenticator.ts`), só Chromium, criado **antes** do clique que dispara o WebAuthn. Com ele o autofill de `/entrar` entra sozinho ao abrir a página; o teste do botão desliga `isConditionalMediationAvailable` com `addInitScript`.
 - **Base UI:** navegação com cara de botão é `<Link className={buttonVariants()}>` (role link); `Button render={<Link />}` daria role=button e não é usado para navegação. No spec: `getByRole("link")` para "Agora não" e para os itens da sidebar.
 - **`/admin` do operador:** confira o texto "Página não encontrada" e o `<title>`, nunca o status (com streaming é 200).
+- **`e2e/solicitacoes.spec.ts` (Fase 4).** `/solicitacoes` sem `visao` renderiza o Quadro **e** a Lista (a que não é a do tamanho
+  da tela fica `display: none`): o spec abre `?visao=quadro` ou `?visao=lista` e acha colunas e grupos por CSS
+  (`section:visible` com `h2`). Com o Sheet aberto o Base UI põe `aria-hidden` no resto da página e `getByRole` deixa de
+  enxergar o que está por baixo: **dentro** do Sheet use `page.getByRole("dialog").getBy…`; **por baixo**, `page.locator(…)` e
+  `getByLabel`. `getByText` de um título também casa o `#__next-route-announcer__`: use `locator("h1", { hasText })`. O botão
+  do cartão e o ↗ têm nomes que se contêm: `getByRole("link", { name, exact: true })`. Toda `insertRequest` do E2E passa
+  `createdAt` e `statusChangedAt` relativos a `Date.now()` (o padrão fixo da fixture é para o Vitest e sairia da janela de 30
+  dias). Fechar o Sheet é o botão "Fechar"; depois `getByRole("dialog")` conta 0 e a URL volta à do Quadro. `/nao-existe`
+  logado responde 404 com "Página não encontrada": o `[...catchAll]` do slot não engole URL desconhecida.
 - Cada teste cria os próprios dados (e-mail único, nomes fictícios). Login social ao vivo é checklist manual.
 - **`e2e/cadastros.spec.ts`:** a linha de uma lista é um `<li>` dentro de `<main>` (`rowWith(page, texto)`),
   para não casar com a barra lateral; o link do convite sai do campo `Link do convite`;
@@ -251,7 +281,7 @@
   }
   ```
 
-- **`runAdminAction`** (`src/features/admin/runAdminAction.ts`, `server-only`): `schema.safeParse` →
+- **`runAdminAction`** (`src/features/admin/runAdminAction.ts`, `server-only`) é, desde a Fase 4, um embrulho fino do **runner único `runAction`** (`src/features/admin/runAction.ts`, P33) com `revalidate: "/(app)/admin"`; o fluxo abaixo é o do `runAction`: `schema.safeParse` →
   falha vira `INVALID_INPUT` com `fieldErrors`; `run({ db, now, actor, input })`; `revalidatePath("/(app)/admin",
   "layout")` só quando `ok` (com route group o caminho é o do arquivo, como em `revalidatePath.md`); exceção inesperada passa por `unstable_rethrow` (deixa `redirect` e
   `notFound` seguirem) e, se for outra, vira `INTERNAL` com `console.error` e texto fixo. Nunca devolve
@@ -268,13 +298,27 @@
 ## 13. Passagem de turno (Fase 3)
 
 - **Onde:** domínio em `src/features/handovers/*` (recebe `db: Db` e, quando o tempo importa, `now: Date`; devolve `AdminResult` com mensagem pt-BR pronta); Server Actions em `src/app/(app)/passagens/actions.ts` e `src/app/(app)/actions.ts`; telas em `src/components/passagens/*`. O arquivo `actions.ts` só exporta funções `async`; tipos, constantes e schemas vivem fora dele.
-- **`runHandoverAction`** (`src/features/handovers/runHandoverAction.ts`, `server-only`): irmão do `runAdminAction` (§12). `schema.safeParse` → `run({ db, now, actor, input })` → `unstable_rethrow` (deixa `redirect` e `notFound` passarem) → `INTERNAL` com texto fixo. A diferença é o parâmetro `revalidate`: `false` no salvamento automático (revalidar re-renderizaria a tela enquanto a pessoa digita), `true` em entregar, confirmar e corrigir (`revalidatePath("/(app)", "layout")`, só quando `ok`). Cada action começa por `requireUser()` (a do setor, `requireAdmin()`).
+- **`runHandoverAction`** (`src/features/handovers/runHandoverAction.ts`, `server-only`): embrulho fino do `runAction` (§12) com `revalidate ? "/(app)" : null`. `schema.safeParse` → `run({ db, now, actor, input })` → `unstable_rethrow` (deixa `redirect` e `notFound` passarem) → `INTERNAL` com texto fixo. A diferença é o parâmetro `revalidate`: `false` no salvamento automático (revalidar re-renderizaria a tela enquanto a pessoa digita), `true` em entregar, confirmar e corrigir (`revalidatePath("/(app)", "layout")`, só quando `ok`). Cada action começa por `requireUser()` (a do setor, `requireAdmin()`).
 - **Salvamento automático** (`useHandoverAutosave`): debounce de 800 ms **por campo**, **fila serial** (uma requisição em voo, porque duas Server Actions não têm ordem garantida e o valor velho poderia sobrescrever o novo) e coalescência (o valor mais novo de cada campo vence). `onBlur` envia já; falha mantém o que foi digitado, para a fila e mostra "Não salvo." com "Tentar de novo"; o evento `online` reenvia; `beforeunload` só enquanto houver algo não salvo; ao desmontar envia o pendente. "Entregar turno" e a troca de turno ou dia chamam `flush()` antes.
 - **SQL do histórico** (`history.ts`): ``db.select({ … sql<string>`u.col` }).from(sql`(WITH … SELECT * FROM u) as u`)``, sem `db.execute` (o `Db` genérico não tipa o resultado). `timestamptz` cru volta como texto (`"2026-11-21 11:54:27.517+00"`) nos dois drivers: mapeie com ``sql<Date | null>`u.delivered_at`.mapWith(handover.deliveredAt)`` (a coluna do schema traz o decoder); `date` e `timestamp` sem fuso voltam como texto. O total (`count()`) e a página saem do mesmo CTE. O teste de paridade compara `hasShiftEnded` (JS) com o SQL de pares encerrados numa grade de horários (fim == agora conta como encerrado).
 - **Cookie do setor** (`sectorCookie.ts`): `cookies().set` só em Server Function ou Route Handler, nunca em Server Component nem no `proxy.ts`; a leitura (`readRememberedSector`) fica dentro de `<Suspense>`. `chooseSectorAction` grava o cookie (`httpOnly`, `sameSite: "lax"`, `secure` em produção, `path: "/"`, 1 ano) e faz `redirect` **fora** de `try/catch`; "Todos os setores" não grava.
 - **Fuso e datas:** `America/Sao_Paulo` via `Intl.DateTimeFormat("en-CA", { timeZone, hourCycle: "h23" }).formatToParts` (`saoPaulo.ts`); `operational_date` é texto `"YYYY-MM-DD"`. Teste de tempo usa o relógio injetado (`spDate()` em `test/clock.ts`), nunca o relógio real; o E2E usa turno `00:00–23:59` e a data de hoje na URL.
 - **P27 (guardas):** `test/actionGuards.ts` guarda a varredura de actions (extraída de `actionsAuth.test.ts`); `actionsGuards.test.ts` reprova `"use server"` fora de `actions.ts`, action sem `requireUser`/`requireAdmin` na primeira instrução e `admin/**` sem `requireAdmin`; `appPagesAuth.test.ts` exige `requireAdmin` nas páginas de `admin/`.
 - **E2E (`e2e/passagem.spec.ts`):** o Next mantém a página anterior escondida ao navegar; `getByText` também casa texto escondido e o modo estrito reprova. Use consultas por papel ou o helper `text()` do spec (`.filter({ visible: true })`) e `{ exact: true }` quando um texto contém o outro ("2 rolo" × "12 rolo").
+
+## 14. Solicitações (Fase 4)
+
+- **Onde:** domínio em `src/features/requests/*` (recebe `db: Db` e, quando o tempo importa, `now: Date`; devolve `AdminResult` com mensagem pt-BR pronta). A lógica pura (status, "parada", permissões, filtros da URL, busca, textos, linha do tempo, `applyMove`, mensagens, links, schemas) não faz I/O e o cliente a importa; leituras e escritas são `server-only`. Server Actions em `src/app/(app)/solicitacoes/actions.ts`: `requireUser()` na primeira instrução e `runAction({ …, revalidate: "/(app)" })`, que só revalida em `ok`. Telas em `src/components/solicitacoes/*`. O arquivo `actions.ts` só exporta funções `async`.
+- **Detalhe rápido = rota interceptada.** O slot `@detalhe` do layout de `(app)` tem `@detalhe/(.)solicitacoes/[id]/page.tsx` (um `Sheet` com o `RequestDetail`) e três arquivos que só devolvem `null`: `default.tsx`, `page.tsx` (rota `/`) e `[...catchAll]/page.tsx`. As duas páginas nulas são **obrigatórias**: numa navegação no cliente o slot mantém a última página ativa e o Sheet ficaria aberto sobre a próxima tela. **Não** existe `(app)/default.tsx` (com ele uma URL desconhecida viraria página em branco em vez do 404). `(.)` conta segmentos de rota, não `@slot` nem grupo. O layout usa `LayoutProps<"/">`, que já tipa `detalhe`. Páginas do slot não exportam `metadata`; as de `/solicitacoes` exportam `metadata` estático.
+- **Links do detalhe.** `<Link href={requestHref(id)} scroll={false}>` abre o Sheet. A página completa (↗, "Abrir página completa", "Ver comentários anteriores") é `<a href>` comum, navegação de documento: um `<Link>` para a mesma URL seria interceptado de novo. A interceptação depende do cabeçalho `next-url` (P44). O `RequestSheet` mantém `open` constante e fecha com `router.back()` com trava contra fechar duas vezes (estado local de `open` não reabriria sob a `Activity`).
+- **`useOptimistic` (`useRequestMove`, Quadro e Lista).** O `setOptimistic` roda **dentro** de `startTransition(async () => …)`, de forma síncrona, **antes** do primeiro `await` (fora disso o React loga "An optimistic state update occurred outside a transition"). O estado otimista volta sozinho quando a transição termina; `revalidatePath` só em `ok` (o RSC novo chega antes do fim da transição e o cartão não pisca). O reducer `applyMove` é puro: o cartão muda de coluna e as duas contagens mudam juntas. Falha: `toast.error` e, em `STATUS_CONFLICT`, `NO_CHANGES` ou `NOT_FOUND`, `router.refresh()` (o runner não revalida em falha). Exceção: `unstable_rethrow` e `INTERNAL`. jsdom não tem RSC: o sucesso se prova com `rerender` com as props novas e `console.error` sem chamadas.
+- **Transição de status.** `UPDATE request … WHERE id AND status = <o que a pessoa viu>` e `INSERT request_status_event` na mesma transação; 0 linhas → `lockRequest` (`FOR UPDATE`) + `lastChange` devolvem quem e quando venceu (`STATUS_CONFLICT`, ou `NO_CHANGES` quando o vencedor foi para o mesmo alvo). Cancelar também grava o motivo como comentário ligado ao evento. Solicitação não se edita (D-F4-1).
+- **Agregação no SQL.** Contagem de coluna e de grupo (`count(*) filter`), abertas, paradas, "dias no status", itens e comentários vêm do SQL (subconsulta correlata com `"request"."id"` por extenso, §5); "Carregar mais" é `?mais_<status>=N` (20 a 200). O `now` injetado entra no SQL como `${now.toISOString()}::timestamptz` (nunca `now()`), e `staleSql`/`daysInStatusSql` têm teste de paridade com `stale.ts` numa grade (72 h exatas não é parada; 72 h + 1 ms é).
+- **Busca.** `translate(lower(col), 'áàâãäéèêëíìîïóòôõöúùûüçñ', 'aaaaaeeeeiiiiooooouuuucn')` + `ILIKE` com `\` como escape (`%`, `_` e `\` escapados no padrão); as duas strings têm 24 caracteres e o resultado é igual no PGlite e no Neon, sem extensão (`unaccent` não entra). `foldForSearch` (JS) espelha o SQL e a paridade é testada com palavras acentuadas.
+- **"Abertas na entrega".** Sem tabela de snapshot: o status no instante T é o último evento com `changed_at <= T` (`DISTINCT ON`, §5); dias e "parada" contam desse evento até T, nunca de `request.status_changed_at` (que é o valor de agora). A seção não junta `sector.active` (o resumo de um setor inativo continua legível).
+- **GET nunca escreve; origem.** Abrir o quadro, o detalhe, a passagem ou o Início não cria linha. `createRequest` com `originRef` chama `ensureHandover` **dentro** da transação (escrita iniciada pela pessoa; efeito aceito: o Início passa a "Continuar passagem"); passagem confirmada → `HANDOVER_LOCKED`, nada gravado e o digitado fica no formulário.
+- **Setor inativo é só leitura.** Criar, mover, cancelar, comentar e apagar comentário recusam com `SECTOR_INACTIVE`; o detalhe e o resumo da passagem continuam legíveis, sem botões de escrita e com `ReadOnlySectorNotice`. Listas, escolhas, "quem criou", "abertas agora" e o cartão do Início juntam `sector.active = true` (padrão P26).
+- **Cache Components.** `cookies()`, `headers()`, `await params`/`searchParams` e a sessão só dentro de `<Suspense>`; nada de `"use cache"` em dado escopado por usuário.
 
 ## Como adicionar uma biblioteca nova
 

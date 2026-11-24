@@ -11,13 +11,12 @@
 
 ## ▸ Próximo passo
 
-- **2026-11-21 — Fases 0, 1, 2 e 3 concluídas. Próximo: plano de implementação da Fase 4
-  (Solicitações: quadro · lista · tabela, detalhe, comentários e a ligação com a passagem)** com a
-  skill `writing-plans`, a partir da spec §13
-  (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). A passagem já está
-  inteira (formulário, receber, corrigir e histórico) e **não** mostra solicitações (D-F3-1): a
-  Fase 4 acrescenta a seção "Solicitações abertas" ao formulário e ao resumo e a ligação passagem →
-  solicitação.
+- **2026-11-24 — Fases 0, 1, 2, 3 e 4 concluídas. Próximo: plano de implementação da Fase 5
+  (Dashboard: consultas de quantidades e de solicitações — abertas, paradas, tempo até a entrega —,
+  `metric-card` e `spending-ring` adaptados e exportação CSV)** com a skill `writing-plans`, a
+  partir da spec §13 (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). As
+  solicitações já gravam o histórico de status (`request_status_event`) e a passagem guarda o que
+  o dashboard conta; a Fase 5 só lê.
 - **Neon ligado** (P1 resolvida, 2026-11-20). P6/P7/P8 só travam Apple, Facebook e "esqueci a
   senha".
 
@@ -75,7 +74,18 @@
 - ✅ Telas: Início com os dois cartões, formulário com salvamento automático, resumo com confirmação, correção, histórico com filtros e seletor de setor do admin (2026-11-21)
 - ✅ P26 e P27 resolvidas; pendências novas P33–P36 (2026-11-21)
 - ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 19 cenários (7 de acesso, 6 de cadastros e 6 de passagem). Verificado: `check-types`, `lint`, `test`, `test:e2e` (19 passed) e `build` verdes (2026-11-21)
-- ⬜ Solicitações na passagem: Fase 4
+- ✅ Solicitações na passagem: entraram na Fase 4 (formulário do rascunho e resumo)
+
+## Fase 4 — Solicitações · ✅
+
+- ✅ Pendências antes da feature, cada uma no seu commit: P33 (runner único `runAction`), P40 (higiene da Fase 3: `firstValue`, harness de migração, `runInTransaction` e `ensureHandover` em módulos próprios, teste de concordância "awaiting"), P29 (acessibilidade da Equipe e da paginação) e P37 (setor inativo: resumo só leitura) (2026-11-24)
+- ✅ Schema: `request`, `request_item`, `request_status_event` (com `seq` identity), `request_comment`, 12 CHECKs, 11 índices, 11 FKs `restrict` e migração `0004_fase4_solicitacoes` só aditiva (2026-11-24)
+- ✅ Lógica pura: status, "parada" (72 h), permissões, filtros da URL, busca com dobra de acento, linha do tempo, reducer do movimento otimista, mensagens e links; schemas Zod e os códigos `STATUS_CONFLICT` e `DESTINATION_INACTIVE` (2026-11-24)
+- ✅ Domínio: criar (com origem na passagem), mover, cancelar com motivo, comentar e apagar o próprio comentário; leituras do Quadro, da Lista e da Tabela, escolhas do formulário, abertas agora, abertas na entrega e cartão do Início, tudo agregado no SQL com teste de paridade (2026-11-24)
+- ✅ Telas: `/solicitacoes` (Quadro com `useOptimistic`, Lista, Tabela com o primitivo `table`, filtros na URL, "Carregar mais"), detalhe rápido em Sheet (rota interceptada `@detalhe`) e página completa, cancelar com motivo, linha do tempo, comentários, "Nova solicitação" (também pela passagem), seção "Solicitações abertas" no formulário e no resumo, cartão no Início e "Solicitações" na navegação (2026-11-24)
+- ✅ P29, P33, P37 e P40 resolvidas; pendências novas P44–P47 (2026-11-24)
+- ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 28 cenários (7 de acesso, 6 de cadastros, 6 de passagem e 9 de solicitações). Verificado: `check-types`, `lint`, `test`, `test:e2e` (28 passed) e `build` verdes (2026-11-24)
+- ⬜ Dashboard e CSV: Fase 5
 
 ## Histórico
 
@@ -85,3 +95,4 @@
 - **2026-11-20** — Correções da revisão final: renovação da sessão (servidor lê sem refresh, `SessionKeepAlive` renova banco e cookie), limite de tentativas 30/10 com mensagem própria (`RATE_LIMITED`), link "Entrar" nos convites e no e-mail já cadastrado, testes de escalonamento, guarda de páginas `appPagesAuth.test.ts` (no lugar do `RequireUser`) e pendências P11–P22.
 - **2026-11-21** — Fase 2 concluída: cadastros e equipe em `/admin` (setores, turnos, itens, destinos, pessoas e convites), P11 e P18 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-2-cadastros.md`.
 - **2026-11-21** — Fase 3 concluída: passagem de turno de ponta a ponta (rascunho com salvamento automático, entregar, receber, corrigir com motivo e histórico), P26 e P27 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.
+- **2026-11-24** — Fase 4 concluída: solicitações de ponta a ponta (Quadro, Lista e Tabela, detalhe rápido em Sheet, cancelar com motivo, comentários, ligação com a passagem e o Início), P29, P33, P37 e P40 resolvidas. Plano em `docs/superpowers/plans/2026-11-23-fase-4-solicitacoes.md`.

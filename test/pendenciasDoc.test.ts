@@ -144,4 +144,12 @@ describe(".context/pendencias.md", () => {
       ).toBe(true);
     }
   });
+
+  it("Fase 4: P44 a P47 entraram como Aberto, não triado", () => {
+    for (const id of ["P44", "P45", "P46", "P47"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Aberto, não triado");
+      expect(entry?.section, id).toBe("1");
+    }
+  });
 });

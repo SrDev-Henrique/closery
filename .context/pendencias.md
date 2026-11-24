@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P44.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P48.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -80,6 +80,10 @@
 | P41 | Higiene de testes da Fase 3 | ⚪ | Aberto, não triado |
 | P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
 | P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
+| P44 | Detalhe rápido das solicitações depende do cabeçalho next-url | ⚪ | Aberto, não triado |
+| P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Aberto, não triado |
+| P46 | Cartão movido para uma coluna aberta e truncada some até a revalidação | ⚪ | Aberto, não triado |
+| P47 | X só com ícone do EditDialog continua sem tooltip | ⚪ | Aberto, não triado |
 
 ---
 
@@ -168,6 +172,7 @@
 **Impacto:** com collation `C.UTF-8`, `lower(name)` ordena por ponto de código: nomes com inicial acentuada (Á, É, Ó) vão para o fim das listas e da escolha de setor.
 **Correção:** — (opção: `ORDER BY name COLLATE "pt-BR-x-icu"` se o Neon tiver ICU, ou coluna normalizada sem acento)
 **Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** a Fase 4 repete o padrão nas escolhas de /solicitacoes (`listActiveDestinations`, `listFilterDestinations` e `listRequestCreators` em `src/features/requests/choices.ts` ordenam por `lower(name)` na collation C.UTF-8: "Área 1" sai depois de "Doca 3"); a correção, quando vier, vale para as duas.
 
 #### P25 — Corrida entre cadastro por convite e desativação do setor 🟡
 **Estado:** Aberto, não triado
@@ -259,6 +264,34 @@
 **Impacto:** a linha de um item desativado depois de salva no rascunho some do formulário mas é entregue com o valor; o preenchimento com zero na entrega não respeita o teto de 200 itens da lista.
 **Correção:** — (opção: aceitar no MVP; ou mostrar a linha inativa no rascunho e limitar itens por setor)
 **Registrado em:** 2026-11-21
+
+#### P44 — Detalhe rápido das solicitações depende do cabeçalho next-url ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/@detalhe/(.)solicitacoes/[id]/page.tsx` · `src/app/(app)/layout.tsx`
+**Impacto:** a rota interceptada só abre o Sheet quando a requisição chega com o cabeçalho `next-url`; um CDN ou proxy que o descarte (ou que cacheie a resposta sem `Vary`) faz o clique abrir a página completa. Sem perda de dados: a página completa tem tudo, só perde o "sem sair da tela".
+**Correção:** — (opção: conferir na Vercel, na Fase 6, que o `Vary: next-url` passa; se não passar, aceitar a página completa como fallback)
+**Registrado em:** 2026-11-24
+
+#### P45 — Trocar de setor em /solicitacoes perde os filtros da URL 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/actions.ts` (`chooseSectorAction`) · `src/components/passagens/SectorPicker.tsx` · `src/components/solicitacoes/RequestsScreen.tsx`
+**Impacto:** o admin que troca de setor volta para `/solicitacoes?setor={id}`: a visão, o destino, o período, quem criou e a busca somem, porque o `chooseSectorAction` só leva `?setor=`.
+**Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
+**Registrado em:** 2026-11-24
+
+#### P46 — Cartão movido para uma coluna aberta e truncada some até a revalidação ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/boardMove.ts` (`applyMove`) · `src/components/solicitacoes/useRequestMove.ts`
+**Impacto:** o movimento otimista não insere o cartão numa coluna aberta cujas linhas não estão todas carregadas (para não furar a ordem "mais antigo no status primeiro"): a contagem sobe e o cartão sai da origem, mas só aparece no destino depois da resposta do servidor (ou atrás de "Carregar mais"). Sem perda de dados.
+**Correção:** — (opção: inserir no fim da coluna truncada e deixar a revalidação reordenar; ou aceitar)
+**Registrado em:** 2026-11-24
+
+#### P47 — X só com ícone do EditDialog continua sem tooltip ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/ui/dialog.tsx` · `src/components/admin/EditDialog.tsx`
+**Impacto:** o botão X (só ícone) do `DialogContent` não tem tooltip, contra a regra "todo controle só com ícone ganha tooltip"; a Fase 4 resolveu nos diálogos e no Sheet novos com `showCloseButton={false}` e botão com texto, mas o `EditDialog` da Fase 2 (único uso restante) continua assim.
+**Correção:** — (opção: `EditDialog` com `showCloseButton={false}` e botão "Voltar", ou tooltip no X do primitivo)
+**Registrado em:** 2026-11-24
 
 ## 2. Triado, plano pronto
 
