@@ -92,6 +92,9 @@ function uniqueEmail(): string {
 
 // Datas das fixtures sempre relativas a Date.now(): o padrão fixo da fixture
 // sairia da janela de 30 dias com o tempo e daria "parada" diferente a cada dia.
+// Para "status mudou na criação", passe só createdAt (a fixture copia para
+// statusChangedAt): duas chamadas de ago() podem cair em milissegundos
+// diferentes, e a fixture recusa 'requested' com as duas datas diferentes.
 function ago(milliseconds: number): Date {
   return new Date(Date.now() - milliseconds);
 }
@@ -290,7 +293,6 @@ test("(b) o detalhe abre em Sheet sobre o Quadro: comenta, move, fecha, volta e 
     destinationId: world.destination.id,
     description,
     createdAt: ago(2 * HOUR_MS),
-    statusChangedAt: ago(2 * HOUR_MS),
   });
   await insertRequestItem(db, {
     requestId: seeded.id,
@@ -350,8 +352,8 @@ test("(b) o detalhe abre em Sheet sobre o Quadro: comenta, move, fecha, volta e 
   const reopened = page.getByRole("dialog", { name: /^Solicitação para / });
   await expect(reopened).toBeVisible();
 
-  // Escape, ou um clique fora, num diálogo de dentro do Sheet fecha só o
-  // diálogo de dentro: o Sheet e a URL ficam.
+  // Escape num diálogo de dentro do Sheet fecha só o diálogo de dentro: o
+  // Sheet e a URL ficam.
   await reopened.getByRole("button", { name: "Cancelar solicitação" }).click();
   const cancelDialog = page.getByRole("dialog", {
     name: "Cancelar solicitação",
@@ -370,8 +372,13 @@ test("(b) o detalhe abre em Sheet sobre o Quadro: comenta, move, fecha, volta e 
   await page.keyboard.press("Escape");
   await expect(deleteDialog).toHaveCount(0);
   await expect(reopened).toBeVisible();
-  await expect(page).toHaveURL(detailUrl);
   await expect(reopened.getByText(comment, { exact: true })).toBeVisible();
+  // Usar o Sheet depois do Escape: se o Escape tivesse vazado para o Sheet, o
+  // router.back() assíncrono o tiraria daqui e o campo não aceitaria o texto.
+  const draft = `Rascunho ${unique()}`;
+  await reopened.getByLabel("Novo comentário").fill(draft);
+  await expect(reopened.getByLabel("Novo comentário")).toHaveValue(draft);
+  await expect(page).toHaveURL(detailUrl);
 
   await reopened.getByRole("button", { name: "Fechar" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -435,7 +442,6 @@ test("(c) outra pessoa do mesmo setor abre a página completa e vê o comentári
     destinationId: world.destination.id,
     description,
     createdAt: ago(3 * HOUR_MS),
-    statusChangedAt: ago(3 * HOUR_MS),
   });
   await insertRequestComment(db, {
     requestId: seeded.id,
@@ -482,7 +488,6 @@ test("(d) cancelar exige o motivo; o motivo vai para a linha do tempo e a solici
     destinationId: world.destination.id,
     description,
     createdAt: ago(2 * HOUR_MS),
-    statusChangedAt: ago(2 * HOUR_MS),
   });
   await signUpOperator(page, world.sector.id, "Ana Teste");
   const reason = `Já tinha sido pedido ${unique()}`;
@@ -621,7 +626,6 @@ test("(f) operador de outro setor não vê a solicitação nem o setor alheio", 
     destinationId: theirs.destination.id,
     description,
     createdAt: ago(2 * HOUR_MS),
-    statusChangedAt: ago(2 * HOUR_MS),
   });
   await signUpOperator(page, mine.sector.id, "Caio Teste");
 
