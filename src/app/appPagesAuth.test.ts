@@ -62,7 +62,10 @@ function readComponentFromDisk(path: string): string | null {
 // há o que proteger. A lista é fechada de propósito: uma página nula que não
 // esteja aqui continua precisando do portão, e o guarda reprova. Caminhos
 // relativos a src/app/(app), com "/". Entra o slot @detalhe na Tarefa 12.
-export const NULL_SLOT_PAGES: readonly string[] = [];
+export const NULL_SLOT_PAGES: readonly string[] = [
+  "@detalhe/page.tsx",
+  "@detalhe/[...catchAll]/page.tsx",
+];
 
 // Verdadeiro só para `export default function Nome() { return null; }`, sem
 // nenhum import (comentários não contam).
@@ -92,7 +95,7 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
   );
 
   it("encontra as páginas guardadas do grupo", () => {
-    expect(pages.length).toBeGreaterThanOrEqual(13);
+    expect(pages.length).toBeGreaterThanOrEqual(15);
   });
 
   it("a lista fechada de slots nulos: cada entrada é de um slot, existe e só devolve null", () => {
@@ -107,6 +110,12 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
         `${route} faz mais que devolver null: precisa do portão`,
       ).toBe(true);
     }
+  });
+
+  it("o default do slot @detalhe também só devolve null", () => {
+    const file = join(APP_GROUP, "@detalhe", "default.tsx");
+    expect(existsSync(file)).toBe(true);
+    expect(rendersNothing(readFileSync(file, "utf8"))).toBe(true);
   });
 
   it("inclui a página de cada rota de /admin", () => {
@@ -142,7 +151,11 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
     const routes = pages.map((file) =>
       relative(APP_GROUP, file).replaceAll("\\", "/"),
     );
-    for (const route of ["solicitacoes/page.tsx"]) {
+    for (const route of [
+      "solicitacoes/page.tsx",
+      "solicitacoes/[id]/page.tsx",
+      "@detalhe/(.)solicitacoes/[id]/page.tsx",
+    ]) {
       expect(routes).toContain(route);
     }
   });

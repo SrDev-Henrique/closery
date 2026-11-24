@@ -982,6 +982,77 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Usa:** `Table`, `Pagination`, `RequestStatusBadge`, `StaleBadge`.
 - **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
 
+### RequestDetail
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestDetail.tsx`
+- **Propósito:** o detalhe da solicitação: a página completa `/solicitacoes/[id]` e o conteúdo do Sheet do detalhe rápido.
+- **Como funciona:** server component async, `variant="page" | "sheet"`. `page`: título `<h1>` "Solicitação para {destino}", seções `h2`, link "Ver todas as solicitações", `notFound()` para id malformado, inexistente ou de outro setor. `sheet`: título pelo `SheetTitle`, seções `h3`, link `<a href>` "Abrir página completa" (navegação de documento: uma navegação no cliente para a mesma URL seria interceptada de novo), e o estado "Solicitação não encontrada." dentro do Sheet (um `notFound()` no slot derrubaria a tela). Mostra o aviso `ReadOnlySectorNotice` em setor inativo, propriedades (`<dl>`: status e selo de parada, setor só para o admin, destino, quem criou, origem com link para a passagem), itens com quantidade e unidade, "Mudar status" (só com `canMove`), linha do tempo e comentários; "Ver comentários anteriores" é sempre `<a href>` e some no teto de 500.
+- **Usa:** `getRequestDetail`, `RequestStatusBadge`, `StaleBadge`, `RequestStatusActions`, `RequestTimeline`, `RequestComments`, `ReadOnlySectorNotice`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestSheet
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestSheet.tsx`
+- **Propósito:** o Sheet do detalhe rápido (rota interceptada `@detalhe/(.)solicitacoes/[id]`).
+- **Como funciona:** `"use client"`. `open` é constante: o slot só existe enquanto a URL é a do detalhe, e estado local não reabriria sob a Activity. Fechar (Escape, fundo ou o botão com texto "Fechar") chama `router.back()` uma vez só: a trava `closing` (um `ref` liberado no efeito de montagem) impede dois `back()` antes de a navegação terminar. O X só com ícone do primitivo fica desligado (`showCloseButton={false}`): o botão "Fechar" tem texto.
+- **Usa:** `Sheet`, `SheetContent`, `SheetClose`, `Button`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestDetailSkeleton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestDetailSkeleton.tsx`
+- **Propósito:** esqueleto do detalhe (`aria-busy`) enquanto a página completa ou o Sheet leem o banco.
+- **Usa:** `Skeleton`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestStatusActions
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestStatusActions.tsx`
+- **Propósito:** "Mudar status" no detalhe: um botão por status alvo (na cor do destino) e "Cancelar solicitação".
+- **Como funciona:** `"use client"`; `moveTargets(status)` (Cancelada reabre para qualquer um); todos os botões ficam desativados enquanto um movimento está em voo. Sucesso: toast "“{prévia}” movida para {status}."; falha: toast de erro nomeando a solicitação e `router.refresh()` em `STATUS_CONFLICT`, `NO_CHANGES` e `NOT_FOUND`.
+- **Usa:** `MoveStatusButton`, `CancelRequestDialog`, `useAdminAction`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### CancelRequestDialog
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/CancelRequestDialog.tsx`
+- **Propósito:** cancelar a solicitação com motivo obrigatório (≤ 500 caracteres).
+- **Como funciona:** `"use client"`; `Dialog` com `Textarea` "Motivo do cancelamento"; valida com `cancelRequestSchema` antes da action (erro no campo, sem chamar o servidor); "Voltar" fecha; o motivo não volta na próxima abertura. Só fecha sozinho no sucesso (toast "Solicitação cancelada."); `fieldErrors.reason` fica no campo, `STATUS_CONFLICT`/`NO_CHANGES`/`NOT_FOUND` viram toast + fecha + `router.refresh()` (o botão de cancelar some depois do refresh), qualquer outra falha fica no pé do diálogo, aberto, com o texto.
+- **Usa:** `Dialog`, `Textarea`, `Field*`, `useAdminAction`, `cancelRequestSchema`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestTimeline
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestTimeline.tsx`
+- **Propósito:** a linha do tempo dos status (mais antigo primeiro): "Criada por X", "X moveu para Y", "X cancelou" com "Motivo: …", "X reabriu como Y".
+- **Como funciona:** server-safe; `<ol>` com o ícone do status de destino (nunca só cor), a frase de `timelineSentence`, a data e hora de São Paulo em `<time>`.
+- **Usa:** `REQUEST_STATUS_STYLE`, `timelineSentence`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestComments
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestComments.tsx`
+- **Propósito:** os comentários da solicitação (mais antigo primeiro, os últimos 50).
+- **Como funciona:** server-safe; título "Comentários (n)" no nível `headingLevel` (2 na página, 3 no Sheet); "Ver comentários anteriores" (`<a href>`) acima da lista; o motivo de cancelamento aparece com o rótulo "Motivo do cancelamento" e sem "Apagar"; `DeleteCommentButton` só onde `canDelete`; `CommentComposer` só com `canComment`; vazio em uma linha.
+- **Usa:** `CommentComposer`, `DeleteCommentButton`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### CommentComposer
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/CommentComposer.tsx`
+- **Propósito:** escrever um comentário.
+- **Como funciona:** `"use client"`; `Textarea` "Novo comentário" (`text-base`, 2.000 caracteres) + "Comentar" (pendente "Comentando…"); valida com `addCommentSchema` antes da action; limpa só no sucesso (toast "Comentário adicionado."); o erro fica no campo e o texto digitado nunca se perde.
+- **Usa:** `useAdminAction`, `Textarea`, `Field*`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### DeleteCommentButton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/DeleteCommentButton.tsx`
+- **Propósito:** apagar o próprio comentário, com confirmação.
+- **Como funciona:** `"use client"`; botão "Apagar" com `aria-label` "Apagar comentário de {data}"; `ConfirmDialog` destrutivo ("Apagar comentário?" / "Ele some da solicitação para todos."); sucesso: toast "Comentário apagado."; falha: a mensagem fica no diálogo.
+- **Usa:** `ConfirmDialog`, `deleteCommentAction`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
 *(nenhum ainda)*
