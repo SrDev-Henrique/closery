@@ -17,9 +17,10 @@ import {
   stepQuantity,
 } from "@/features/handovers/quantity";
 
-// Contador de uma contagem inteira de 0 a 99.999 (ui-rules §2.2: número nunca
-// em branco). Só dígitos; o campo pode ficar vazio enquanto a pessoa digita
-// (buffer local), mas ao sair vira 0 e o 0 é o valor salvo.
+// Contador de uma contagem inteira de `min` (padrão 0) a 99.999 (ui-rules §2.2:
+// número nunca em branco). Só dígitos; o campo pode ficar vazio, ou abaixo do
+// mínimo, enquanto a pessoa digita (buffer local), mas ao sair vira o mínimo e
+// ele é o valor salvo.
 export function QuantityCounter({
   label,
   unit,
@@ -27,6 +28,7 @@ export function QuantityCounter({
   onChange,
   onCommit,
   disabled = false,
+  min = 0,
 }: {
   label: string;
   unit: string;
@@ -34,12 +36,13 @@ export function QuantityCounter({
   onChange: (value: number) => void;
   onCommit?: (value: number) => void;
   disabled?: boolean;
+  min?: number;
 }) {
   // null = o campo mostra `value`; texto = a pessoa está digitando.
   const [draft, setDraft] = useState<string | null>(null);
 
   function step(delta: 1 | -1) {
-    const next = stepQuantity(value, delta);
+    const next = stepQuantity(value, delta, min);
     setDraft(null);
     onChange(next);
     onCommit?.(next);
@@ -49,12 +52,12 @@ export function QuantityCounter({
     const text = sanitizeQuantityInput(event.target.value);
     setDraft(text);
     const parsed = parseQuantity(text);
-    if (parsed !== null) onChange(parsed);
+    if (parsed !== null && parsed >= min) onChange(parsed);
   }
 
   function handleBlur() {
     if (draft === null) return;
-    const final = parseQuantity(draft) ?? 0;
+    const final = Math.max(parseQuantity(draft) ?? min, min);
     setDraft(null);
     onChange(final);
     onCommit?.(final);
@@ -71,7 +74,7 @@ export function QuantityCounter({
               variant="outline"
               size="icon"
               aria-label={`Diminuir ${label}`}
-              disabled={disabled || value <= 0}
+              disabled={disabled || value <= min}
               onClick={() => step(-1)}
             />
           }

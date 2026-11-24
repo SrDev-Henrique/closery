@@ -702,10 +702,10 @@ o operador usa o próprio setor e nunca vê o seletor.
 ### QuantityCounter
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/QuantityCounter.tsx`
-- **Propósito:** contagem inteira de 0 a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
+- **Propósito:** contagem inteira de `min` (padrão 0) a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
 - **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira 0 e chama `onChange(0)` e `onCommit(0)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
 - **Usa:** `Button` (`icon`), `Input`, `Tooltip`, `sanitizeQuantityInput`, `parseQuantity`, `stepQuantity`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8); 2026-11-24 — prop `min` (padrão 0, comportamento anterior intacto): − desativa em `value <= min`, digitar abaixo do mínimo fica só no campo e sair com vazio ou abaixo dele salva o mínimo; `stepQuantity(value, delta, min = 0)`. A solicitação usa `min={1}` (Fase 4, Tarefa 10).
 
 ### useHandoverAutosave
 - **Status:** ✅ pronto (2026-11-21)
@@ -834,6 +834,50 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Como funciona:** `"use client"`; reaproveita `HandoverFields` com estado local (sem salvamento automático: nada é gravado até o envio) e acrescenta `Textarea` "Motivo da correção" (obrigatório, 500 caracteres); "Registrar correção" (pendente: "Registrando…") valida com `correctHandoverSchema` e manda o estado completo desejado; o servidor calcula o diff. Sucesso = toast "Correção registrada." e volta ao resumo (que mostra o selo "Corrigida"); recusa (motivo, `NO_CHANGES`, `FORBIDDEN`) aparece inline, sem toast, e nada do que foi digitado se perde. Link "Cancelar" volta ao resumo.
 - **Usa:** `HandoverFields`, `useAdminAction`, `Button`, `Field*`, `Textarea`, `sonner`, `useRouter`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 11).
+
+### Solicitações — `src/components/solicitacoes/*` (Fase 4)
+
+Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitações. Status sempre com ícone e texto (a cor pertence ao status e nunca é ciclada); ação que muda status usa a cor do status de destino.
+
+### statusStyle
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/statusStyle.ts` (server-safe)
+- **Propósito:** o ícone e as classes de cor de cada status de solicitação, num lugar só.
+- **Como funciona:** `REQUEST_STATUS_STYLE[status]` devolve `{ icon, badgeClass, buttonClass }`. Solicitada `CircleDot` + `bg-info text-info-foreground`; Em separação / Trânsito `Truck` + `bg-warning text-warning-foreground`; Entregue `CircleCheck` + `bg-success text-success-foreground`; Cancelada `CircleX` + `bg-muted text-muted-foreground`. `buttonClass` = `badgeClass` + `border-transparent hover:bg-{token}/80`: é a cor do botão "Mover para {status}" (o de cancelar usa `variant="destructive"`). Classes sempre inteiras no texto, para o Tailwind enxergá-las.
+- **Usa:** tokens `info`, `warning`, `success`, `muted`; ícones do lucide.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### RequestStatusBadge
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestStatusBadge.tsx` (server-safe)
+- **Propósito:** selo do status da solicitação (cartão, linha, tabela, detalhe, passagem).
+- **Como funciona:** `<Badge variant="secondary" className="h-6 …">` com o ícone (`aria-hidden`) e o rótulo (`Solicitada`, `Em separação / Trânsito`, `Entregue`, `Cancelada`) do `REQUEST_STATUS_STYLE`. Nunca só cor.
+- **Usa:** `Badge`, `statusStyle`, `REQUEST_STATUS_LABEL`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### StaleBadge
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/StaleBadge.tsx` (server-safe)
+- **Propósito:** selo "Parada há N dias" das solicitações abertas há mais de 72 h no mesmo status.
+- **Como funciona:** `<Badge variant="secondary" className="h-6 bg-warning text-warning-foreground">` com `ClockAlert` (`aria-hidden`) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
+- **Usa:** `Badge`, `staleLabel`, token `warning`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### RequestForm
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestForm.tsx`
+- **Propósito:** formulário de nova solicitação, o MESMO na tela de solicitações e na passagem.
+- **Como funciona:** `"use client"`, controlado, nunca começa em branco: `Destino` (`SelectField` com os destinos ativos e `Outro` por último) já vem no destino mais usado do setor (sem destinos ativos, em `Outro`); `Outro` revela `Qual destino?` (`maxLength` 80, `text-base`); `Descrição` (`Textarea`, 500, obrigatória); grupo `Itens` (opcional): `Adicionar item` acrescenta o primeiro item de estoque ainda não escolhido com quantidade 1, cada linha tem `<select>` "Item" (só as opções que ninguém escolheu, mais a própria), `QuantityCounter` com `min={1}` e `Remover {item}` (ícone `Trash2`, tooltip "Remover item"); sem itens de estoque, o texto "Nenhum item de estoque neste setor.". `Setor` só aparece para o admin em "Todos os setores" (`sectors` não nulo); trocar o setor limpa os itens e mantém o destino. Valida com `createRequestSchema` antes da action (erro vai para o campo, a action não é chamada); `useAdminAction` com `showError: false` e toast "Solicitação criada."; erro do servidor vai para o campo de `fieldErrors` e, sem campo (ex.: passagem confirmada), para um `FieldError` no pé; nada do digitado se perde. Botões `Criar solicitação` (pendente `Criando…`) e `Voltar`.
+- **Usa:** `SelectField`, `QuantityCounter`, `Field*`, `Input`, `Textarea`, `NativeSelect`, `Button`, `Tooltip`, `useAdminAction`, `createRequestAction`, `createRequestSchema`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### NewRequestDialog
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/NewRequestDialog.tsx`
+- **Propósito:** gatilho "Nova solicitação" + diálogo com o `RequestForm`.
+- **Como funciona:** `"use client"`. Gatilho `Button` (`Plus` + "Nova solicitação"; `triggerVariant` `default` ou `outline`, o da passagem). O conteúdo desmonta ao fechar, então cada abertura começa com o estado novo. `DialogContent showCloseButton={false}` (o X só com ícone do primitivo não tem tooltip; "Voltar" fecha), `max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg`. Sucesso fecha (o toast vem do formulário); erro mantém o diálogo aberto.
+- **Usa:** `Dialog`, `Button`, `RequestForm`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
