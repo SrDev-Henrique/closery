@@ -178,7 +178,11 @@ describe("listOpenRequests", () => {
   });
 
   it("outro setor: operador recebe vazio; admin lê o setor pedido", async () => {
-    await insertRequest(db, {
+    const own = await seed({
+      destinationId: undefined,
+      destinationOther: "No meu setor",
+    });
+    const foreign = await insertRequest(db, {
       sectorId: w.other.id,
       createdBy: w.ana.id,
       destinationOther: "Em outro setor",
@@ -189,7 +193,12 @@ describe("listOpenRequests", () => {
     expect(asOperator).toEqual({ rows: [], total: 0, staleCount: 0 });
 
     const asAdmin = await listOpenRequests(db, w.admin, w.other.id, NOW);
+    expect(asAdmin.rows.map((row) => row.id)).toEqual([foreign.id]);
     expect(asAdmin.total).toBe(1);
+
+    const ownResult = await listOpenRequests(db, w.operator, w.sector.id, NOW);
+    expect(ownResult.rows.map((row) => row.id)).toEqual([own.id]);
+    expect(ownResult.total).toBe(1);
   });
 
   it("setor inativo não lista abertas (padrão P26)", async () => {
@@ -410,7 +419,13 @@ describe("listOpenRequestsAtDelivery", () => {
   });
 
   it("outro setor devolve vazio para o operador; admin lê qualquer setor", async () => {
-    await insertRequest(db, {
+    const own = await insertRequest(db, {
+      sectorId: w.sector.id,
+      createdBy: w.ana.id,
+      destinationOther: "No meu setor",
+      createdAt: before(HOUR),
+    });
+    const foreign = await insertRequest(db, {
       sectorId: w.other.id,
       createdBy: w.ana.id,
       destinationOther: "Em outro setor",
@@ -424,7 +439,13 @@ describe("listOpenRequestsAtDelivery", () => {
       total: 0,
       staleCount: 0,
     });
-    expect((await atDelivery(w.admin, w.other.id)).total).toBe(1);
+    const ownResult = await atDelivery(w.operator, w.sector.id);
+    expect(ownResult.rows.map((row) => row.id)).toEqual([own.id]);
+    expect(ownResult.total).toBe(1);
+
+    const otherResult = await atDelivery(w.admin, w.other.id);
+    expect(otherResult.rows.map((row) => row.id)).toEqual([foreign.id]);
+    expect(otherResult.total).toBe(1);
   });
 
   it("setor inativo continua legível (o resumo da passagem não some)", async () => {
