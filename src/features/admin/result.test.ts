@@ -80,3 +80,52 @@ describe("códigos da passagem (aditivos)", () => {
     }
   });
 });
+
+describe("códigos da Fase 4 (aditivos)", () => {
+  // Record<AdminErrorCode, true> obriga esta lista a bater com a uniao: um
+  // codigo a mais ou a menos nao compila (bun run check-types).
+  const CONTRACT: Record<AdminErrorCode, true> = {
+    INVALID_INPUT: true,
+    NAME_TAKEN: true,
+    NOT_FOUND: true,
+    SECTOR_REQUIRED: true,
+    SECTOR_INACTIVE: true,
+    SECTOR_IN_USE: true,
+    SELF_CHANGE: true,
+    LAST_ADMIN: true,
+    INVITE_NOT_PENDING: true,
+    SHIFT_INACTIVE: true,
+    DATE_OUT_OF_RANGE: true,
+    FORBIDDEN: true,
+    HANDOVER_LOCKED: true,
+    ALREADY_DELIVERED: true,
+    NOT_DELIVERED: true,
+    ALREADY_CONFIRMED: true,
+    OWN_HANDOVER: true,
+    NOT_CONFIRMED: true,
+    NO_CHANGES: true,
+    STATUS_CONFLICT: true,
+    DESTINATION_INACTIVE: true,
+    INTERNAL: true,
+  };
+
+  it("a lista do contrato tem os 22 codigos, sem repeticao", () => {
+    expect(Object.keys(CONTRACT)).toHaveLength(22);
+  });
+
+  it("fail aceita os 2 codigos novos e os de antes continuam valendo", () => {
+    expect(fail("STATUS_CONFLICT", "mudou")).toEqual({
+      ok: false,
+      code: "STATUS_CONFLICT",
+      message: "mudou",
+    });
+    expect(
+      fail("DESTINATION_INACTIVE", "inativo", { destinationId: "inativo" }),
+    ).toEqual({
+      ok: false,
+      code: "DESTINATION_INACTIVE",
+      message: "inativo",
+      fieldErrors: { destinationId: "inativo" },
+    });
+  });
+});

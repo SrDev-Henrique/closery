@@ -34,21 +34,27 @@ function nameOf(file: string): string {
 
 const adminFiles = sourceFiles(join("src", "components", "admin"));
 const handoverFiles = sourceFiles(join("src", "components", "passagens"));
+const requestFiles = sourceFiles(join("src", "components", "solicitacoes"));
 const primitiveFiles = ["toggle", "toggle-group", "native-select", "dialog"]
   .map((name) => join("src", "components", "ui", `${name}.tsx`))
   .filter((file) => existsSync(file));
 
-describe("ui-registry.md cobre os componentes das Fases 2 e 3", () => {
+describe("ui-registry.md cobre os componentes das Fases 2, 3 e 4", () => {
   it.each(
-    [...adminFiles, ...handoverFiles, ...primitiveFiles].map((file) => [
-      file,
-      nameOf(file),
-    ]),
+    [...adminFiles, ...handoverFiles, ...requestFiles, ...primitiveFiles].map(
+      (file) => [file, nameOf(file)],
+    ),
   )("%s está no catálogo", (file, name) => {
     expect(
       new RegExp(String.raw`\b${name}\b`, "i").test(registry),
       `${file}: nenhuma menção a "${name}" em .context/ui-registry.md`,
     ).toBe(true);
+  });
+
+  it("pasta inexistente (como solicitacoes antes da Tarefa 10): a varredura devolve vazio e não lança", () => {
+    expect(
+      sourceFiles(join("src", "components", "pasta-que-nao-existe")),
+    ).toEqual([]);
   });
 
   it("AdminOverview descreve os cartões da Fase 2", () => {

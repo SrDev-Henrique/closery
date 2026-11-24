@@ -58,19 +58,55 @@ function readComponentFromDisk(path: string): string | null {
   return file ? readFileSync(file, "utf8") : null;
 }
 
+// Páginas de slot (rota paralela) que só devolvem null: não leem nada, então não
+// há o que proteger. A lista é fechada de propósito: uma página nula que não
+// esteja aqui continua precisando do portão, e o guarda reprova. Caminhos
+// relativos a src/app/(app), com "/". Entra o slot @detalhe na Tarefa 12.
+export const NULL_SLOT_PAGES: readonly string[] = [];
+
+// Verdadeiro só para `export default function Nome() { return null; }`, sem
+// nenhum import (comentários não contam).
+export function rendersNothing(source: string): boolean {
+  return /^export\s+default\s+function\s+[A-Za-z_$][\w$]*\s*\(\s*\)\s*\{\s*return\s+null\s*;?\s*\}\s*;?$/.test(
+    stripComments(source).trim(),
+  );
+}
+
 function findPages(dir: string): string[] {
   return listSourceFiles(dir, (name) => name === "page.tsx");
 }
 
+function routeOf(file: string): string {
+  return relative(APP_GROUP, file).replaceAll("\\", "/");
+}
+
 function isAdminPage(file: string): boolean {
-  return relative(APP_GROUP, file).replaceAll("\\", "/").startsWith("admin/");
+  return routeOf(file).startsWith("admin/");
 }
 
 describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => {
-  const pages = findPages(APP_GROUP);
+  const allPages = findPages(APP_GROUP);
+  // As páginas nulas da lista fechada têm a sua própria regra (abaixo).
+  const pages = allPages.filter(
+    (file) => !NULL_SLOT_PAGES.includes(routeOf(file)),
+  );
 
-  it("encontra as páginas do grupo", () => {
+  it("encontra as páginas guardadas do grupo", () => {
     expect(pages.length).toBeGreaterThanOrEqual(12);
+  });
+
+  it("a lista fechada de slots nulos: cada entrada é de um slot, existe e só devolve null", () => {
+    expect(new Set(NULL_SLOT_PAGES).size).toBe(NULL_SLOT_PAGES.length);
+    for (const route of NULL_SLOT_PAGES) {
+      expect(route.startsWith("@"), `${route} não é de um slot`).toBe(true);
+      const file = allPages.find((candidate) => routeOf(candidate) === route);
+      expect(file, `${route} não existe`).toBeDefined();
+      if (file === undefined) continue;
+      expect(
+        rendersNothing(readFileSync(file, "utf8")),
+        `${route} faz mais que devolver null: precisa do portão`,
+      ).toBe(true);
+    }
   });
 
   it("inclui a página de cada rota de /admin", () => {
@@ -190,5 +226,86 @@ describe("pageCallsAuthGuard (o guarda de fato falha)", () => {
     expect(pageCallsAuthGuard("await requireUserOrNot();", noComponents)).toBe(
       false,
     );
+  });
+});
+
+describe("rendersNothing (a lista fechada de slots nulos de fato falha)", () => {
+  it("a página nula de verdade → true", () => {
+    expect(
+      rendersNothing(`export default function Default() { return null; }`),
+    ).toBe(true);
+    expect(
+      rendersNothing(
+        `// slot vazio\nexport default function Nada() {\n  return null\n}\n`,
+      ),
+    ).toBe(true);
+  });
+
+  it("com import → false", () => {
+    expect(
+      rendersNothing(
+        `import { x } from "@/lib/x";\nexport default function Page() { return null; }`,
+      ),
+    ).toBe(false);
+  });
+
+  it("com JSX → false", () => {
+    expect(
+      rendersNothing(`export default function Page() { return <p>oi</p>; }`),
+    ).toBe(false);
+  });
+
+  it("com requireUser ou outra instrução → false", () => {
+    expect(
+      rendersNothing(
+        `export default async function Page() { await requireUser(); return null; }`,
+      ),
+    ).toBe(false);
+  });
+
+  it("com dois exports → false", () => {
+    expect(
+      rendersNothing(
+        `export const metadata = {};\nexport default function Page() { return null; }`,
+      ),
+    ).toBe(false);
+    expect(
+      rendersNothing(
+        `export default function Page() { return null; }\nexport const x = 1;`,
+      ),
+    ).toBe(false);
+  });
+
+  it("função de seta ou export nomeado → false (o formato é um só)", () => {
+    expect(rendersNothing(`export default () => null;`)).toBe(false);
+    expect(rendersNothing(`export function Page() { return null; }`)).toBe(
+      false,
+    );
+  });
+
+  it("devolver outra coisa que não null → false", () => {
+    expect(
+      rendersNothing(`export default function Page() { return undefined; }`),
+    ).toBe(false);
+    expect(
+      rendersNothing(`export default function Page() { return <></>; }`),
+    ).toBe(false);
+  });
+
+  it("o return null só em comentário não conta", () => {
+    expect(
+      rendersNothing(
+        `export default function Page() { /* return null; */ return <p />; }`,
+      ),
+    ).toBe(false);
+  });
+
+  it("vazio → false", () => {
+    expect(rendersNothing("")).toBe(false);
+  });
+
+  it("uma página nula que NÃO está na lista continua sem portão: o guarda a reprova", () => {
+    const nullPage = `export default function Page() { return null; }`;
+    expect(pageCallsAuthGuard(nullPage, () => null)).toBe(false);
   });
 });
