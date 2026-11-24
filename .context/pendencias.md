@@ -69,7 +69,7 @@
 | P30 | Regra de convite pendente duplicada em 6 lugares | 🟡 | Aberto, não triado |
 | P31 | Higiene de testes e refatorações pequenas da Fase 2 | ⚪ | Aberto, não triado |
 | P32 | Mensagens no feminino e select vazio sem setor ativo | ⚪ | Aberto, não triado |
-| P33 | Dois runners de Server Action quase iguais (admin e passagem) | ⚪ | Aberto, não triado |
+| P33 | Dois runners de Server Action quase iguais (admin e passagem) | ⚪ | Resolvido |
 | P34 | "Sem passagem" usa os horários atuais do turno e some com o turno desativado | 🟡 | Aberto, não triado |
 | P35 | Cartão "Passagem para confirmar" não tem teto de idade | 🟡 | Aberto, não triado |
 | P36 | Dois operadores no mesmo rascunho: o último a salvar vence, sem aviso | 🟡 | Aberto, não triado |
@@ -209,13 +209,6 @@
 **Arquivos:** `src/components/admin/ActiveToggleButton.tsx` · `src/components/admin/team/PersonForm.tsx`
 **Impacto:** `ActiveToggleButton` fixa o masculino (`${entity} desativado/reativado`): serve para Setor, Turno, Item e Destino, mas erra a concordância com uma entidade feminina futura (ex.: Pessoa → "Pessoa desativada."), então não pode ser reaproveitado na Equipe; com nenhum setor ativo o select de setor do operador aparece vazio.
 **Correção:** — (opção: gênero como parâmetro do botão; com 0 setores ativos, mostrar a explicação e o atalho para Setores como no `InviteForm`)
-**Registrado em:** 2026-11-21
-
-#### P33 — Dois runners de Server Action quase iguais (admin e passagem) ⚪
-**Estado:** Aberto, não triado
-**Arquivos:** `src/features/admin/runAdminAction.ts` · `src/features/handovers/runHandoverAction.ts`
-**Impacto:** cerca de 25 linhas do fluxo (Zod → domínio → `unstable_rethrow` → `INTERNAL`) estão duplicadas; mudar o tratamento de erro num runner exige lembrar do outro e os dois podem divergir em silêncio.
-**Correção:** — (opção: uma refatoração separada, com testes verdes antes e depois: um runner só, com o `revalidatePath` como parâmetro; nunca no mesmo commit de uma feature)
 **Registrado em:** 2026-11-21
 
 #### P34 — "Sem passagem" usa os horários atuais do turno e some com o turno desativado 🟡
@@ -456,3 +449,11 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: exigir `requireAdmin` para arquivos sob `admin/`; ampliar a varredura a qualquer `.ts/.tsx` com `"use server"` de arquivo ou inline, na primeira tarefa da Fase 3)
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-21):** resolvida na Fase 3 (Tarefa 3). `appPagesAuth.test.ts` passou a exigir `requireAdmin` nas páginas sob `admin/`; o novo `src/app/actionsGuards.test.ts` varre todo `.ts`/`.tsx` de `src` com `"use server"` (de arquivo ou inline), exige que o arquivo se chame `actions.ts` sob `src/app/(app)/**` (exceção documentada: `(auth)/convite/[token]/actions.ts`), `requireAdmin()` em `admin/**` e `requireUser()` ou `requireAdmin()` na primeira instrução do resto. A varredura vive em `test/actionGuards.ts` (extraída de `actionsAuth.test.ts` em commit próprio, só refatoração).
+
+#### P33 — Dois runners de Server Action quase iguais (admin e passagem) ⚪
+**Estado:** Resolvido
+**Arquivos:** `src/features/admin/runAdminAction.ts` · `src/features/handovers/runHandoverAction.ts`
+**Impacto:** cerca de 25 linhas do fluxo (Zod → domínio → `unstable_rethrow` → `INTERNAL`) estão duplicadas; mudar o tratamento de erro num runner exige lembrar do outro e os dois podem divergir em silêncio.
+**Correção:** — (opção: uma refatoração separada, com testes verdes antes e depois: um runner só, com o `revalidatePath` como parâmetro; nunca no mesmo commit de uma feature)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 1), em commit só de refatoração. `runAction` (`src/features/admin/runAction.ts`) é o runner único (Zod → domínio → `unstable_rethrow` → `INTERNAL` → `revalidatePath` só em `ok`), com `revalidate: "/(app)" | "/(app)/admin" | null` como parâmetro. `runAdminAction` e `runHandoverAction` ficaram como embrulhos finos com a mesma assinatura de antes, e os testes dos dois passaram sem nenhuma edição. As Server Actions da Fase 4 chamam `runAction` direto.
