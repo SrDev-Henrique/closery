@@ -52,6 +52,10 @@ vi.mock("@/app/(app)/passagens/actions", () => ({
   saveHandoverFieldAction: vi.fn(),
   deliverHandoverAction: vi.fn(),
 }));
+// O diálogo "Nova solicitação" do rascunho importa a action de criar.
+vi.mock("@/app/(app)/solicitacoes/actions", () => ({
+  createRequestAction: vi.fn(),
+}));
 vi.mock("@/db", async () => {
   const { createTestDb } = await import("../../../test/db");
   const { client, db } = await createTestDb();

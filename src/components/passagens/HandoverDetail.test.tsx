@@ -15,6 +15,7 @@ import {
   insertHandoverCorrection,
   insertHandoverItem,
   insertItem,
+  insertRequest,
   insertSector,
   insertShift,
   insertUser,
@@ -283,6 +284,7 @@ describe("HandoverDetail", () => {
       expect(headingNames()).toEqual([
         "Passagem de turno",
         "Fica para o próximo turno",
+        "Solicitações abertas",
         "Controles",
         "Estoque",
         "Ocorrências do turno",
@@ -417,6 +419,225 @@ describe("HandoverDetail", () => {
       expect(screen.getByText("Rede de proteção")).toBeInTheDocument();
       expect(screen.getByText("3 unidade")).toBeInTheDocument();
       expect(screen.queryByText("Rede nova")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("solicitações abertas na entrega", () => {
+    const sectionOf = () => {
+      const section = screen
+        .getByRole("heading", { level: 2, name: "Solicitações abertas" })
+        .closest("section");
+      if (!section) throw new Error("seção não encontrada");
+      return section;
+    };
+
+    it("fica logo depois de 'Fica para o próximo turno' e antes dos controles", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(headingNames()).toEqual([
+        "Passagem de turno",
+        "Fica para o próximo turno",
+        "Solicitações abertas",
+        "Controles",
+        "Estoque",
+        "Ocorrências do turno",
+        "Entrega",
+      ]);
+      expect(
+        screen.getByText("Como estavam na entrega, em 20/11/2026 às 14:05."),
+      ).toBeInTheDocument();
+    });
+
+    it("sem solicitações: 'Nenhuma solicitação aberta na entrega.' e o link para todas", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(
+        within(sectionOf()).getByText("Nenhuma solicitação aberta na entrega."),
+      ).toBeInTheDocument();
+      expect(
+        within(sectionOf()).getByRole("link", {
+          name: "Ver todas as solicitações",
+        }),
+      ).toHaveAttribute("href", "/solicitacoes");
+    });
+
+    it("mostra o status do instante da entrega e 'Agora: …' quando mudou depois", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Mudou depois da entrega",
+        status: "in_transit",
+        createdAt: spDate("2026-11-20", "12:00"),
+        statusChangedAt: spDate("2026-11-20", "14:30"),
+      });
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Não mudou",
+        status: "in_transit",
+        createdAt: spDate("2026-11-19", "12:00"),
+        statusChangedAt: spDate("2026-11-20", "10:00"),
+      });
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      const items = within(sectionOf()).getAllByRole("listitem");
+      expect(items).toHaveLength(2);
+      // A mais antiga no status daquele instante vem primeiro: "Não mudou" (10:00).
+      expect(items[0]).toHaveTextContent("Não mudou");
+      expect(items[0]).toHaveTextContent("Em separação / Trânsito");
+      expect(items[0]).not.toHaveTextContent("Agora:");
+      expect(items[1]).toHaveTextContent("Mudou depois da entrega");
+      expect(items[1]).toHaveTextContent("Solicitada");
+      expect(items[1]).toHaveTextContent("Agora: Em separação / Trânsito");
+    });
+
+    it("não lista a que já estava fechada na entrega, a criada depois nem a de outro setor", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      const carga = await insertSector(db, "Carga");
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Entregue antes",
+        status: "delivered",
+        createdAt: spDate("2026-11-20", "09:00"),
+        statusChangedAt: spDate("2026-11-20", "13:00"),
+      });
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Cancelada antes",
+        status: "cancelled",
+        createdAt: spDate("2026-11-20", "09:00"),
+        statusChangedAt: spDate("2026-11-20", "13:00"),
+      });
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Criada depois",
+        createdAt: spDate("2026-11-20", "15:00"),
+      });
+      await insertRequest(db, {
+        sectorId: carga.id,
+        createdBy: world.ana.id,
+        description: "De outro setor",
+        createdAt: spDate("2026-11-20", "12:00"),
+      });
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(
+        within(sectionOf()).getByText("Nenhuma solicitação aberta na entrega."),
+      ).toBeInTheDocument();
+    });
+
+    it("parada na entrega e entregue depois: o selo é o do instante da entrega e vem 'Agora: Entregue'", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Parada na entrega",
+        status: "delivered",
+        createdAt: spDate("2026-11-16", "10:00"),
+        statusChangedAt: spDate("2026-11-21", "09:00"),
+      });
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      const [item] = within(sectionOf()).getAllByRole("listitem");
+      expect(item).toHaveTextContent("Parada na entrega");
+      expect(item).toHaveTextContent("Solicitada");
+      expect(item).toHaveTextContent("Parada há 4 dias");
+      expect(item).toHaveTextContent("Agora: Entregue");
+    });
+
+    it("com 21 abertas na entrega mostra 20 e 'Mostrando 20 de 21.'", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      for (let index = 0; index < 21; index += 1) {
+        await insertRequest(db, {
+          sectorId: world.sector.id,
+          createdBy: world.ana.id,
+          description: `Pedido ${index}`,
+          createdAt: spDate("2026-11-20", "09:00"),
+        });
+      }
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(within(sectionOf()).getAllByRole("listitem")).toHaveLength(20);
+      expect(screen.getByText("Mostrando 20 de 21.")).toBeInTheDocument();
+    });
+
+    it("passagem confirmada mostra a seção com as abertas da entrega dela", async () => {
+      const world = await seed();
+      const id = await confirmedHandover(world);
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Aberta na véspera",
+        createdAt: spDate("2026-11-19", "09:00"),
+      });
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(
+        screen.getByText("Como estavam na entrega, em 19/11/2026 às 14:05."),
+      ).toBeInTheDocument();
+      const items = within(sectionOf()).getAllByRole("listitem");
+      expect(items).toHaveLength(1);
+      expect(items[0]).toHaveTextContent("Aberta na véspera");
+    });
+
+    it("admin: 'Ver todas as solicitações' leva o setor da passagem", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      mocks.requireUser.mockResolvedValue(world.asAdmin);
+
+      await renderDetail(id);
+
+      expect(
+        within(sectionOf()).getByRole("link", {
+          name: "Ver todas as solicitações",
+        }),
+      ).toHaveAttribute("href", `/solicitacoes?setor=${world.sector.id}`);
+    });
+
+    it("setor inativo continua legível: a seção aparece", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Pedido antigo",
+        createdAt: spDate("2026-11-20", "09:00"),
+      });
+      await db
+        .update(sector)
+        .set({ active: false })
+        .where(eq(sector.id, world.sector.id));
+      mocks.requireUser.mockResolvedValue(world.asAdmin);
+
+      await renderDetail(id);
+
+      expect(within(sectionOf()).getAllByRole("listitem")).toHaveLength(1);
     });
   });
 

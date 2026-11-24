@@ -253,4 +253,62 @@ describe("HandoverFields", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe("afterItems (slot da seção de solicitações)", () => {
+    const SLOT = (
+      <section aria-label="Slot de teste">Solicitações aqui</section>
+    );
+
+    function isBefore(first: Node, second: Node): boolean {
+      return Boolean(
+        first.compareDocumentPosition(second) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    }
+
+    it("aparece depois do Estoque e antes de 'Ocorrências do turno'", () => {
+      setup({ afterItems: SLOT });
+
+      const slot = screen.getByText("Solicitações aqui");
+      expect(
+        isBefore(screen.getByRole("heading", { name: "Estoque" }), slot),
+      ).toBe(true);
+      expect(
+        isBefore(slot, screen.getByLabelText("Ocorrências do turno")),
+      ).toBe(true);
+      expect(
+        isBefore(slot, screen.getByLabelText("Fica para o próximo turno")),
+      ).toBe(true);
+    });
+
+    it("aparece também quando o setor não tem itens (depois do estado vazio)", () => {
+      setup({ controls: [], stock: [], afterItems: SLOT });
+
+      const slot = screen.getByText("Solicitações aqui");
+      expect(isBefore(screen.getByText("Nenhum item neste setor."), slot)).toBe(
+        true,
+      );
+      expect(
+        isBefore(slot, screen.getByLabelText("Ocorrências do turno")),
+      ).toBe(true);
+    });
+
+    it("sem a prop, nada muda: só Controles e Estoque como seções", () => {
+      setup();
+
+      expect(screen.queryByText("Solicitações aqui")).not.toBeInTheDocument();
+      expect(
+        screen
+          .getAllByRole("heading", { level: 2 })
+          .map((heading) => heading.textContent),
+      ).toEqual(["Controles", "Estoque"]);
+    });
+
+    it("o slot não é afetado por `disabled` e não mexe nos campos", () => {
+      setup({ afterItems: SLOT, disabled: true });
+
+      expect(screen.getByText("Solicitações aqui")).toBeInTheDocument();
+      expect(screen.getByLabelText("Ocorrências do turno")).toBeDisabled();
+    });
+  });
 });

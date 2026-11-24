@@ -1,5 +1,5 @@
 import type { PGlite } from "@electric-sql/pglite";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/db";
@@ -7,7 +7,9 @@ import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
 import { resetDb } from "../../../test/db";
 import {
+  insertDestination,
   insertHandover,
+  insertRequest,
   insertSector,
   insertShift,
   insertUser,
@@ -117,15 +119,166 @@ describe("HomeHandovers", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("não mostra cartão de solicitações nesta fase", async () => {
-    const { uld, ana } = await setup();
-    mocks.requireUser.mockResolvedValue(
-      authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
-    );
+  describe("cartão Solicitações", () => {
+    function asAna(world: Awaited<ReturnType<typeof setup>>) {
+      mocks.requireUser.mockResolvedValue(
+        authzOf({
+          role: "operator",
+          userId: world.ana.id,
+          sectorId: world.uld.id,
+        }),
+      );
+    }
 
-    await renderHome();
+    it("sem abertas: o cartão vem depois de 'Passagem do meu turno' com o estado vazio", async () => {
+      const world = await setup();
+      asAna(world);
 
-    expect(screen.queryByText(/solicita/i)).not.toBeInTheDocument();
+      await renderHome();
+
+      const headings = screen
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent);
+      expect(headings).toEqual(["Passagem do meu turno", "Solicitações"]);
+      expect(
+        screen.getByText("Nenhuma solicitação aberta."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Ver solicitações" }),
+      ).toHaveAttribute("href", "/solicitacoes");
+    });
+
+    it("conta abertas e paradas e lista as paradas com link para o detalhe", async () => {
+      const world = await setup();
+      const doca = await insertDestination(db, { name: "Doca 3" });
+      const parada = await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        destinationId: doca.id,
+        description: "Trocar as redes",
+        createdAt: spDate("2026-11-16", "09:00"),
+      });
+      await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        description: "Recente",
+        createdAt: spDate("2026-11-19", "09:00"),
+      });
+      await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        description: "Em trânsito",
+        status: "in_transit",
+        createdAt: spDate("2026-11-19", "09:00"),
+        statusChangedAt: spDate("2026-11-19", "10:00"),
+      });
+      await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        description: "Entregue",
+        status: "delivered",
+        createdAt: spDate("2026-11-10", "09:00"),
+        statusChangedAt: spDate("2026-11-11", "09:00"),
+      });
+      asAna(world);
+
+      await renderHome();
+
+      expect(screen.getByText("3 abertas · 1 parada")).toBeInTheDocument();
+      expect(screen.getByText("Paradas há mais tempo")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Trocar as redes" }),
+      ).toHaveAttribute("href", `/solicitacoes/${parada.id}`);
+      expect(screen.getByText("Para Doca 3")).toBeInTheDocument();
+      expect(screen.getByText("Parada há 4 dias")).toBeInTheDocument();
+      expect(screen.queryByText("Recente")).not.toBeInTheDocument();
+    });
+
+    it("72 h exatas não é parada; um minuto a mais, é", async () => {
+      const world = await setup();
+      await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        description: "Exatas 72 h",
+        createdAt: spDate("2026-11-17", "10:00"),
+      });
+      asAna(world);
+
+      await renderHome();
+      expect(screen.getByText("1 aberta · 0 paradas")).toBeInTheDocument();
+      cleanup();
+
+      await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        description: "72 h e 1 minuto",
+        createdAt: spDate("2026-11-17", "09:59"),
+      });
+      await renderHome();
+
+      expect(screen.getByText("2 abertas · 1 parada")).toBeInTheDocument();
+      expect(screen.getByText("Parada há 3 dias")).toBeInTheDocument();
+    });
+
+    it("lista só as 5 paradas há mais tempo, mas conta todas", async () => {
+      const world = await setup();
+      for (let day = 1; day <= 7; day += 1) {
+        await insertRequest(db, {
+          sectorId: world.uld.id,
+          createdBy: world.ana.id,
+          description: `Parada ${day}`,
+          createdAt: spDate(`2026-11-0${day}`, "09:00"),
+        });
+      }
+      asAna(world);
+
+      await renderHome();
+
+      expect(screen.getByText("7 abertas · 7 paradas")).toBeInTheDocument();
+      const items = within(
+        screen.getByRole("heading", { name: "Paradas há mais tempo" })
+          .parentElement as HTMLElement,
+      ).getAllByRole("listitem");
+      expect(items).toHaveLength(5);
+      expect(items[0]).toHaveTextContent("Parada 1");
+      expect(items[4]).toHaveTextContent("Parada 5");
+    });
+
+    it("não conta as de outro setor", async () => {
+      const world = await setup();
+      const carga = await insertSector(db, "Carga");
+      await insertRequest(db, {
+        sectorId: carga.id,
+        createdBy: world.ana.id,
+        description: "De outro setor",
+        createdAt: spDate("2026-11-01", "09:00"),
+      });
+      asAna(world);
+
+      await renderHome();
+
+      expect(
+        screen.getByText("Nenhuma solicitação aberta."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("De outro setor")).not.toBeInTheDocument();
+    });
+
+    it("admin: o link leva o setor escolhido e o cartão é desse setor", async () => {
+      const world = await setup();
+      await insertRequest(db, {
+        sectorId: world.uld.id,
+        createdBy: world.ana.id,
+        createdAt: spDate("2026-11-19", "09:00"),
+      });
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome({ setor: world.uld.id });
+
+      expect(screen.getByText("1 aberta · 0 paradas")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Ver solicitações" }),
+      ).toHaveAttribute("href", `/solicitacoes?setor=${world.uld.id}`);
+    });
   });
 
   it("rascunho existente vira 'Continuar passagem'", async () => {
@@ -173,6 +326,7 @@ describe("HomeHandovers", () => {
     expect(headings).toEqual([
       "Passagem para confirmar",
       "Passagem do meu turno",
+      "Solicitações",
     ]);
     expect(screen.getByText("Conferir a rede do box 4.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
@@ -268,6 +422,9 @@ describe("HomeHandovers", () => {
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Passagem do meu turno" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Solicitações" }),
     ).not.toBeInTheDocument();
   });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { TriangleAlert } from "lucide-react";
-import { useId } from "react";
+import { type ReactNode, useId } from "react";
 
 import { EmptyState } from "@/components/admin/EmptyState";
 import {
@@ -141,6 +141,7 @@ export function HandoverFields({
   disabled = false,
   canManageCatalog,
   itemsHref,
+  afterItems,
 }: {
   controls: readonly ItemLine[];
   stock: readonly ItemLine[];
@@ -150,6 +151,8 @@ export function HandoverFields({
   disabled?: boolean;
   canManageCatalog: boolean;
   itemsHref: string;
+  // Seção extra entre os itens e as ocorrências (solicitações abertas, F4-13).
+  afterItems?: ReactNode;
 }) {
   const noItems = controls.length === 0 && stock.length === 0;
 
@@ -191,6 +194,7 @@ export function HandoverFields({
           />
         </>
       )}
+      {afterItems}
       <TextSection
         title="Ocorrências do turno"
         description="Opcional. Conte o que saiu do normal."

@@ -16,6 +16,7 @@ import {
   insertHandover,
   insertHandoverItem,
   insertItem,
+  insertRequest,
   insertSector,
   insertShift,
   insertUser,
@@ -254,6 +255,29 @@ describe("HandoverDetail com ?editar=1", () => {
       ).toBeInTheDocument();
     });
 
+    it("o formulário de edição não mostra a seção de solicitações", async () => {
+      const world = await seed();
+      const id = await delivered(world);
+      await insertRequest(db, {
+        sectorId: world.sector.id,
+        createdBy: world.ana.id,
+        description: "Pedido aberto",
+        createdAt: spDate("2026-11-20", "09:00"),
+      });
+      mocks.requireUser.mockResolvedValue(world.asAna);
+
+      await renderDetail(id, EDIT);
+
+      isEditPage();
+      expect(
+        screen.queryByRole("heading", { name: "Solicitações abertas" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText("Pedido aberto")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Nova solicitação" }),
+      ).not.toBeInTheDocument();
+    });
+
     it("outro operador do setor cai no resumo, sem formulário", async () => {
       const world = await seed();
       const id = await delivered(world);
@@ -316,6 +340,19 @@ describe("HandoverDetail com ?editar=1", () => {
       expect(
         screen.getByRole("textbox", { name: "Quantidade de Rede de proteção" }),
       ).toHaveValue("3");
+    });
+
+    it("a correção com motivo não mostra a seção de solicitações", async () => {
+      const world = await seed();
+      const id = await confirmed(world);
+      mocks.requireUser.mockResolvedValue(world.asAdmin);
+
+      await renderDetail(id, EDIT);
+
+      isEditPage();
+      expect(
+        screen.queryByRole("heading", { name: "Solicitações abertas" }),
+      ).not.toBeInTheDocument();
     });
 
     it("quem recebeu (operador) cai no resumo", async () => {

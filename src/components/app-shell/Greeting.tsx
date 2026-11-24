@@ -9,9 +9,7 @@ export async function Greeting() {
       <h1 className="text-2xl font-semibold tracking-tight">
         {greetingTitle(authz.name)}
       </h1>
-      <p className="text-muted-foreground">
-        Em breve: solicitações e dashboard.
-      </p>
+      <p className="text-muted-foreground">Em breve: dashboard.</p>
     </div>
   );
 }

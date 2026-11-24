@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { OpenRequestsAtDeliverySection } from "@/components/solicitacoes/OpenRequestsAtDeliverySection";
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/db";
 import { idSchema } from "@/features/admin/schemas";
@@ -17,6 +18,8 @@ import {
 } from "@/features/handovers/saoPaulo";
 import { getHandoverSummary } from "@/features/handovers/summary";
 import { handoverHref, newHandoverHref } from "@/features/handovers/urls";
+import { listOpenRequestsAtDelivery } from "@/features/requests/open";
+import { requestsHref } from "@/features/requests/urls";
 import { requireUser } from "@/lib/auth/session";
 
 import { ConfirmReceiptForm } from "./ConfirmReceiptForm";
@@ -120,6 +123,16 @@ export async function HandoverDetail({
   // Setor inativo é só leitura (P37): nenhuma ação de escrita é oferecida.
   const writable = summary.sectorActive;
   const { capabilities } = summary;
+  // As abertas NA ENTREGA (D-F4-2): o retrato do instante `delivered_at`, com o
+  // status daquele instante calculado pelos eventos. Só aqui (resumo): o
+  // formulário de edição e a correção não mostram a seção.
+  const openAtDelivery =
+    summary.deliveredAt === null
+      ? null
+      : await listOpenRequestsAtDelivery(db, actor, {
+          sectorId: summary.ref.sectorId,
+          deliveredAt: summary.deliveredAt,
+        });
   const hasHighlighted =
     summary.highlighted.controls.length > 0 ||
     summary.highlighted.stock.length > 0;
@@ -159,6 +172,13 @@ export async function HandoverDetail({
           <p className="whitespace-pre-wrap">{summary.nextShiftText}</p>
         )}
       </section>
+
+      {openAtDelivery && (
+        <OpenRequestsAtDeliverySection
+          data={openAtDelivery}
+          allHref={requestsHref(isAdmin(actor) ? summary.ref.sectorId : null)}
+        />
+      )}
 
       <SummaryItemList title="Controles" items={summary.highlighted.controls} />
       <SummaryItemList title="Estoque" items={summary.highlighted.stock} />
