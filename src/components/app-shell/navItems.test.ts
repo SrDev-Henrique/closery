@@ -7,10 +7,11 @@ import {
 } from "@/components/app-shell/navItems";
 
 describe("visibleNavItems", () => {
-  it("operador vê Início, Passagens e Conta, sem Administração", () => {
+  it("operador vê Início, Passagens, Solicitações e Conta, sem Administração", () => {
     expect(visibleNavItems(false).map((item) => item.label)).toEqual([
       "Início",
       "Passagens",
+      "Solicitações",
       "Conta",
     ]);
   });
@@ -19,6 +20,7 @@ describe("visibleNavItems", () => {
     expect(visibleNavItems(true).map((item) => item.label)).toEqual([
       "Início",
       "Passagens",
+      "Solicitações",
       "Conta",
       "Administração",
     ]);
@@ -28,6 +30,7 @@ describe("visibleNavItems", () => {
     expect(NAV_ITEMS.map((item) => item.href)).toEqual([
       "/",
       "/passagens",
+      "/solicitacoes",
       "/conta",
       "/admin",
     ]);
@@ -58,6 +61,15 @@ describe("isNavItemActive", () => {
     expect(isNavItemActive("/passagens/nova", "/passagens")).toBe(true);
     expect(isNavItemActive("/passagens/abc", "/passagens")).toBe(true);
     expect(isNavItemActive("/", "/passagens")).toBe(false);
+  });
+
+  it("Solicitações fica ativo na tela e no detalhe, não em prefixo parecido", () => {
+    expect(isNavItemActive("/solicitacoes", "/solicitacoes")).toBe(true);
+    expect(isNavItemActive("/solicitacoes/abc", "/solicitacoes")).toBe(true);
+    expect(isNavItemActive("/solicitacoes-antigas", "/solicitacoes")).toBe(
+      false,
+    );
+    expect(isNavItemActive("/passagens", "/solicitacoes")).toBe(false);
   });
 
   it("prefixo parecido que não é subrota não é ativo", () => {

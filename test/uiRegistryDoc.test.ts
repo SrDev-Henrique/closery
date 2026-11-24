@@ -35,7 +35,13 @@ function nameOf(file: string): string {
 const adminFiles = sourceFiles(join("src", "components", "admin"));
 const handoverFiles = sourceFiles(join("src", "components", "passagens"));
 const requestFiles = sourceFiles(join("src", "components", "solicitacoes"));
-const primitiveFiles = ["toggle", "toggle-group", "native-select", "dialog"]
+const primitiveFiles = [
+  "toggle",
+  "toggle-group",
+  "native-select",
+  "dialog",
+  "table",
+]
   .map((name) => join("src", "components", "ui", `${name}.tsx`))
   .filter((file) => existsSync(file));
 

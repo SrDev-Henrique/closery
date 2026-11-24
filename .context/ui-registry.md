@@ -223,6 +223,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `Button`; tokens `popover`, `muted`.
 - **Histórico:** 2026-11-21 — `shadcn add dialog`; os dois "Close" viram "Fechar" (P12). O CLI sobrescreve `button.tsx` (pergunta mesmo com `--yes`): rode com `--overwrite` e depois `git checkout -- src/components/ui/button.tsx` (F2-24).
 
+### Table (TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption…)
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/ui/table.tsx`
+- **Propósito:** a primeira tabela do projeto: a visão Tabela das solicitações (dado que se compara em colunas).
+- **Como funciona:** adicionado pelo CLI (`bunx shadcn@latest add table --yes`); o contêiner `data-slot="table-container"` tem `overflow-x-auto`, então a tabela rola na horizontal sozinha e a página nunca rola. Ajustes depois do CLI: sem `"use client"` (é server-safe) e formatação do Biome. Quem usa põe `text-right tabular-nums` nas colunas numéricas e `TableCaption className="sr-only"` com o nome da tabela.
+- **Usa:** tokens `border`, `muted`, `foreground`.
+- **Histórico:** 2026-11-24 — `shadcn add table` na Fase 4 (Tarefa 11).
+
 ## 2. Componentes de aplicação — `src/components/<área>`
 
 ### AppSidebar
@@ -878,6 +886,101 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Como funciona:** `"use client"`. Gatilho `Button` (`Plus` + "Nova solicitação"; `triggerVariant` `default` ou `outline`, o da passagem). O conteúdo desmonta ao fechar, então cada abertura começa com o estado novo. `DialogContent showCloseButton={false}` (o X só com ícone do primitivo não tem tooltip; "Voltar" fecha), `max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg`. Sucesso fecha (o toast vem do formulário); erro mantém o diálogo aberto.
 - **Usa:** `Dialog`, `Button`, `RequestForm`.
 - **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### RequestsScreen
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestsScreen.tsx`
+- **Propósito:** a tela `/solicitacoes`: cabeçalho, filtros, seletor de visão e a visão escolhida (Quadro, Lista ou Tabela).
+- **Como funciona:** server component async (dentro do `<Suspense>` da página). Lê a sessão, os filtros da URL (`parseRequestFilters`) e o setor (admin: `SectorPicker` com "Todos os setores"; operador: o próprio, nunca o seletor). `?criador=` e `?destino=` (uuid) fora das escolhas viram "todos" antes da consulta. Sem `visao` renderiza o Quadro (`hidden md:block`) e a Lista (`md:hidden`) com os mesmos dados e dois `RequestViewSwitcher` (um por largura, para o `aria-current` dizer a verdade). O subtítulo vem do servidor (`boardSummary`/`tableSummary`). Vazio novo × vazio filtrado; operador de setor inativo e admin sem setor ativo têm estado vazio próprio.
+- **Usa:** `RequestFiltersForm`, `RequestViewSwitcher`, `RequestBoard`, `RequestList`, `RequestTable`, `NewRequestDialog`, `SectorPicker`, `EmptyState`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestViewSwitcher
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestViewSwitcher.tsx`
+- **Propósito:** trocar entre Quadro, Lista e Tabela sem perder os filtros.
+- **Como funciona:** `<nav aria-label="Visão">` com três `<Link className={buttonVariants(...)}>` (ícones `SquareKanban`, `List`, `Table2`); o da visão atual é `default` e tem `aria-current="page"`. Aceita `className` (a tela usa `md:hidden` / `hidden md:flex`).
+- **Usa:** `buttonVariants`, `Link`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestFiltersForm
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestFiltersForm.tsx`
+- **Propósito:** busca, destino, período e quem criou, na URL.
+- **Como funciona:** `"use client"`, controlado, valores iniciais da URL (nunca em branco); `key` = a URL dos filtros. "Aplicar filtros" monta a URL (`buildRequestsHref(resetPaging(...))`, mantém visão e setor); "Limpar filtros" é um `<Link>`. Escolhas, não texto: destinos (inativo marcado "(inativo)" e "Outro"), pessoas, períodos; "De"/"Até" só em "Intervalo". Busca `type="search"`, `text-base`, 80 caracteres.
+- **Usa:** `SelectField`, `Input`, `Field`, `Button`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### useRequestMove
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/useRequestMove.ts`
+- **Propósito:** mover a solicitação no Quadro e na Lista com o cartão mudando de coluna antes da resposta.
+- **Como funciona:** `useRequestMove(groups)` devolve `{ groups, move(request, to) }`. `useOptimistic(toGroupView(groups), applyMove)`; `move` roda o `setOptimistic` DENTRO de `startTransition(async …)`, antes do primeiro `await`, e chama `moveRequestAction({ id, from, to })`. `ok` → `toast.success`; falha → `toast.error` com a prévia da descrição, e `router.refresh()` quando `isStaleScreenCode(code)` (`STATUS_CONFLICT`, `NO_CHANGES`, `NOT_FOUND`); exceção → `unstable_rethrow` e `INTERNAL`. O estado otimista volta sozinho ao fim da transição.
+- **Usa:** `moveRequestAction`, `applyMove`, `toGroupView`, `sonner`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestBoard
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestBoard.tsx`
+- **Propósito:** o Quadro: três colunas (Solicitada, Em separação / Trânsito, Entregue).
+- **Como funciona:** `"use client"`. Lado a lado a partir de `lg`, empilhadas entre `md` e `lg`; abaixo de `md` o grupo "Coluna" (botões `aria-pressed` com a contagem) escolhe uma coluna e as outras ganham `max-md:hidden` (só CSS: as três ficam montadas; nada de `matchMedia`). Entregue mostra "Últimos 30 dias" só sem período.
+- **Usa:** `useRequestMove`, `RequestColumn`, `FieldSet`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestColumn
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestColumn.tsx`
+- **Propósito:** uma coluna do Quadro: cabeçalho com ícone do status, contagem do servidor, cartões e "Carregar mais".
+- **Como funciona:** `<section aria-labelledby>` com o id de `useId()` (sem `visao` o Quadro e a Lista estão os dois no DOM); contagem `tabular-nums` com "solicitações" só para leitor de tela; vazio "Nenhuma solicitação."; nota opcional.
+- **Usa:** `RequestCard`, `LoadMoreButton`, `REQUEST_STATUS_STYLE`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestCard
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestCard.tsx`
+- **Propósito:** o cartão da solicitação; também exporta `RequestHeadline` e `RequestMeta`, que a linha da Lista reaproveita.
+- **Como funciona:** a descrição (2 linhas) é um `<Link href={requestHref(id)} scroll={false}>` esticado pelo cartão (`after:absolute after:inset-0`): abre o detalhe rápido no Sheet. O ↗ é um `<a href>` comum (página completa), com `aria-label` "Abrir página completa de {prévia}" e tooltip. Mostra "Para {destino}", setor (admin em Todos os setores), itens, comentários (ícone + número, "{n} comentários" só para leitor de tela), "Criada por {nome} em {data}", o selo de parada e o botão do próximo passo (`MoveStatusButton`, acima do link esticado).
+- **Usa:** `MoveStatusButton`, `StaleBadge`, `Tooltip`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### MoveStatusButton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/MoveStatusButton.tsx`
+- **Propósito:** a ação "Mover para {status}" na cor do status de destino (regra: o rótulo nomeia o resultado).
+- **Como funciona:** `"use client"`; ícone e `buttonClass` de `REQUEST_STATUS_STYLE[to]`; `size` `default` ou `sm`; `className` extra.
+- **Usa:** `Button`, `REQUEST_STATUS_STYLE`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### LoadMoreButton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/LoadMoreButton.tsx`
+- **Propósito:** "Carregar mais" de uma coluna ou grupo, com "{mostradas} de {total}".
+- **Como funciona:** `"use client"`; `useTransition` + `router.replace(href, { scroll: false })` (o limite cresce pela URL, `?mais_<status>=`); pendente "Carregando…"; contador em `<p aria-live="polite">`.
+- **Usa:** `Button`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestList
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestList.tsx`
+- **Propósito:** a Lista agrupada por status (os quatro, com Cancelada): a visão padrão no celular.
+- **Como funciona:** `"use client"`; mesmo `useRequestMove` do Quadro; uma `<section>` por status (id de `useId()` em um componente interno); vazio "Nenhuma solicitação."; nota "Últimos 30 dias" em Entregue e Cancelada só sem período; "Carregar mais" por grupo.
+- **Usa:** `RequestListRow`, `LoadMoreButton`, `useRequestMove`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestListRow
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestListRow.tsx`
+- **Propósito:** a linha da Lista: o conteúdo do cartão em linha, com o mesmo próximo passo (no celular é onde se avança).
+- **Usa:** `RequestHeadline`, `RequestMeta`, `MoveStatusButton`, `StaleBadge`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestTable
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestTable.tsx`
+- **Propósito:** a Tabela: lista plana paginada (50 por página), sem a janela de 30 dias.
+- **Como funciona:** server-safe; `TableCaption` "Solicitações" só para leitor de tela; colunas Descrição (link com `scroll={false}`) · Setor (admin em Todos os setores) · Destino · Itens · Quem criou · Criada em · Status (selo, mais o de parada) · Dias no status; as numéricas à direita com `tabular-nums`; o contêiner do primitivo rola na horizontal. Paginação que preserva os filtros.
+- **Usa:** `Table`, `Pagination`, `RequestStatusBadge`, `StaleBadge`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
