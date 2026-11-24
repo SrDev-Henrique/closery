@@ -26,10 +26,10 @@ export const AUTH_ACTION_FILES: readonly string[] = [
 ];
 
 // Quantos actions.ts o guarda precisa achar (um número que só sobe: se cair, a
-// varredura parou de enxergar algum arquivo). Sobe para 1 na Tarefa 7
-// (src/app/(app)/actions.ts) e para 2 na Tarefa 8 (passagens/actions.ts).
+// varredura parou de enxergar algum arquivo). (app): actions.ts e
+// passagens/actions.ts (Fase 3) e solicitacoes/actions.ts (Fase 4).
 const MIN_ADMIN_ACTION_FILES = 5;
-const MIN_APP_ACTION_FILES = 2;
+const MIN_APP_ACTION_FILES = 3;
 
 const APP_PREFIX = "src/app/(app)/";
 const ADMIN_PREFIX = "src/app/(app)/admin/";
