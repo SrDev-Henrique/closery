@@ -133,10 +133,15 @@ describe(".context/pendencias.md", () => {
     }
   });
 
-  it("Fase 4: P33 resolvida", () => {
-    const entry = entries.get("P33");
-    expect(entry?.state).toBe("Resolvido");
-    expect(entry?.section).toBe("5");
-    expect(entry?.updates.some((date) => date >= "2026-11-23")).toBe(true);
+  it("Fase 4: P33 e P40 resolvidas", () => {
+    for (const id of ["P33", "P40"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Resolvido");
+      expect(entry?.section, id).toBe("5");
+      expect(
+        entry?.updates.some((date) => date >= "2026-11-23"),
+        id,
+      ).toBe(true);
+    }
   });
 });

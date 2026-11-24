@@ -76,7 +76,7 @@
 | P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Aberto, não triado |
 | P38 | Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface | ⚪ | Aberto, não triado |
 | P39 | Defesa em profundidade no banco da passagem | ⚪ | Aberto, não triado |
-| P40 | Higiene de refatoração da Fase 3 | ⚪ | Aberto, não triado |
+| P40 | Higiene de refatoração da Fase 3 | ⚪ | Resolvido |
 | P41 | Higiene de testes da Fase 3 | ⚪ | Aberto, não triado |
 | P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
 | P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
@@ -251,13 +251,6 @@
 **Arquivos:** `src/db/schema/handovers.ts` · `drizzle/0003_*.sql`
 **Impacto:** nenhum caminho do domínio mistura setores, mas o banco não impede: passagem, itens e correções não compartilham o setor por chave composta, e `confirmation_note` fora do CHECK permite nota solta em rascunho ou entregue (só a fixture impede).
 **Correção:** — (opção: migração aditiva com FKs compostas (setor) e `confirmation_note` no CHECK `state_consistent`)
-**Registrado em:** 2026-11-21
-
-#### P40 — Higiene de refatoração da Fase 3 ⚪
-**Estado:** Aberto, não triado
-**Arquivos:** `src/db/schema/migration0003.test.ts` e demais testes de migração · `src/features/handovers/*` (`firstValue`, `loaders.ts`, `creationRefusal`) · testes das guardas (`stripComments`, `findPages`) · `HandoverHeader.tsx` (rótulo "Setor")
-**Impacto:** helpers de migração duplicados entre testes; `firstValue` copiado 3 vezes; `stripComments`/`findPages` duplicados; a recusa de criação escrita 2 vezes; `loaders.ts` faz três trabalhos; a regra "awaiting" escrita 3 vezes (hoje equivalentes, sem teste de concordância); o rótulo "Setor" do cabeçalho não tem controle associado (ver P29).
-**Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
 **Registrado em:** 2026-11-21
 
 #### P41 — Higiene de testes da Fase 3 ⚪
@@ -457,3 +450,11 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: uma refatoração separada, com testes verdes antes e depois: um runner só, com o `revalidatePath` como parâmetro; nunca no mesmo commit de uma feature)
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 1), em commit só de refatoração. `runAction` (`src/features/admin/runAction.ts`) é o runner único (Zod → domínio → `unstable_rethrow` → `INTERNAL` → `revalidatePath` só em `ok`), com `revalidate: "/(app)" | "/(app)/admin" | null` como parâmetro. `runAdminAction` e `runHandoverAction` ficaram como embrulhos finos com a mesma assinatura de antes, e os testes dos dois passaram sem nenhuma edição. As Server Actions da Fase 4 chamam `runAction` direto.
+
+#### P40 — Higiene de refatoração da Fase 3 ⚪
+**Estado:** Resolvido
+**Arquivos:** `src/db/schema/migration0003.test.ts` e demais testes de migração · `src/features/handovers/*` (`firstValue`, `loaders.ts`, `creationRefusal`) · testes das guardas (`stripComments`, `findPages`) · `HandoverHeader.tsx` (rótulo "Setor")
+**Impacto:** helpers de migração duplicados entre testes; `firstValue` copiado 3 vezes; `stripComments`/`findPages` duplicados; a recusa de criação escrita 2 vezes; `loaders.ts` faz três trabalhos; a regra "awaiting" escrita 3 vezes (hoje equivalentes, sem teste de concordância); o rótulo "Setor" do cabeçalho não tem controle associado (ver P29).
+**Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 2), em commit só de refatoração: `firstValue` vive uma vez em `src/lib/searchParams.ts`; o harness de migração em `test/migrations.ts` (usado por `migration0002` e `migration0003`; a `0004` o reutiliza); `appPagesAuth.test.ts` usa `stripComments` e `listSourceFiles` de `test/actionGuards.ts`; `runInTransaction` foi para `src/features/admin/transaction.ts`; `ensureHandover` e `creationRefusal` (a recusa de criação que `formState.ts` repetia) para `src/features/handovers/ensureHandover.ts`, e `loaders.ts` ficou só com leituras. O novo `awaiting.test.ts` faz as três regras "awaiting" (resumo, histórico, Início) concordarem. Os casos de `loaders.test.ts` só mudaram de arquivo, sem mudar asserção. O rótulo "Setor" do cabeçalho entra com P29 (Tarefa 3).
