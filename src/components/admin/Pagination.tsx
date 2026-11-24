@@ -1,8 +1,7 @@
 import Link from "next/link";
 
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { buildPageHref } from "@/features/admin/pagination";
-import { cn } from "@/lib/utils";
 
 export function Pagination({
   page,
@@ -10,12 +9,16 @@ export function Pagination({
   pathname,
   params,
   param = "pagina",
+  label = "Paginação",
 }: {
   page: number;
   pageCount: number;
   pathname: string;
   params: Record<string, string | undefined>;
   param?: string;
+  // Nome do <nav>: duas paginações na mesma tela (Equipe) precisam de nomes
+  // diferentes para o leitor de tela distingui-las.
+  label?: string;
 }) {
   if (pageCount <= 1) return null;
 
@@ -26,21 +29,15 @@ export function Pagination({
   const buttonClass = buttonVariants({ variant: "outline" });
 
   return (
-    <nav
-      aria-label="Paginação"
-      className="flex items-center justify-between gap-2"
-    >
+    <nav aria-label={label} className="flex items-center justify-between gap-2">
       {previous ? (
         <Link href={previous} className={buttonClass}>
           Anterior
         </Link>
       ) : (
-        <span
-          aria-disabled="true"
-          className={cn(buttonClass, "pointer-events-none opacity-50")}
-        >
+        <Button type="button" variant="outline" disabled>
           Anterior
-        </span>
+        </Button>
       )}
       <span className="text-sm text-muted-foreground tabular-nums">
         Página {page} de {pageCount}
@@ -50,12 +47,9 @@ export function Pagination({
           Próxima
         </Link>
       ) : (
-        <span
-          aria-disabled="true"
-          className={cn(buttonClass, "pointer-events-none opacity-50")}
-        >
+        <Button type="button" variant="outline" disabled>
           Próxima
-        </span>
+        </Button>
       )}
     </nav>
   );

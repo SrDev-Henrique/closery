@@ -24,6 +24,7 @@ import { CorrectionForm } from "./CorrectionForm";
 import { CorrectionsTimeline } from "./CorrectionsTimeline";
 import { HandoverForm } from "./HandoverForm";
 import { HandoverStatusBadge } from "./HandoverStatusBadge";
+import { ReadOnlySectorNotice } from "./ReadOnlySectorNotice";
 import { SummaryItemList } from "./SummaryItemList";
 
 type HandoverDetailProps = {
@@ -116,6 +117,8 @@ export async function HandoverDetail({
     }
   }
 
+  // Setor inativo é só leitura (P37): nenhuma ação de escrita é oferecida.
+  const writable = summary.sectorActive;
   const { capabilities } = summary;
   const hasHighlighted =
     summary.highlighted.controls.length > 0 ||
@@ -138,6 +141,8 @@ export async function HandoverDetail({
           />
         )}
       </header>
+
+      {!writable && <ReadOnlySectorNotice />}
 
       <section
         aria-labelledby="next-shift-heading"
@@ -213,13 +218,17 @@ export async function HandoverDetail({
             {`Observação do recebimento: ${summary.confirmationNote}`}
           </p>
         )}
-        {capabilities.canConfirm && <ConfirmReceiptForm id={summary.id} />}
-        {summary.status === "delivered" && !capabilities.canConfirm && (
-          <p className="text-muted-foreground">
-            Você entregou este turno. Outra pessoa do setor confirma o
-            recebimento.
-          </p>
+        {writable && capabilities.canConfirm && (
+          <ConfirmReceiptForm id={summary.id} />
         )}
+        {writable &&
+          summary.status === "delivered" &&
+          !capabilities.canConfirm && (
+            <p className="text-muted-foreground">
+              Você entregou este turno. Outra pessoa do setor confirma o
+              recebimento.
+            </p>
+          )}
       </section>
 
       {summary.corrections.length > 0 && (
@@ -235,15 +244,17 @@ export async function HandoverDetail({
       )}
 
       <div className="flex flex-wrap gap-3">
-        {summary.status === "delivered" && capabilities.canEditDirectly && (
-          <Link
-            href={handoverHref(summary.id, { edit: true })}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Corrigir
-          </Link>
-        )}
-        {capabilities.canCorrectWithReason && (
+        {writable &&
+          summary.status === "delivered" &&
+          capabilities.canEditDirectly && (
+            <Link
+              href={handoverHref(summary.id, { edit: true })}
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Corrigir
+            </Link>
+          )}
+        {writable && capabilities.canCorrectWithReason && (
           <Link
             href={handoverHref(summary.id, { edit: true })}
             className={buttonVariants({ variant: "outline" })}

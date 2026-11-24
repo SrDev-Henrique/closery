@@ -47,6 +47,8 @@ export type HandoverSummary = {
   situation: "awaiting" | "confirmed" | "unconfirmed" | null;
   corrected: boolean;
   sectorName: string;
+  /** Setor inativo é só leitura (P26/P37): a tela esconde as ações de escrita. */
+  sectorActive: boolean;
   shiftName: string;
   nextShiftText: string;
   occurrencesText: string;
@@ -151,7 +153,11 @@ export async function getHandoverSummary(
   if (!row) return fail("NOT_FOUND", HANDOVER_NOT_FOUND_MESSAGE);
 
   const [names] = await db
-    .select({ sectorName: sector.name, shiftName: shift.name })
+    .select({
+      sectorName: sector.name,
+      sectorActive: sector.active,
+      shiftName: shift.name,
+    })
     .from(sector)
     .innerJoin(shift, eq(shift.id, row.shiftId))
     .where(eq(sector.id, row.sectorId));
@@ -186,6 +192,7 @@ export async function getHandoverSummary(
       situation,
       corrected: corrections.length > 0,
       sectorName: names.sectorName,
+      sectorActive: names.sectorActive,
       shiftName: row.shiftNameSnapshot ?? names.shiftName,
       nextShiftText: row.nextShiftText,
       occurrencesText: row.occurrencesText,

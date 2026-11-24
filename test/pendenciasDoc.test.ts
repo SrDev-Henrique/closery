@@ -133,8 +133,8 @@ describe(".context/pendencias.md", () => {
     }
   });
 
-  it("Fase 4: P33 e P40 resolvidas", () => {
-    for (const id of ["P33", "P40"]) {
+  it("Fase 4: P29, P33, P37 e P40 resolvidas", () => {
+    for (const id of ["P29", "P33", "P37", "P40"]) {
       const entry = entries.get(id);
       expect(entry?.state, id).toBe("Resolvido");
       expect(entry?.section, id).toBe("5");

@@ -414,12 +414,12 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Histórico:** 2026-11-21 — criado na Fase 2.
 
 ### Pagination
-- **Status:** ✅ pronto (2026-11-21)
+- **Status:** ✏️ estendido (2026-11-24)
 - **Local:** `src/components/admin/Pagination.tsx` (server-safe)
 - **Propósito:** paginação das listas (toda lista é paginada).
-- **Como funciona:** `<nav aria-label="Paginação">` com "Anterior", "Página {n} de {m}" (`tabular-nums`) e "Próxima"; `param` (padrão `pagina`; `convites` na Equipe) e `params` preservam os demais parâmetros da URL via `buildPageHref`; página 1 remove o parâmetro. Na borda o botão é um `<span aria-disabled="true">` (não é link). Com `pageCount <= 1` renderiza `null`.
-- **Usa:** `buttonVariants`, `buildPageHref`, `next/link`.
-- **Histórico:** 2026-11-21 — criado na Fase 2.
+- **Como funciona:** `<nav aria-label={label}>` (`label` opcional, padrão "Paginação"; a Equipe usa "Paginação dos convites pendentes" e "Paginação das pessoas" para as duas listas terem nomes distintos) com "Anterior", "Página {n} de {m}" (`tabular-nums`) e "Próxima"; `param` (padrão `pagina`; `convites` na Equipe) e `params` preservam os demais parâmetros da URL via `buildPageHref`; página 1 remove o parâmetro. Na borda o lado sem destino é um `<Button type="button" variant="outline" disabled>` (botão desativado, nem link nem texto solto). Com `pageCount <= 1` renderiza `null`.
+- **Usa:** `Button`, `buttonVariants`, `buildPageHref`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2. 2026-11-24 — Fase 4 (Tarefa 3, P29): prop `label` e desativado como `<Button disabled>`.
 
 ### SectorSwitcher
 - **Status:** ✅ pronto (2026-11-21)
@@ -633,17 +633,17 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/InviteForm.tsx`
 - **Propósito:** gerar convite de entrada (operador ou administrador) em `/admin/equipe`.
-- **Como funciona:** `"use client"`; cartão "Convidar pessoa"; formulário controlado e nunca em branco (papel Operador, setor = primeiro ativo, nome de referência opcional); `ChoiceGroup` "Papel", `SelectField` "Setor" só para Operador; valida com `createInviteSchema`; erro de campo no campo, o resto no pé; sem setor ativo e papel Operador mostra o aviso e o link "Ir para Setores" no lugar do botão; no sucesso troca o formulário por `InviteLinkCard`; "Gerar outro convite" limpa só o nome (mantém papel e setor).
+- **Como funciona:** `"use client"`; cartão com o título "Convidar pessoa" (`h2`); formulário controlado e nunca em branco (papel Operador, setor = primeiro ativo, nome de referência opcional); `ChoiceGroup` "Papel", `SelectField` "Setor" só para Operador; valida com `createInviteSchema`; erro de campo no campo, o resto no pé; sem setor ativo e papel Operador mostra o aviso e o link "Ir para Setores" no lugar do botão; no sucesso troca o formulário por `InviteLinkCard`; "Gerar outro convite" limpa só o nome (mantém papel e setor) e devolve o foco ao campo "Nome de referência (opcional)".
 - **Usa:** `Card`, `Field*`, `Input`, `ChoiceGroup`, `SelectField`, `InviteLinkCard`, `useAdminAction`, `buttonVariants`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): título em `h2` e foco devolvido ao campo depois de "Gerar outro convite".
 
 ### InviteLinkCard
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/InviteLinkCard.tsx`
 - **Propósito:** mostrar o link do convite **uma vez** (só o hash fica no banco) para copiar ou compartilhar.
-- **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`.
+- **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`; ao montar, o foco vai ao título "Convite gerado" (`h3`, `tabIndex={-1}`).
 - **Usa:** `Button`, `Input`, `sonner`, `formatDateTimeBR`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): foco no título ao montar.
 
 ### PendingInviteActions
 - **Status:** ✅ pronto (2026-11-21)
@@ -743,9 +743,9 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverHeader.tsx`
 - **Propósito:** setor, turno e data do formulário (D-F3-2).
-- **Como funciona:** `"use client"`. Setor em texto; `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. A data só vale ao sair do campo, com Enter ou depois de 700 ms sem digitar (digitar "15" pelo teclado não salta para o dia 01). Prop `onPendingChange(pending)` avisa o formulário enquanto uma troca está em andamento. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
+- **Como funciona:** `"use client"`. Setor em texto (`FieldTitle`, nunca `<label>` sem controle); `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. A data só vale ao sair do campo, com Enter ou depois de 700 ms sem digitar (digitar "15" pelo teclado não salta para o dia 01). Prop `onPendingChange(pending)` avisa o formulário enquanto uma troca está em andamento. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
 - **Usa:** `SelectField`, `Field*`, `Input`, `newHandoverHref`, `sonner`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: data por blur/Enter/pausa de 700 ms e `onPendingChange`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: data por blur/Enter/pausa de 700 ms e `onPendingChange`. 2026-11-24 — Fase 4 (Tarefa 3, P29): "Setor" com `FieldTitle` no lugar do `FieldLabel` órfão.
 
 ### HandoverForm
 - **Status:** ✅ pronto (2026-11-21)
@@ -791,9 +791,17 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverDetail.tsx`
 - **Propósito:** resumo de `/passagens/[id]` na ordem do briefing (F3-10).
-- **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens".
+- **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens". Setor inativo (`summary.sectorActive` falso): `ReadOnlySectorNotice` logo depois do cabeçalho e nenhuma ação de escrita (sem `ConfirmReceiptForm`, sem a frase "Você entregou este turno…", sem "Corrigir" nem "Corrigir com motivo"); `?editar=1` cai no resumo.
 - **Usa:** `getHandoverSummary`, `getHandoverFormStateById`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverForm`, `CorrectionForm`, `HandoverStatusBadge`, `buttonVariants`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo. 2026-11-24 — Fase 4 (Tarefa 3, P37): setor inativo é só leitura, com `ReadOnlySectorNotice`.
+
+### ReadOnlySectorNotice
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/passagens/ReadOnlySectorNotice.tsx` (server-safe)
+- **Propósito:** avisar que o setor está inativo e que a tela é só leitura (P37); a Fase 4 o reutiliza no detalhe da solicitação.
+- **Como funciona:** `<Alert>` com o ícone `Lock` (decorativo), título "Setor inativo: só leitura." e descrição "Peça a um administrador para reativá-lo.". Sem props: quem usa decide quando mostrar (`!summary.sectorActive`) e esconde as ações de escrita.
+- **Usa:** `Alert`, `AlertTitle`, `AlertDescription`, ícone `Lock` (lucide).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 3, P37).
 
 ### HandoverHistory
 - **Status:** ✅ pronto (2026-11-21)

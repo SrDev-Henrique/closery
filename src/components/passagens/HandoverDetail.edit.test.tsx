@@ -1,10 +1,12 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { db } from "@/db";
+import { sector } from "@/db/schema/sectors";
 import { ok } from "@/features/admin/result";
 import type { Authz } from "@/features/authz/authz";
 import { authzOf } from "../../../test/authz";
@@ -375,5 +377,51 @@ describe("HandoverDetail com ?editar=1", () => {
     await expect(
       HandoverDetail({ id: draft.id, searchParams: Promise.resolve(EDIT) }),
     ).rejects.toThrow("NEXT_REDIRECT;/passagens/nova?turno=");
+  });
+
+  describe("setor inativo (P37)", () => {
+    async function deactivate(world: World) {
+      await db
+        .update(sector)
+        .set({ active: false })
+        .where(eq(sector.id, world.sector.id));
+    }
+
+    it("entregue: quem entregou com ?editar=1 cai no resumo com o aviso, sem formulário", async () => {
+      const world = await seed();
+      const id = await delivered(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asAna);
+
+      await renderDetail(id, EDIT);
+
+      isSummary();
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Setor inativo: só leitura.",
+      );
+      expect(
+        screen.queryByRole("textbox", { name: "Ocorrências do turno" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Corrigir" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("confirmada: o admin com ?editar=1 cai no resumo com o aviso, sem formulário de correção", async () => {
+      const world = await seed();
+      const id = await confirmed(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asAdmin);
+
+      await renderDetail(id, EDIT);
+
+      isSummary();
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Setor inativo: só leitura.",
+      );
+      expect(
+        screen.queryByRole("textbox", { name: "Motivo da correção" }),
+      ).not.toBeInTheDocument();
+    });
   });
 });

@@ -1,9 +1,11 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { render, screen, within } from "@testing-library/react";
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { db } from "@/db";
+import { sector } from "@/db/schema/sectors";
 import type { Authz } from "@/features/authz/authz";
 import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
@@ -660,6 +662,124 @@ describe("HandoverDetail", () => {
       expect(
         screen.getByRole("link", { name: "Ver todas as passagens" }),
       ).toHaveAttribute("href", "/passagens");
+    });
+  });
+
+  describe("setor inativo: só leitura (P37)", () => {
+    const NOTICE = "Setor inativo: só leitura.";
+
+    async function deactivate(world: World) {
+      await db
+        .update(sector)
+        .set({ active: false })
+        .where(eq(sector.id, world.sector.id));
+    }
+
+    function expectReadOnly() {
+      expect(screen.getByRole("alert")).toHaveTextContent(NOTICE);
+      expect(
+        screen.getByText("Peça a um administrador para reativá-lo."),
+      ).toBeInTheDocument();
+      for (const name of [
+        "Confirmar recebimento",
+        "Corrigir",
+        "Corrigir com motivo",
+      ]) {
+        expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+        expect(screen.queryByRole("link", { name })).not.toBeInTheDocument();
+      }
+      expect(
+        screen.queryByRole("textbox", {
+          name: "Observação do recebimento (opcional)",
+        }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Você entregou este turno/),
+      ).not.toBeInTheDocument();
+    }
+
+    it("entregue, operador que não entregou: aviso e sem Confirmar recebimento", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expectReadOnly();
+    });
+
+    it("entregue, quem entregou: aviso, sem Corrigir e sem a frase 'Você entregou este turno…'", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asAna);
+
+      await renderDetail(id);
+
+      expectReadOnly();
+    });
+
+    it("entregue, admin: aviso, sem Confirmar recebimento e sem Corrigir", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asAdmin);
+
+      await renderDetail(id);
+
+      expectReadOnly();
+    });
+
+    it("confirmada, admin: aviso e sem 'Corrigir com motivo'", async () => {
+      const world = await seed();
+      const id = await confirmedHandover(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asAdmin);
+
+      await renderDetail(id);
+
+      expectReadOnly();
+    });
+
+    it("o resumo continua legível, e o aviso vem logo depois do cabeçalho", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      await deactivate(world);
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(
+        screen.getByText("Conferir as redes do galpão 2."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("Entregue por Ana Teste em 20/11/2026 às 14:05."),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Ver todas as passagens" }),
+      ).toBeInTheDocument();
+      const alert = screen.getByRole("alert");
+      const nextShift = screen.getByRole("heading", {
+        name: "Fica para o próximo turno",
+      });
+      expect(
+        alert.compareDocumentPosition(nextShift) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it("setor ativo: sem aviso e com as ações de sempre", async () => {
+      const world = await seed();
+      const id = await deliveredHandover(world);
+      mocks.requireUser.mockResolvedValue(world.asBia);
+
+      await renderDetail(id);
+
+      expect(screen.queryByText(NOTICE)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Confirmar recebimento" }),
+      ).toBeInTheDocument();
     });
   });
 });

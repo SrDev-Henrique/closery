@@ -110,6 +110,7 @@ export async function TeamAdmin({
           pathname="/admin/equipe"
           params={pageParams}
           param="convites"
+          label="Paginação dos convites pendentes"
         />
       </section>
 
@@ -165,6 +166,7 @@ export async function TeamAdmin({
           pageCount={people.pageCount}
           pathname="/admin/equipe"
           params={pageParams}
+          label="Paginação das pessoas"
         />
       </section>
     </div>

@@ -65,7 +65,7 @@
 | P26 | Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo | 🟡 | Resolvido |
 | P27 | Guardas de teste aceitam menos do que deveriam | 🟡 | Resolvido |
 | P28 | Formulários de criação perdem o texto digitado ao remontar | ⚪ | Aberto, não triado |
-| P29 | Acessibilidade da Equipe e da paginação | 🟡 | Aberto, não triado |
+| P29 | Acessibilidade da Equipe e da paginação | 🟡 | Resolvido |
 | P30 | Regra de convite pendente duplicada em 6 lugares | 🟡 | Aberto, não triado |
 | P31 | Higiene de testes e refatorações pequenas da Fase 2 | ⚪ | Aberto, não triado |
 | P32 | Mensagens no feminino e select vazio sem setor ativo | ⚪ | Aberto, não triado |
@@ -73,7 +73,7 @@
 | P34 | "Sem passagem" usa os horários atuais do turno e some com o turno desativado | 🟡 | Aberto, não triado |
 | P35 | Cartão "Passagem para confirmar" não tem teto de idade | 🟡 | Aberto, não triado |
 | P36 | Dois operadores no mesmo rascunho: o último a salvar vence, sem aviso | 🟡 | Aberto, não triado |
-| P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Aberto, não triado |
+| P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Resolvido |
 | P38 | Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface | ⚪ | Aberto, não triado |
 | P39 | Defesa em profundidade no banco da passagem | ⚪ | Aberto, não triado |
 | P40 | Higiene de refatoração da Fase 3 | ⚪ | Resolvido |
@@ -183,13 +183,6 @@
 **Correção:** — (opção: chave só do que realmente exige reiniciar o formulário, ou reiniciar por evento de sucesso da própria criação)
 **Registrado em:** 2026-11-21
 
-#### P29 — Acessibilidade da Equipe e da paginação 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/(app)/admin/equipe/page.tsx` · `src/components/admin/team/TeamAdmin.tsx` · `src/components/admin/team/InviteForm.tsx` · `src/components/admin/Pagination.tsx`
-**Impacto:** `/admin/equipe` pode ter dois `<nav aria-label="Paginação">`; "Convidar pessoa" não é `h2` e há um `h3` órfão; ao trocar entre o formulário e o cartão do link o foco se perde (e o link aparece uma vez só); Anterior/Próxima desativados são `<span aria-disabled>`.
-**Correção:** — (opção: prop opcional `aria-label` em Pagination; revisar níveis de título; mover o foco ao cartão do link e de volta ao formulário; fazer o desativado ser botão `disabled` ou manter o texto lido)
-**Registrado em:** 2026-11-21
-
 #### P30 — Regra de convite pendente duplicada em 6 lugares 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/invites/inviteQueries.ts` (`consumeInvite`, `cancelInvite`) · `src/features/admin/teamInvites.ts` (`pendingWhere`) · `src/features/admin/sectors.ts:42` · `src/features/admin/overview.ts:45` · `inviteState` (JS)
@@ -230,13 +223,6 @@
 **Arquivos:** `src/features/handovers/draft.ts` · `src/components/passagens/useHandoverAutosave.ts`
 **Impacto:** dois operadores digitando o mesmo campo do mesmo rascunho ao mesmo tempo: o último a salvar sobrescreve o outro por campo, sem aviso de conflito (sem tempo real, spec §6.1); "Último salvamento às HH:mm por {nome}" mostra quem mexeu por último.
 **Correção:** — (opção: só se o piloto mostrar perda: versão por campo com aviso "{nome} alterou este campo", ou tempo real)
-**Registrado em:** 2026-11-21
-
-#### P37 — Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/features/handovers/summary.ts` (`capabilities`) · `src/components/passagens/HandoverDetail.tsx`
-**Impacto:** `capabilities` ignora `sector.active`: num setor inativo o resumo mostra "Confirmar recebimento", "Corrigir" e "Corrigir com motivo", e todos devolvem `SECTOR_INACTIVE`; `?editar=1` volta ao resumo em silêncio. Sem risco de dados, só atrito.
-**Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
 **Registrado em:** 2026-11-21
 
 #### P38 — Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface ⚪
@@ -458,3 +444,19 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 2), em commit só de refatoração: `firstValue` vive uma vez em `src/lib/searchParams.ts`; o harness de migração em `test/migrations.ts` (usado por `migration0002` e `migration0003`; a `0004` o reutiliza); `appPagesAuth.test.ts` usa `stripComments` e `listSourceFiles` de `test/actionGuards.ts`; `runInTransaction` foi para `src/features/admin/transaction.ts`; `ensureHandover` e `creationRefusal` (a recusa de criação que `formState.ts` repetia) para `src/features/handovers/ensureHandover.ts`, e `loaders.ts` ficou só com leituras. O novo `awaiting.test.ts` faz as três regras "awaiting" (resumo, histórico, Início) concordarem. Os casos de `loaders.test.ts` só mudaram de arquivo, sem mudar asserção. O rótulo "Setor" do cabeçalho entra com P29 (Tarefa 3).
+
+#### P29 — Acessibilidade da Equipe e da paginação 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/(app)/admin/equipe/page.tsx` · `src/components/admin/team/TeamAdmin.tsx` · `src/components/admin/team/InviteForm.tsx` · `src/components/admin/Pagination.tsx`
+**Impacto:** `/admin/equipe` pode ter dois `<nav aria-label="Paginação">`; "Convidar pessoa" não é `h2` e há um `h3` órfão; ao trocar entre o formulário e o cartão do link o foco se perde (e o link aparece uma vez só); Anterior/Próxima desativados são `<span aria-disabled>`.
+**Correção:** — (opção: prop opcional `aria-label` em Pagination; revisar níveis de título; mover o foco ao cartão do link e de volta ao formulário; fazer o desativado ser botão `disabled` ou manter o texto lido)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 3). `Pagination` ganhou a prop `label` (padrão "Paginação") e o lado sem destino virou `<Button disabled>`; a Equipe nomeia as duas paginações ("Paginação dos convites pendentes" e "Paginação das pessoas"). "Convidar pessoa" é `h2`; ao gerar o convite o foco vai ao título "Convite gerado" e "Gerar outro convite" devolve o foco ao campo "Nome de referência (opcional)". O "Setor" do cabeçalho da passagem (a parte de P40) deixou de ser `<label>` sem controle (`FieldTitle`). "O link aparece uma vez só" é intencional (o token bruto só existe na criação) e não mudou.
+
+#### P37 — Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/features/handovers/summary.ts` (`capabilities`) · `src/components/passagens/HandoverDetail.tsx`
+**Impacto:** `capabilities` ignora `sector.active`: num setor inativo o resumo mostra "Confirmar recebimento", "Corrigir" e "Corrigir com motivo", e todos devolvem `SECTOR_INACTIVE`; `?editar=1` volta ao resumo em silêncio. Sem risco de dados, só atrito.
+**Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 3). `HandoverSummary` ganhou `sectorActive`; em setor inativo o resumo mostra o aviso `ReadOnlySectorNotice` ("Setor inativo: só leitura.") e esconde "Confirmar recebimento", "Corrigir", "Corrigir com motivo" e "Você entregou este turno…", para operador e admin, na entregue e na confirmada; `?editar=1` cai no resumo com o aviso. O comportamento de setor ativo não mudou.

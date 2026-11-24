@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,13 @@ export function InviteLinkCard({
   const [canShare, setCanShare] = useState(false);
   useEffect(() => {
     setCanShare(typeof navigator.share === "function");
+  }, []);
+
+  // O cartão substitui o formulário que tinha o foco: leva o foco ao título
+  // (leitor de tela anuncia "Convite gerado" e a pessoa segue dali).
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    titleRef.current?.focus();
   }, []);
 
   async function copy() {
@@ -51,7 +58,12 @@ export function InviteLinkCard({
       className="flex flex-col gap-4"
       aria-labelledby="invite-link-title"
     >
-      <h3 id="invite-link-title" className="text-base font-medium">
+      <h3
+        id="invite-link-title"
+        ref={titleRef}
+        tabIndex={-1}
+        className="text-base font-medium outline-none"
+      >
         Convite gerado
       </h3>
       <Input

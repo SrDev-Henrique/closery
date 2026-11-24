@@ -55,6 +55,17 @@ describe("HandoverHeader", () => {
     expect(screen.getByLabelText("Data")).toHaveValue("2026-11-20");
   });
 
+  it("não deixa <label> sem controle: o Setor é só texto e todo rótulo aponta para um campo", () => {
+    setup();
+
+    expect(screen.getByText("Setor").closest("label")).toBeNull();
+    const labels = Array.from(document.querySelectorAll("label"));
+    expect(labels.length).toBeGreaterThan(0);
+    for (const label of labels) {
+      expect(label.control, label.textContent ?? "").not.toBeNull();
+    }
+  });
+
   it("a data só aceita de hoje até 31 dias atrás (min e max do campo)", () => {
     setup();
 

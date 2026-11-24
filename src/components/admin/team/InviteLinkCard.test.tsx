@@ -62,6 +62,17 @@ describe("InviteLinkCard", () => {
     ).toBeInTheDocument();
   });
 
+  it("o título 'Convite gerado' recebe o foco ao montar e não entra na ordem de tab", () => {
+    setup();
+
+    const title = screen.getByRole("heading", {
+      level: 3,
+      name: "Convite gerado",
+    });
+    expect(title).toHaveFocus();
+    expect(title).toHaveAttribute("tabindex", "-1");
+  });
+
   it("Copiar link copia o link e avisa", async () => {
     setup();
 
