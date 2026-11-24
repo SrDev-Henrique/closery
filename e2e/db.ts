@@ -1,4 +1,4 @@
-import { and, count, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq } from "drizzle-orm";
 import type { Pool } from "pg";
 
 import { createDb, createPool } from "@/db/client";
@@ -6,6 +6,10 @@ import {
   type HandoverStatus,
   handover,
   handoverCorrection,
+  type RequestStatus,
+  request,
+  requestComment,
+  requestStatusEvent,
   session,
   user,
 } from "@/db/schema";
@@ -20,10 +24,15 @@ export const E2E_BASE_URL = `http://localhost:${E2E_APP_PORT}`;
 
 export { buildInviteUrl } from "@/features/invites/inviteUrl";
 export {
+  insertDestination,
   insertHandover,
   insertHandoverItem,
   insertInvite,
   insertItem,
+  insertRequest,
+  insertRequestComment,
+  insertRequestEvent,
+  insertRequestItem,
   insertSector,
   insertShift,
   insertUser,
@@ -113,4 +122,84 @@ export async function countCorrections(
     .from(handoverCorrection)
     .where(eq(handoverCorrection.handoverId, handoverId));
   return row?.total ?? 0;
+}
+
+// A solicitação como o banco a guarda (conferir o resultado de uma tela).
+export async function requestOf(
+  db: Db,
+  id: string,
+): Promise<{
+  id: string;
+  status: RequestStatus;
+  sectorId: string;
+  originHandoverId: string | null;
+  description: string;
+} | null> {
+  const [row] = await db
+    .select({
+      id: request.id,
+      status: request.status,
+      sectorId: request.sectorId,
+      originHandoverId: request.originHandoverId,
+      description: request.description,
+    })
+    .from(request)
+    .where(eq(request.id, id));
+  return row ?? null;
+}
+
+// A solicitação mais recente com a descrição exata (o E2E cria com texto único).
+export async function requestByDescription(
+  db: Db,
+  description: string,
+): Promise<{
+  id: string;
+  status: RequestStatus;
+  originHandoverId: string | null;
+} | null> {
+  const [row] = await db
+    .select({
+      id: request.id,
+      status: request.status,
+      originHandoverId: request.originHandoverId,
+    })
+    .from(request)
+    .where(eq(request.description, description))
+    .orderBy(desc(request.createdAt), desc(request.id))
+    .limit(1);
+  return row ?? null;
+}
+
+// Quantos eventos de status a solicitação tem (criar = 1, cada mudança +1).
+export async function countRequestEvents(
+  db: Db,
+  requestId: string,
+): Promise<number> {
+  const [row] = await db
+    .select({ total: count() })
+    .from(requestStatusEvent)
+    .where(eq(requestStatusEvent.requestId, requestId));
+  return row?.total ?? 0;
+}
+
+// Comentários da solicitação, do mais antigo ao mais novo, com os apagados e o
+// motivo de cancelamento marcados.
+export async function commentsOf(
+  db: Db,
+  requestId: string,
+): Promise<{ body: string; deleted: boolean; isReason: boolean }[]> {
+  const rows = await db
+    .select({
+      body: requestComment.body,
+      deletedAt: requestComment.deletedAt,
+      statusEventId: requestComment.statusEventId,
+    })
+    .from(requestComment)
+    .where(eq(requestComment.requestId, requestId))
+    .orderBy(asc(requestComment.createdAt), asc(requestComment.id));
+  return rows.map((row) => ({
+    body: row.body,
+    deleted: row.deletedAt !== null,
+    isReason: row.statusEventId !== null,
+  }));
 }

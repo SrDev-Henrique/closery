@@ -5,7 +5,12 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { SelectField } from "@/components/admin/SelectField";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SWITCH_FAILED_MESSAGE } from "@/features/handovers/messages";
 import { isIsoDate } from "@/features/handovers/saoPaulo";
@@ -97,7 +102,7 @@ export function HandoverHeader({
   return (
     <FieldGroup className="gap-4 sm:grid sm:grid-cols-3">
       <Field>
-        <FieldLabel>Setor</FieldLabel>
+        <FieldTitle>Setor</FieldTitle>
         <p className="flex h-9 items-center text-base max-md:h-11">
           {sectorName}
         </p>

@@ -1,35 +1,18 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
+import type { PGlite } from "@electric-sql/pglite";
 import { afterEach, describe, expect, it } from "vitest";
+
+import {
+  applyMigration,
+  migratedTo,
+  migrationFile,
+  statementsOf,
+} from "../../../test/migrations";
 
 // Aplica 0000–0002 (o banco como está depois da Fase 2), insere dados e aplica
 // a 0003 por cima: é o que o db:migrate faz no Neon.
-const MIGRATIONS = readdirSync("drizzle")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-
 const SECTOR = "11111111-1111-4111-8111-111111111111";
 const SHIFT = "22222222-2222-4222-8222-222222222222";
 const ITEM = "33333333-3333-4333-8333-333333333333";
-
-function migrationFile(prefix: string): string {
-  const file = MIGRATIONS.find((name) => name.startsWith(prefix));
-  if (!file) throw new Error(`migração ${prefix} não encontrada`);
-  return file;
-}
-
-function statementsOf(file: string): string[] {
-  return readFileSync(`drizzle/${file}`, "utf8")
-    .split("--> statement-breakpoint")
-    .map((statement) => statement.trim())
-    .filter((statement) => statement !== "");
-}
-
-async function applyMigration(client: PGlite, file: string): Promise<void> {
-  for (const statement of statementsOf(file)) {
-    await client.exec(statement);
-  }
-}
 
 // Cada teste cria um PGlite novo e aplica todas as migrações: sob carga passa
 // dos 15 s padrão (mesmo padrão da migration0002), então o describe leva 60 s.
@@ -42,12 +25,8 @@ describe("migração 0003 sobre os dados da 0002", { timeout: 60_000 }, () => {
   });
 
   async function dbAtPhase2(): Promise<PGlite> {
-    const created = new PGlite();
+    const created = await migratedTo(["0000", "0001", "0002"]);
     client = created;
-    await created.waitReady;
-    for (const prefix of ["0000", "0001", "0002"]) {
-      await applyMigration(created, migrationFile(prefix));
-    }
     await created.exec(`
       INSERT INTO sector (id, name) VALUES ('${SECTOR}', 'ULD');
       INSERT INTO "user" (id, name, email, role, sector_id)

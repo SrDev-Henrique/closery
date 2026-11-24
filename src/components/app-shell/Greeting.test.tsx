@@ -32,9 +32,8 @@ describe("Greeting", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Olá, Maria" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Em breve: solicitações e dashboard."),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Em breve: dashboard.")).toBeInTheDocument();
+    expect(screen.queryByText(/solicitações/)).not.toBeInTheDocument();
     expect(screen.queryByText(/passagem de turno/)).not.toBeInTheDocument();
   });
 

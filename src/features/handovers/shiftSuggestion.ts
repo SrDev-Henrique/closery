@@ -1,4 +1,5 @@
 import { MINUTES_PER_DAY, parseTimeOfDay } from "@/features/admin/timeOfDay";
+import { firstValue } from "@/lib/searchParams";
 
 import {
   addDays,
@@ -99,10 +100,6 @@ export function suggestShift(
 
   if (best === null) return null;
   return { shiftId: best.shiftId, operationalDate: best.operationalDate };
-}
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
 }
 
 /**

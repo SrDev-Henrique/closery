@@ -218,12 +218,29 @@ describe("TeamAdmin", () => {
       await renderTeam({ pagina: "3" });
 
       const nav = invitesSection().getByRole("navigation", {
-        name: "Paginação",
+        name: "Paginação dos convites pendentes",
       });
       expect(
         within(nav).getByRole("link", { name: "Próxima" }),
       ).toHaveAttribute("href", "/admin/equipe?pagina=3&convites=2");
     });
+  });
+
+  it("com as duas listas paginadas há dois navs de nomes distintos", async () => {
+    mocks.listPendingInvites.mockResolvedValue(
+      page([pendingInvite()], { page: 1, pageCount: 2, total: 60 }),
+    );
+    mocks.listPeople.mockResolvedValue(
+      page([person()], { page: 2, pageCount: 3, total: 120 }),
+    );
+
+    await renderTeam();
+
+    expect(
+      screen
+        .getAllByRole("navigation")
+        .map((nav) => nav.getAttribute("aria-label")),
+    ).toEqual(["Paginação dos convites pendentes", "Paginação das pessoas"]);
   });
 
   describe("pessoas", () => {
@@ -325,7 +342,7 @@ describe("TeamAdmin", () => {
       await renderTeam({ pagina: "2", convites: "4" });
 
       const nav = peopleSection().getByRole("navigation", {
-        name: "Paginação",
+        name: "Paginação das pessoas",
       });
       expect(within(nav).getByText("Página 2 de 3")).toBeInTheDocument();
       expect(

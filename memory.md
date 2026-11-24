@@ -1,6 +1,6 @@
-# Memory — Fases 0 a 3 concluídas; o próximo passo é o plano da Fase 4
+# Memory — Fases 0 a 4 concluídas; o próximo passo é o plano da Fase 5
 
-Last updated: 2026-11-21 (UTC-3)
+Last updated: 2026-11-24 (UTC-3)
 
 ---
 
@@ -24,8 +24,18 @@ certo sem digitar nada (turno e dia sugeridos pelo relógio de São Paulo, núme
 automático por campo e "Entregar turno"; `/passagens/[id]` é o resumo na ordem do briefing com "Confirmar
 recebimento" (quem entregou não confirma); quem entregou ainda edita até a confirmação, depois só o admin
 corrige, com motivo e uma linha de rastro por campo; `/passagens` é o histórico com filtros na URL, "sem
-passagem", "não confirmada" e o selo "Corrigida". O admin escolhe o setor na tela (URL + cookie). Solicitações
-não aparecem (Fase 4). Plano executado em `docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.
+passagem", "não confirmada" e o selo "Corrigida". O admin escolhe o setor na tela (URL + cookie). Plano executado em
+`docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.
+
+**Solicitações prontas (Fase 4).** `/solicitacoes` mostra as solicitações do setor em Quadro (três colunas com a
+contagem do servidor e "Carregar mais"), Lista (quatro grupos; padrão no celular) e Tabela (paginada), com filtros
+na URL; "Nova solicitação" é um diálogo que nunca começa em branco (destino da lista ou "Outro", itens de estoque
+com quantidade); "Mover para …" troca o cartão de coluna antes da resposta (`useOptimistic`) e cancelar exige o
+motivo. Clicar numa solicitação abre o detalhe num Sheet sobre a tela (rota interceptada `@detalhe`); recarregar abre a
+página completa. A passagem mostra "Solicitações abertas": no formulário, as de agora (com "Nova solicitação" ligada
+à passagem); no resumo, as que estavam abertas **no instante da entrega**, com o status daquele instante. O Início
+ganhou o cartão "Solicitações". Solicitação não se edita (D-F4-1). Plano executado em
+`docs/superpowers/plans/2026-11-23-fase-4-solicitacoes.md`.
 
 O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
 18 decisões em `.context/build-plan.md §5`) e o plano executado em
@@ -33,11 +43,18 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 
 ## O que está esperando
 
-- **Plano da Fase 4 (skill `writing-plans`):** Solicitações — quadro · lista · tabela, detalhe,
-  comentários e a ligação passagem → solicitação (a passagem já existe e não mostra solicitações, D-F3-1).
-- **P33–P36 (Fase 3):** unificar os runners das actions (P33); "sem passagem" usa os horários atuais do
-  turno (P34); o cartão "Passagem para confirmar" não tem teto de idade (P35); dois operadores no mesmo
-  rascunho: o último a salvar vence (P36).
+- **Plano da Fase 5 (skill `writing-plans`):** Dashboard — consultas de quantidades e de solicitações
+  (abertas, paradas, tempo até a entrega), `metric-card` e `spending-ring` adaptados e exportação CSV (spec §13).
+  A Fase 5 só lê: o histórico de status (`request_status_event`) e a passagem já guardam o que ela conta.
+- **P34–P36 (Fase 3):** "sem passagem" usa os horários atuais do turno (P34); o cartão "Passagem para
+  confirmar" não tem teto de idade (P35); dois operadores no mesmo rascunho: o último a salvar vence (P36).
+- **P44–P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); trocar de setor em
+  `/solicitacoes` perde os filtros da URL (P45); um cartão movido para uma coluna aberta e truncada só aparece
+  depois da revalidação (P46); o X só com ícone do `EditDialog` continua sem tooltip (P47).
+- **P48–P52 (revisão final da Fase 4):** refatorações para o início da Fase 5, a de maior prioridade é extrair
+  `resolveScreenSector`/`paginationParams` antes do painel (P48); higiene de testes e o erro `portal "" does not exist`
+  do `pglite-socket` no log do E2E (P49); UX (P50); FK composta do comentário (P51); CTE `last` das abertas (P52).
+  Próximo id livre: P53.
 - **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
 - **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
@@ -100,3 +117,14 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
   Paulo; só o cenário do cartão do Início usa o relógio real.
 - **Setor do admin** vem de `?setor=` e do cookie `closery_setor` (gravado só por Server Action, lido
   dentro de `<Suspense>`); "Todos os setores" é só do histórico e não grava cookie.
+- **Solicitações (Fase 4):** o detalhe rápido é o slot `@detalhe` do layout de `(app)`: ele **precisa** de
+  `default.tsx`, `page.tsx` e `[...catchAll]/page.tsx` que só devolvem `null` (sem as duas páginas nulas o Sheet fica
+  aberto sobre a tela seguinte) e **não** pode haver `(app)/default.tsx` (a URL desconhecida deixaria de dar 404).
+  `<Link scroll={false}>` abre o Sheet; a página completa (↗) é `<a href>`, senão a navegação seria interceptada de novo.
+- **`useOptimistic` só dentro de `startTransition`**, antes do primeiro `await`; `revalidatePath` só em `ok`; em conflito
+  o cliente faz `router.refresh()`. Eventos de status se ordenam por `changed_at, seq` (nunca por `id`): `seq` é identity.
+- **Escrita de solicitação lê o setor com `FOR SHARE`** (`lockSectorShare`); setor inativo é só leitura (`SECTOR_INACTIVE`).
+  Operador de outro setor recebe "não encontrada", nunca "sem permissão".
+- **E2E das solicitações:** abra `?visao=quadro` ou `?visao=lista` (sem `visao` as duas visões estão no DOM); com o Sheet
+  aberto só `page.getByRole("dialog")` enxerga dentro e o resto da página vira `aria-hidden` (use `page.locator` por baixo);
+  fixture sempre com datas relativas a `Date.now()`.

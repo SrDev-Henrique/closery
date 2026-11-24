@@ -29,6 +29,13 @@
       "when": 1795271010025,
       "tag": "0003_fase3_passagem",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795508947929,
+      "tag": "0004_fase4_solicitacoes",
+      "breakpoints": true
     }
   ]
 }

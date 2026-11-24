@@ -18,6 +18,8 @@ export type AdminErrorCode =
   | "OWN_HANDOVER"
   | "NOT_CONFIRMED"
   | "NO_CHANGES"
+  | "STATUS_CONFLICT"
+  | "DESTINATION_INACTIVE"
   | "INTERNAL";
 
 /** Chave = nome do campo do formulário; valor = mensagem pt-BR do campo. */

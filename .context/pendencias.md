@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P44.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P53.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -65,21 +65,30 @@
 | P26 | Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo | 🟡 | Resolvido |
 | P27 | Guardas de teste aceitam menos do que deveriam | 🟡 | Resolvido |
 | P28 | Formulários de criação perdem o texto digitado ao remontar | ⚪ | Aberto, não triado |
-| P29 | Acessibilidade da Equipe e da paginação | 🟡 | Aberto, não triado |
+| P29 | Acessibilidade da Equipe e da paginação | 🟡 | Resolvido |
 | P30 | Regra de convite pendente duplicada em 6 lugares | 🟡 | Aberto, não triado |
 | P31 | Higiene de testes e refatorações pequenas da Fase 2 | ⚪ | Aberto, não triado |
 | P32 | Mensagens no feminino e select vazio sem setor ativo | ⚪ | Aberto, não triado |
-| P33 | Dois runners de Server Action quase iguais (admin e passagem) | ⚪ | Aberto, não triado |
+| P33 | Dois runners de Server Action quase iguais (admin e passagem) | ⚪ | Resolvido |
 | P34 | "Sem passagem" usa os horários atuais do turno e some com o turno desativado | 🟡 | Aberto, não triado |
 | P35 | Cartão "Passagem para confirmar" não tem teto de idade | 🟡 | Aberto, não triado |
 | P36 | Dois operadores no mesmo rascunho: o último a salvar vence, sem aviso | 🟡 | Aberto, não triado |
-| P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Aberto, não triado |
+| P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Resolvido |
 | P38 | Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface | ⚪ | Aberto, não triado |
 | P39 | Defesa em profundidade no banco da passagem | ⚪ | Aberto, não triado |
-| P40 | Higiene de refatoração da Fase 3 | ⚪ | Aberto, não triado |
+| P40 | Higiene de refatoração da Fase 3 | ⚪ | Resolvido |
 | P41 | Higiene de testes da Fase 3 | ⚪ | Aberto, não triado |
 | P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
 | P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
+| P44 | Detalhe rápido das solicitações depende do cabeçalho next-url | ⚪ | Aberto, não triado |
+| P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Aberto, não triado |
+| P46 | Cartão movido para uma coluna aberta e truncada some até a revalidação | ⚪ | Aberto, não triado |
+| P47 | X só com ícone do EditDialog continua sem tooltip | ⚪ | Aberto, não triado |
+| P48 | Refatorações da Fase 4 para o início da Fase 5 | 🟡 | Aberto, não triado |
+| P49 | Higiene de testes da Fase 4 | ⚪ | Aberto, não triado |
+| P50 | UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas | ⚪ | Aberto, não triado |
+| P51 | Defesa em profundidade no banco das solicitações | ⚪ | Aberto, não triado |
+| P52 | Desempenho: a CTE `last` das abertas na entrega varre todo o histórico do setor | ⚪ | Aberto, não triado |
 
 ---
 
@@ -168,6 +177,7 @@
 **Impacto:** com collation `C.UTF-8`, `lower(name)` ordena por ponto de código: nomes com inicial acentuada (Á, É, Ó) vão para o fim das listas e da escolha de setor.
 **Correção:** — (opção: `ORDER BY name COLLATE "pt-BR-x-icu"` se o Neon tiver ICU, ou coluna normalizada sem acento)
 **Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** a Fase 4 repete o padrão nas escolhas de /solicitacoes (`listActiveDestinations`, `listFilterDestinations` e `listRequestCreators` em `src/features/requests/choices.ts` ordenam por `lower(name)` na collation C.UTF-8: "Área 1" sai depois de "Doca 3"); a correção, quando vier, vale para as duas.
 
 #### P25 — Corrida entre cadastro por convite e desativação do setor 🟡
 **Estado:** Aberto, não triado
@@ -181,13 +191,6 @@
 **Arquivos:** `src/components/admin/shifts/ShiftsAdmin.tsx:79` · `src/components/admin/items/ItemsAdmin.tsx`
 **Impacto:** a `key` de remontagem do formulário de criar muda após ações não relacionadas (em Turnos a chave inclui os padrões, que mudam ao desativar, reativar ou mover; em Itens usa `page.total`) e zera o que a pessoa estava digitando. Baixa frequência.
 **Correção:** — (opção: chave só do que realmente exige reiniciar o formulário, ou reiniciar por evento de sucesso da própria criação)
-**Registrado em:** 2026-11-21
-
-#### P29 — Acessibilidade da Equipe e da paginação 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/(app)/admin/equipe/page.tsx` · `src/components/admin/team/TeamAdmin.tsx` · `src/components/admin/team/InviteForm.tsx` · `src/components/admin/Pagination.tsx`
-**Impacto:** `/admin/equipe` pode ter dois `<nav aria-label="Paginação">`; "Convidar pessoa" não é `h2` e há um `h3` órfão; ao trocar entre o formulário e o cartão do link o foco se perde (e o link aparece uma vez só); Anterior/Próxima desativados são `<span aria-disabled>`.
-**Correção:** — (opção: prop opcional `aria-label` em Pagination; revisar níveis de título; mover o foco ao cartão do link e de volta ao formulário; fazer o desativado ser botão `disabled` ou manter o texto lido)
 **Registrado em:** 2026-11-21
 
 #### P30 — Regra de convite pendente duplicada em 6 lugares 🟡
@@ -211,13 +214,6 @@
 **Correção:** — (opção: gênero como parâmetro do botão; com 0 setores ativos, mostrar a explicação e o atalho para Setores como no `InviteForm`)
 **Registrado em:** 2026-11-21
 
-#### P33 — Dois runners de Server Action quase iguais (admin e passagem) ⚪
-**Estado:** Aberto, não triado
-**Arquivos:** `src/features/admin/runAdminAction.ts` · `src/features/handovers/runHandoverAction.ts`
-**Impacto:** cerca de 25 linhas do fluxo (Zod → domínio → `unstable_rethrow` → `INTERNAL`) estão duplicadas; mudar o tratamento de erro num runner exige lembrar do outro e os dois podem divergir em silêncio.
-**Correção:** — (opção: uma refatoração separada, com testes verdes antes e depois: um runner só, com o `revalidatePath` como parâmetro; nunca no mesmo commit de uma feature)
-**Registrado em:** 2026-11-21
-
 #### P34 — "Sem passagem" usa os horários atuais do turno e some com o turno desativado 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/handovers/history.ts`
@@ -239,13 +235,6 @@
 **Correção:** — (opção: só se o piloto mostrar perda: versão por campo com aviso "{nome} alterou este campo", ou tempo real)
 **Registrado em:** 2026-11-21
 
-#### P37 — Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/features/handovers/summary.ts` (`capabilities`) · `src/components/passagens/HandoverDetail.tsx`
-**Impacto:** `capabilities` ignora `sector.active`: num setor inativo o resumo mostra "Confirmar recebimento", "Corrigir" e "Corrigir com motivo", e todos devolvem `SECTOR_INACTIVE`; `?editar=1` volta ao resumo em silêncio. Sem risco de dados, só atrito.
-**Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
-**Registrado em:** 2026-11-21
-
 #### P38 — Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/handovers/shiftSuggestion.ts` (`resolveHandoverTarget`) · `src/components/passagens/HistoryRowItem.tsx` · `src/components/passagens/NewHandover.tsx`
@@ -258,13 +247,6 @@
 **Arquivos:** `src/db/schema/handovers.ts` · `drizzle/0003_*.sql`
 **Impacto:** nenhum caminho do domínio mistura setores, mas o banco não impede: passagem, itens e correções não compartilham o setor por chave composta, e `confirmation_note` fora do CHECK permite nota solta em rascunho ou entregue (só a fixture impede).
 **Correção:** — (opção: migração aditiva com FKs compostas (setor) e `confirmation_note` no CHECK `state_consistent`)
-**Registrado em:** 2026-11-21
-
-#### P40 — Higiene de refatoração da Fase 3 ⚪
-**Estado:** Aberto, não triado
-**Arquivos:** `src/db/schema/migration0003.test.ts` e demais testes de migração · `src/features/handovers/*` (`firstValue`, `loaders.ts`, `creationRefusal`) · testes das guardas (`stripComments`, `findPages`) · `HandoverHeader.tsx` (rótulo "Setor")
-**Impacto:** helpers de migração duplicados entre testes; `firstValue` copiado 3 vezes; `stripComments`/`findPages` duplicados; a recusa de criação escrita 2 vezes; `loaders.ts` faz três trabalhos; a regra "awaiting" escrita 3 vezes (hoje equivalentes, sem teste de concordância); o rótulo "Setor" do cabeçalho não tem controle associado (ver P29).
-**Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
 **Registrado em:** 2026-11-21
 
 #### P41 — Higiene de testes da Fase 3 ⚪
@@ -287,6 +269,69 @@
 **Impacto:** a linha de um item desativado depois de salva no rascunho some do formulário mas é entregue com o valor; o preenchimento com zero na entrega não respeita o teto de 200 itens da lista.
 **Correção:** — (opção: aceitar no MVP; ou mostrar a linha inativa no rascunho e limitar itens por setor)
 **Registrado em:** 2026-11-21
+
+#### P44 — Detalhe rápido das solicitações depende do cabeçalho next-url ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/@detalhe/(.)solicitacoes/[id]/page.tsx` · `src/app/(app)/layout.tsx`
+**Impacto:** a rota interceptada só abre o Sheet quando a requisição chega com o cabeçalho `next-url`; um CDN ou proxy que o descarte (ou que cacheie a resposta sem `Vary`) faz o clique abrir a página completa. Sem perda de dados: a página completa tem tudo, só perde o "sem sair da tela".
+**Correção:** — (opção: conferir na Vercel, na Fase 6, que o `Vary: next-url` passa; se não passar, aceitar a página completa como fallback)
+**Registrado em:** 2026-11-24
+
+#### P45 — Trocar de setor em /solicitacoes perde os filtros da URL 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/actions.ts` (`chooseSectorAction`) · `src/components/passagens/SectorPicker.tsx` · `src/components/solicitacoes/RequestsScreen.tsx`
+**Impacto:** o admin que troca de setor volta para `/solicitacoes?setor={id}`: a visão, o destino, o período, quem criou e a busca somem, porque o `chooseSectorAction` só leva `?setor=`.
+**Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
+**Registrado em:** 2026-11-24
+
+#### P46 — Cartão movido para uma coluna aberta e truncada some até a revalidação ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/boardMove.ts` (`applyMove`) · `src/components/solicitacoes/useRequestMove.ts`
+**Impacto:** o movimento otimista não insere o cartão numa coluna aberta cujas linhas não estão todas carregadas (para não furar a ordem "mais antigo no status primeiro"): a contagem sobe e o cartão sai da origem, mas só aparece no destino depois da resposta do servidor (ou atrás de "Carregar mais"). Sem perda de dados.
+**Correção:** — (opção: inserir no fim da coluna truncada e deixar a revalidação reordenar; ou aceitar)
+**Registrado em:** 2026-11-24
+
+#### P47 — X só com ícone do EditDialog continua sem tooltip ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/ui/dialog.tsx` · `src/components/admin/EditDialog.tsx`
+**Impacto:** o botão X (só ícone) do `DialogContent` não tem tooltip, contra a regra "todo controle só com ícone ganha tooltip"; a Fase 4 resolveu nos diálogos e no Sheet novos com `showCloseButton={false}` e botão com texto, mas o `EditDialog` da Fase 2 (único uso restante) continua assim.
+**Correção:** — (opção: `EditDialog` com `showCloseButton={false}` e botão "Voltar", ou tooltip no X do primitivo)
+**Registrado em:** 2026-11-24
+
+#### P48 — Refatorações da Fase 4 para o início da Fase 5 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/requests/loaders.ts` · `src/features/requests/lists.ts` · `src/features/requests/home.ts` · `src/features/requests/open.ts` · `src/components/solicitacoes/RequestList.tsx` · `src/components/solicitacoes/RequestColumn.tsx` · `src/components/solicitacoes/RequestDetail.tsx` · `src/features/requests/messages.ts` · `src/features/handovers/loaders.ts` (`loadSector`) · `src/components/passagens/HandoverDetail.tsx` (`dateAndTime`) · `src/components/passagens/HandoverHistory.tsx`, `HomeHandovers.tsx` e `NewHandover.tsx` (as outras cópias da resolução de setor) · `test/`
+**Impacto:** nenhum defeito de comportamento; duplicações que o painel da Fase 5 copiaria e que deixam duas cópias da mesma regra divergirem. Em ordem de prioridade: (1) `resolveScreenSector` e `paginationParams`: a resolução de setor do `RequestsScreen` é a 4ª cópia (as outras estão nas telas de passagens, como `HandoverHistory.tsx`); o painel da Fase 5 seria a 5ª. Maior prioridade: extrair antes de qualquer tela nova; (2) `destinationNameSql` e `toOpenSummaries` compartilhados entre `home.ts` e `open.ts`: o `coalesce` do nome do destino está escrito 4 vezes; (3) A seção compartilhada, com `renderRow`, entre `ListGroup` (`RequestList`) e `RequestColumn`: a contagem do E2E depende das duas cópias; (4) `lockSectorShare` duplica o corpo de `loadSector` (Tarefa 7): o select, o `where` e o `canAccessSector` só diferem pelo `.for("share")`; (5) O fixture `deactivateSector` (SQL cru com interpolação) repetido em 5 arquivos de teste (Tarefa 8); (6) O `Promise.all` posicional (desestruturação por índice) em `lists.ts` (Tarefa 9); (7) `dateAndTime` copiado 3 vezes (`RequestDetail.tsx`, `whenLabel` em `messages.ts` e `HandoverDetail.tsx`) (Tarefa 12).
+**Correção:** — (um commit só de refatoração, sem feature e sem mudar asserção, como o primeiro da Fase 5, no modelo de P33 e P40)
+**Registrado em:** 2026-11-24
+
+#### P49 — Higiene de testes da Fase 4 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/runAction.test.ts` · `src/features/handovers/awaiting.test.ts` · `test/fixtures.ts` · `src/db/schema/requests.test.ts` · `src/features/requests/move.test.ts` · `src/features/requests/comments.test.ts` · `src/components/solicitacoes/useRequestMove.test.tsx` · `src/components/solicitacoes/RequestDetail.test.tsx` · `e2e/solicitacoes.spec.ts` · `e2e/start-db.ts`
+**Impacto:** lacunas que não escondem defeito conhecido, só deixam uma regressão passar: Tarefa 1: o caso do `redirect()` em `runAction.test.ts` usa `revalidate: null` e não confere que `revalidatePath` não foi chamado; usar `"/(app)/admin"` e acrescentar a asserção; Tarefa 2: o caso de outro setor em `awaiting.test.ts` não chama `pendingIdOf`; acrescentar `expect(await pendingIdOf(biaAuthz, uld.id)).toBe(mine.id)`; Tarefa 4: `insertRequest` (`test/fixtures.ts`) escreve até 4 linhas sem transação; `cancelReason` só de espaços e `destinationOther` só de espaços chegam ao banco em vez de lançar o erro do fixture; entradas contraditórias (`cancelReason` com `events: false`, `statusChangedBy` com status `requested`) são ignoradas em silêncio; Tarefa 4: dois casos de FK restrict em `requests.test.ts` (setor, e "não apaga a pessoa que criou, moveu ou comentou") não provam que foram as FKs novas, porque tabelas antigas também referenciam setor e pessoa (a prova é `migration0004.test`); e o caso do padrão do banco só afirma `statusChangedAt >= createdAt`, então o `now()` do título não é provado; Tarefa 7: sem teste de admin cancelando em qualquer setor nem de admin criando solicitação com origem (`move.test.ts`); Tarefa 8: "o admin apaga só o próprio comentário" só confere `{ ok: true }`: conferir `deleted_at`; faltam escritas de admin em setor inativo (`SECTOR_INACTIVE`) em `comments.test.ts`; Tarefa 11: o ramo `NEXT_REDIRECT` do `useRequestMove` nunca é exercitado (o mock de `unstable_rethrow` existe, nenhum caso rejeita com esse erro); Tarefa 12: faltam o teto de 500 (sem "Ver comentários anteriores" com `commentsLimit` 500 e mais de 500 comentários) e o id malformado no Sheet (`RequestDetail.test.tsx`); Tarefa 14: o E2E (a) não confere no banco a quantidade digitada (12); E2E, log do `[app]` (Tarefa 15, investigado em 2026-11-24): na execução completa apareceu de novo, durante o caso (d), um `ERROR [Better Auth]: INTERNAL_SERVER_ERROR` com `portal "" does not exist` (código `34000`, rotina `exec_execute_message`), na consulta `select … from "session" where "session"."token" = $1` (a leitura da sessão do Better Auth), e todos os 28 testes passaram. Não é um caso negativo provocado: é o protocolo estendido do Postgres perdendo o portal sem nome, porque o `pglite-socket` (`e2e/start-db.ts`, `maxConnections` 20) serve vários clientes sobre um único backend PGlite e intercala as mensagens `Bind` e `Execute` de conexões diferentes; as leituras em paralelo (`Promise.all` do detalhe e dos grupos) aumentam a chance. É infraestrutura do E2E, não de produção (Neon é Postgres de verdade).
+**Correção:** — (opção para o último item: pool com `max: 1` só no app do E2E; `maxConnections` 1 no `pglite-socket` não serve, porque derruba a segunda conexão (app mais as conexões do próprio teste, ver `e2e/start-db.ts`); não mexer no pool de produção. Os demais: um commit só de testes)
+**Registrado em:** 2026-11-24
+
+#### P50 — UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/solicitacoes/RequestFiltersForm.tsx` · `src/components/solicitacoes/LoadMoreButton.tsx` · `src/features/requests/choices.ts`
+**Impacto:** sem perda de dados. "Intervalo" com uma das datas vazia (ou "De" depois de "Até", que o servidor já inverte) volta em silêncio para "Todo o período"; `LoadMoreButton` é um botão com `router.replace` (o plano mandou assim); como é só uma mudança de URL, o certo seria `<Link replace scroll={false}>` com o estilo de botão; as funções de escolha de `choices.ts` recebem `sectorIds` crus: os chamadores de hoje (`RequestsScreen` e `NewHandover`) só passam ids ativos e do escopo da pessoa. Falta registrar isso como contrato em JSDoc.
+**Correção:** — (opção: validar as duas datas antes de enviar, ou avisar; trocar o botão por `Link`; escrever a nota de contrato no JSDoc das funções de escolha)
+**Registrado em:** 2026-11-24
+
+#### P51 — Defesa em profundidade no banco das solicitações ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/requests.ts` · `drizzle/0004_*.sql`
+**Impacto:** nenhum caminho do domínio liga um comentário a um evento de outra solicitação, mas o banco não impede: `request_comment.status_event_id` referencia só `request_status_event.id`, então o comentário de motivo da solicitação A poderia apontar para um evento da B (no estilo da P39).
+**Correção:** — (opção: migração aditiva com FK composta `(request_id, status_event_id)` → `(request_id, id)` e a restrição única correspondente em `request_status_event`)
+**Registrado em:** 2026-11-24
+
+#### P52 — Desempenho: a CTE `last` das abertas na entrega varre todo o histórico do setor ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/open.ts:94-117`
+**Impacto:** a CTE `last` faz `DISTINCT ON` sobre todos os eventos do setor até o instante T da entrega, então cresce com todo o histórico e roda em cada abertura de um resumo de passagem, inclusive os antigos. Sem defeito de resultado.
+**Correção:** — (limite seguro sugerido pela revisão final: acrescentar à CTE `request.created_at <= T and (request.status in ('requested','in_transit') or request.status_changed_at > T)`; vale porque `status_changed_at` sempre é o instante do último evento: uma solicitação hoje fechada com `status_changed_at <= T` estava fechada em T)
+**Registrado em:** 2026-11-24
 
 ## 2. Triado, plano pronto
 
@@ -456,3 +501,35 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: exigir `requireAdmin` para arquivos sob `admin/`; ampliar a varredura a qualquer `.ts/.tsx` com `"use server"` de arquivo ou inline, na primeira tarefa da Fase 3)
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-21):** resolvida na Fase 3 (Tarefa 3). `appPagesAuth.test.ts` passou a exigir `requireAdmin` nas páginas sob `admin/`; o novo `src/app/actionsGuards.test.ts` varre todo `.ts`/`.tsx` de `src` com `"use server"` (de arquivo ou inline), exige que o arquivo se chame `actions.ts` sob `src/app/(app)/**` (exceção documentada: `(auth)/convite/[token]/actions.ts`), `requireAdmin()` em `admin/**` e `requireUser()` ou `requireAdmin()` na primeira instrução do resto. A varredura vive em `test/actionGuards.ts` (extraída de `actionsAuth.test.ts` em commit próprio, só refatoração).
+
+#### P33 — Dois runners de Server Action quase iguais (admin e passagem) ⚪
+**Estado:** Resolvido
+**Arquivos:** `src/features/admin/runAdminAction.ts` · `src/features/handovers/runHandoverAction.ts`
+**Impacto:** cerca de 25 linhas do fluxo (Zod → domínio → `unstable_rethrow` → `INTERNAL`) estão duplicadas; mudar o tratamento de erro num runner exige lembrar do outro e os dois podem divergir em silêncio.
+**Correção:** — (opção: uma refatoração separada, com testes verdes antes e depois: um runner só, com o `revalidatePath` como parâmetro; nunca no mesmo commit de uma feature)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 1), em commit só de refatoração. `runAction` (`src/features/admin/runAction.ts`) é o runner único (Zod → domínio → `unstable_rethrow` → `INTERNAL` → `revalidatePath` só em `ok`), com `revalidate: "/(app)" | "/(app)/admin" | null` como parâmetro. `runAdminAction` e `runHandoverAction` ficaram como embrulhos finos com a mesma assinatura de antes, e os testes dos dois passaram sem nenhuma edição. As Server Actions da Fase 4 chamam `runAction` direto.
+
+#### P40 — Higiene de refatoração da Fase 3 ⚪
+**Estado:** Resolvido
+**Arquivos:** `src/db/schema/migration0003.test.ts` e demais testes de migração · `src/features/handovers/*` (`firstValue`, `loaders.ts`, `creationRefusal`) · testes das guardas (`stripComments`, `findPages`) · `HandoverHeader.tsx` (rótulo "Setor")
+**Impacto:** helpers de migração duplicados entre testes; `firstValue` copiado 3 vezes; `stripComments`/`findPages` duplicados; a recusa de criação escrita 2 vezes; `loaders.ts` faz três trabalhos; a regra "awaiting" escrita 3 vezes (hoje equivalentes, sem teste de concordância); o rótulo "Setor" do cabeçalho não tem controle associado (ver P29).
+**Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 2), em commit só de refatoração: `firstValue` vive uma vez em `src/lib/searchParams.ts`; o harness de migração em `test/migrations.ts` (usado por `migration0002` e `migration0003`; a `0004` o reutiliza); `appPagesAuth.test.ts` usa `stripComments` e `listSourceFiles` de `test/actionGuards.ts`; `runInTransaction` foi para `src/features/admin/transaction.ts`; `ensureHandover` e `creationRefusal` (a recusa de criação que `formState.ts` repetia) para `src/features/handovers/ensureHandover.ts`, e `loaders.ts` ficou só com leituras. O novo `awaiting.test.ts` faz as três regras "awaiting" (resumo, histórico, Início) concordarem. Os casos de `loaders.test.ts` só mudaram de arquivo, sem mudar asserção. O rótulo "Setor" do cabeçalho entra com P29 (Tarefa 3).
+
+#### P29 — Acessibilidade da Equipe e da paginação 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/(app)/admin/equipe/page.tsx` · `src/components/admin/team/TeamAdmin.tsx` · `src/components/admin/team/InviteForm.tsx` · `src/components/admin/Pagination.tsx`
+**Impacto:** `/admin/equipe` pode ter dois `<nav aria-label="Paginação">`; "Convidar pessoa" não é `h2` e há um `h3` órfão; ao trocar entre o formulário e o cartão do link o foco se perde (e o link aparece uma vez só); Anterior/Próxima desativados são `<span aria-disabled>`.
+**Correção:** — (opção: prop opcional `aria-label` em Pagination; revisar níveis de título; mover o foco ao cartão do link e de volta ao formulário; fazer o desativado ser botão `disabled` ou manter o texto lido)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 3). `Pagination` ganhou a prop `label` (padrão "Paginação") e o lado sem destino virou `<Button disabled>`; a Equipe nomeia as duas paginações ("Paginação dos convites pendentes" e "Paginação das pessoas"). "Convidar pessoa" é `h2`; ao gerar o convite o foco vai ao título "Convite gerado" e "Gerar outro convite" devolve o foco ao campo "Nome de referência (opcional)". O "Setor" do cabeçalho da passagem (a parte de P40) deixou de ser `<label>` sem controle (`FieldTitle`). "O link aparece uma vez só" é intencional (o token bruto só existe na criação) e não mudou.
+
+#### P37 — Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/features/handovers/summary.ts` (`capabilities`) · `src/components/passagens/HandoverDetail.tsx`
+**Impacto:** `capabilities` ignora `sector.active`: num setor inativo o resumo mostra "Confirmar recebimento", "Corrigir" e "Corrigir com motivo", e todos devolvem `SECTOR_INACTIVE`; `?editar=1` volta ao resumo em silêncio. Sem risco de dados, só atrito.
+**Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 3). `HandoverSummary` ganhou `sectorActive`; em setor inativo o resumo mostra o aviso `ReadOnlySectorNotice` ("Setor inativo: só leitura.") e esconde "Confirmar recebimento", "Corrigir", "Corrigir com motivo" e "Você entregou este turno…", para operador e admin, na entregue e na confirmada; `?editar=1` cai no resumo com o aviso. O comportamento de setor ativo não mudou.

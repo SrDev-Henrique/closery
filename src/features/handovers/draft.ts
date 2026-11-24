@@ -12,11 +12,13 @@ import {
   INVALID_INPUT_MESSAGE,
   ok,
 } from "@/features/admin/result";
+import { runInTransaction } from "@/features/admin/transaction";
 import type { Authz } from "@/features/authz/authz";
 
 import { handoverCapabilities } from "./access";
+import { ensureHandover } from "./ensureHandover";
 import { validateFieldChange } from "./fieldRules";
-import { ensureHandover, type HandoverRow, runInTransaction } from "./loaders";
+import type { HandoverRow } from "./loaders";
 import { EDIT_FORBIDDEN_MESSAGE, HANDOVER_LOCKED_MESSAGE } from "./messages";
 import type { FieldChange, SaveFieldInput } from "./types";
 

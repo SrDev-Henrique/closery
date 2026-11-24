@@ -1,34 +1,16 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { PGlite } from "@electric-sql/pglite";
+import type { PGlite } from "@electric-sql/pglite";
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  applyMigration,
+  migratedTo,
+  migrationFile,
+} from "../../../test/migrations";
 import { sqlErrorOf } from "../../../test/sqlError";
 
 // Aplica as migrações na ordem, parando antes da 0002, e insere dados "da
 // produção" (Fase 1). Depois aplica a 0002 por cima: é o que o db:migrate faz
 // no Neon.
-const MIGRATIONS = readdirSync("drizzle")
-  .filter((file) => file.endsWith(".sql"))
-  .sort();
-
-function statementsOf(file: string): string[] {
-  return readFileSync(`drizzle/${file}`, "utf8")
-    .split("--> statement-breakpoint")
-    .map((statement) => statement.trim())
-    .filter((statement) => statement !== "");
-}
-
-async function applyMigration(client: PGlite, file: string): Promise<void> {
-  for (const statement of statementsOf(file)) {
-    await client.exec(statement);
-  }
-}
-
-function migrationFile(prefix: string): string {
-  const file = MIGRATIONS.find((name) => name.startsWith(prefix));
-  if (!file) throw new Error(`migração ${prefix} não encontrada`);
-  return file;
-}
 
 describe("migração 0002 sobre os dados da 0001", () => {
   let client: PGlite | undefined;
@@ -39,11 +21,8 @@ describe("migração 0002 sobre os dados da 0001", () => {
   });
 
   async function dbAtPhase1(): Promise<PGlite> {
-    const created = new PGlite();
+    const created = await migratedTo(["0000", "0001"]);
     client = created;
-    await created.waitReady;
-    await applyMigration(created, migrationFile("0000"));
-    await applyMigration(created, migrationFile("0001"));
     await created.exec(`
       INSERT INTO sector (id, name) VALUES ('11111111-1111-4111-8111-111111111111', 'ULD');
       INSERT INTO "user" (id, name, email, role, sector_id)

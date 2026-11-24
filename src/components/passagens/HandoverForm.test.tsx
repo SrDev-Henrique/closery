@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -79,7 +80,7 @@ const STATE: HandoverFormState & { mode: FormMode } = {
 
 function renderForm(
   state: HandoverFormState & { mode: FormMode } = STATE,
-  props: { sectorParam?: string | null } = {},
+  props: { sectorParam?: string | null; requestsSection?: ReactNode } = {},
 ) {
   render(
     <TooltipProvider>
@@ -90,6 +91,7 @@ function renderForm(
         minDate="2026-10-20"
         sectorParam={props.sectorParam ?? null}
         canManageCatalog={false}
+        requestsSection={props.requestsSection}
       />
     </TooltipProvider>,
   );
@@ -124,6 +126,40 @@ describe("HandoverForm", () => {
     expect(screen.getByLabelText("Ocorrências do turno")).toHaveValue("");
     expect(screen.getByText("Nada salvo ainda.")).toBeInTheDocument();
     expect(mocks.save).not.toHaveBeenCalled();
+  });
+
+  describe("requestsSection", () => {
+    const SECTION = <section aria-label="Seção de teste">Abertas aqui</section>;
+
+    it("repassa a seção para depois dos itens e antes das ocorrências", () => {
+      renderForm(STATE, { requestsSection: SECTION });
+
+      const section = screen.getByText("Abertas aqui");
+      const stock = screen.getByRole("heading", { name: "Estoque" });
+      const occurrences = screen.getByLabelText("Ocorrências do turno");
+      expect(
+        stock.compareDocumentPosition(section) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        section.compareDocumentPosition(occurrences) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it("sem a prop, nenhuma seção extra aparece", () => {
+      renderForm();
+
+      expect(screen.queryByText("Abertas aqui")).not.toBeInTheDocument();
+    });
+
+    it("a seção não impede salvar nem entregar", async () => {
+      renderForm(STATE, { requestsSection: SECTION });
+
+      await userEvent.click(deliverButton());
+
+      await waitFor(() => expect(mocks.deliver).toHaveBeenCalledTimes(1));
+    });
   });
 
   it("mostra o último salvamento de um rascunho que já existe", () => {

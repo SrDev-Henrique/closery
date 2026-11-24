@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import {
   deliverHandoverAction,
@@ -67,6 +67,7 @@ export function HandoverForm({
   minDate,
   sectorParam,
   canManageCatalog,
+  requestsSection,
 }: {
   state: HandoverFormState & { mode: FormMode };
   shifts: readonly ShiftChoice[];
@@ -74,6 +75,8 @@ export function HandoverForm({
   minDate: string;
   sectorParam: string | null;
   canManageCatalog: boolean;
+  // Seção "Solicitações abertas" (só no rascunho): vai para o slot do HandoverFields.
+  requestsSection?: ReactNode;
 }) {
   const router = useRouter();
   const { pending, run } = useAdminAction();
@@ -164,6 +167,7 @@ export function HandoverForm({
         disabled={switching}
         canManageCatalog={canManageCatalog}
         itemsHref={`/admin/itens?setor=${state.ref.sectorId}`}
+        afterItems={requestsSection}
       />
 
       <div className="flex flex-col gap-3">

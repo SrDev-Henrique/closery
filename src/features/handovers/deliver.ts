@@ -7,16 +7,12 @@ import { handover, handoverItem } from "@/db/schema/handovers";
 import type { Db } from "@/db/types";
 import { notFoundMessage } from "@/features/admin/messages";
 import { type AdminResult, fail, ok } from "@/features/admin/result";
+import { runInTransaction } from "@/features/admin/transaction";
 import type { Authz } from "@/features/authz/authz";
 
 import { handoverCapabilities } from "./access";
-import {
-  ensureHandover,
-  type HandoverRow,
-  lockHandover,
-  runInTransaction,
-  userNames,
-} from "./loaders";
+import { ensureHandover } from "./ensureHandover";
+import { type HandoverRow, lockHandover, userNames } from "./loaders";
 import {
   alreadyDeliveredMessage,
   HANDOVER_NOT_FOUND_MESSAGE,

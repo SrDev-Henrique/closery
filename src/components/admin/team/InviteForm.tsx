@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useEffect, useId, useRef, useState } from "react";
 
 import { createInviteAction } from "@/app/(app)/admin/equipe/actions";
 import { ChoiceGroup } from "@/components/admin/ChoiceGroup";
@@ -42,6 +42,16 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedInvite | null>(null);
+  // Depois de "Gerar outro convite" o campo volta a existir: o foco volta a ele
+  // (o foco estava no cartão do link, que acabou de sumir).
+  const labelRef = useRef<HTMLInputElement>(null);
+  const [refocusLabel, setRefocusLabel] = useState(false);
+  useEffect(() => {
+    if (created === null && refocusLabel) {
+      labelRef.current?.focus();
+      setRefocusLabel(false);
+    }
+  }, [created, refocusLabel]);
 
   // O setor guardado pode ter saído da lista (desativado, ou a lista chegou
   // depois): o select mostra o primeiro, então é ele que vale e que se envia.
@@ -86,6 +96,7 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
 
   function handleReset() {
     setCreated(null);
+    setRefocusLabel(true);
     setLabel("");
     setFieldErrors({});
     setFormError(null);
@@ -94,7 +105,9 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Convidar pessoa</CardTitle>
+        <CardTitle>
+          <h2>Convidar pessoa</h2>
+        </CardTitle>
       </CardHeader>
       <CardContent>
         {created ? (
@@ -112,6 +125,7 @@ export function InviteForm({ sectors }: { sectors: readonly SectorChoice[] }) {
                 </FieldLabel>
                 <Input
                   id={`${uid}-label`}
+                  ref={labelRef}
                   value={label}
                   disabled={pending}
                   autoComplete="off"

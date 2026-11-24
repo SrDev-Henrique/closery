@@ -1,11 +1,14 @@
 import { notFound } from "next/navigation";
 
 import { EmptyState } from "@/components/admin/EmptyState";
+import { RequestsHomeCard } from "@/components/solicitacoes/RequestsHomeCard";
 import { db } from "@/db";
 import { listActiveSectors } from "@/features/admin/sectors";
 import { getHomeHandovers } from "@/features/handovers/home";
 import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
 import { readRememberedSector } from "@/features/handovers/sectorCookie";
+import { getHomeRequests } from "@/features/requests/home";
+import { requestsHref } from "@/features/requests/urls";
 import { requireUser } from "@/lib/auth/session";
 
 import { MyShiftCard } from "./MyShiftCard";
@@ -55,7 +58,8 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
     sectorId = actor.sectorId;
   }
 
-  const result = await getHomeHandovers(db, actor, sectorId, new Date());
+  const now = new Date();
+  const result = await getHomeHandovers(db, actor, sectorId, now);
   if (!result.ok) {
     if (result.code !== "SECTOR_INACTIVE") notFound();
     return (
@@ -67,6 +71,8 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
   }
 
   const { home } = result;
+  // O setor já foi validado (existe, é do ator e está ativo) pelo getHomeHandovers.
+  const requests = await getHomeRequests(db, actor, home.sector.id, now);
   return (
     <div className="flex flex-col gap-4">
       {picker}
@@ -77,6 +83,7 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
         canManageCatalog={actor.role === "admin"}
         sectorParam={sectorParam}
       />
+      <RequestsHomeCard home={requests} allHref={requestsHref(sectorParam)} />
     </div>
   );
 }

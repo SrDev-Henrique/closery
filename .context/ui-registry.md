@@ -223,19 +223,27 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `Button`; tokens `popover`, `muted`.
 - **Histórico:** 2026-11-21 — `shadcn add dialog`; os dois "Close" viram "Fechar" (P12). O CLI sobrescreve `button.tsx` (pergunta mesmo com `--yes`): rode com `--overwrite` e depois `git checkout -- src/components/ui/button.tsx` (F2-24).
 
+### Table (TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption…)
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/ui/table.tsx`
+- **Propósito:** a primeira tabela do projeto: a visão Tabela das solicitações (dado que se compara em colunas).
+- **Como funciona:** adicionado pelo CLI (`bunx shadcn@latest add table --yes`); o contêiner `data-slot="table-container"` tem `overflow-x-auto`, então a tabela rola na horizontal sozinha e a página nunca rola. Ajustes depois do CLI: sem `"use client"` (é server-safe) e formatação do Biome. Quem usa põe `text-right tabular-nums` nas colunas numéricas e `TableCaption className="sr-only"` com o nome da tabela.
+- **Usa:** tokens `border`, `muted`, `foreground`.
+- **Histórico:** 2026-11-24 — `shadcn add table` na Fase 4 (Tarefa 11).
+
 ## 2. Componentes de aplicação — `src/components/<área>`
 
 ### AppSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
-- **Propósito:** navegação lateral do app autenticado: Início, Conta e, só para admin, Administração.
+- **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Conta e, só para admin, Administração.
 - **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
   `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
   `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
   gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
   atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
 - **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava.
 
 ### AuthedSidebar
 - **Status:** ✅ pronto (2026-11-20)
@@ -270,7 +278,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão.
 
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)
@@ -414,12 +422,12 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Histórico:** 2026-11-21 — criado na Fase 2.
 
 ### Pagination
-- **Status:** ✅ pronto (2026-11-21)
+- **Status:** ✏️ estendido (2026-11-24)
 - **Local:** `src/components/admin/Pagination.tsx` (server-safe)
 - **Propósito:** paginação das listas (toda lista é paginada).
-- **Como funciona:** `<nav aria-label="Paginação">` com "Anterior", "Página {n} de {m}" (`tabular-nums`) e "Próxima"; `param` (padrão `pagina`; `convites` na Equipe) e `params` preservam os demais parâmetros da URL via `buildPageHref`; página 1 remove o parâmetro. Na borda o botão é um `<span aria-disabled="true">` (não é link). Com `pageCount <= 1` renderiza `null`.
-- **Usa:** `buttonVariants`, `buildPageHref`, `next/link`.
-- **Histórico:** 2026-11-21 — criado na Fase 2.
+- **Como funciona:** `<nav aria-label={label}>` (`label` opcional, padrão "Paginação"; a Equipe usa "Paginação dos convites pendentes" e "Paginação das pessoas" para as duas listas terem nomes distintos) com "Anterior", "Página {n} de {m}" (`tabular-nums`) e "Próxima"; `param` (padrão `pagina`; `convites` na Equipe) e `params` preservam os demais parâmetros da URL via `buildPageHref`; página 1 remove o parâmetro. Na borda o lado sem destino é um `<Button type="button" variant="outline" disabled>` (botão desativado, nem link nem texto solto). Com `pageCount <= 1` renderiza `null`.
+- **Usa:** `Button`, `buttonVariants`, `buildPageHref`, `next/link`.
+- **Histórico:** 2026-11-21 — criado na Fase 2. 2026-11-24 — Fase 4 (Tarefa 3, P29): prop `label` e desativado como `<Button disabled>`.
 
 ### SectorSwitcher
 - **Status:** ✅ pronto (2026-11-21)
@@ -633,17 +641,17 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/InviteForm.tsx`
 - **Propósito:** gerar convite de entrada (operador ou administrador) em `/admin/equipe`.
-- **Como funciona:** `"use client"`; cartão "Convidar pessoa"; formulário controlado e nunca em branco (papel Operador, setor = primeiro ativo, nome de referência opcional); `ChoiceGroup` "Papel", `SelectField` "Setor" só para Operador; valida com `createInviteSchema`; erro de campo no campo, o resto no pé; sem setor ativo e papel Operador mostra o aviso e o link "Ir para Setores" no lugar do botão; no sucesso troca o formulário por `InviteLinkCard`; "Gerar outro convite" limpa só o nome (mantém papel e setor).
+- **Como funciona:** `"use client"`; cartão com o título "Convidar pessoa" (`h2`); formulário controlado e nunca em branco (papel Operador, setor = primeiro ativo, nome de referência opcional); `ChoiceGroup` "Papel", `SelectField` "Setor" só para Operador; valida com `createInviteSchema`; erro de campo no campo, o resto no pé; sem setor ativo e papel Operador mostra o aviso e o link "Ir para Setores" no lugar do botão; no sucesso troca o formulário por `InviteLinkCard`; "Gerar outro convite" limpa só o nome (mantém papel e setor) e devolve o foco ao campo "Nome de referência (opcional)".
 - **Usa:** `Card`, `Field*`, `Input`, `ChoiceGroup`, `SelectField`, `InviteLinkCard`, `useAdminAction`, `buttonVariants`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): título em `h2` e foco devolvido ao campo depois de "Gerar outro convite".
 
 ### InviteLinkCard
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/InviteLinkCard.tsx`
 - **Propósito:** mostrar o link do convite **uma vez** (só o hash fica no banco) para copiar ou compartilhar.
-- **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`.
+- **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`; ao montar, o foco vai ao título "Convite gerado" (`h3`, `tabIndex={-1}`).
 - **Usa:** `Button`, `Input`, `sonner`, `formatDateTimeBR`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): foco no título ao montar.
 
 ### PendingInviteActions
 - **Status:** ✅ pronto (2026-11-21)
@@ -695,17 +703,17 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HomeHandovers.tsx`
 - **Propósito:** os cartões de passagem do Início.
-- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveHandoverSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Sem cartão de solicitações (Fase 4).
-- **Usa:** `getHomeHandovers`, `resolveHandoverSector`, `readRememberedSector`, `EmptyState`, `SectorPicker`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveHandoverSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Depois deles vem o `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
+- **Usa:** `getHomeHandovers`, `resolveHandoverSector`, `readRememberedSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno".
 
 ### QuantityCounter
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/QuantityCounter.tsx`
-- **Propósito:** contagem inteira de 0 a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
-- **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira 0 e chama `onChange(0)` e `onCommit(0)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
+- **Propósito:** contagem inteira de `min` (padrão 0) a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
+- **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em `min`, padrão 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira `min` e chama `onChange(min)` e `onCommit(min)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
 - **Usa:** `Button` (`icon`), `Input`, `Tooltip`, `sanitizeQuantityInput`, `parseQuantity`, `stepQuantity`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8); 2026-11-24 — prop `min` (padrão 0, comportamento anterior intacto): − desativa em `value <= min`, digitar abaixo do mínimo fica só no campo e sair com vazio ou abaixo dele salva o mínimo; `stepQuantity(value, delta, min = 0)`. A solicitação usa `min={1}` (Fase 4, Tarefa 10).
 
 ### useHandoverAutosave
 - **Status:** ✅ pronto (2026-11-21)
@@ -735,33 +743,33 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverFields.tsx`
 - **Propósito:** o corpo do formulário da passagem, sem estado próprio (reaproveitado pela correção com motivo).
-- **Como funciona:** `"use client"`. Seções Controles ("Soma no período, como redes danificadas.") e Estoque ("Contagem de agora. Vale a última, nunca a soma."), só as que têm itens; sem nenhum item, `EmptyState` "Nenhum item neste setor." (admin: link "Ir para Itens"). Depois "Ocorrências do turno" e "Fica para o próximo turno" (`Textarea` `text-base`, `maxLength` 2.000, contador "{n} de 2.000 caracteres" só a partir de 90%; a segunda com destaque `border-warning-foreground/40 bg-warning/30` e ícone). Valores e eventos (`onChange`, `onCommit`) vêm do pai.
+- **Como funciona:** `"use client"`. Seções Controles ("Soma no período, como redes danificadas.") e Estoque ("Contagem de agora. Vale a última, nunca a soma."), só as que têm itens; sem nenhum item, `EmptyState` "Nenhum item neste setor." (admin: link "Ir para Itens"). Depois "Ocorrências do turno" e "Fica para o próximo turno" (`Textarea` `text-base`, `maxLength` 2.000, contador "{n} de 2.000 caracteres" só a partir de 90%; a segunda com destaque `border-warning-foreground/40 bg-warning/30` e ícone). Valores e eventos (`onChange`, `onCommit`) vêm do pai. Prop opcional `afterItems` (nó): renderizada depois de Controles/Estoque (ou do estado vazio de itens) e antes de "Ocorrências do turno"; sem ela nada muda.
 - **Usa:** `ItemLineField`, `EmptyState`, `Field*`, `Textarea`, tokens `warning`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-24 — Fase 4 (Tarefa 13): slot `afterItems` para a seção de solicitações abertas.
 
 ### HandoverHeader
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverHeader.tsx`
 - **Propósito:** setor, turno e data do formulário (D-F3-2).
-- **Como funciona:** `"use client"`. Setor em texto; `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. A data só vale ao sair do campo, com Enter ou depois de 700 ms sem digitar (digitar "15" pelo teclado não salta para o dia 01). Prop `onPendingChange(pending)` avisa o formulário enquanto uma troca está em andamento. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
+- **Como funciona:** `"use client"`. Setor em texto (`FieldTitle`, nunca `<label>` sem controle); `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. A data só vale ao sair do campo, com Enter ou depois de 700 ms sem digitar (digitar "15" pelo teclado não salta para o dia 01). Prop `onPendingChange(pending)` avisa o formulário enquanto uma troca está em andamento. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
 - **Usa:** `SelectField`, `Field*`, `Input`, `newHandoverHref`, `sonner`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: data por blur/Enter/pausa de 700 ms e `onPendingChange`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: data por blur/Enter/pausa de 700 ms e `onPendingChange`. 2026-11-24 — Fase 4 (Tarefa 3, P29): "Setor" com `FieldTitle` no lugar do `FieldLabel` órfão.
 
 ### HandoverForm
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverForm.tsx`
 - **Propósito:** formulário da passagem com salvamento automático e "Entregar turno".
-- **Como funciona:** `"use client"`; o chamador põe `key={turno:data}` para remontar ao trocar. Estado controlado dos valores (nunca em branco: `0` e textos vazios), `useHandoverAutosave`, `HandoverHeader` (modo `draft`), `HandoverFields` e `AutosaveIndicator`. **Entregar turno** faz `flush()` antes; se algo ficou sem salvar, mostra "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo." e não entrega; com sucesso, toast "Turno entregue." e navega para o resumo (o botão fica travado até a navegação); `ALREADY_DELIVERED` e outras falhas aparecem no próprio formulário, sem perder o digitado. Sem diálogo de confirmação. Enquanto uma troca de turno ou data está em andamento, os campos e "Entregar turno" ficam travados e `deliver()` recusa. No modo `edit` (passagem entregue) não há cabeçalho nem botão, só o botão "Ver resumo" (espera o `flush()` e então navega; se o salvamento falhar, fica na tela e mostra "Há alterações sem salvar. Toque em “Tentar de novo” antes de ver o resumo.").
+- **Como funciona:** `"use client"`; o chamador põe `key={turno:data}` para remontar ao trocar. Estado controlado dos valores (nunca em branco: `0` e textos vazios), `useHandoverAutosave`, `HandoverHeader` (modo `draft`), `HandoverFields` e `AutosaveIndicator`. **Entregar turno** faz `flush()` antes; se algo ficou sem salvar, mostra "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo." e não entrega; com sucesso, toast "Turno entregue." e navega para o resumo (o botão fica travado até a navegação); `ALREADY_DELIVERED` e outras falhas aparecem no próprio formulário, sem perder o digitado. Sem diálogo de confirmação. Enquanto uma troca de turno ou data está em andamento, os campos e "Entregar turno" ficam travados e `deliver()` recusa. No modo `edit` (passagem entregue) não há cabeçalho nem botão, só o botão "Ver resumo" (espera o `flush()` e então navega; se o salvamento falhar, fica na tela e mostra "Há alterações sem salvar. Toque em “Tentar de novo” antes de ver o resumo."). Prop opcional `requestsSection` (nó) repassada ao slot `afterItems` do `HandoverFields`: só o rascunho a recebe (a edição da entregue e a correção com motivo não mostram solicitações).
 - **Usa:** `useHandoverAutosave`, `useAdminAction`, `saveHandoverFieldAction`, `deliverHandoverAction`, `HandoverHeader`, `HandoverFields`, `AutosaveIndicator`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: trava durante a troca de turno/data; "Ver resumo" com mensagem própria.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: trava durante a troca de turno/data; "Ver resumo" com mensagem própria. 2026-11-24 — Fase 4 (Tarefa 13): prop `requestsSection`.
 
 ### NewHandover
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/NewHandover.tsx`
 - **Propósito:** a página `/passagens/nova`.
-- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>`. `requireUser()`; operador usa o próprio setor, admin escolhe (`resolveHandoverSector` + `SectorPicker`). Turno e data vêm de `resolveHandoverTarget` (URL válida ou sugestão pelo horário). **GET nunca escreve**: o rascunho nasce no primeiro salvamento. Combinação já entregue ou confirmada redireciona para o resumo. Estados vazios: sem setor ativo, setor inativo, sem turnos (admin: link "Ir para Turnos").
-- **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `HandoverForm`, `SectorPicker`, `EmptyState`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>`. `requireUser()`; operador usa o próprio setor, admin escolhe (`resolveHandoverSector` + `SectorPicker`). Turno e data vêm de `resolveHandoverTarget` (URL válida ou sugestão pelo horário). **GET nunca escreve**: o rascunho nasce no primeiro salvamento. Combinação já entregue ou confirmada redireciona para o resumo. Estados vazios: sem setor ativo, setor inativo, sem turnos (admin: link "Ir para Turnos"). No rascunho (`mode: "draft"`) lê as abertas de agora (`listOpenRequests`) e as escolhas do formulário (`getRequestFormChoices`) e passa ao `HandoverForm` a seção `OpenRequestsNowSection` com o `NewRequestDialog` (`originRef` = a tripla setor + turno + dia da tela, `sectors={null}`, `triggerVariant="outline"`); o rascunho só nasce se a pessoa criar a solicitação (escrita iniciada por ela, nunca pelo GET).
+- **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `HandoverForm`, `SectorPicker`, `EmptyState`. Também: `listOpenRequests`, `getRequestFormChoices`, `OpenRequestsNowSection`, `NewRequestDialog`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-24 — Fase 4 (Tarefa 13): seção "Solicitações abertas" no formulário do rascunho.
 
 ### SummaryItemList
 - **Status:** ✅ pronto (2026-11-21)
@@ -791,9 +799,17 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverDetail.tsx`
 - **Propósito:** resumo de `/passagens/[id]` na ordem do briefing (F3-10).
-- **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens".
-- **Usa:** `getHandoverSummary`, `getHandoverFormStateById`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverForm`, `CorrectionForm`, `HandoverStatusBadge`, `buttonVariants`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo.
+- **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → "Solicitações abertas" (`OpenRequestsAtDeliverySection`: as abertas no instante da entrega, com o status daquele instante e "Agora: …"; só no resumo, nunca em `?editar=1`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens". Setor inativo (`summary.sectorActive` falso): `ReadOnlySectorNotice` logo depois do cabeçalho e nenhuma ação de escrita (sem `ConfirmReceiptForm`, sem a frase "Você entregou este turno…", sem "Corrigir" nem "Corrigir com motivo"); `?editar=1` cai no resumo.
+- **Usa:** `getHandoverSummary`, `getHandoverFormStateById`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverForm`, `CorrectionForm`, `HandoverStatusBadge`, `buttonVariants`. Também: `listOpenRequestsAtDelivery`, `OpenRequestsAtDeliverySection`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo. 2026-11-24 — Fase 4 (Tarefa 3, P37): setor inativo é só leitura, com `ReadOnlySectorNotice`. 2026-11-24 — Fase 4 (Tarefa 13): seção "Solicitações abertas" (as abertas na entrega) logo depois de "Fica para o próximo turno".
+
+### ReadOnlySectorNotice
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/passagens/ReadOnlySectorNotice.tsx` (server-safe)
+- **Propósito:** avisar que o setor está inativo e que a tela é só leitura (P37); a Fase 4 o reutiliza no detalhe da solicitação.
+- **Como funciona:** `<Alert>` com o ícone `Lock` (decorativo), título "Setor inativo: só leitura." e descrição "Peça a um administrador para reativá-lo.". Sem props: quem usa decide quando mostrar (`!summary.sectorActive`) e esconde as ações de escrita.
+- **Usa:** `Alert`, `AlertTitle`, `AlertDescription`, ícone `Lock` (lucide).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 3, P37).
 
 ### HandoverHistory
 - **Status:** ✅ pronto (2026-11-21)
@@ -826,6 +842,248 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Como funciona:** `"use client"`; reaproveita `HandoverFields` com estado local (sem salvamento automático: nada é gravado até o envio) e acrescenta `Textarea` "Motivo da correção" (obrigatório, 500 caracteres); "Registrar correção" (pendente: "Registrando…") valida com `correctHandoverSchema` e manda o estado completo desejado; o servidor calcula o diff. Sucesso = toast "Correção registrada." e volta ao resumo (que mostra o selo "Corrigida"); recusa (motivo, `NO_CHANGES`, `FORBIDDEN`) aparece inline, sem toast, e nada do que foi digitado se perde. Link "Cancelar" volta ao resumo.
 - **Usa:** `HandoverFields`, `useAdminAction`, `Button`, `Field*`, `Textarea`, `sonner`, `useRouter`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 11).
+
+### Solicitações — `src/components/solicitacoes/*` (Fase 4)
+
+Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitações. Status sempre com ícone e texto (a cor pertence ao status e nunca é ciclada); ação que muda status usa a cor do status de destino.
+
+### statusStyle
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/statusStyle.ts` (server-safe)
+- **Propósito:** o ícone e as classes de cor de cada status de solicitação, num lugar só.
+- **Como funciona:** `REQUEST_STATUS_STYLE[status]` devolve `{ icon, badgeClass, buttonClass }`. Solicitada `CircleDot` + `bg-info text-info-foreground`; Em separação / Trânsito `Truck` + `bg-warning text-warning-foreground`; Entregue `CircleCheck` + `bg-success text-success-foreground`; Cancelada `CircleX` + `bg-muted text-muted-foreground`. `buttonClass` = `badgeClass` + `border-transparent hover:bg-{token}/80`: é a cor do botão "Mover para {status}" (o de cancelar usa `variant="destructive"`). Classes sempre inteiras no texto, para o Tailwind enxergá-las.
+- **Usa:** tokens `info`, `warning`, `success`, `muted`; ícones do lucide.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### RequestStatusBadge
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestStatusBadge.tsx` (server-safe)
+- **Propósito:** selo do status da solicitação (cartão, linha, tabela, detalhe, passagem).
+- **Como funciona:** `<Badge variant="secondary" className="h-6 …">` com o ícone (`aria-hidden`) e o rótulo (`Solicitada`, `Em separação / Trânsito`, `Entregue`, `Cancelada`) do `REQUEST_STATUS_STYLE`. Nunca só cor.
+- **Usa:** `Badge`, `statusStyle`, `REQUEST_STATUS_LABEL`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### StaleBadge
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/StaleBadge.tsx` (server-safe)
+- **Propósito:** selo "Parada há N dias" das solicitações abertas há mais de 72 h no mesmo status.
+- **Como funciona:** `<Badge variant="secondary" className="h-6 bg-warning text-warning-foreground">` com `ClockAlert` (`aria-hidden`) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
+- **Usa:** `Badge`, `staleLabel`, token `warning`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### RequestForm
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestForm.tsx`
+- **Propósito:** formulário de nova solicitação, o MESMO na tela de solicitações e na passagem.
+- **Como funciona:** `"use client"`, controlado, nunca começa em branco: `Destino` (`SelectField` com os destinos ativos e `Outro` por último) já vem no destino mais usado do setor, se ele estiver entre as opções (senão, no primeiro ativo; sem destinos ativos, em `Outro`); `Outro` revela `Qual destino?` (`maxLength` 80, `text-base`); `Descrição` (`Textarea`, 500, obrigatória); grupo `Itens` (opcional): `Adicionar item` acrescenta o primeiro item de estoque ainda não escolhido com quantidade 1, cada linha tem `<select>` "Item" (só as opções que ninguém escolheu, mais a própria), `QuantityCounter` com `min={1}` e `Remover {item}` (ícone `Trash2`, tooltip "Remover item"); sem itens de estoque, o texto "Nenhum item de estoque neste setor.". `Setor` só aparece para o admin em "Todos os setores" (`sectors` não nulo); trocar o setor limpa os itens e mantém o destino. Valida com `createRequestSchema` antes da action (erro vai para o campo, a action não é chamada); `useAdminAction` com `showError: false` e toast "Solicitação criada."; erro do servidor vai para o campo de `fieldErrors` e, sem campo (ex.: passagem confirmada), para um `FieldError` no pé; nada do digitado se perde. Botões `Criar solicitação` (pendente `Criando…`) e `Voltar`.
+- **Usa:** `SelectField`, `QuantityCounter`, `Field*`, `Input`, `Textarea`, `NativeSelect`, `Button`, `Tooltip`, `useAdminAction`, `createRequestAction`, `createRequestSchema`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-24 — revisão final: cada linha de item tem uma chave do cliente (fora do payload), então trocar o item mantém foco e quantidade; a `Descrição` ganha `text-base md:text-base`; o destino padrão só vale se estiver entre as opções (senão, o primeiro ativo).
+
+### NewRequestDialog
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/NewRequestDialog.tsx`
+- **Propósito:** gatilho "Nova solicitação" + diálogo com o `RequestForm`.
+- **Como funciona:** `"use client"`. Gatilho `Button` (`Plus` + "Nova solicitação"; `triggerVariant` `default` ou `outline`, o da passagem). O conteúdo desmonta ao fechar, então cada abertura começa com o estado novo. `DialogContent showCloseButton={false}` (o X só com ícone do primitivo não tem tooltip; "Voltar" fecha), `max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg`. Sucesso fecha (o toast vem do formulário); erro mantém o diálogo aberto.
+- **Usa:** `Dialog`, `Button`, `RequestForm`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+
+### RequestsScreen
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestsScreen.tsx`
+- **Propósito:** a tela `/solicitacoes`: cabeçalho, filtros, seletor de visão e a visão escolhida (Quadro, Lista ou Tabela).
+- **Como funciona:** server component async (dentro do `<Suspense>` da página). Lê a sessão, os filtros da URL (`parseRequestFilters`) e o setor (admin: `SectorPicker` com "Todos os setores"; operador: o próprio, nunca o seletor). `?criador=` e `?destino=` (uuid) fora das escolhas viram "todos" antes da consulta. Sem `visao` renderiza o Quadro (`hidden md:block`) e a Lista (`md:hidden`) com os mesmos dados e dois `RequestViewSwitcher` (um por largura, para o `aria-current` dizer a verdade). O subtítulo vem do servidor (`boardSummary`/`tableSummary`). Vazio novo × vazio filtrado; operador de setor inativo e admin sem setor ativo têm estado vazio próprio.
+- **Usa:** `RequestFiltersForm`, `RequestViewSwitcher`, `RequestBoard`, `RequestList`, `RequestTable`, `NewRequestDialog`, `SectorPicker`, `EmptyState`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestViewSwitcher
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestViewSwitcher.tsx`
+- **Propósito:** trocar entre Quadro, Lista e Tabela sem perder os filtros.
+- **Como funciona:** `<nav aria-label="Visão">` com três `<Link className={buttonVariants(...)}>` (ícones `SquareKanban`, `List`, `Table2`); o da visão atual é `default` e tem `aria-current="page"`. Aceita `className` (a tela usa `md:hidden` / `hidden md:flex`).
+- **Usa:** `buttonVariants`, `Link`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestFiltersForm
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestFiltersForm.tsx`
+- **Propósito:** busca, destino, período e quem criou, na URL.
+- **Como funciona:** `"use client"`, controlado, valores iniciais da URL (nunca em branco); `key` = a URL dos filtros. "Aplicar filtros" monta a URL (`buildRequestsHref(resetPaging(...))`, mantém visão e setor); "Limpar filtros" é um `<Link>`. Escolhas, não texto: destinos (inativo marcado "(inativo)" e "Outro"), pessoas, períodos; "De"/"Até" só em "Intervalo". Busca `type="search"`, `text-base`, 80 caracteres.
+- **Usa:** `SelectField`, `Input`, `Field`, `Button`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### useRequestMove
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/useRequestMove.ts`
+- **Propósito:** mover a solicitação no Quadro e na Lista com o cartão mudando de coluna antes da resposta.
+- **Como funciona:** `useRequestMove(groups)` devolve `{ groups, move(request, to) }`. `useOptimistic(toGroupView(groups), applyMove)`; `move` roda o `setOptimistic` DENTRO de `startTransition(async …)`, antes do primeiro `await`, e chama `moveRequestAction({ id, from, to })`. `ok` → `toast.success`; falha → `toast.error` com a prévia da descrição, e `router.refresh()` quando `isStaleScreenCode(code)` (`STATUS_CONFLICT`, `NO_CHANGES`, `NOT_FOUND`); exceção → `unstable_rethrow` e `INTERNAL`. O estado otimista volta sozinho ao fim da transição.
+- **Usa:** `moveRequestAction`, `applyMove`, `toGroupView`, `sonner`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestBoard
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestBoard.tsx`
+- **Propósito:** o Quadro: três colunas (Solicitada, Em separação / Trânsito, Entregue).
+- **Como funciona:** `"use client"`. Lado a lado a partir de `lg`, empilhadas entre `md` e `lg`; abaixo de `md` o grupo "Coluna" (botões `aria-pressed` com a contagem) escolhe uma coluna e as outras ganham `max-md:hidden` (só CSS: as três ficam montadas; nada de `matchMedia`). Entregue mostra "Últimos 30 dias" só sem período.
+- **Usa:** `useRequestMove`, `RequestColumn`, `FieldSet`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestColumn
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestColumn.tsx`
+- **Propósito:** uma coluna do Quadro: cabeçalho com ícone do status, contagem do servidor, cartões e "Carregar mais".
+- **Como funciona:** `<section aria-labelledby>` com o id de `useId()` (sem `visao` o Quadro e a Lista estão os dois no DOM); contagem `tabular-nums` com "solicitações" só para leitor de tela; vazio "Nenhuma solicitação."; nota opcional.
+- **Usa:** `RequestCard`, `LoadMoreButton`, `REQUEST_STATUS_STYLE`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestCard
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestCard.tsx`
+- **Propósito:** o cartão da solicitação; também exporta `RequestHeadline` e `RequestMeta`, que a linha da Lista reaproveita.
+- **Como funciona:** a descrição (2 linhas) é um `<Link href={requestHref(id)} scroll={false}>` esticado pelo cartão (`after:absolute after:inset-0`): abre o detalhe rápido no Sheet. O ↗ é um `<a href>` comum (página completa), com `aria-label` "Abrir página completa de {prévia}" e tooltip. Mostra "Para {destino}", setor (admin em Todos os setores), itens, comentários (ícone + número, "{n} comentários" só para leitor de tela), "Criada por {nome} em {data}", o selo de parada e o botão do próximo passo (`MoveStatusButton`, acima do link esticado).
+- **Usa:** `MoveStatusButton`, `StaleBadge`, `Tooltip`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### MoveStatusButton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/MoveStatusButton.tsx`
+- **Propósito:** a ação "Mover para {status}" na cor do status de destino (regra: o rótulo nomeia o resultado).
+- **Como funciona:** `"use client"`; ícone e `buttonClass` de `REQUEST_STATUS_STYLE[to]`; `size` `default` ou `sm`; `className` extra.
+- **Usa:** `Button`, `REQUEST_STATUS_STYLE`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### LoadMoreButton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/LoadMoreButton.tsx`
+- **Propósito:** "Carregar mais" de uma coluna ou grupo, com "{mostradas} de {total}".
+- **Como funciona:** `"use client"`; `useTransition` + `router.replace(href, { scroll: false })` (o limite cresce pela URL, `?mais_<status>=`); pendente "Carregando…"; contador em `<p aria-live="polite">`.
+- **Usa:** `Button`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestList
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestList.tsx`
+- **Propósito:** a Lista agrupada por status (os quatro, com Cancelada): a visão padrão no celular.
+- **Como funciona:** `"use client"`; mesmo `useRequestMove` do Quadro; uma `<section>` por status (id de `useId()` em um componente interno); vazio "Nenhuma solicitação."; nota "Últimos 30 dias" em Entregue e Cancelada só sem período; "Carregar mais" por grupo.
+- **Usa:** `RequestListRow`, `LoadMoreButton`, `useRequestMove`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestListRow
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestListRow.tsx`
+- **Propósito:** a linha da Lista: o conteúdo do cartão em linha, com o mesmo próximo passo (no celular é onde se avança).
+- **Usa:** `RequestHeadline`, `RequestMeta`, `MoveStatusButton`, `StaleBadge`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+
+### RequestTable
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestTable.tsx`
+- **Propósito:** a Tabela: lista plana paginada (50 por página), sem a janela de 30 dias.
+- **Como funciona:** server-safe; `TableCaption` "Solicitações" só para leitor de tela; colunas Descrição (link com `scroll={false}`) · Setor (admin em Todos os setores) · Destino · Itens · Quem criou · Criada em · Status (selo, mais o de parada) · Dias no status; as numéricas à direita com `tabular-nums`; o contêiner do primitivo rola na horizontal. Paginação que preserva os filtros.
+- **Usa:** `Table`, `Pagination`, `RequestStatusBadge`, `StaleBadge`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-24 — revisão final: o corte de 2 linhas da descrição (`line-clamp-2`) fica num `span` dentro do Link `inline-flex`.
+
+### RequestDetail
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestDetail.tsx`
+- **Propósito:** o detalhe da solicitação: a página completa `/solicitacoes/[id]` e o conteúdo do Sheet do detalhe rápido.
+- **Como funciona:** server component async, `variant="page" | "sheet"`. `page`: título `<h1>` "Solicitação para {destino}", seções `h2`, link "Ver todas as solicitações", `notFound()` para id malformado, inexistente ou de outro setor. `sheet`: título pelo `SheetTitle`, seções `h3`, link `<a href>` "Abrir página completa" (navegação de documento: uma navegação no cliente para a mesma URL seria interceptada de novo), e o estado "Solicitação não encontrada." dentro do Sheet (um `notFound()` no slot derrubaria a tela). Mostra o aviso `ReadOnlySectorNotice` em setor inativo, propriedades (`<dl>`: status e selo de parada, setor só para o admin, destino, quem criou, origem com link para a passagem), itens com quantidade e unidade, "Mudar status" (só com `canMove`), linha do tempo e comentários; "Ver comentários anteriores" é sempre `<a href>` e some no teto de 500.
+- **Usa:** `getRequestDetail`, `RequestStatusBadge`, `StaleBadge`, `RequestStatusActions`, `RequestTimeline`, `RequestComments`, `ReadOnlySectorNotice`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestSheet
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestSheet.tsx`
+- **Propósito:** o Sheet do detalhe rápido (rota interceptada `@detalhe/(.)solicitacoes/[id]`).
+- **Como funciona:** `"use client"`. `open` é constante: o slot só existe enquanto a URL é a do detalhe, e estado local não reabriria sob a Activity. Fechar (Escape, fundo ou o botão com texto "Fechar") chama `router.back()` uma vez só: a trava `closing` (um `ref` liberado no efeito de montagem) impede dois `back()` antes de a navegação terminar. O X só com ícone do primitivo fica desligado (`showCloseButton={false}`): o botão "Fechar" tem texto.
+- **Usa:** `Sheet`, `SheetContent`, `SheetClose`, `Button`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: o teste da trava usa `Activity` com a mesma instância; Escape num diálogo de dentro do Sheet (cancelar, apagar comentário) fecha só o diálogo, coberto pelo E2E (b), sem mudança no código. O fallback de carregamento do slot `@detalhe/(.)solicitacoes/[id]` ganha `SheetTitle` `sr-only` "Carregando solicitação".
+
+### RequestDetailSkeleton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestDetailSkeleton.tsx`
+- **Propósito:** esqueleto do detalhe (`aria-busy`) enquanto a página completa ou o Sheet leem o banco.
+- **Usa:** `Skeleton`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestStatusActions
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestStatusActions.tsx`
+- **Propósito:** "Mudar status" no detalhe: um botão por status alvo (na cor do destino) e "Cancelar solicitação".
+- **Como funciona:** `"use client"`; `moveTargets(status)` (Cancelada reabre para qualquer um); todos os botões, o gatilho de "Cancelar solicitação" inclusive (`disabled={pending}` repassado ao `CancelRequestDialog`), ficam desativados enquanto um movimento está em voo. Sucesso: toast "“{prévia}” movida para {status}."; falha: toast de erro nomeando a solicitação e `router.refresh()` em `STATUS_CONFLICT`, `NO_CHANGES` e `NOT_FOUND`.
+- **Usa:** `MoveStatusButton`, `CancelRequestDialog`, `useAdminAction`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: "Cancelar solicitação" também fica desativado durante um movimento.
+
+### CancelRequestDialog
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/CancelRequestDialog.tsx`
+- **Propósito:** cancelar a solicitação com motivo obrigatório (≤ 500 caracteres).
+- **Como funciona:** `"use client"`; `Dialog` com `Textarea` "Motivo do cancelamento"; valida com `cancelRequestSchema` antes da action (erro no campo, sem chamar o servidor); "Voltar" fecha; o motivo não volta na próxima abertura. Só fecha sozinho no sucesso (toast "Solicitação cancelada."); `fieldErrors.reason` fica no campo, `STATUS_CONFLICT`/`NO_CHANGES`/`NOT_FOUND` viram toast + fecha + `router.refresh()` (o botão de cancelar some depois do refresh), qualquer outra falha fica no pé do diálogo, aberto, com o texto.
+- **Usa:** `Dialog`, `Textarea`, `Field*`, `useAdminAction`, `cancelRequestSchema`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: prop `disabled` (padrão `false`) no gatilho, usada pelo `RequestStatusActions` durante um movimento.
+
+### RequestTimeline
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestTimeline.tsx`
+- **Propósito:** a linha do tempo dos status (mais antigo primeiro): "Criada por X", "X moveu para Y", "X cancelou" com "Motivo: …", "X reabriu como Y".
+- **Como funciona:** server-safe; `<ol>` com o ícone do status de destino (nunca só cor), a frase de `timelineSentence`, a data e hora de São Paulo em `<time>`.
+- **Usa:** `REQUEST_STATUS_STYLE`, `timelineSentence`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### RequestComments
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestComments.tsx`
+- **Propósito:** os comentários da solicitação (mais antigo primeiro, os últimos 50).
+- **Como funciona:** server-safe; título "Comentários (n)" no nível `headingLevel` (2 na página, 3 no Sheet); "Ver comentários anteriores" (`<a href>`) acima da lista; o motivo de cancelamento aparece com o rótulo "Motivo do cancelamento" e sem "Apagar"; `DeleteCommentButton` só onde `canDelete`; `CommentComposer` só com `canComment`; vazio em uma linha.
+- **Usa:** `CommentComposer`, `DeleteCommentButton`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### CommentComposer
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/CommentComposer.tsx`
+- **Propósito:** escrever um comentário.
+- **Como funciona:** `"use client"`; `Textarea` "Novo comentário" (`text-base`, 2.000 caracteres) + "Comentar" (pendente "Comentando…"); valida com `addCommentSchema` antes da action; limpa só no sucesso (toast "Comentário adicionado."); o erro fica no campo e o texto digitado nunca se perde.
+- **Usa:** `useAdminAction`, `Textarea`, `Field*`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### DeleteCommentButton
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/DeleteCommentButton.tsx`
+- **Propósito:** apagar o próprio comentário, com confirmação.
+- **Como funciona:** `"use client"`; botão "Apagar" com `aria-label` "Apagar comentário de {data}"; `ConfirmDialog` destrutivo ("Apagar comentário?" / "Ele some da solicitação para todos."); sucesso: toast "Comentário apagado."; falha: a mensagem fica no diálogo.
+- **Usa:** `ConfirmDialog`, `deleteCommentAction`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+
+### OpenRequestItem
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/OpenRequestItem.tsx` (server-safe)
+- **Propósito:** uma solicitação aberta nas seções da passagem e no cartão do Início.
+- **Como funciona:** `<li>` com a prévia da descrição (`requestPreview`: 1ª linha, até 60 pontos de código) num `<Link href={requestHref(id)} scroll={false}>` (abre o detalhe rápido no Sheet), "Para {destino}", `RequestStatusBadge` e, se parada, `StaleBadge`. Com `statusNow` diferente do status mostra "Agora: {status}" (só o resumo da entrega passa a prop). O link tem alvo ≥ 44px no celular.
+- **Usa:** `RequestStatusBadge`, `StaleBadge`, `requestPreview`, `requestHref`, `REQUEST_STATUS_LABEL`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+
+### OpenRequestsNowSection
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/OpenRequestsNowSection.tsx` (server-safe)
+- **Propósito:** seção "Solicitações abertas" do formulário do rascunho: as abertas de agora do setor.
+- **Como funciona:** `<section>` com `<h2>` "Solicitações abertas" e a ajuda "Do setor, agora. As paradas há mais tempo aparecem primeiro."; lista de `OpenRequestItem` (até 20, a mais antiga no status primeiro) ou "Nenhuma solicitação aberta."; com mais do que o listado, "Mostrando {n} de {total}."; no pé o nó `newRequest` (o `NewRequestDialog` do rascunho, que leva a tripla da passagem como `originRef`; `null` não mostra botão) e o link "Ver todas as solicitações" (`allHref`).
+- **Usa:** `OpenRequestItem`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+
+### OpenRequestsAtDeliverySection
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/OpenRequestsAtDeliverySection.tsx` (server-safe)
+- **Propósito:** seção "Solicitações abertas" do resumo da passagem: como estavam NA ENTREGA (D-F4-2).
+- **Como funciona:** `<section>` com `<h2>` "Solicitações abertas" e "Como estavam na entrega, em {dd/mm/aaaa} às {HH:mm}." (hora de São Paulo); cada `OpenRequestItem` mostra o status e o selo de parada **daquele instante** e "Agora: {status}" quando o status mudou depois; vazio "Nenhuma solicitação aberta na entrega."; "Mostrando {n} de {total}." acima de 20; link "Ver todas as solicitações". Só leitura (sem botão de criar).
+- **Usa:** `OpenRequestItem`, `formatDateBR`, `formatTimeBR`, `saoPauloParts`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+
+### RequestsHomeCard
+- **Status:** ✅ pronto (2026-11-24)
+- **Local:** `src/components/solicitacoes/RequestsHomeCard.tsx` (server-safe)
+- **Propósito:** cartão "Solicitações" do Início, depois de "Passagem do meu turno".
+- **Como funciona:** `Card` com `<h2>` "Solicitações"; linha "{n abertas} · {m paradas}" (`tabular-nums`, singular em 1) ou "Nenhuma solicitação aberta."; havendo paradas, o rótulo `<h3>` "Paradas há mais tempo" e até 5 `OpenRequestItem` (as mais antigas no status); link-botão "Ver solicitações" (`allHref`; o admin leva `?setor=`).
+- **Usa:** `Card`, `OpenRequestItem`, `openCountLabel`, `staleCountLabel`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

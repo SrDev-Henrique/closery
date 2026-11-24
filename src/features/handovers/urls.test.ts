@@ -54,11 +54,12 @@ describe("chooseSectorPath", () => {
 });
 
 describe("SECTOR_PICKER_PATHS", () => {
-  it("lista fechada de três caminhos", () => {
+  it("lista fechada de quatro caminhos", () => {
     expect([...SECTOR_PICKER_PATHS]).toEqual([
       "/",
       "/passagens",
       "/passagens/nova",
+      "/solicitacoes",
     ]);
   });
 });

@@ -4,4 +4,5 @@ export * from "./auth";
 export * from "./catalog";
 export * from "./handovers";
 export * from "./invites";
+export * from "./requests";
 export * from "./sectors";

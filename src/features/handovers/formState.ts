@@ -13,6 +13,7 @@ import type { Authz } from "@/features/authz/authz";
 import type { ItemKind } from "@/lib/itemKinds";
 
 import { formModeOf, handoverCapabilities } from "./access";
+import { creationRefusal } from "./ensureHandover";
 import {
   findHandoverById,
   findHandoverByRef,
@@ -25,9 +26,8 @@ import {
   DATE_OUT_OF_RANGE_MESSAGE,
   HANDOVER_NOT_FOUND_MESSAGE,
   SECTOR_INACTIVE_HANDOVER_MESSAGE,
-  SHIFT_INACTIVE_MESSAGE,
 } from "./messages";
-import { isIsoDate, isOperationalDateAllowed } from "./saoPaulo";
+import { isIsoDate } from "./saoPaulo";
 import type { FormMode, HandoverRef, ItemLine, SavedMark } from "./types";
 
 export type HandoverFormState = {
@@ -197,10 +197,8 @@ export async function getHandoverFormState(
 
   const row = await findHandoverByRef(db, ref);
   if (row === null) {
-    if (!target.active) return fail("SHIFT_INACTIVE", SHIFT_INACTIVE_MESSAGE);
-    if (!isOperationalDateAllowed(ref.operationalDate, now)) {
-      return fail("DATE_OUT_OF_RANGE", DATE_OUT_OF_RANGE_MESSAGE);
-    }
+    const refusal = creationRefusal(target, ref, now);
+    if (refusal) return refusal;
   }
   return ok({ state: await buildState(db, actor, owner, target, ref, row) });
 }

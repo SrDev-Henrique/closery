@@ -461,6 +461,35 @@ describe("getHandoverSummary", () => {
     expect(asAdmin.ok).toBe(true);
   });
 
+  it("sectorActive: true no setor ativo; false depois de desativar, para operador e admin", async () => {
+    const { uld, ana, root, turno, anaAuthz } = await seed();
+    const passagem = await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: turno.id,
+      status: "delivered",
+      deliveredBy: ana.id,
+    });
+    const adminAuthz: Authz = {
+      userId: root.id,
+      name: "Admin Teste",
+      email: `${root.id}@example.test`,
+      role: "admin",
+      sectorId: null,
+    };
+
+    expect((await mustSummary(anaAuthz, passagem.id)).sectorActive).toBe(true);
+    expect((await mustSummary(adminAuthz, passagem.id)).sectorActive).toBe(
+      true,
+    );
+
+    await db.update(sector).set({ active: false }).where(eq(sector.id, uld.id));
+
+    expect((await mustSummary(anaAuthz, passagem.id)).sectorActive).toBe(false);
+    expect((await mustSummary(adminAuthz, passagem.id)).sectorActive).toBe(
+      false,
+    );
+  });
+
   it("outro setor e id inexistente devolvem NOT_FOUND idêntico", async () => {
     const { uld, ana, turno, caioAuthz } = await seed();
     const passagem = await insertHandover(db, {

@@ -2,6 +2,7 @@ import {
   ClipboardList,
   House,
   type LucideIcon,
+  PackageOpen,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
@@ -19,6 +20,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     href: "/passagens",
     label: "Passagens",
     icon: ClipboardList,
+    adminOnly: false,
+  },
+  {
+    href: "/solicitacoes",
+    label: "Solicitações",
+    icon: PackageOpen,
     adminOnly: false,
   },
   { href: "/conta", label: "Conta", icon: UserRound, adminOnly: false },

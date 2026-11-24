@@ -119,6 +119,54 @@ describe("InviteForm", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("'Convidar pessoa' é o título (h2) do cartão", () => {
+    setup();
+
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Convidar pessoa" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ao gerar o convite o foco vai para o título 'Convite gerado'", async () => {
+    const { user } = setup();
+
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+
+    const title = await screen.findByRole("heading", {
+      level: 3,
+      name: "Convite gerado",
+    });
+    await waitFor(() => expect(title).toHaveFocus());
+  });
+
+  it("'Gerar outro convite' devolve o foco ao campo do nome de referência", async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+
+    await user.click(
+      await screen.findByRole("button", { name: "Gerar outro convite" }),
+    );
+
+    await waitFor(() => expect(screen.getByLabelText(LABEL)).toHaveFocus());
+  });
+
+  it("recusa do servidor não rouba o foco do formulário", async () => {
+    mocks.createInviteAction.mockResolvedValue(
+      fail("SECTOR_INACTIVE", "Este setor está inativo. Escolha outro.", {
+        sectorId: "Este setor está inativo. Escolha outro.",
+      }),
+    );
+    const { user } = setup();
+
+    await user.click(screen.getByRole("button", { name: "Gerar convite" }));
+
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText(LABEL)).not.toHaveFocus();
+    expect(
+      screen.queryByRole("heading", { name: "Convite gerado" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("nome de referência acima de 80 caracteres: recusa no cliente", async () => {
     const { user } = setup();
 

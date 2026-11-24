@@ -125,8 +125,28 @@ describe(".context/pendencias.md", () => {
     }
   });
 
-  it("Fase 3: P33 a P36 entraram como Aberto, não triado", () => {
-    for (const id of ["P33", "P34", "P35", "P36"]) {
+  it("Fase 3: P34 a P36 entraram como Aberto, não triado", () => {
+    for (const id of ["P34", "P35", "P36"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Aberto, não triado");
+      expect(entry?.section, id).toBe("1");
+    }
+  });
+
+  it("Fase 4: P29, P33, P37 e P40 resolvidas", () => {
+    for (const id of ["P29", "P33", "P37", "P40"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Resolvido");
+      expect(entry?.section, id).toBe("5");
+      expect(
+        entry?.updates.some((date) => date >= "2026-11-23"),
+        id,
+      ).toBe(true);
+    }
+  });
+
+  it("Fase 4: P44 a P47 entraram como Aberto, não triado", () => {
+    for (const id of ["P44", "P45", "P46", "P47"]) {
       const entry = entries.get(id);
       expect(entry?.state, id).toBe("Aberto, não triado");
       expect(entry?.section, id).toBe("1");

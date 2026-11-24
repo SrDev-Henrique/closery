@@ -16,9 +16,9 @@ export function parseQuantity(raw: string): number | null {
   return Math.min(Number(digits), MAX_QUANTITY);
 }
 
-/** Soma ou subtrai 1; trava em 0 e em MAX_QUANTITY. */
-export function stepQuantity(value: number, delta: 1 | -1): number {
-  return Math.min(Math.max(value + delta, 0), MAX_QUANTITY);
+/** Soma ou subtrai 1; trava em `min` (padrão 0) e em MAX_QUANTITY. */
+export function stepQuantity(value: number, delta: 1 | -1, min = 0): number {
+  return Math.min(Math.max(value + delta, min), MAX_QUANTITY);
 }
 
 /** pt-BR: 1234 → "1.234". */

@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 
 import { EmptyState } from "@/components/admin/EmptyState";
+import { NewRequestDialog } from "@/components/solicitacoes/NewRequestDialog";
+import { OpenRequestsNowSection } from "@/components/solicitacoes/OpenRequestsNowSection";
 import { db } from "@/db";
 import { listActiveSectors } from "@/features/admin/sectors";
 import { getHandoverFormState } from "@/features/handovers/formState";
@@ -12,6 +14,9 @@ import { readRememberedSector } from "@/features/handovers/sectorCookie";
 import { resolveHandoverTarget } from "@/features/handovers/shiftSuggestion";
 import { listActiveShifts } from "@/features/handovers/targets";
 import { handoverHref } from "@/features/handovers/urls";
+import { getRequestFormChoices } from "@/features/requests/choices";
+import { listOpenRequests } from "@/features/requests/open";
+import { requestsHref } from "@/features/requests/urls";
 import { requireUser } from "@/lib/auth/session";
 
 import { HandoverForm } from "./HandoverForm";
@@ -135,6 +140,32 @@ export async function NewHandover({ searchParams }: NewHandoverProps) {
   }
   if (state.mode === null) notFound();
 
+  // Só o rascunho mostra as abertas de agora (a entregue já tem o retrato da
+  // entrega no resumo). "Nova solicitação" leva a tripla da passagem: o servidor
+  // cria o rascunho junto, se ainda não existir.
+  let requestsSection: React.ReactNode;
+  if (state.mode === "draft") {
+    const [open, choices] = await Promise.all([
+      listOpenRequests(db, actor, sector.id, now),
+      getRequestFormChoices(db, [sector.id]),
+    ]);
+    requestsSection = (
+      <OpenRequestsNowSection
+        data={open}
+        allHref={requestsHref(isAdmin ? sector.id : null)}
+        newRequest={
+          <NewRequestDialog
+            sectors={null}
+            initialSectorId={sector.id}
+            choices={choices}
+            originRef={ref}
+            triggerVariant="outline"
+          />
+        }
+      />
+    );
+  }
+
   const today = todayInSaoPaulo(now);
   return (
     <div className="flex flex-col gap-6">
@@ -149,6 +180,7 @@ export async function NewHandover({ searchParams }: NewHandoverProps) {
         minDate={addDays(today, -MAX_DAYS_BACK)}
         sectorParam={isAdmin ? sector.id : null}
         canManageCatalog={isAdmin}
+        requestsSection={requestsSection}
       />
     </div>
   );
