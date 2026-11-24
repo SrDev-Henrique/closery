@@ -51,6 +51,10 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **P44–P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); trocar de setor em
   `/solicitacoes` perde os filtros da URL (P45); um cartão movido para uma coluna aberta e truncada só aparece
   depois da revalidação (P46); o X só com ícone do `EditDialog` continua sem tooltip (P47).
+- **P48–P52 (revisão final da Fase 4):** refatorações para o início da Fase 5, a de maior prioridade é extrair
+  `resolveScreenSector`/`paginationParams` antes do painel (P48); higiene de testes e o erro `portal "" does not exist`
+  do `pglite-socket` no log do E2E (P49); UX (P50); FK composta do comentário (P51); CTE `last` das abertas (P52).
+  Próximo id livre: P53.
 - **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
 - **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).

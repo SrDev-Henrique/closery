@@ -236,14 +236,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 ### AppSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
-- **Propósito:** navegação lateral do app autenticado: Início, Conta e, só para admin, Administração.
+- **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Conta e, só para admin, Administração.
 - **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
   `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
   `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
   gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
   atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
 - **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava.
 
 ### AuthedSidebar
 - **Status:** ✅ pronto (2026-11-20)
@@ -711,7 +711,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/QuantityCounter.tsx`
 - **Propósito:** contagem inteira de `min` (padrão 0) a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
-- **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira 0 e chama `onChange(0)` e `onCommit(0)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
+- **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em `min`, padrão 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira `min` e chama `onChange(min)` e `onCommit(min)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
 - **Usa:** `Button` (`icon`), `Input`, `Tooltip`, `sanitizeQuantityInput`, `parseQuantity`, `stepQuantity`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8); 2026-11-24 — prop `min` (padrão 0, comportamento anterior intacto): − desativa em `value <= min`, digitar abaixo do mínimo fica só no campo e sair com vazio ou abaixo dele salva o mínimo; `stepQuantity(value, delta, min = 0)`. A solicitação usa `min={1}` (Fase 4, Tarefa 10).
 
@@ -877,7 +877,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** formulário de nova solicitação, o MESMO na tela de solicitações e na passagem.
 - **Como funciona:** `"use client"`, controlado, nunca começa em branco: `Destino` (`SelectField` com os destinos ativos e `Outro` por último) já vem no destino mais usado do setor (sem destinos ativos, em `Outro`); `Outro` revela `Qual destino?` (`maxLength` 80, `text-base`); `Descrição` (`Textarea`, 500, obrigatória); grupo `Itens` (opcional): `Adicionar item` acrescenta o primeiro item de estoque ainda não escolhido com quantidade 1, cada linha tem `<select>` "Item" (só as opções que ninguém escolheu, mais a própria), `QuantityCounter` com `min={1}` e `Remover {item}` (ícone `Trash2`, tooltip "Remover item"); sem itens de estoque, o texto "Nenhum item de estoque neste setor.". `Setor` só aparece para o admin em "Todos os setores" (`sectors` não nulo); trocar o setor limpa os itens e mantém o destino. Valida com `createRequestSchema` antes da action (erro vai para o campo, a action não é chamada); `useAdminAction` com `showError: false` e toast "Solicitação criada."; erro do servidor vai para o campo de `fieldErrors` e, sem campo (ex.: passagem confirmada), para um `FieldError` no pé; nada do digitado se perde. Botões `Criar solicitação` (pendente `Criando…`) e `Voltar`.
 - **Usa:** `SelectField`, `QuantityCounter`, `Field*`, `Input`, `Textarea`, `NativeSelect`, `Button`, `Tooltip`, `useAdminAction`, `createRequestAction`, `createRequestSchema`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-24 — revisão final: cada linha de item tem uma chave do cliente (fora do payload), então trocar o item mantém foco e quantidade; a `Descrição` ganha `text-base md:text-base`; o destino padrão só vale se estiver entre as opções (senão, o primeiro ativo).
 
 ### NewRequestDialog
 - **Status:** ✅ pronto (2026-11-24)
@@ -980,7 +980,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** a Tabela: lista plana paginada (50 por página), sem a janela de 30 dias.
 - **Como funciona:** server-safe; `TableCaption` "Solicitações" só para leitor de tela; colunas Descrição (link com `scroll={false}`) · Setor (admin em Todos os setores) · Destino · Itens · Quem criou · Criada em · Status (selo, mais o de parada) · Dias no status; as numéricas à direita com `tabular-nums`; o contêiner do primitivo rola na horizontal. Paginação que preserva os filtros.
 - **Usa:** `Table`, `Pagination`, `RequestStatusBadge`, `StaleBadge`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-24 — revisão final: o corte de 2 linhas da descrição (`line-clamp-2`) fica num `span` dentro do Link `inline-flex`.
 
 ### RequestDetail
 - **Status:** ✅ pronto (2026-11-24)
@@ -996,7 +996,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** o Sheet do detalhe rápido (rota interceptada `@detalhe/(.)solicitacoes/[id]`).
 - **Como funciona:** `"use client"`. `open` é constante: o slot só existe enquanto a URL é a do detalhe, e estado local não reabriria sob a Activity. Fechar (Escape, fundo ou o botão com texto "Fechar") chama `router.back()` uma vez só: a trava `closing` (um `ref` liberado no efeito de montagem) impede dois `back()` antes de a navegação terminar. O X só com ícone do primitivo fica desligado (`showCloseButton={false}`): o botão "Fechar" tem texto.
 - **Usa:** `Sheet`, `SheetContent`, `SheetClose`, `Button`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: o teste da trava usa `Activity` com a mesma instância; Escape num diálogo de dentro do Sheet (cancelar, apagar comentário) fecha só o diálogo, coberto pelo E2E (b), sem mudança no código. O fallback de carregamento do slot `@detalhe/(.)solicitacoes/[id]` ganha `SheetTitle` `sr-only` "Carregando solicitação".
 
 ### RequestDetailSkeleton
 - **Status:** ✅ pronto (2026-11-24)
@@ -1009,9 +1009,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestStatusActions.tsx`
 - **Propósito:** "Mudar status" no detalhe: um botão por status alvo (na cor do destino) e "Cancelar solicitação".
-- **Como funciona:** `"use client"`; `moveTargets(status)` (Cancelada reabre para qualquer um); todos os botões ficam desativados enquanto um movimento está em voo. Sucesso: toast "“{prévia}” movida para {status}."; falha: toast de erro nomeando a solicitação e `router.refresh()` em `STATUS_CONFLICT`, `NO_CHANGES` e `NOT_FOUND`.
+- **Como funciona:** `"use client"`; `moveTargets(status)` (Cancelada reabre para qualquer um); todos os botões, o gatilho de "Cancelar solicitação" inclusive (`disabled={pending}` repassado ao `CancelRequestDialog`), ficam desativados enquanto um movimento está em voo. Sucesso: toast "“{prévia}” movida para {status}."; falha: toast de erro nomeando a solicitação e `router.refresh()` em `STATUS_CONFLICT`, `NO_CHANGES` e `NOT_FOUND`.
 - **Usa:** `MoveStatusButton`, `CancelRequestDialog`, `useAdminAction`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: "Cancelar solicitação" também fica desativado durante um movimento.
 
 ### CancelRequestDialog
 - **Status:** ✅ pronto (2026-11-24)
@@ -1019,7 +1019,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** cancelar a solicitação com motivo obrigatório (≤ 500 caracteres).
 - **Como funciona:** `"use client"`; `Dialog` com `Textarea` "Motivo do cancelamento"; valida com `cancelRequestSchema` antes da action (erro no campo, sem chamar o servidor); "Voltar" fecha; o motivo não volta na próxima abertura. Só fecha sozinho no sucesso (toast "Solicitação cancelada."); `fieldErrors.reason` fica no campo, `STATUS_CONFLICT`/`NO_CHANGES`/`NOT_FOUND` viram toast + fecha + `router.refresh()` (o botão de cancelar some depois do refresh), qualquer outra falha fica no pé do diálogo, aberto, com o texto.
 - **Usa:** `Dialog`, `Textarea`, `Field*`, `useAdminAction`, `cancelRequestSchema`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: prop `disabled` (padrão `false`) no gatilho, usada pelo `RequestStatusActions` durante um movimento.
 
 ### RequestTimeline
 - **Status:** ✅ pronto (2026-11-24)

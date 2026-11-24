@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P48.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P53.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -84,6 +84,11 @@
 | P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Aberto, não triado |
 | P46 | Cartão movido para uma coluna aberta e truncada some até a revalidação | ⚪ | Aberto, não triado |
 | P47 | X só com ícone do EditDialog continua sem tooltip | ⚪ | Aberto, não triado |
+| P48 | Refatorações da Fase 4 para o início da Fase 5 | 🟡 | Aberto, não triado |
+| P49 | Higiene de testes da Fase 4 | ⚪ | Aberto, não triado |
+| P50 | UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas | ⚪ | Aberto, não triado |
+| P51 | Defesa em profundidade no banco das solicitações | ⚪ | Aberto, não triado |
+| P52 | Desempenho: a CTE `last` das abertas na entrega varre todo o histórico do setor | ⚪ | Aberto, não triado |
 
 ---
 
@@ -291,6 +296,61 @@
 **Arquivos:** `src/components/ui/dialog.tsx` · `src/components/admin/EditDialog.tsx`
 **Impacto:** o botão X (só ícone) do `DialogContent` não tem tooltip, contra a regra "todo controle só com ícone ganha tooltip"; a Fase 4 resolveu nos diálogos e no Sheet novos com `showCloseButton={false}` e botão com texto, mas o `EditDialog` da Fase 2 (único uso restante) continua assim.
 **Correção:** — (opção: `EditDialog` com `showCloseButton={false}` e botão "Voltar", ou tooltip no X do primitivo)
+**Registrado em:** 2026-11-24
+
+#### P48 — Refatorações da Fase 4 para o início da Fase 5 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/requests/loaders.ts` · `src/features/requests/lists.ts` · `src/features/requests/home.ts` · `src/features/requests/open.ts` · `src/components/solicitacoes/RequestList.tsx` · `src/components/solicitacoes/RequestColumn.tsx` · `src/components/solicitacoes/RequestDetail.tsx` · `src/features/requests/messages.ts` · `test/`
+**Impacto:** nenhum defeito de comportamento; duplicações que o painel da Fase 5 copiaria e que deixam duas cópias da mesma regra divergirem. Em ordem de prioridade:
+1. `resolveScreenSector` e `paginationParams`: a resolução de setor do `RequestsScreen` é a 4ª cópia (as outras estão nas telas de passagens, como `HandoverHistory.tsx`); o painel da Fase 5 seria a 5ª. Maior prioridade: extrair antes de qualquer tela nova.
+2. `destinationNameSql` e `toOpenSummaries` compartilhados entre `home.ts` e `open.ts`: o `coalesce` do nome do destino está escrito 4 vezes.
+3. A seção compartilhada, com `renderRow`, entre `ListGroup` (`RequestList`) e `RequestColumn`: a contagem do E2E depende das duas cópias.
+4. `lockSectorShare` duplica o corpo de `loadSector` (Tarefa 7): o select, o `where` e o `canAccessSector` só diferem pelo `.for("share")`.
+5. O fixture `deactivateSector` (SQL cru com interpolação) repetido em 5 arquivos de teste (Tarefa 8).
+6. O `Promise.all` posicional (desestruturação por índice) em `lists.ts` (Tarefa 9).
+7. `dateAndTime` copiado 3 vezes (`RequestDetail.tsx`, `whenLabel` em `messages.ts` e `HandoverDetail.tsx`) (Tarefa 12).
+**Correção:** — (um commit só de refatoração, sem feature e sem mudar asserção, como o primeiro da Fase 5, no modelo de P33 e P40)
+**Registrado em:** 2026-11-24
+
+#### P49 — Higiene de testes da Fase 4 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/runAction.test.ts` · `src/features/handovers/awaiting.test.ts` · `test/fixtures.ts` · `src/db/schema/requests.test.ts` · `src/features/requests/move.test.ts` · `src/features/requests/comments.test.ts` · `src/components/solicitacoes/useRequestMove.test.tsx` · `src/components/solicitacoes/RequestDetail.test.tsx` · `e2e/solicitacoes.spec.ts` · `e2e/start-db.ts`
+**Impacto:** lacunas que não escondem defeito conhecido, só deixam uma regressão passar:
+- Tarefa 1: o caso do `redirect()` em `runAction.test.ts` usa `revalidate: null` e não confere que `revalidatePath` não foi chamado; usar `"/(app)/admin"` e acrescentar a asserção.
+- Tarefa 2: o caso de outro setor em `awaiting.test.ts` não chama `pendingIdOf`; acrescentar `expect(await pendingIdOf(biaAuthz, uld.id)).toBe(mine.id)`.
+- Tarefa 4: `insertRequest` (`test/fixtures.ts`) escreve até 4 linhas sem transação; `cancelReason` só de espaços e `destinationOther` só de espaços chegam ao banco em vez de lançar o erro do fixture; entradas contraditórias (`cancelReason` com `events: false`, `statusChangedBy` com status `requested`) são ignoradas em silêncio.
+- Tarefa 4: dois casos de FK restrict em `requests.test.ts` (setor, e "não apaga a pessoa que criou, moveu ou comentou") não provam que foram as FKs novas, porque tabelas antigas também referenciam setor e pessoa (a prova é `migration0004.test`); e o caso do padrão do banco só afirma `statusChangedAt >= createdAt`, então o `now()` do título não é provado.
+- Tarefa 7: sem teste de admin cancelando em qualquer setor nem de admin criando solicitação com origem (`move.test.ts`).
+- Tarefa 8: "o admin apaga só o próprio comentário" só confere `{ ok: true }`: conferir `deleted_at`; faltam escritas de admin em setor inativo (`SECTOR_INACTIVE`) em `comments.test.ts`.
+- Tarefa 11: o ramo `NEXT_REDIRECT` do `useRequestMove` nunca é exercitado (o mock de `unstable_rethrow` existe, nenhum caso rejeita com esse erro).
+- Tarefa 12: faltam o teto de 500 (sem "Ver comentários anteriores" com `commentsLimit` 500 e mais de 500 comentários) e o id malformado no Sheet (`RequestDetail.test.tsx`).
+- Tarefa 14: o E2E (a) não confere no banco a quantidade digitada (12).
+- E2E, log do `[app]` (Tarefa 15, investigado em 2026-11-24): na execução completa apareceu de novo, durante o caso (d), um `ERROR [Better Auth]: INTERNAL_SERVER_ERROR` com `portal "" does not exist` (código `34000`, rotina `exec_execute_message`), na consulta `select … from "session" where "session"."token" = $1` (a leitura da sessão do Better Auth), e todos os 28 testes passaram. Não é um caso negativo provocado: é o protocolo estendido do Postgres perdendo o portal sem nome, porque o `pglite-socket` (`e2e/start-db.ts`, `maxConnections` 20) serve vários clientes sobre um único backend PGlite e intercala as mensagens `Bind` e `Execute` de conexões diferentes; as leituras em paralelo (`Promise.all` do detalhe e dos grupos) aumentam a chance. É infraestrutura do E2E, não de produção (Neon é Postgres de verdade).
+**Correção:** — (opção para o último item: pool com `max: 1` só no app do E2E, ou `maxConnections` 1 no `pglite-socket`; não mexer no pool de produção. Os demais: um commit só de testes)
+**Registrado em:** 2026-11-24
+
+#### P50 — UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/solicitacoes/RequestFiltersForm.tsx` · `src/components/solicitacoes/LoadMoreButton.tsx` · `src/features/requests/choices.ts`
+**Impacto:** sem perda de dados.
+- "Intervalo" com uma das datas vazia (ou "De" depois de "Até", que o servidor já inverte) volta em silêncio para "Todo o período".
+- `LoadMoreButton` é um botão com `router.replace` (o plano mandou assim); como é só uma mudança de URL, o certo seria `<Link replace scroll={false}>` com o estilo de botão.
+- As funções de escolha de `choices.ts` recebem `sectorIds` crus: os chamadores de hoje (`RequestsScreen` e `NewHandover`) só passam ids ativos e do escopo da pessoa. Falta registrar isso como contrato em JSDoc.
+**Correção:** — (opção: validar as duas datas antes de enviar, ou avisar; trocar o botão por `Link`; escrever a nota de contrato no JSDoc das funções de escolha)
+**Registrado em:** 2026-11-24
+
+#### P51 — Defesa em profundidade no banco das solicitações ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/requests.ts` · `drizzle/0004_*.sql`
+**Impacto:** nenhum caminho do domínio liga um comentário a um evento de outra solicitação, mas o banco não impede: `request_comment.status_event_id` referencia só `request_status_event.id`, então o comentário de motivo da solicitação A poderia apontar para um evento da B (no estilo da P39).
+**Correção:** — (opção: migração aditiva com FK composta `(request_id, status_event_id)` → `(request_id, id)` e a restrição única correspondente em `request_status_event`)
+**Registrado em:** 2026-11-24
+
+#### P52 — Desempenho: a CTE `last` das abertas na entrega varre todo o histórico do setor ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/open.ts:94-117`
+**Impacto:** a CTE `last` faz `DISTINCT ON` sobre todos os eventos do setor até o instante T da entrega, então cresce com todo o histórico e roda em cada abertura de um resumo de passagem, inclusive os antigos. Sem defeito de resultado.
+**Correção:** — (limite seguro sugerido pela revisão final: acrescentar à CTE `request.created_at <= T and (request.status in ('requested','in_transit') or request.status_changed_at > T)`; vale porque `status_changed_at` sempre é o instante do último evento: uma solicitação hoje fechada com `status_changed_at <= T` estava fechada em T)
 **Registrado em:** 2026-11-24
 
 ## 2. Triado, plano pronto

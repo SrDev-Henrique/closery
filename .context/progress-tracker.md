@@ -83,7 +83,7 @@
 - ✅ Lógica pura: status, "parada" (72 h), permissões, filtros da URL, busca com dobra de acento, linha do tempo, reducer do movimento otimista, mensagens e links; schemas Zod e os códigos `STATUS_CONFLICT` e `DESTINATION_INACTIVE` (2026-11-24)
 - ✅ Domínio: criar (com origem na passagem), mover, cancelar com motivo, comentar e apagar o próprio comentário; leituras do Quadro, da Lista e da Tabela, escolhas do formulário, abertas agora, abertas na entrega e cartão do Início, tudo agregado no SQL com teste de paridade (2026-11-24)
 - ✅ Telas: `/solicitacoes` (Quadro com `useOptimistic`, Lista, Tabela com o primitivo `table`, filtros na URL, "Carregar mais"), detalhe rápido em Sheet (rota interceptada `@detalhe`) e página completa, cancelar com motivo, linha do tempo, comentários, "Nova solicitação" (também pela passagem), seção "Solicitações abertas" no formulário e no resumo, cartão no Início e "Solicitações" na navegação (2026-11-24)
-- ✅ P29, P33, P37 e P40 resolvidas; pendências novas P44–P47 (2026-11-24)
+- ✅ P29, P33, P37 e P40 resolvidas; pendências novas P44–P47 e, da revisão final, P48–P52 (2026-11-24)
 - ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 28 cenários (7 de acesso, 6 de cadastros, 6 de passagem e 9 de solicitações). Verificado: `check-types`, `lint`, `test`, `test:e2e` (28 passed) e `build` verdes (2026-11-24)
 - ⬜ Dashboard e CSV: Fase 5
 
