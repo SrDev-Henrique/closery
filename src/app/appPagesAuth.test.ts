@@ -1,6 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+
+import { listSourceFiles, stripComments } from "../../test/actionGuards";
 
 // Guarda do grupo (app): o layout não protege a página (o Next roda a página
 // mesmo que o layout troque o conteúdo, e o layout não re-renderiza na
@@ -17,12 +19,6 @@ const ANY_GUARD: readonly PageGuard[] = ["requireUser", "requireAdmin"];
 
 function guardCall(accepted: readonly PageGuard[]): RegExp {
   return new RegExp(`\\b(?:${accepted.join("|")})\\s*\\(`);
-}
-
-function stripComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
 }
 
 function componentImports(source: string): string[] {
@@ -63,11 +59,7 @@ function readComponentFromDisk(path: string): string | null {
 }
 
 function findPages(dir: string): string[] {
-  return readdirSync(dir).flatMap((name) => {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) return findPages(full);
-    return name === "page.tsx" ? [full] : [];
-  });
+  return listSourceFiles(dir, (name) => name === "page.tsx");
 }
 
 function isAdminPage(file: string): boolean {

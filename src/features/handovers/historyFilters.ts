@@ -1,3 +1,5 @@
+import { firstValue } from "@/lib/searchParams";
+
 import { HISTORY_MAX_DAYS } from "./limits";
 import { addDays, daysBetween, isIsoDate } from "./saoPaulo";
 import type { HistorySituation } from "./status";
@@ -28,10 +30,6 @@ type Params = Record<string, string | string[] | undefined>;
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 function situationFromParam(param: string | undefined): HistorySituationFilter {
   const entry = Object.entries(SITUATION_PARAM).find(

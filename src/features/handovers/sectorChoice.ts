@@ -1,4 +1,5 @@
 import type { SectorChoice } from "@/features/admin/sectors";
+import { firstValue } from "@/lib/searchParams";
 
 import { ALL_SECTORS } from "./limits";
 
@@ -6,10 +7,6 @@ export type SectorSelection =
   | { kind: "sector"; sector: SectorChoice }
   | { kind: "all" }
   | { kind: "none" };
-
-function firstValue(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
 
 /**
  * Setor que o admin vê: URL "todos" (só com allowAll) → todos; URL na lista →
