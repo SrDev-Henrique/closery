@@ -11,11 +11,13 @@
 
 ## ▸ Próximo passo
 
-- **2026-11-21 — Fases 0, 1 e 2 concluídas. Próximo: plano de implementação da Fase 3 (Passagem:
-  rascunho, entregar, receber, corrigir, histórico)** com a skill `writing-plans`, a partir da spec
-  §13 (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). Os cadastros que a
-  passagem usa (setores, turnos, itens, destinos) e a equipe já existem em `/admin`; falta a tela do
-  operador que os usa.
+- **2026-11-21 — Fases 0, 1, 2 e 3 concluídas. Próximo: plano de implementação da Fase 4
+  (Solicitações: quadro · lista · tabela, detalhe, comentários e a ligação com a passagem)** com a
+  skill `writing-plans`, a partir da spec §13
+  (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). A passagem já está
+  inteira (formulário, receber, corrigir e histórico) e **não** mostra solicitações (D-F3-1): a
+  Fase 4 acrescenta a seção "Solicitações abertas" ao formulário e ao resumo e a ligação passagem →
+  solicitação.
 - **Neon ligado** (P1 resolvida, 2026-11-20). P6/P7/P8 só travam Apple, Facebook e "esqueci a
   senha".
 
@@ -64,6 +66,17 @@
 - ✅ P11 e P18 resolvidas; pendências novas P23 (editar o nome de uma pessoa) e P24 (ordem alfabética ignora acento) (2026-11-21)
 - ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 13 cenários (7 de acesso e 6 de cadastros). Verificado: `check-types`, `lint`, `test`, `test:e2e` (13 passed) e `build` verdes (2026-11-21)
 
+## Fase 3 — Passagem · ✅
+
+- ✅ Schema: `handover`, `handover_item`, `handover_correction`, CHECKs de estado e de quantidade, um índice por FK e migração `0003_fase3_passagem` (2026-11-21)
+- ✅ Lógica pura: fuso de São Paulo, dia operacional, turno sugerido, quantidade, permissões (`handoverCapabilities`), diff de correção, situações, filtros do histórico, links e escolha de setor (2026-11-21)
+- ✅ Contrato das actions: 10 códigos novos em `AdminErrorCode`, `runHandoverAction` e os guardas da P27 (`actionsGuards.test.ts`, `requireAdmin` em `admin/`) (2026-11-21)
+- ✅ Domínio: rascunho sem escrita no GET, salvamento por campo, entregar, confirmar, resumo, correção com motivo e rastro, histórico com "sem passagem" no SQL e cartões do Início (2026-11-21)
+- ✅ Telas: Início com os dois cartões, formulário com salvamento automático, resumo com confirmação, correção, histórico com filtros e seletor de setor do admin (2026-11-21)
+- ✅ P26 e P27 resolvidas; pendências novas P33–P36 (2026-11-21)
+- ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 19 cenários (7 de acesso, 6 de cadastros e 6 de passagem). Verificado: `check-types`, `lint`, `test`, `test:e2e` (19 passed) e `build` verdes (2026-11-21)
+- ⬜ Solicitações na passagem: Fase 4
+
 ## Histórico
 
 - **2026-11-20** — Projeto criado; contexto escrito; planilha analisada; brainstorm concluído
@@ -71,3 +84,4 @@
 - **2026-11-20** — Fases 0 e 1 concluídas: fundação de testes (Vitest, PGlite, Testing Library, Playwright) e acesso por convite (Better Auth, papéis por setor, telas e shell). Plano em `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 - **2026-11-20** — Correções da revisão final: renovação da sessão (servidor lê sem refresh, `SessionKeepAlive` renova banco e cookie), limite de tentativas 30/10 com mensagem própria (`RATE_LIMITED`), link "Entrar" nos convites e no e-mail já cadastrado, testes de escalonamento, guarda de páginas `appPagesAuth.test.ts` (no lugar do `RequireUser`) e pendências P11–P22.
 - **2026-11-21** — Fase 2 concluída: cadastros e equipe em `/admin` (setores, turnos, itens, destinos, pessoas e convites), P11 e P18 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-2-cadastros.md`.
+- **2026-11-21** — Fase 3 concluída: passagem de turno de ponta a ponta (rascunho com salvamento automático, entregar, receber, corrigir com motivo e histórico), P26 e P27 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.

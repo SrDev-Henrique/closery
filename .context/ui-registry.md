@@ -270,7 +270,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold).
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`.
 
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)
@@ -652,6 +652,180 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Como funciona:** `"use client"`; botão "Cancelar convite" (`aria-label` `Cancelar convite {nome ou "sem nome"}`) abre `ConfirmDialog` ("O link deixa de funcionar. Não dá para desfazer."); sucesso = toast "Convite cancelado." e diálogo fechado; recusa (convite que já não está pendente) aparece no diálogo, que fica aberto.
 - **Usa:** `ConfirmDialog`, `useAdminAction`, `Button`.
 - **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10).
+
+### Passagem de turno — `src/components/passagens/*` (Fase 3)
+
+Componentes da passagem. Regras comuns: só tokens de cor, tema claro e escuro, situação sempre com
+ícone e texto, alvo de toque ≥ 44px no celular. Quem escolhe o setor é o admin (`SectorPicker`);
+o operador usa o próprio setor e nunca vê o seletor.
+
+### SectorPicker
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/SectorPicker.tsx`
+- **Propósito:** o admin escolher o setor no Início, na Nova passagem e no Histórico (D-F3-3).
+- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
+- **Usa:** `Button`, `FieldSet`, `FieldLegend`, `chooseSectorAction`, `sonner`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### HandoverStatusBadge
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverStatusBadge.tsx`
+- **Propósito:** mostrar a situação da passagem (aguardando, confirmada, não confirmada, sem passagem) e o selo "Corrigida".
+- **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-muted`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
+- **Usa:** `Badge`, tokens `info`, `success`, `warning`, `muted`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### PendingHandoverCard
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/PendingHandoverCard.tsx`
+- **Propósito:** cartão do topo do Início "Passagem para confirmar".
+- **Como funciona:** Server-safe. Mostra `{turno} · {dd/mm/aaaa}`, "Entregue às {HH:mm} por {nome}", o bloco "Fica para o próximo turno" em destaque (trecho do texto ou "Nada registrado para o próximo turno.") e o link-botão "Ver passagem" (`/passagens/{id}`). Não confirma aqui: a confirmação é no resumo.
+- **Usa:** `Card`, `buttonVariants`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### MyShiftCard
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/MyShiftCard.tsx`
+- **Propósito:** cartão "Passagem do meu turno" do Início, nos cinco estados.
+- **Como funciona:** Server-safe. Mostra `{turno} · {início}–{fim} · {data}` (horário com `tabular-nums`) e "Turno sugerido pelo horário de agora.". `start` → "Começar passagem"; `continue` → "Rascunho salvo às {HH:mm} por {nome}" + "Continuar passagem"; `delivered` → "Entregue às … Aguardando recebimento." + "Ver passagem"; `confirmed` → "Entregue por … Confirmada por …" + "Ver passagem"; `no-shifts` → "Nenhum turno neste setor." (admin: link "Ir para Turnos"). Todos, menos `no-shifts`, trazem o link "Ver todas as passagens". Admin leva `&setor=` no link de começar.
+- **Usa:** `Card`, `buttonVariants`, `newHandoverHref`, `handoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### HomeHandovers
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HomeHandovers.tsx`
+- **Propósito:** os cartões de passagem do Início.
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveHandoverSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Sem cartão de solicitações (Fase 4).
+- **Usa:** `getHomeHandovers`, `resolveHandoverSector`, `readRememberedSector`, `EmptyState`, `SectorPicker`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+
+### QuantityCounter
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/QuantityCounter.tsx`
+- **Propósito:** contagem inteira de 0 a 99.999 com −/+ e digitação (ui-rules §2.2: número nunca em branco).
+- **Como funciona:** `"use client"`, controlado (`value`, `onChange`, `onCommit`). `<fieldset>` com legenda do item (só para leitor de tela); botão − (`aria-label` `Diminuir {item}`, tooltip "Diminuir", trava em 0), campo (`inputMode="numeric"`, `maxLength={5}`, `text-base tabular-nums text-center`, `aria-label` `Quantidade de {item}`, seleciona tudo ao receber foco) e botão + (`Aumentar {item}`, tooltip "Aumentar", trava no teto). Só dígitos; zeros à esquerda somem. O campo pode ficar vazio só no buffer enquanto se digita: ao sair vira 0 e chama `onChange(0)` e `onCommit(0)`. −/+ chamam `onChange` e `onCommit`. Alvos `size-9 max-md:size-11` (campo `h-9 max-md:h-11`). A unidade fica em texto ao lado.
+- **Usa:** `Button` (`icon`), `Input`, `Tooltip`, `sanitizeQuantityInput`, `parseQuantity`, `stepQuantity`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### useHandoverAutosave
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/useHandoverAutosave.ts`
+- **Propósito:** salvamento automático por campo da passagem (F3-3).
+- **Como funciona:** `"use client"`. `change(campo)` agenda o envio com debounce de 800 ms por campo; `commit(campo)` envia já (onBlur, −/+). **Fila serial**: uma requisição em voo por vez, e o valor mais novo de cada campo vence (chave `occurrences`, `nextShift`, `quantity:{item}`, `note:{item}`). Falha (`ok: false` ou exceção) vira `status: error`, mantém o digitado e **para a fila** até `retry()`; o evento `online` também reenvia. `flush()` envia tudo e devolve `true` só se nada ficou sem salvar (o botão "Entregar turno" e a troca de turno/data dependem disso). `beforeunload` só enquanto houver algo não salvo; ao desmontar, envia o pendente sem esperar. Nunca lança. Não revalida a tela: a action de salvar não chama `revalidatePath`.
+- **Usa:** `saveHandoverFieldAction` (injetada), `AUTOSAVE_DEBOUNCE_MS`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### AutosaveIndicator
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/AutosaveIndicator.tsx`
+- **Propósito:** dizer, em texto, o estado do salvamento automático.
+- **Como funciona:** `"use client"`. `<output aria-live="polite">` (papel `status`) com "Salvando…", "Salvo às {HH:mm}", "Último salvamento às {HH:mm} por {nome}" (estado inicial vindo do servidor), "Nada salvo ainda." ou, no erro, "Não salvo." + a mensagem + botão "Tentar de novo" (`outline`, `sm`). Cada estado leva um ícone decorativo (`aria-hidden`) ao lado do texto.
+- **Usa:** `Button`, `formatTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8); 2026-11-21 — ícones por estado (revisão final).
+
+### ItemLineField
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/ItemLineField.tsx`
+- **Propósito:** uma linha de item da passagem: nome, contador e observação opcional.
+- **Como funciona:** `"use client"`; renderiza um `<li>` (a lista é do `HandoverFields`). Nome em `font-medium`, `QuantityCounter` e o botão "Adicionar observação" (`aria-label` `Adicionar observação em {item}`) que revela o campo `Observação de {item}` (`maxLength` 200, `text-base`); a observação já vem aberta quando existe. Digitar chama `onNoteChange`; sair do campo chama `onNoteCommit`.
+- **Usa:** `QuantityCounter`, `Button`, `Input`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### HandoverFields
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverFields.tsx`
+- **Propósito:** o corpo do formulário da passagem, sem estado próprio (reaproveitado pela correção com motivo).
+- **Como funciona:** `"use client"`. Seções Controles ("Soma no período, como redes danificadas.") e Estoque ("Contagem de agora. Vale a última, nunca a soma."), só as que têm itens; sem nenhum item, `EmptyState` "Nenhum item neste setor." (admin: link "Ir para Itens"). Depois "Ocorrências do turno" e "Fica para o próximo turno" (`Textarea` `text-base`, `maxLength` 2.000, contador "{n} de 2.000 caracteres" só a partir de 90%; a segunda com destaque `border-warning-foreground/40 bg-warning/30` e ícone). Valores e eventos (`onChange`, `onCommit`) vêm do pai.
+- **Usa:** `ItemLineField`, `EmptyState`, `Field*`, `Textarea`, tokens `warning`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### HandoverHeader
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverHeader.tsx`
+- **Propósito:** setor, turno e data do formulário (D-F3-2).
+- **Como funciona:** `"use client"`. Setor em texto; `SelectField` "Turno" (`{nome} ({início}–{fim})`) e `<input type="date">` "Data" (`min` = hoje − 31 dias, `max` = hoje; valor vazio ou fora da janela é ignorado). Trocar turno ou data chama `beforeNavigate` (o `flush` do salvamento) e só então `router.push` para `/passagens/nova?turno=&data=` (+ `&setor=` do admin); a troca de turno mantém a data e vice-versa. A data só vale ao sair do campo, com Enter ou depois de 700 ms sem digitar (digitar "15" pelo teclado não salta para o dia 01). Prop `onPendingChange(pending)` avisa o formulário enquanto uma troca está em andamento. Se não deu para salvar, toast "Não foi possível salvar. Tente de novo antes de trocar de turno." e não navega. Campos desabilitados enquanto salva ou navega.
+- **Usa:** `SelectField`, `Field*`, `Input`, `newHandoverHref`, `sonner`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: data por blur/Enter/pausa de 700 ms e `onPendingChange`.
+
+### HandoverForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverForm.tsx`
+- **Propósito:** formulário da passagem com salvamento automático e "Entregar turno".
+- **Como funciona:** `"use client"`; o chamador põe `key={turno:data}` para remontar ao trocar. Estado controlado dos valores (nunca em branco: `0` e textos vazios), `useHandoverAutosave`, `HandoverHeader` (modo `draft`), `HandoverFields` e `AutosaveIndicator`. **Entregar turno** faz `flush()` antes; se algo ficou sem salvar, mostra "Há alterações sem salvar. Toque em “Tentar de novo” e entregue de novo." e não entrega; com sucesso, toast "Turno entregue." e navega para o resumo (o botão fica travado até a navegação); `ALREADY_DELIVERED` e outras falhas aparecem no próprio formulário, sem perder o digitado. Sem diálogo de confirmação. Enquanto uma troca de turno ou data está em andamento, os campos e "Entregar turno" ficam travados e `deliver()` recusa. No modo `edit` (passagem entregue) não há cabeçalho nem botão, só o botão "Ver resumo" (espera o `flush()` e então navega; se o salvamento falhar, fica na tela e mostra "Há alterações sem salvar. Toque em “Tentar de novo” antes de ver o resumo.").
+- **Usa:** `useHandoverAutosave`, `useAdminAction`, `saveHandoverFieldAction`, `deliverHandoverAction`, `HandoverHeader`, `HandoverFields`, `AutosaveIndicator`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-22 — revisão final: trava durante a troca de turno/data; "Ver resumo" com mensagem própria.
+
+### NewHandover
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/NewHandover.tsx`
+- **Propósito:** a página `/passagens/nova`.
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>`. `requireUser()`; operador usa o próprio setor, admin escolhe (`resolveHandoverSector` + `SectorPicker`). Turno e data vêm de `resolveHandoverTarget` (URL válida ou sugestão pelo horário). **GET nunca escreve**: o rascunho nasce no primeiro salvamento. Combinação já entregue ou confirmada redireciona para o resumo. Estados vazios: sem setor ativo, setor inativo, sem turnos (admin: link "Ir para Turnos").
+- **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `HandoverForm`, `SectorPicker`, `EmptyState`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8).
+
+### SummaryItemList
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/SummaryItemList.tsx`
+- **Propósito:** lista de itens de uma seção do resumo da passagem (Controles ou Estoque).
+- **Como funciona:** server-safe; `<section aria-labelledby>` com `<h2>` e `<ul>`; cada linha mostra o nome, `{quantidade} {unidade}` à direita com `tabular-nums` (milhar em pt-BR) e a observação em `text-muted-foreground`; sem itens não escreve nada (nem o título).
+- **Usa:** tokens `border`, `muted-foreground`; `formatQuantity`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
+### CorrectionsTimeline
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/CorrectionsTimeline.tsx`
+- **Propósito:** mostrar as correções de uma passagem confirmada (D13) como linha do tempo.
+- **Como funciona:** server-safe; `<ol>` com uma entrada por campo corrigido: rótulo (`correctionFieldLabel`), `antigo → novo` (`(vazio)` para texto vazio), `Motivo: …` e `{nome} · {dd/mm/aaaa, HH:mm}`; ordem recebida (a consulta já ordena por data); sem correções não escreve nada.
+- **Usa:** tokens `border`, `muted-foreground`; `formatDateTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
+### ConfirmReceiptForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/ConfirmReceiptForm.tsx`
+- **Propósito:** confirmar o recebimento de uma passagem entregue, com observação opcional.
+- **Como funciona:** `"use client"`; formulário controlado: `Textarea` "Observação do recebimento (opcional)" (500 caracteres) e botão "Confirmar recebimento" (pendente: "Confirmando…", desabilitado, um envio só); valida com `confirmHandoverSchema` antes de chamar `confirmHandoverAction`; sucesso = toast "Recebimento confirmado." (a action revalida a página, que passa a mostrar a passagem confirmada); recusa aparece inline (no campo, se for da observação; senão abaixo dele) sem toast, e o que foi digitado fica.
+- **Usa:** `useAdminAction`, `Button`, `Field*`, `Textarea`, `sonner`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9).
+
+### HandoverDetail
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverDetail.tsx`
+- **Propósito:** resumo de `/passagens/[id]` na ordem do briefing (F3-10).
+- **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens".
+- **Usa:** `getHandoverSummary`, `getHandoverFormStateById`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverForm`, `CorrectionForm`, `HandoverStatusBadge`, `buttonVariants`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo.
+
+### HandoverHistory
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HandoverHistory.tsx` (server, async)
+- **Propósito:** conteúdo de `/passagens`: o histórico de passagens, do dia mais recente ao mais antigo.
+- **Como funciona:** chama `requireUser()`, interpreta os filtros da URL (`parseHistoryFilters`, dia de hoje em São Paulo) e lê `listHandoverHistory` (50 por página, `?pagina=` clampada). Operador usa o próprio setor e nunca vê o seletor; admin vê o `SectorPicker` com "Todos os setores" (que não grava cookie) e o setor vem de `?setor=`, do cookie ou do primeiro ativo. Ordem na tela: título, seletor (admin), `HistoryFilters`, "Período: dd/mm/aaaa a dd/mm/aaaa", lista de `HistoryRowItem` (ou o estado vazio "Nenhuma passagem neste período.") e `Pagination` com os filtros e o setor preservados. Setor inativo (operador) ou nenhum setor ativo (admin) mostram `EmptyState`.
+- **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+
+### HistoryFilters
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HistoryFilters.tsx`
+- **Propósito:** filtros do histórico (período, turno, situação) que vivem na URL.
+- **Como funciona:** `"use client"`; formulário controlado que nunca começa em branco (os valores vêm da URL já interpretada: 7 dias, todos os turnos, todas as situações). `SelectField` "Período" (Últimos 7 dias, Últimos 30 dias, Intervalo), "Turno" (só quando há turnos do setor: some em "Todos os setores"), "Situação" e, no Intervalo, `De` e `Até` (`type="date"`, já preenchidos com o período atual). "Aplicar filtros" navega com `router.push(buildHistoryHref(…))` (volta à página 1 e preserva o setor do admin); "Limpar filtros" é um `<Link>` para `/passagens` (preserva só `?setor=`).
+- **Usa:** `SelectField`, `Field`, `Input`, `Button`, `buttonVariants`, `buildHistoryHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+
+### HistoryRowItem
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/HistoryRowItem.tsx` (server-safe)
+- **Propósito:** uma linha do histórico: o dia, o turno, quem entregou e a situação.
+- **Como funciona:** reaproveita `AdminListRow`. Título `dd/mm/aaaa · {turno}` (data com `tabular-nums`); subtítulo com o setor (só quando `showSector`) e "Entregue por {nome} às {HH:mm}" (ausente em "sem passagem"); `HandoverStatusBadge` com o selo "Corrigida" quando há correção. Link da linha: "Abrir" (`aria-label` "Abrir passagem de {turno} em {data}") para a passagem; em "sem passagem" o link é "Entregar turno" ou, se há rascunho, "Continuar passagem", para o turno e o dia daquela linha (o setor da linha vai em `?setor=` só para o admin). Com `minDate` (hoje − 31 dias) a linha "sem passagem" mais antiga que isso não mostra ação, porque o link cairia no turno sugerido de hoje.
+- **Usa:** `AdminListRow`, `HandoverStatusBadge`, `buttonVariants`, `handoverHref`, `newHandoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10); 2026-11-21 — prop `minDate` (revisão final).
+
+### CorrectionForm
+- **Status:** ✅ pronto (2026-11-21)
+- **Local:** `src/components/passagens/CorrectionForm.tsx`
+- **Propósito:** o admin corrige uma passagem já confirmada, com motivo e rastro (D13).
+- **Como funciona:** `"use client"`; reaproveita `HandoverFields` com estado local (sem salvamento automático: nada é gravado até o envio) e acrescenta `Textarea` "Motivo da correção" (obrigatório, 500 caracteres); "Registrar correção" (pendente: "Registrando…") valida com `correctHandoverSchema` e manda o estado completo desejado; o servidor calcula o diff. Sucesso = toast "Correção registrada." e volta ao resumo (que mostra o selo "Corrigida"); recusa (motivo, `NO_CHANGES`, `FORBIDDEN`) aparece inline, sem toast, e nada do que foi digitado se perde. Link "Cancelar" volta ao resumo.
+- **Usa:** `HandoverFields`, `useAdminAction`, `Button`, `Field*`, `Textarea`, `sonner`, `useRouter`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 11).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

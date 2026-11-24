@@ -8,6 +8,16 @@ export type AdminErrorCode =
   | "SELF_CHANGE"
   | "LAST_ADMIN"
   | "INVITE_NOT_PENDING"
+  | "SHIFT_INACTIVE"
+  | "DATE_OUT_OF_RANGE"
+  | "FORBIDDEN"
+  | "HANDOVER_LOCKED"
+  | "ALREADY_DELIVERED"
+  | "NOT_DELIVERED"
+  | "ALREADY_CONFIRMED"
+  | "OWN_HANDOVER"
+  | "NOT_CONFIRMED"
+  | "NO_CHANGES"
   | "INTERNAL";
 
 /** Chave = nome do campo do formulário; valor = mensagem pt-BR do campo. */

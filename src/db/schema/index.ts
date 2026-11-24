@@ -2,5 +2,6 @@
 // → bun run db:migrate.
 export * from "./auth";
 export * from "./catalog";
+export * from "./handovers";
 export * from "./invites";
 export * from "./sectors";

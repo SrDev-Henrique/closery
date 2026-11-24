@@ -23,6 +23,9 @@ export const TABLES: readonly string[] = [
   "shift",
   "item",
   "destination",
+  "handover",
+  "handover_item",
+  "handover_correction",
 ];
 
 // O dump migrado é lido uma vez por processo de worker.

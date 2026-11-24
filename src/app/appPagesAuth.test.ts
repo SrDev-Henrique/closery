@@ -5,12 +5,19 @@ import { describe, expect, it } from "vitest";
 // Guarda do grupo (app): o layout não protege a página (o Next roda a página
 // mesmo que o layout troque o conteúdo, e o layout não re-renderiza na
 // navegação no cliente). Toda página precisa chamar requireUser/requireAdmin
-// ela mesma ou num componente que importa direto de "@/components/...".
+// ela mesma ou num componente que importa direto de "@/components/...". Sob
+// admin/ só requireAdmin vale (P27): requireUser deixaria um operador abrir a
+// tela do administrador.
 
 const ROOT = process.cwd();
 const APP_GROUP = join(ROOT, "src", "app", "(app)");
 
-const GUARD_CALL = /\brequire(User|Admin)\s*\(/;
+type PageGuard = "requireUser" | "requireAdmin";
+const ANY_GUARD: readonly PageGuard[] = ["requireUser", "requireAdmin"];
+
+function guardCall(accepted: readonly PageGuard[]): RegExp {
+  return new RegExp(`\\b(?:${accepted.join("|")})\\s*\\(`);
+}
 
 function stripComments(source: string): string {
   return source
@@ -35,15 +42,18 @@ function resolveComponent(path: string): string | null {
   return null;
 }
 
-// Verdadeiro se a página, ou um componente que ela importa direto, chama o guarda.
+// Verdadeiro se a página, ou um componente que ela importa direto, chama um dos
+// guardas aceitos.
 export function pageCallsAuthGuard(
   pageSource: string,
   readComponent: (path: string) => string | null,
+  accepted: readonly PageGuard[] = ANY_GUARD,
 ): boolean {
-  if (GUARD_CALL.test(stripComments(pageSource))) return true;
+  const call = guardCall(accepted);
+  if (call.test(stripComments(pageSource))) return true;
   return componentImports(pageSource).some((path) => {
     const source = readComponent(path);
-    return source !== null && GUARD_CALL.test(stripComments(source));
+    return source !== null && call.test(stripComments(source));
   });
 }
 
@@ -60,11 +70,15 @@ function findPages(dir: string): string[] {
   });
 }
 
+function isAdminPage(file: string): boolean {
+  return relative(APP_GROUP, file).replaceAll("\\", "/").startsWith("admin/");
+}
+
 describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => {
   const pages = findPages(APP_GROUP);
 
   it("encontra as páginas do grupo", () => {
-    expect(pages.length).toBeGreaterThanOrEqual(9);
+    expect(pages.length).toBeGreaterThanOrEqual(12);
   });
 
   it("inclui a página de cada rota de /admin", () => {
@@ -83,11 +97,21 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
     }
   });
 
-  it("nenhuma página de /admin exporta metadata (T12)", () => {
-    const adminPages = pages.filter((file) =>
-      relative(APP_GROUP, file).replaceAll("\\", "/").startsWith("admin/"),
+  it("inclui a página de cada rota de /passagens", () => {
+    const routes = pages.map((file) =>
+      relative(APP_GROUP, file).replaceAll("\\", "/"),
     );
-    for (const file of adminPages) {
+    for (const route of [
+      "passagens/page.tsx",
+      "passagens/nova/page.tsx",
+      "passagens/[id]/page.tsx",
+    ]) {
+      expect(routes).toContain(route);
+    }
+  });
+
+  it("nenhuma página de /admin exporta metadata (T12)", () => {
+    for (const file of pages.filter(isAdminPage)) {
       expect(readFileSync(file, "utf8"), file).not.toMatch(
         /export\s+(const\s+metadata|(async\s+)?function\s+generateMetadata)\b/,
       );
@@ -97,13 +121,17 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
   it.each(
     pages.map((file) => [relative(ROOT, file).replaceAll("\\", "/"), file]),
   )("%s", (name, file) => {
+    const admin = isAdminPage(file as string);
     const ok = pageCallsAuthGuard(
       readFileSync(file as string, "utf8"),
       readComponentFromDisk,
+      admin ? ["requireAdmin"] : ANY_GUARD,
     );
     expect(
       ok,
-      `${name} não chama requireUser/requireAdmin (nem direto, nem num componente importado de @/components). O layout não protege a página.`,
+      admin
+        ? `${name} não chama requireAdmin (nem direto, nem num componente importado de @/components). Sob admin/ só requireAdmin vale.`
+        : `${name} não chama requireUser/requireAdmin (nem direto, nem num componente importado de @/components). O layout não protege a página.`,
     ).toBe(true);
   });
 });
@@ -136,5 +164,39 @@ describe("pageCallsAuthGuard (o guarda de fato falha)", () => {
   it("chamada no componente importado → true", () => {
     const page = `import { Lista } from "@/components/x/Lista";`;
     expect(pageCallsAuthGuard(page, () => "await requireAdmin();")).toBe(true);
+  });
+
+  it("com ['requireAdmin'], só requireUser não basta (página de admin)", () => {
+    const page = `async function C() { await requireUser(); }`;
+    expect(pageCallsAuthGuard(page, noComponents, ["requireAdmin"])).toBe(
+      false,
+    );
+    const viaComponent = `import { Lista } from "@/components/x/Lista";`;
+    expect(
+      pageCallsAuthGuard(viaComponent, () => "await requireUser();", [
+        "requireAdmin",
+      ]),
+    ).toBe(false);
+  });
+
+  it("com ['requireAdmin'], requireAdmin na página ou no componente passa", () => {
+    expect(
+      pageCallsAuthGuard("await requireAdmin();", noComponents, [
+        "requireAdmin",
+      ]),
+    ).toBe(true);
+    const viaComponent = `import { Lista } from "@/components/x/Lista";`;
+    expect(
+      pageCallsAuthGuard(viaComponent, () => "await requireAdmin();", [
+        "requireAdmin",
+      ]),
+    ).toBe(true);
+  });
+
+  it("o padrão aceita requireUser; um nome parecido não conta", () => {
+    expect(pageCallsAuthGuard("await requireUser();", noComponents)).toBe(true);
+    expect(pageCallsAuthGuard("await requireUserOrNot();", noComponents)).toBe(
+      false,
+    );
   });
 });

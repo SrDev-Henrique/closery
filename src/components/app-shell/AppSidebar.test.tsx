@@ -46,8 +46,13 @@ describe("AppSidebar", () => {
     mocks.pathname = "/";
   });
 
-  it("operador vê Início e Conta, e não vê Administração", () => {
+  it("operador vê Início, Passagens e Conta, e não vê Administração", () => {
     renderSidebar({ isAdmin: false });
+
+    expect(screen.getByRole("link", { name: "Passagens" })).toHaveAttribute(
+      "href",
+      "/passagens",
+    );
 
     expect(screen.getByRole("link", { name: "Início" })).toHaveAttribute(
       "href",
@@ -85,6 +90,19 @@ describe("AppSidebar", () => {
     expect(
       screen.getByRole("link", { name: "Administração" }),
     ).not.toHaveAttribute("aria-current");
+  });
+
+  it("Passagens fica ativo em /passagens/nova e Início não", () => {
+    mocks.pathname = "/passagens/nova";
+    renderSidebar();
+
+    expect(screen.getByRole("link", { name: "Passagens" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Início" })).not.toHaveAttribute(
+      "aria-current",
+    );
   });
 
   it("Início fica ativo na raiz", () => {

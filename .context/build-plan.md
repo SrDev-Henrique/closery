@@ -45,7 +45,7 @@ Detalhe completo na spec: `docs/superpowers/specs/2026-11-20-closery-passagem-de
 | **0 — Fundação** | scaffold e contexto ✅ · Neon + driver `pg` (P1, D18) ✅ · PGlite + Vitest + Playwright ✅ · tokens da D16 ✅ | ✅ |
 | **1 — Acesso** | Better Auth (e-mail + senha, Google, passkey; Apple/Facebook quando P6/P7 resolvidas), convites, `admin:invite`, shell de navegação, escopo por setor | ✅ |
 | **2 — Cadastros** | setores, turnos, itens, destinos, equipe | ✅ |
-| **3 — Passagem** | rascunho, entregar, receber, corrigir, histórico | ⬜ |
+| **3 — Passagem** | rascunho, entregar, receber, corrigir, histórico | ✅ |
 | **4 — Solicitações** | quadro · lista · tabela, detalhe, comentários, ligação com a passagem | ⬜ |
 | **5 — Dashboard** | consultas, `metric-card` e `spending-ring` adaptados, CSV | ⬜ |
 | **6 — Produção** | Vercel, domínio, e-mail (P8), piloto de uma semana com a equipe | ⬜ |

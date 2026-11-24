@@ -33,10 +33,9 @@ describe("Greeting", () => {
       screen.getByRole("heading", { level: 1, name: "Olá, Maria" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "Em breve: passagem de turno, solicitações e dashboard.",
-      ),
+      screen.getByText("Em breve: solicitações e dashboard."),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/passagem de turno/)).not.toBeInTheDocument();
   });
 
   it("nome vazio não deixa vírgula solta", async () => {

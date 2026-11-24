@@ -1,4 +1,10 @@
-import { House, type LucideIcon, ShieldCheck, UserRound } from "lucide-react";
+import {
+  ClipboardList,
+  House,
+  type LucideIcon,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 
 export type NavItem = {
   href: string;
@@ -9,6 +15,12 @@ export type NavItem = {
 
 export const NAV_ITEMS: readonly NavItem[] = [
   { href: "/", label: "Início", icon: House, adminOnly: false },
+  {
+    href: "/passagens",
+    label: "Passagens",
+    icon: ClipboardList,
+    adminOnly: false,
+  },
   { href: "/conta", label: "Conta", icon: UserRound, adminOnly: false },
   {
     href: "/admin",

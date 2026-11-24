@@ -1,4 +1,4 @@
-# Memory — Fases 0, 1 e 2 concluídas; o próximo passo é o plano da Fase 3
+# Memory — Fases 0 a 3 concluídas; o próximo passo é o plano da Fase 4
 
 Last updated: 2026-11-21 (UTC-3)
 
@@ -18,14 +18,26 @@ turno avisa sobreposição, ordem por botões ↑ ↓, unidade do item por escol
 papel, setor, desativação (que derruba as sessões, P11) e convites com link para copiar ou compartilhar.
 Plano executado em `docs/superpowers/plans/2026-11-21-fase-2-cadastros.md`.
 
+**Passagem pronta (Fase 3).** O Início (`/`) mostra "Passagem para confirmar" (a mais recente entregue do
+setor, para quem não a entregou) e "Passagem do meu turno"; `/passagens/nova` abre o formulário do turno
+certo sem digitar nada (turno e dia sugeridos pelo relógio de São Paulo, números em `0`) com salvamento
+automático por campo e "Entregar turno"; `/passagens/[id]` é o resumo na ordem do briefing com "Confirmar
+recebimento" (quem entregou não confirma); quem entregou ainda edita até a confirmação, depois só o admin
+corrige, com motivo e uma linha de rastro por campo; `/passagens` é o histórico com filtros na URL, "sem
+passagem", "não confirmada" e o selo "Corrigida". O admin escolhe o setor na tela (URL + cookie). Solicitações
+não aparecem (Fase 4). Plano executado em `docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.
+
 O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
 18 decisões em `.context/build-plan.md §5`) e o plano executado em
 `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 
 ## O que está esperando
 
-- **Plano da Fase 3 (skill `writing-plans`):** Passagem — rascunho, entregar, receber, corrigir,
-  histórico. Usa os setores, turnos e itens já cadastrados; ainda não há tela de operador para eles.
+- **Plano da Fase 4 (skill `writing-plans`):** Solicitações — quadro · lista · tabela, detalhe,
+  comentários e a ligação passagem → solicitação (a passagem já existe e não mostra solicitações, D-F3-1).
+- **P33–P36 (Fase 3):** unificar os runners das actions (P33); "sem passagem" usa os horários atuais do
+  turno (P34); o cartão "Passagem para confirmar" não tem teto de idade (P35); dois operadores no mesmo
+  rascunho: o último a salvar vence (P36).
 - **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
 - **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
@@ -75,3 +87,16 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **PGlite não prova o "último admin"**: a garantia é `SELECT … FOR UPDATE` no SQL, provada em sequência.
 - **Neon de dev:** collation `C.UTF-8`; `lower('ÁGUA') = lower('água')`, então nomes acentuados colidem
   sem diferença de caixa também em produção.
+- **Passagem (Fase 3):** GET nunca escreve: o rascunho nasce no primeiro salvamento e a identidade dele é
+  setor + turno + dia operacional (nunca um id guardado no cliente). O salvamento automático **não** chama
+  `revalidatePath` (re-renderizaria a tela enquanto a pessoa digita); só entregar, confirmar e corrigir
+  revalidam. Confirmada não muda: só `correctHandover` (admin, motivo, uma linha por campo).
+- **Dia operacional** de um turno que atravessa a meia-noite é o dia em que ele **começou**; o fuso é
+  `America/Sao_Paulo` via `Intl`. Teste de tempo usa `spDate()` (`test/clock.ts`), nunca o relógio real.
+- **Next 16 mantém a página anterior escondida** ao navegar: no Playwright `getByText` casa texto
+  escondido e o modo estrito reprova; use `.filter({ visible: true })` (helper `text()` de
+  `e2e/passagem.spec.ts`) e consultas por papel.
+- **E2E da passagem não depende do relógio:** turno `00:00–23:59` e `?turno=&data=` de hoje em São
+  Paulo; só o cenário do cartão do Início usa o relógio real.
+- **Setor do admin** vem de `?setor=` e do cookie `closery_setor` (gravado só por Server Action, lido
+  dentro de `<Suspense>`); "Todos os setores" é só do histórico e não grava cookie.

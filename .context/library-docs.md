@@ -191,9 +191,9 @@
 - **Permissão em teste de domínio e de action:** `authzOf({ role, … })` (`test/authz.ts`) monta o
   `Authz` (admin sempre com `sectorId` nulo); a action de operador, com `requireAdmin` mockado para
   lançar `notFound`, não toca o banco. **Guardas estáticos** que leem arquivos: `appPagesAuth.test.ts`
-  (páginas), `actionsAuth.test.ts` e `actionsInventory.test.ts` (actions), `pendenciasDoc.test.ts`
-  (índice, seções e próximo id de `pendencias.md`) e `uiRegistryDoc.test.ts` (todo componente de
-  `/admin` aparece em `ui-registry.md`).
+  (páginas), `actionsAuth.test.ts`, `actionsInventory.test.ts` e `actionsGuards.test.ts` (actions e
+  qualquer `"use server"`), `pendenciasDoc.test.ts` (índice, seções e próximo id de `pendencias.md`) e
+  `uiRegistryDoc.test.ts` (todo componente de `/admin` e de `/passagens` aparece em `ui-registry.md`).
 
 ## 10. Playwright + pglite-socket
 
@@ -264,6 +264,17 @@
   `useActionState`/`FormData` aqui: o React 19 limpa o formulário não controlado depois do envio.
 - **Tempo e paginação:** o domínio recebe `now: Date` quando o tempo importa; listas usam `PAGE_SIZE = 50`
   e `?pagina=`, e a página fora do intervalo é clampada.
+
+## 13. Passagem de turno (Fase 3)
+
+- **Onde:** domínio em `src/features/handovers/*` (recebe `db: Db` e, quando o tempo importa, `now: Date`; devolve `AdminResult` com mensagem pt-BR pronta); Server Actions em `src/app/(app)/passagens/actions.ts` e `src/app/(app)/actions.ts`; telas em `src/components/passagens/*`. O arquivo `actions.ts` só exporta funções `async`; tipos, constantes e schemas vivem fora dele.
+- **`runHandoverAction`** (`src/features/handovers/runHandoverAction.ts`, `server-only`): irmão do `runAdminAction` (§12). `schema.safeParse` → `run({ db, now, actor, input })` → `unstable_rethrow` (deixa `redirect` e `notFound` passarem) → `INTERNAL` com texto fixo. A diferença é o parâmetro `revalidate`: `false` no salvamento automático (revalidar re-renderizaria a tela enquanto a pessoa digita), `true` em entregar, confirmar e corrigir (`revalidatePath("/(app)", "layout")`, só quando `ok`). Cada action começa por `requireUser()` (a do setor, `requireAdmin()`).
+- **Salvamento automático** (`useHandoverAutosave`): debounce de 800 ms **por campo**, **fila serial** (uma requisição em voo, porque duas Server Actions não têm ordem garantida e o valor velho poderia sobrescrever o novo) e coalescência (o valor mais novo de cada campo vence). `onBlur` envia já; falha mantém o que foi digitado, para a fila e mostra "Não salvo." com "Tentar de novo"; o evento `online` reenvia; `beforeunload` só enquanto houver algo não salvo; ao desmontar envia o pendente. "Entregar turno" e a troca de turno ou dia chamam `flush()` antes.
+- **SQL do histórico** (`history.ts`): ``db.select({ … sql<string>`u.col` }).from(sql`(WITH … SELECT * FROM u) as u`)``, sem `db.execute` (o `Db` genérico não tipa o resultado). `timestamptz` cru volta como texto (`"2026-11-21 11:54:27.517+00"`) nos dois drivers: mapeie com ``sql<Date | null>`u.delivered_at`.mapWith(handover.deliveredAt)`` (a coluna do schema traz o decoder); `date` e `timestamp` sem fuso voltam como texto. O total (`count()`) e a página saem do mesmo CTE. O teste de paridade compara `hasShiftEnded` (JS) com o SQL de pares encerrados numa grade de horários (fim == agora conta como encerrado).
+- **Cookie do setor** (`sectorCookie.ts`): `cookies().set` só em Server Function ou Route Handler, nunca em Server Component nem no `proxy.ts`; a leitura (`readRememberedSector`) fica dentro de `<Suspense>`. `chooseSectorAction` grava o cookie (`httpOnly`, `sameSite: "lax"`, `secure` em produção, `path: "/"`, 1 ano) e faz `redirect` **fora** de `try/catch`; "Todos os setores" não grava.
+- **Fuso e datas:** `America/Sao_Paulo` via `Intl.DateTimeFormat("en-CA", { timeZone, hourCycle: "h23" }).formatToParts` (`saoPaulo.ts`); `operational_date` é texto `"YYYY-MM-DD"`. Teste de tempo usa o relógio injetado (`spDate()` em `test/clock.ts`), nunca o relógio real; o E2E usa turno `00:00–23:59` e a data de hoje na URL.
+- **P27 (guardas):** `test/actionGuards.ts` guarda a varredura de actions (extraída de `actionsAuth.test.ts`); `actionsGuards.test.ts` reprova `"use server"` fora de `actions.ts`, action sem `requireUser`/`requireAdmin` na primeira instrução e `admin/**` sem `requireAdmin`; `appPagesAuth.test.ts` exige `requireAdmin` nas páginas de `admin/`.
+- **E2E (`e2e/passagem.spec.ts`):** o Next mantém a página anterior escondida ao navegar; `getByText` também casa texto escondido e o modo estrito reprova. Use consultas por papel ou o helper `text()` do spec (`.filter({ visible: true })`) e `{ exact: true }` quando um texto contém o outro ("2 rolo" × "12 rolo").
 
 ## Como adicionar uma biblioteca nova
 

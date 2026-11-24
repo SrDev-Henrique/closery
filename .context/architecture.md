@@ -100,7 +100,7 @@ scripts/                  scripts do desenvolvedor (admin:invite)
 - **Migrações:** `bun run db:generate` → revisar o SQL em `drizzle/` → `bun run db:migrate`.
   `db:push` só em banco de dev descartável.
 
-## 6. Modelo de dados · 🟡 em construção (acesso, convite e cadastros ✅ até a Fase 2)
+## 6. Modelo de dados · 🟡 em construção (acesso, convite, cadastros e passagem ✅ até a Fase 3)
 
 Entidades que as decisões já implicam: **setor**, **turno** (por setor, com horário — D9),
 **item** (por setor, com unidade e tipo controle/estoque — D1), **destino** de solicitação (D7),
@@ -109,7 +109,7 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
 **congelados** na entrega — D1), **solicitação** + **histórico de status** + **comentários**
 (D6–D8), e as tabelas do Better Auth + **convite** (D2–D4). Sem fotos (D10).
 
-**Tabelas criadas até a Fase 2** (migrações versionadas em `drizzle/`):
+**Tabelas criadas até a Fase 3** (migrações versionadas em `drizzle/`):
 
 | Tabela | O que guarda | Chave |
 |---|---|---|
@@ -120,6 +120,9 @@ Entidades que as decisões já implicam: **setor**, **turno** (por setor, com ho
 | `shift` | turno de um setor: `name`, `starts_at` e `ends_at` (`time`; atravessar a meia-noite é permitido), `sort_order`, `active`; índice único `(sector_id, lower(name))`; check `shift_starts_ne_ends` | `uuid` |
 | `item` | item de um setor: `name`, `unit` (texto: a unidade da lista ou o "Outro" digitado), `kind` (`control` ou `stock`; check `item_kind_valid`), `sort_order`, `active`; índice único `(sector_id, lower(name))` | `uuid` |
 | `destination` | destino de solicitação, global: `name`, `active`; índice único `lower(name)` | `uuid` |
+| `handover` | passagem: `sector_id`, `shift_id`, `operational_date` (`date`, o dia em que o turno **começou**), `status` (`draft`, `delivered` ou `confirmed`), `shift_name_snapshot`, `occurrences_text`, `next_shift_text`, `delivered_by`/`delivered_at`, `confirmed_by`/`confirmed_at`, `confirmation_note`, `updated_by`/`updated_at` (alimentam "Salvo às HH:mm por {nome}"); único `(sector_id, shift_id, operational_date)`; índice `(sector_id, operational_date)` para o histórico e um índice por FK; checks `handover_status_valid`, `handover_confirmer_ne_deliverer` (quem confirma não é quem entregou) e `handover_state_consistent` (rascunho sem entrega nem confirmação; entregue com entrega e sem confirmação; confirmada com os quatro campos) | `uuid` |
+| `handover_item` | valor de um item na passagem: `quantity` (inteiro ≥ 0, check `handover_item_quantity_nonneg`; o teto de 99.999 é do domínio), `note`, `item_name_snapshot`, `item_unit_snapshot`, `item_kind_snapshot` (congelados na entrega, D1); check do tipo do snapshot | `(handover_id, item_id)` |
+| `handover_correction` | uma linha por campo corrigido depois da confirmação (D13): `field` (`occurrences_text`, `next_shift_text`, `item_quantity` ou `item_note`), `item_id` (só nos campos de item, check `handover_correction_item_matches_field`), `old_value`, `new_value`, `reason` (não vazio), `corrected_by`, `corrected_at` | `uuid` |
 
 As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do domínio (`sector`, `invite`, `shift`, `item`, `destination`) usam `timestamptz`.
 
@@ -127,7 +130,10 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 - **Nome único sem diferença de caixa** vale por índice em `lower(name)`: global em `sector` e `destination`, por setor em `shift` e `item`. O domínio normaliza o nome (NFC, `trim`, espaços colapsados) antes de gravar.
 - **Nada se apaga:** o cadastro só desativa (`active = false`); as listas de escolha das fases seguintes usam só os ativos, e as FKs para `sector` são `restrict`.
 
-As demais entidades acima (passagem, valores por item, solicitações) chegam nas Fases 3 e 4.
+- **Datas da passagem:** `operational_date` é `date` e trafega como texto `"YYYY-MM-DD"` (o dia operacional de um turno que atravessa a meia-noite é o dia em que ele **começou**); `delivered_at`, `confirmed_at` e `updated_at` são `timestamptz`. O fuso da operação é `America/Sao_Paulo`, calculado com `Intl` (`src/features/handovers/saoPaulo.ts`), sem somar offset fixo.
+- **Nada é apagado nem sobrescrito em silêncio:** as FKs da passagem são `restrict`; nome e unidade do item e o nome do turno ficam **congelados** na entrega (renomear o cadastro depois não muda a passagem) e, depois da confirmação, só `handover_correction` registra mudança.
+
+As solicitações (com histórico de status e comentários) chegam na Fase 4.
 
 ## 7. Autenticação e autorização · 🟢 implementado na Fase 1 (Apple na Fase 6)
 
@@ -175,6 +181,17 @@ As demais entidades acima (passagem, valores por item, solicitações) chegam na
 - **Desativar setor.** Setor com pessoa ativa ou convite pendente (válido) **não** desativa (`SECTOR_IN_USE`, com as contagens). Turno, item e convite não nascem em setor inativo.
 - **Sem `layout.tsx` e sem `metadata` em `/admin`.** Um layout renderizaria a navegação do admin para o operador antes do `notFound()` da página, e o `<title>` revelaria a rota. Cada página tem o link "Voltar para Administração"; a sidebar já marca "Administração" ativa nas subrotas.
 
+### Como ficou implementado (Fase 3)
+
+- **Portão em três camadas.** (1) Toda página de `src/app/(app)/**` chama `requireUser()` ou `requireAdmin()` por um componente importado de `@/components/...`; as páginas sob `admin/` só valem com `requireAdmin` (P27; guarda `appPagesAuth.test.ts`, mínimo de 12 páginas). (2) Toda Server Action exportada chama `requireUser()` (ou `requireAdmin()`) como **primeira instrução**; `src/app/actionsGuards.test.ts` varre todo arquivo de `src` com `"use server"` (de arquivo ou inline), exige que se chame `actions.ts` sob `src/app/(app)/**` (exceção documentada: `(auth)/convite/[token]/actions.ts`) e que `admin/**` use `requireAdmin()`. (3) O domínio não confia na tela: revalida escopo de setor, papel, estado e limites, e o operador que monta a URL ou a action de outro setor recebe `NOT_FOUND` ("Página não encontrada"), nunca "sem permissão" (não revela o que existe).
+- **GET nunca escreve.** Abrir, recarregar e pré-carregar `/passagens/nova` não cria linha: o rascunho nasce no primeiro salvamento. A identidade do rascunho é a tripla setor + turno + dia operacional (nunca um id que o cliente teria de guardar); criar é `INSERT … ON CONFLICT DO NOTHING RETURNING` e, se não voltou linha, `SELECT … FOR UPDATE` da existente.
+- **Quem edita (`handoverCapabilities`, função pura usada pelo domínio e pela tela):** rascunho = qualquer pessoa do setor e o admin; entregue = só quem entregou e o admin, direto (sem linha de correção); confirmada = o salvamento automático recusa todos, inclusive o admin (`HANDOVER_LOCKED`); só `correctHandover` (admin, com motivo) altera.
+- **Transições** são `UPDATE … WHERE status = '<esperado>'` conferindo as linhas afetadas, dentro de `db.transaction()` e com a linha travada por `FOR UPDATE` antes de decidir a mensagem; a corrida perdida devolve quem venceu e quando. O PGlite não prova concorrência: a atomicidade vai no SQL e o teste prova a invariante em sequência.
+- **Entregar** cria o rascunho se faltar, completa com `0` os itens ativos e congela os snapshots de todas as linhas. **Receber:** o cartão do Início é a passagem mais recente do setor entre as entregues e as confirmadas (`delivered_at desc, id desc`); só aparece se ela ainda estiver entregue e não for de quem olha (uma confirmada mais nova esconde as entregues antigas), sem cair para outra e sem teto de idade (P35). **Corrigir:** o servidor calcula o diff (`diffHandover`) e grava uma linha de `handover_correction` por campo alterado, na mesma transação.
+- **Turno sugerido (spec §6.2):** `suggestShift` escolhe o turno ativo cujo fim está mais próximo de agora (entre as ocorrências que começam ontem ou hoje: um turno que só começa amanhã não pode ter passagem e a data seria recusada); empate: o que já terminou, depois a ordem do setor.
+- **Histórico `/passagens`:** uma consulta SQL (`generate_series` × turnos ativos de setores ativos, `NOT EXISTS`, `UNION ALL` com as passagens reais), paginada por linhas (50). Situações `awaiting`, `confirmed`, `unconfirmed` e `missing`, mais o selo "Corrigida"; passagem já entregue de turno depois desativado continua no histórico (só os pares "sem passagem" exigem turno ativo). "Sem passagem" só existe para pares já encerrados e a partir do dia em que o turno foi criado (P34).
+- **Setor do admin:** `?setor=` na URL e o cookie `closery_setor`, gravado só pela Server Action `chooseSectorAction` e lido dentro de `<Suspense>`; "Todos os setores" (só no histórico) não grava o cookie.
+
 ## 8. Dados pessoais (LGPD) · 🟢 baseline
 
 - O sistema guarda **nome e e-mail de funcionários**, **autoria de passagens** e **comentários**.
@@ -183,14 +200,14 @@ As demais entidades acima (passagem, valores por item, solicitações) chegam na
   fixture — só dados fictícios.
 - **Sem upload de arquivos** no MVP (D10) — nenhum armazenamento de mídia.
 
-## 9. Rotas · 🟢 rotas das Fases 1 e 2 prontas (as seguintes entram a cada marco)
+## 9. Rotas · 🟢 rotas das Fases 1, 2 e 3 prontas (as seguintes entram a cada marco)
 
 | Rota | O que é | Status |
 |---|---|---|
 | `/entrar` | login: e-mail e senha, passkey (autofill e botão), Google/Facebook se habilitados. Pública | ✅ Fase 1 |
 | `/convite/[token]` | convite (válido, expirado, usado, cancelado, inexistente) + cadastro; `armInvite` grava o cookie. Pública | ✅ Fase 1 |
 | `/bem-vindo` | oferta de passkey logo depois do cadastro | ✅ Fase 1 |
-| `/` | Início: saudação (a passagem de turno entra na Fase 3) | ✅ Fase 1 |
+| `/` | Início: saudação, "Passagem para confirmar" (a mais recente entregue do setor, para quem não a entregou) e "Passagem do meu turno" (começar, continuar, entregue ou confirmada); o admin escolhe o setor (`?setor=`) | ✅ Fase 3 |
 | `/conta` | passkeys (criar e remover) e "Sair" | ✅ Fase 1 |
 | `/admin` | Administração: cinco cartões (setores, turnos, itens, destinos, equipe) com as contagens de ativos e pendentes; operador vê "Página não encontrada" | ✅ Fase 2 |
 | `/admin/setores` | setores: criar, renomear, desativar e reativar (bloqueia com pessoas ou convites). Admin | ✅ Fase 2 |
@@ -198,6 +215,9 @@ As demais entidades acima (passagem, valores por item, solicitações) chegam na
 | `/admin/itens` | itens por setor (`?setor=`): unidade por escolha com "Outro", tipo controle ou estoque, ordem por botões. Admin | ✅ Fase 2 |
 | `/admin/destinos` | destinos de solicitação (valem para todos os setores). Admin | ✅ Fase 2 |
 | `/admin/equipe` | pessoas (papel, setor, desativar) e convites (gerar, copiar ou compartilhar, cancelar); `?pagina=` pagina as pessoas e `?convites=` os convites pendentes. Admin | ✅ Fase 2 |
+| `/passagens` | histórico de passagens, do dia mais recente ao mais antigo: filtros na URL (`periodo`, `de`, `ate`, `turno`, `situacao`, `setor`, `pagina`), situação de cada turno (aguardando, confirmada, não confirmada, sem passagem) e selo "Corrigida". Admin escolhe o setor ou "Todos os setores" | ✅ Fase 3 |
+| `/passagens/nova` | formulário da passagem (`?turno=&data=&setor=`): salvamento automático, contadores −/+ e "Entregar turno". Já entregue ou confirmada redireciona para o resumo | ✅ Fase 3 |
+| `/passagens/[id]` | resumo na ordem do briefing, "Confirmar recebimento" e correções; `?editar=1` abre o formulário de edição (entregue) ou de correção com motivo (confirmada, só admin). Outro setor ou id inexistente: "Página não encontrada" | ✅ Fase 3 |
 | `/api/auth/[...all]` | handler do Better Auth. Pública | ✅ Fase 1 |
 | `/api/health` | `GET` — `select 1` dentro de transação; `200 {status:"ok"}` ou `503 {status:"error"}` sem detalhe (o erro vai só para o log). Pública | ✅ 2026-11-20 |
 
@@ -256,3 +276,11 @@ Rotas públicas: `/entrar`, `/convite/[token]`, `/api/auth/*` e `/api/health`. T
 - **Trade-offs aceitos:** (1) PGlite não prova concorrência: o "último admin" (`FOR UPDATE`) e o nome repetido (índice único) são garantidos no SQL e provados em sequência. (2) Lista em linhas, não tabela, para funcionar no celular. (3) ↑ ↓ andam entre ativos e inativos; se incomodar na Fase 3, mover só entre ativos. (4) Mudar papel ou setor não encerra sessões (só desativar encerra). (5) A sobreposição de turnos lê até 200 turnos ativos do setor. (6) O ator não é revalidado dentro da transação: um admin desativado milissegundos antes ainda pode concluir uma ação em curso (limite aceito).
 - **Desvios e detalhes registrados:** (a) "mudar papel" e "mudar setor" viraram uma ação `updatePerson` ("Editar"): uma transação evita o estado "operador sem setor". (b) A linha da própria conta do admin não tem botões (botão que sempre falha é atrito); a regra continua no servidor. (c) Formulários controlados chamam a action com objeto tipado, em vez de `useActionState`, para a pessoa não perder o que digitou quando o servidor recusa. (d) O Drizzle 0.45 embrulha o erro do driver: SQLSTATE e nome do índice ficam em `error.cause`. (e) `time` volta como `"HH:mm:ss"`. (f) `db.select({ … })` sem `.from()` não executa nesta versão do Drizzle; a visão geral seleciona de uma tabela de uma linha (`values (1)`) com subconsultas `count(*)`. (g) Verificado no branch de dev do Neon: collation `C.UTF-8` e `lower('ÁGUA') = lower('água')`, então "Água" e "ÁGUA" colidem em produção como no PGlite.
 - **Verificado:** `check-types`, `lint`, `test`, `test:e2e` (13 passed) e `build` verdes. P11 e P18 resolvidas; P23 (editar o nome de uma pessoa) e P24 (ordem alfabética ignora acento) registradas.
+
+### 2026-11-21 — Fase 3: passagem de turno
+
+- **Decisão:** a passagem de ponta a ponta — rascunho com salvamento automático, entregar, receber (confirmar), corrigir com motivo e histórico — em `/`, `/passagens`, `/passagens/nova` e `/passagens/[id]`. Regra de negócio em `src/features/handovers/*` (funções que recebem `db` e `now` e devolvem `AdminResult`); lógica pura (fuso, dia operacional, turno sugerido, quantidade, permissões, diff, filtros) sem I/O; Server Actions finas em `src/app/(app)/passagens/actions.ts` sobre o `runHandoverAction`, irmão do `runAdminAction` que **não** revalida no salvamento automático. Migração `0003_fase3_passagem` (`handover`, `handover_item`, `handover_correction`). Decisões do dono: solicitações ficam para a Fase 4; trocar turno ou data abre o rascunho daquele turno e dia; o admin escolhe o setor na tela (URL + cookie).
+- **Por quê:** a passagem tem de ser mais rápida no sistema do que na planilha (regra de ouro): o formulário abre pronto (turno e dia sugeridos, números em `0`), salva sozinho e entrega com um toque; quem recebe lê o resumo na ordem do briefing e confirma com outro toque. Confirmada não muda em silêncio (D13): o servidor calcula o diff e grava o rastro, nunca o cliente. O histórico de "sem passagem" é uma consulta SQL, nunca subtração em JS.
+- **Trade-offs aceitos:** (1) O PGlite não prova concorrência: a atomicidade (entregar, confirmar, corrigir) vai no SQL com `UPDATE … WHERE status = …` e `FOR UPDATE`, provada em sequência. (2) Dois operadores no mesmo rascunho: o último a salvar vence por campo, sem aviso (P36). (3) "Sem passagem" usa os horários atuais do turno e some quando o turno é desativado (P34). (4) O cartão "Passagem para confirmar" não tem teto de idade (P35). (5) O runner novo duplica cerca de 25 linhas do `runAdminAction` em troca de não mexer na Fase 2 junto de uma feature (P33). (6) O E2E usa um turno 00:00–23:59 e a data de hoje em São Paulo na URL para não depender do relógio.
+- **Desvios e detalhes registrados:** (a) o histórico pagina por linhas (50), não por dia: com filtros uma página de "dias" ficaria vazia ou desigual, e a ordem já agrupa por dia. (b) A leitura SQL seleciona colunas tipadas com `sql<string>` sobre um CTE (sem `db.execute`) e `timestamptz` cru volta como texto nos dois drivers: `.mapWith(handover.deliveredAt)` devolve `Date`. (c) O Next mantém a página anterior escondida ao navegar: no Playwright o texto escondido também casa, e o modo estrito reprova (use `.filter({ visible: true })`). (d) O cookie do setor só é gravado por Server Action; o `proxy.ts` não grava (o Next pré-carrega cada link de setor e o cookie viraria o último setor pré-carregado).
+- **Verificado:** `check-types`, `lint`, `test`, `test:e2e` (19 passed: 7 de acesso, 6 de cadastros e 6 de passagem) e `build` verdes. P26 e P27 resolvidas; P33 a P36 registradas.

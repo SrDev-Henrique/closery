@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P33.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P44.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -62,13 +62,24 @@
 | P23 | Editar o nome de uma pessoa: falta em /admin/equipe e em /conta | 🟡 | Aberto, não triado |
 | P24 | Ordem alfabética das listas do admin ignora acento | 🟡 | Aberto, não triado |
 | P25 | Corrida entre cadastro por convite e desativação do setor | 🟡 | Aberto, não triado |
-| P26 | Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo | 🟡 | Aberto, não triado |
-| P27 | Guardas de teste aceitam menos do que deveriam | 🟡 | Aberto, não triado |
+| P26 | Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo | 🟡 | Resolvido |
+| P27 | Guardas de teste aceitam menos do que deveriam | 🟡 | Resolvido |
 | P28 | Formulários de criação perdem o texto digitado ao remontar | ⚪ | Aberto, não triado |
 | P29 | Acessibilidade da Equipe e da paginação | 🟡 | Aberto, não triado |
 | P30 | Regra de convite pendente duplicada em 6 lugares | 🟡 | Aberto, não triado |
 | P31 | Higiene de testes e refatorações pequenas da Fase 2 | ⚪ | Aberto, não triado |
 | P32 | Mensagens no feminino e select vazio sem setor ativo | ⚪ | Aberto, não triado |
+| P33 | Dois runners de Server Action quase iguais (admin e passagem) | ⚪ | Aberto, não triado |
+| P34 | "Sem passagem" usa os horários atuais do turno e some com o turno desativado | 🟡 | Aberto, não triado |
+| P35 | Cartão "Passagem para confirmar" não tem teto de idade | 🟡 | Aberto, não triado |
+| P36 | Dois operadores no mesmo rascunho: o último a salvar vence, sem aviso | 🟡 | Aberto, não triado |
+| P37 | Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham | 🟡 | Aberto, não triado |
+| P38 | Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface | ⚪ | Aberto, não triado |
+| P39 | Defesa em profundidade no banco da passagem | ⚪ | Aberto, não triado |
+| P40 | Higiene de refatoração da Fase 3 | ⚪ | Aberto, não triado |
+| P41 | Higiene de testes da Fase 3 | ⚪ | Aberto, não triado |
+| P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
+| P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
 
 ---
 
@@ -165,20 +176,6 @@
 **Correção:** — (opção: acrescentar `sector.active` ao WHERE de `consumeInvite` para convites de operador, falhando fechado; ou aceitar e registrar)
 **Registrado em:** 2026-11-21
 
-#### P26 — Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/features/admin/overview.ts:39-40` · `src/app/(app)/admin/turnos` · `src/app/(app)/admin/itens`
-**Impacto:** as contagens do `/admin` incluem turnos e itens ativos de setores inativos, que `/admin/turnos` e `/admin/itens` não conseguem mostrar (o seletor lista só setores ativos). As listas de escolha da Fase 3 (passagem) também precisam filtrar `sector.active`.
-**Correção:** — (opção: juntar `sector` e filtrar `sector.active` nas contagens; registrar o filtro no plano da Fase 3)
-**Registrado em:** 2026-11-21
-
-#### P27 — Guardas de teste aceitam menos do que deveriam 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/appPagesAuth.test.ts:13` · teste de inventário das actions (`actionsAuth`)
-**Impacto:** a guarda de páginas aceita `requireUser` em páginas de `admin/` (basta `require(User|Admin)`), então uma página admin que só chamasse `requireUser` passaria; a guarda das actions só varre arquivos chamados `actions.ts`, e um `"use server"` em outro nome ou inline escaparia.
-**Correção:** — (opção: exigir `requireAdmin` para arquivos sob `admin/`; ampliar a varredura a qualquer `.ts/.tsx` com `"use server"` de arquivo ou inline, na primeira tarefa da Fase 3)
-**Registrado em:** 2026-11-21
-
 #### P28 — Formulários de criação perdem o texto digitado ao remontar ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/components/admin/shifts/ShiftsAdmin.tsx:79` · `src/components/admin/items/ItemsAdmin.tsx`
@@ -212,6 +209,83 @@
 **Arquivos:** `src/components/admin/ActiveToggleButton.tsx` · `src/components/admin/team/PersonForm.tsx`
 **Impacto:** `ActiveToggleButton` fixa o masculino (`${entity} desativado/reativado`): serve para Setor, Turno, Item e Destino, mas erra a concordância com uma entidade feminina futura (ex.: Pessoa → "Pessoa desativada."), então não pode ser reaproveitado na Equipe; com nenhum setor ativo o select de setor do operador aparece vazio.
 **Correção:** — (opção: gênero como parâmetro do botão; com 0 setores ativos, mostrar a explicação e o atalho para Setores como no `InviteForm`)
+**Registrado em:** 2026-11-21
+
+#### P33 — Dois runners de Server Action quase iguais (admin e passagem) ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/runAdminAction.ts` · `src/features/handovers/runHandoverAction.ts`
+**Impacto:** cerca de 25 linhas do fluxo (Zod → domínio → `unstable_rethrow` → `INTERNAL`) estão duplicadas; mudar o tratamento de erro num runner exige lembrar do outro e os dois podem divergir em silêncio.
+**Correção:** — (opção: uma refatoração separada, com testes verdes antes e depois: um runner só, com o `revalidatePath` como parâmetro; nunca no mesmo commit de uma feature)
+**Registrado em:** 2026-11-21
+
+#### P34 — "Sem passagem" usa os horários atuais do turno e some com o turno desativado 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/history.ts`
+**Impacto:** o par (turno × dia) "sem passagem" é calculado com os horários e o estado atuais do turno e só existe a partir do dia em que o turno foi criado: mudar o horário de um turno reescreve o passado e desativar um turno some com os "sem passagem" dele (nada guarda quando ele esteve ativo). O dashboard da Fase 5 herda a mesma definição.
+**Correção:** — (opção: aceitar no MVP; se o piloto ou o dashboard exigirem, guardar o histórico de horários e de atividade do turno)
+**Registrado em:** 2026-11-21
+
+#### P35 — Cartão "Passagem para confirmar" não tem teto de idade 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/home.ts` (`getHomeHandovers`)
+**Impacto:** uma passagem entregue há semanas e nunca confirmada continua no topo do Início até alguém confirmar; o cartão mostra a data e a hora da entrega, e o histórico a marca "não confirmada" quando surge uma mais nova.
+**Correção:** — (opção: se o piloto mostrar ruído, um teto de 72 h entra como mudança de uma linha na consulta do cartão)
+**Registrado em:** 2026-11-21
+
+#### P36 — Dois operadores no mesmo rascunho: o último a salvar vence, sem aviso 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/draft.ts` · `src/components/passagens/useHandoverAutosave.ts`
+**Impacto:** dois operadores digitando o mesmo campo do mesmo rascunho ao mesmo tempo: o último a salvar sobrescreve o outro por campo, sem aviso de conflito (sem tempo real, spec §6.1); "Último salvamento às HH:mm por {nome}" mostra quem mexeu por último.
+**Correção:** — (opção: só se o piloto mostrar perda: versão por campo com aviso "{nome} alterou este campo", ou tempo real)
+**Registrado em:** 2026-11-21
+
+#### P37 — Setor inativo: o resumo oferece Confirmar e Corrigir que sempre falham 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/summary.ts` (`capabilities`) · `src/components/passagens/HandoverDetail.tsx`
+**Impacto:** `capabilities` ignora `sector.active`: num setor inativo o resumo mostra "Confirmar recebimento", "Corrigir" e "Corrigir com motivo", e todos devolvem `SECTOR_INACTIVE`; `?editar=1` volta ao resumo em silêncio. Sem risco de dados, só atrito.
+**Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
+**Registrado em:** 2026-11-21
+
+#### P38 — Rascunho com mais de 31 dias é editável no domínio, mas inalcançável pela interface ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/shiftSuggestion.ts` (`resolveHandoverTarget`) · `src/components/passagens/HistoryRowItem.tsx` · `src/components/passagens/NewHandover.tsx`
+**Impacto:** um rascunho antigo continua editável e entregável no domínio (F3-8b), mas nenhuma tela ou URL o abre: o histórico não oferece o link fora da janela, `/passagens/{id}` de um rascunho redireciona para `/passagens/nova` e ali a data antiga é descartada em favor do turno sugerido.
+**Correção:** — (opção: abrir rascunhos antigos pelo id em `/passagens/{id}?editar=1`, ou expirá-los de propósito)
+**Registrado em:** 2026-11-21
+
+#### P39 — Defesa em profundidade no banco da passagem ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/handovers.ts` · `drizzle/0003_*.sql`
+**Impacto:** nenhum caminho do domínio mistura setores, mas o banco não impede: passagem, itens e correções não compartilham o setor por chave composta, e `confirmation_note` fora do CHECK permite nota solta em rascunho ou entregue (só a fixture impede).
+**Correção:** — (opção: migração aditiva com FKs compostas (setor) e `confirmation_note` no CHECK `state_consistent`)
+**Registrado em:** 2026-11-21
+
+#### P40 — Higiene de refatoração da Fase 3 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/migration0003.test.ts` e demais testes de migração · `src/features/handovers/*` (`firstValue`, `loaders.ts`, `creationRefusal`) · testes das guardas (`stripComments`, `findPages`) · `HandoverHeader.tsx` (rótulo "Setor")
+**Impacto:** helpers de migração duplicados entre testes; `firstValue` copiado 3 vezes; `stripComments`/`findPages` duplicados; a recusa de criação escrita 2 vezes; `loaders.ts` faz três trabalhos; a regra "awaiting" escrita 3 vezes (hoje equivalentes, sem teste de concordância); o rótulo "Setor" do cabeçalho não tem controle associado (ver P29).
+**Correção:** — (opção: um commit só de refatoração antes da Fase 4, testes verdes antes e depois, com um teste de concordância das três regras "awaiting"; o rótulo entra com P29)
+**Registrado em:** 2026-11-21
+
+#### P41 — Higiene de testes da Fase 3 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/migration0003.test.ts` · `src/features/handovers/schemas.test.ts` · `src/features/handovers/history.test.ts` · `src/components/passagens/HandoverHistory.test.tsx`
+**Impacto:** o teste de FK-restrict do setor não isola a FK da passagem; faltam casos-limite de `correctHandoverSchema` e da correção no limite; o desempate de setor não tem teste; o teste de clamp de página é fraco.
+**Correção:** — (opção: reforçar cada um num commit só de testes)
+**Registrado em:** 2026-11-21
+
+#### P42 — Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/actionsGuards.test.ts` · `test/actionGuards.ts` · `src/app/(auth)/convite/[token]/actions.ts`
+**Impacto:** a varredura de exports proíbe um conjunto conhecido (lista negra) em vez de permitir só o esperado; a exceção do convite vale para o arquivo todo, então uma action nova ali escaparia da guarda de sessão.
+**Correção:** — (opção: allowlist por export, com a exceção só para a action de convite)
+**Registrado em:** 2026-11-21
+
+#### P43 — Limites conhecidos do rascunho: item inativo e preenchimento de zeros ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/draft.ts` · `src/features/handovers/formState.ts` · `src/components/passagens/HandoverFields.tsx`
+**Impacto:** a linha de um item desativado depois de salva no rascunho some do formulário mas é entregue com o valor; o preenchimento com zero na entrega não respeita o teto de 200 itens da lista.
+**Correção:** — (opção: aceitar no MVP; ou mostrar a linha inativa no rascunho e limitar itens por setor)
 **Registrado em:** 2026-11-21
 
 ## 2. Triado, plano pronto
@@ -366,3 +440,19 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: uma migração com `CHECK (role IN ('admin','operator'))` nas duas colunas)
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-21):** resolvida na Fase 2. A migração `0002_fase2_cadastros` acrescenta `CHECK` de papel em `user` (`user_role_valid`) e em `invite` (`invite_role_valid`); o teste de schema prova que o banco recusa um papel fora de `admin`/`operator` (SQLSTATE 23514).
+
+#### P26 — Visão geral conta turnos e itens de setores inativos; listas da Fase 3 precisam filtrar setor ativo 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/features/admin/overview.ts:39-40` · `src/app/(app)/admin/turnos` · `src/app/(app)/admin/itens`
+**Impacto:** as contagens do `/admin` incluem turnos e itens ativos de setores inativos, que `/admin/turnos` e `/admin/itens` não conseguem mostrar (o seletor lista só setores ativos). As listas de escolha da Fase 3 (passagem) também precisam filtrar `sector.active`.
+**Correção:** — (opção: juntar `sector` e filtrar `sector.active` nas contagens; registrar o filtro no plano da Fase 3)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-21):** resolvida na Fase 3. `getAdminOverviewCounts` (`src/features/admin/overview.ts`) passou a contar turnos e itens só de setores ativos, e as listas e escolhas da passagem (turnos, itens, histórico, Início e formulário novo) juntam `sector.active`: turno inativo não entra em escolha nem em "sem passagem", item inativo não entra no formulário e o histórico só lista setores ativos. Escrever numa passagem existente de setor inativo (salvar, entregar, confirmar, corrigir) é recusado com `SECTOR_INACTIVE`; o resumo dela continua legível. Testes: `overview.test.ts` (turno e item de setor inativo ficam de fora) e os testes de domínio e de componente da passagem.
+
+#### P27 — Guardas de teste aceitam menos do que deveriam 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/appPagesAuth.test.ts:13` · teste de inventário das actions (`actionsAuth`)
+**Impacto:** a guarda de páginas aceita `requireUser` em páginas de `admin/` (basta `require(User|Admin)`), então uma página admin que só chamasse `requireUser` passaria; a guarda das actions só varre arquivos chamados `actions.ts`, e um `"use server"` em outro nome ou inline escaparia.
+**Correção:** — (opção: exigir `requireAdmin` para arquivos sob `admin/`; ampliar a varredura a qualquer `.ts/.tsx` com `"use server"` de arquivo ou inline, na primeira tarefa da Fase 3)
+**Registrado em:** 2026-11-21
+**Atualização (2026-11-21):** resolvida na Fase 3 (Tarefa 3). `appPagesAuth.test.ts` passou a exigir `requireAdmin` nas páginas sob `admin/`; o novo `src/app/actionsGuards.test.ts` varre todo `.ts`/`.tsx` de `src` com `"use server"` (de arquivo ou inline), exige que o arquivo se chame `actions.ts` sob `src/app/(app)/**` (exceção documentada: `(auth)/convite/[token]/actions.ts`), `requireAdmin()` em `admin/**` e `requireUser()` ou `requireAdmin()` na primeira instrução do resto. A varredura vive em `test/actionGuards.ts` (extraída de `actionsAuth.test.ts` em commit próprio, só refatoração).

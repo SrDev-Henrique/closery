@@ -113,7 +113,7 @@ test("convite de admin: cadastro por e-mail e senha, Início e Administração",
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { name: "Olá, Ana" })).toBeVisible();
   await expect(
-    page.getByText("Em breve: passagem de turno, solicitações e dashboard."),
+    page.getByText("Em breve: solicitações e dashboard."),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Administração" })).toBeVisible();
 });

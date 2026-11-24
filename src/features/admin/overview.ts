@@ -1,6 +1,7 @@
 import "server-only";
 
 import { type SQL, sql } from "drizzle-orm";
+import type { PgColumn } from "drizzle-orm/pg-core";
 
 import { user } from "@/db/schema/auth";
 import { destination, item, shift } from "@/db/schema/catalog";
@@ -24,6 +25,12 @@ function countWhere(from: SQL, where: SQL): SQL<number> {
   );
 }
 
+// P26: turno e item de setor inativo não contam (o setor inteiro está fora de
+// uso). A subconsulta nomeia a tabela "sector" por extenso, como em sectors.ts.
+function inActiveSector(sectorId: PgColumn): SQL {
+  return sql`exists (select 1 from ${sector} where ${sector.id} = ${sectorId} and ${sector.active})`;
+}
+
 // Um único SELECT: cada contagem é uma subconsulta count(*) no SQL (a visão
 // geral nunca soma linhas em JS). O FROM é uma tabela de uma linha
 // (`values (1)`) porque o Drizzle 0.45 só executa select com FROM. "Ativo" =
@@ -36,8 +43,14 @@ export async function getAdminOverviewCounts(
   const [row] = await db
     .select({
       sectors: countWhere(sql`${sector}`, sql`${sector.active}`),
-      shifts: countWhere(sql`${shift}`, sql`${shift.active}`),
-      items: countWhere(sql`${item}`, sql`${item.active}`),
+      shifts: countWhere(
+        sql`${shift}`,
+        sql`${shift.active} and ${inActiveSector(shift.sectorId)}`,
+      ),
+      items: countWhere(
+        sql`${item}`,
+        sql`${item.active} and ${inActiveSector(item.sectorId)}`,
+      ),
       destinations: countWhere(sql`${destination}`, sql`${destination.active}`),
       people: countWhere(sql`${user}`, sql`${user.deactivatedAt} is null`),
       pendingInvites: countWhere(
