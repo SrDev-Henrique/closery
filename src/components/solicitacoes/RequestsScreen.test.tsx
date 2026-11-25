@@ -653,6 +653,28 @@ describe("RequestsScreen: filtros novos", () => {
     expect(screen.getByText("Pedido desistido")).toBeInTheDocument();
   });
 
+  it.each([
+    ["visao=quadro", { visao: "quadro", status: "cancelada" }],
+    ["sem visao", { status: "cancelada" }],
+  ])("status=cancelada (%s): o seletor marca a Lista, que é a visão mostrada", async (_name, params) => {
+    const { sector, ana } = await seed();
+    await insertRequest(db, { sectorId: sector.id, createdBy: ana.id });
+    operator(sector.id, ana.id);
+
+    await renderScreen(params);
+
+    const navs = screen.getAllByRole("navigation", { name: "Visão" });
+    expect(navs).toHaveLength(1);
+    const nav = within(navs[0] as HTMLElement);
+    expect(nav.getByRole("link", { name: "Lista" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(nav.getByRole("link", { name: "Quadro" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("?status= desconhecido cai em Todos os status", async () => {
     const { sector, ana } = await seed();
     await insertRequest(db, {

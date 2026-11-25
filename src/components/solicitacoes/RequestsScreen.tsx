@@ -186,6 +186,10 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
     table === null ? await getRequestGroups(db, actor, input, now) : null;
 
   const closedWindow = closedWindowApplies(filters);
+  // A visão que aparece: o Quadro não tem coluna de Canceladas, então com
+  // Status = Cancelada a Lista ocupa o lugar dele (corpo e seletor concordam).
+  const shownView =
+    table === null && filters.status === "cancelled" ? "list" : filters.view;
   const subtitle =
     table !== null
       ? tableSummary(table.total)
@@ -268,21 +272,17 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
     );
     // Sem `visao` o servidor não sabe a largura: as duas visões vão no DOM e o
     // CSS mostra a Lista abaixo de md e o Quadro de md em diante.
-    // O Quadro não tem coluna de Canceladas: com Status = Cancelada a Lista
-    // (que tem os quatro grupos) ocupa o lugar dele, em qualquer largura.
-    const boardHasNoCancelled = filters.status === "cancelled";
-    body = boardHasNoCancelled ? (
-      list
-    ) : filters.view === "board" ? (
-      board
-    ) : filters.view === "list" ? (
-      list
-    ) : (
-      <>
-        <div className="hidden md:block">{board}</div>
-        <div className="md:hidden">{list}</div>
-      </>
-    );
+    body =
+      shownView === "board" ? (
+        board
+      ) : shownView === "list" ? (
+        list
+      ) : (
+        <>
+          <div className="hidden md:block">{board}</div>
+          <div className="md:hidden">{list}</div>
+        </>
+      );
   }
 
   return (
@@ -307,7 +307,7 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
         items={items}
         sectorParam={sectorParam}
       />
-      {filters.view === null ? (
+      {shownView === null ? (
         <>
           <RequestViewSwitcher
             current="list"
@@ -321,7 +321,7 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
           />
         </>
       ) : (
-        <RequestViewSwitcher current={filters.view} hrefs={hrefs} />
+        <RequestViewSwitcher current={shownView} hrefs={hrefs} />
       )}
       {body}
     </div>
