@@ -30,6 +30,7 @@ const FILTERS: HistoryFilters = {
   to: "2026-11-21",
   shiftId: null,
   situation: "all",
+  itemId: null,
 };
 
 let client: PGlite;

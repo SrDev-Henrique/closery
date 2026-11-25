@@ -176,3 +176,36 @@ describe("sectorRedirectHref: /solicitacoes e os filtros novos", () => {
     ).toBe(`/solicitacoes?status=nao-canceladas&entrega=30&setor=${setorNovo}`);
   });
 });
+
+describe("sectorRedirectHref: /passagens e o item", () => {
+  const hoje = "2026-11-23";
+  const setorNovo = "22222222-2222-4222-8222-222222222222";
+  const setorAntigo = "11111111-1111-4111-8111-111111111111";
+  const itemId = "33333333-3333-4333-8333-333333333333";
+  const turnoId = "55555555-5555-4555-8555-555555555555";
+
+  it("o item cai junto com o turno; período e situação ficam", () => {
+    const query = `periodo=intervalo&de=2026-11-01&ate=2026-11-10&turno=${turnoId}&situacao=entregues&item=${itemId}&pagina=3&setor=${setorAntigo}`;
+
+    expect(sectorRedirectHref("/passagens", setorNovo, query, hoje)).toBe(
+      `/passagens?periodo=intervalo&de=2026-11-01&ate=2026-11-10&situacao=entregues&setor=${setorNovo}`,
+    );
+  });
+
+  it("só o item: sobra o setor novo", () => {
+    expect(
+      sectorRedirectHref("/passagens", setorNovo, `item=${itemId}`, hoje),
+    ).toBe(`/passagens?setor=${setorNovo}`);
+  });
+
+  it("situação esperadas fica e lixo no item cai", () => {
+    expect(
+      sectorRedirectHref(
+        "/passagens",
+        setorNovo,
+        "situacao=esperadas&item=abc",
+        hoje,
+      ),
+    ).toBe(`/passagens?situacao=esperadas&setor=${setorNovo}`);
+  });
+});

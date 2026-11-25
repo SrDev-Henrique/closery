@@ -8,6 +8,11 @@ import { parsePage } from "@/features/admin/pagination";
 import { isAdmin } from "@/features/authz/authz";
 import { listHandoverHistory } from "@/features/handovers/history";
 import {
+  listHistoryItems,
+  listHistoryShifts,
+} from "@/features/handovers/historyChoices";
+import {
+  type HistoryFilters as AppliedFilters,
   buildHistoryHref,
   parseHistoryFilters,
 } from "@/features/handovers/historyFilters";
@@ -18,7 +23,10 @@ import {
   todayInSaoPaulo,
 } from "@/features/handovers/saoPaulo";
 import { resolveScreenSector } from "@/features/handovers/screenSector";
-import { listActiveShifts } from "@/features/handovers/targets";
+import type {
+  HistoryItemChoice,
+  HistoryShiftChoice,
+} from "@/features/handovers/types";
 import { requireUser } from "@/lib/auth/session";
 import {
   hrefQuery,
@@ -92,15 +100,29 @@ export async function HandoverHistory({ searchParams }: HandoverHistoryProps) {
       />
     );
 
-  const [history, shifts] = await Promise.all([
-    listHandoverHistory(
-      db,
-      actor,
-      { filters, sectorId, page: parsePage(params.pagina) },
-      now,
-    ),
-    sectorId === null ? Promise.resolve([]) : listActiveShifts(db, sectorId),
-  ]);
+  // Os selects de Turno e Item só existem com um setor escolhido. O turno ou o
+  // item inativo que a URL escolheu entra como "(inativo)" em vez de sumir.
+  const [shifts, items]: [HistoryShiftChoice[], HistoryItemChoice[]] =
+    sectorId === null
+      ? [[], []]
+      : await Promise.all([
+          listHistoryShifts(db, sectorId, filters.shiftId),
+          listHistoryItems(db, sectorId, filters.itemId),
+        ]);
+  // O item que o select não sabe mostrar (inexistente, de outro setor, ou em
+  // "Todos os setores") vira "todos os itens" antes da consulta.
+  const applied: AppliedFilters = {
+    ...filters,
+    itemId: items.some((entry) => entry.id === filters.itemId)
+      ? filters.itemId
+      : null,
+  };
+  const history = await listHandoverHistory(
+    db,
+    actor,
+    { filters: applied, sectorId, page: parsePage(params.pagina) },
+    now,
+  );
 
   const extras = sectorParam === null ? {} : { sector: sectorParam };
   const showSector = admin && sectorId === null;
@@ -111,9 +133,10 @@ export async function HandoverHistory({ searchParams }: HandoverHistoryProps) {
       <Header />
       {picker}
       <HistoryFilters
-        key={buildHistoryHref(filters, extras)}
-        filters={filters}
+        key={buildHistoryHref(applied, extras)}
+        filters={applied}
         shifts={shifts}
+        items={items}
         sectorParam={sectorParam}
       />
       <p className="text-sm text-muted-foreground">
@@ -144,7 +167,7 @@ export async function HandoverHistory({ searchParams }: HandoverHistoryProps) {
         page={history.page}
         pageCount={history.pageCount}
         pathname="/passagens"
-        params={paginationParams(buildHistoryHref(filters, extras))}
+        params={paginationParams(buildHistoryHref(applied, extras))}
       />
     </div>
   );

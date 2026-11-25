@@ -5,7 +5,14 @@ import { addDays, daysBetween, isIsoDate } from "./saoPaulo";
 import type { HistorySituation } from "./status";
 
 export type HistoryPeriod = "7" | "30" | "range";
-export type HistorySituationFilter = "all" | HistorySituation | "corrected";
+// "delivered" = confirmada + aguardando + não confirmada (tudo que foi entregue);
+// "expected" = os pares de turno já encerrados (a entregue de cada um ou "sem passagem").
+export type HistorySituationFilter =
+  | "all"
+  | "delivered"
+  | "expected"
+  | HistorySituation
+  | "corrected";
 
 // Valor de ?situacao= na URL (pt-BR).
 export const SITUATION_PARAM: Readonly<Record<HistorySituationFilter, string>> =
@@ -16,6 +23,8 @@ export const SITUATION_PARAM: Readonly<Record<HistorySituationFilter, string>> =
     unconfirmed: "nao-confirmada",
     missing: "sem-passagem",
     corrected: "corrigida",
+    delivered: "entregues",
+    expected: "esperadas",
   };
 
 export type HistoryFilters = {
@@ -24,10 +33,16 @@ export type HistoryFilters = {
   to: string; // "YYYY-MM-DD"
   shiftId: string | null;
   situation: HistorySituationFilter;
+  itemId: string | null; // só as passagens que têm linha desse item
 };
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// uuid guardado em minúsculas; qualquer outra coisa vira "nenhum".
+function uuidFrom(value: string | undefined): string | null {
+  return value !== undefined && UUID.test(value) ? value.toLowerCase() : null;
+}
 
 function situationFromParam(param: string | undefined): HistorySituationFilter {
   const entry = Object.entries(SITUATION_PARAM).find(
@@ -35,6 +50,8 @@ function situationFromParam(param: string | undefined): HistorySituationFilter {
   );
   const key = entry?.[0];
   switch (key) {
+    case "delivered":
+    case "expected":
     case "awaiting":
     case "confirmed":
     case "unconfirmed":
@@ -118,16 +135,15 @@ export function parseHistoryFilters(
   params: SearchParams,
   today: string,
 ): HistoryFilters {
-  const shift = firstValue(params.turno);
   return {
     ...parseHistoryPeriod(params, today),
-    shiftId:
-      shift !== undefined && UUID.test(shift) ? shift.toLowerCase() : null,
+    shiftId: uuidFrom(firstValue(params.turno)),
     situation: situationFromParam(firstValue(params.situacao)),
+    itemId: uuidFrom(firstValue(params.item)),
   };
 }
 
-/** URL do histórico; omite o que é padrão (período 7, situação todas, sem turno, página 1). */
+/** URL do histórico; omite o que é padrão (período 7, situação todas, sem turno nem item, página 1). */
 export function buildHistoryHref(
   filters: HistoryFilters,
   extras: { sector?: string; page?: number } = {},
@@ -138,6 +154,7 @@ export function buildHistoryHref(
   if (filters.situation !== "all") {
     query.set("situacao", SITUATION_PARAM[filters.situation]);
   }
+  if (filters.itemId) query.set("item", filters.itemId);
   if (extras.sector) query.set("setor", extras.sector);
   if (extras.page !== undefined && extras.page > 1) {
     query.set("pagina", String(extras.page));

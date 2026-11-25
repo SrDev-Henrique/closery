@@ -15,6 +15,16 @@ export type ShiftChoice = {
   endsAt: string; // "HH:mm"
 };
 
+// Escolhas dos selects do histórico: o turno ou o item inativo escolhido pela
+// URL aparece como "{nome} (inativo)" em vez de sumir.
+export type HistoryShiftChoice = ShiftChoice & { active: boolean };
+export type HistoryItemChoice = {
+  id: string;
+  name: string;
+  unit: string;
+  active: boolean;
+};
+
 export type FormMode = "draft" | "edit" | "correction";
 
 // note "" = sem observação.

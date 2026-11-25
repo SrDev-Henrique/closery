@@ -94,7 +94,7 @@ export function historyPairsSql(
 // ("missing"). A origem da leitura é este SELECT inteiro como tabela derivada
 // (alias "u"): colunas sector_id, sector_name, shift_id, shift_name,
 // shift_order, operational_date, ends_local, handover_id, situation, corrected,
-// has_draft, delivered_by_name, delivered_at, confirmed_by_name, confirmed_at.
+// has_draft, delivered_by_name, delivered_at, confirmed_by_name, confirmed_at, expected.
 export function historySource(
   input: HistorySourceInput,
   sectorId: string | null,
@@ -126,7 +126,12 @@ export function historySource(
       exists (select 1 from handover_correction c where c.handover_id = h.id) as corrected,
       false as has_draft,
       du.name as delivered_by_name, h.delivered_at,
-      cu.name as confirmed_by_name, h.confirmed_at
+      cu.name as confirmed_by_name, h.confirmed_at,
+      (
+        s.active
+        and h.operational_date >= (s.created_at at time zone ${SAO_PAULO_TIME_ZONE})::date
+        and ${endsLocalSql(sql`h.operational_date`)} <= ${nowLocalSql(now)}
+      ) as expected
     from handover h
     join sector sec on sec.id = h.sector_id
     join shift s on s.id = h.shift_id
@@ -146,7 +151,8 @@ export function historySource(
         where d.sector_id = p.sector_id and d.shift_id = p.shift_id
           and d.operational_date = p.operational_date
       ),
-      null::text, null::timestamptz, null::text, null::timestamptz
+      null::text, null::timestamptz, null::text, null::timestamptz,
+      true
     from pairs p
     where p.ends_local <= ${nowLocal}
       and not exists (
@@ -161,7 +167,19 @@ export function historySource(
 function situationWhere(filters: HistoryFilters): SQL {
   if (filters.situation === "all") return sql`true`;
   if (filters.situation === "corrected") return sql`u.corrected`;
+  // Tudo que foi entregue (confirmada, aguardando e não confirmada).
+  if (filters.situation === "delivered") return sql`u.situation <> 'missing'`;
+  // Os pares de turno já encerrados: a entregue de cada um ou "sem passagem".
+  if (filters.situation === "expected") return sql`u.expected`;
   return sql`u.situation = ${filters.situation}`;
+}
+
+// Só as passagens que têm linha desse item (a "sem passagem" não tem passagem
+// e sai; item de outro setor não casa com nenhuma). Fica fora da `historySource`
+// de propósito: o dashboard e o CSV não filtram por item.
+function itemWhere(itemId: string | null): SQL {
+  if (itemId === null) return sql`true`;
+  return sql`exists (select 1 from handover_item hi where hi.handover_id = u.handover_id and hi.item_id = ${itemId})`;
 }
 
 export async function listHandoverHistory(
@@ -176,7 +194,7 @@ export async function listHandoverHistory(
   const sectorId = scope.kind === "sector" ? scope.sectorId : null;
 
   const source = historySource(input.filters, sectorId, now);
-  const where = situationWhere(input.filters);
+  const where = sql`${situationWhere(input.filters)} and ${itemWhere(input.filters.itemId)}`;
 
   const [counted] = await db
     .select({ total: sql<number>`count(*)`.mapWith(Number) })

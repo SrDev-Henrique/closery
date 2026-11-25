@@ -33,7 +33,7 @@ export function sectorRedirectHref(
       return chooseSectorPath(path, sectorId);
     case "/passagens":
       return buildHistoryHref(
-        { ...parseHistoryFilters(params, today), shiftId: null },
+        { ...parseHistoryFilters(params, today), shiftId: null, itemId: null },
         { sector: sectorId },
       );
     case "/solicitacoes":

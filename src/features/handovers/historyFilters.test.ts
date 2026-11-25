@@ -21,6 +21,7 @@ const DEFAULTS: HistoryFilters = {
   to: TODAY,
   shiftId: null,
   situation: "all",
+  itemId: null,
 };
 
 describe("parseHistoryFilters", () => {
@@ -149,6 +150,8 @@ describe("SITUATION_PARAM", () => {
       unconfirmed: "nao-confirmada",
       missing: "sem-passagem",
       corrected: "corrigida",
+      delivered: "entregues",
+      expected: "esperadas",
     });
   });
 });
@@ -194,6 +197,7 @@ describe("buildHistoryHref", () => {
       to: "2026-11-10",
       shiftId: SHIFT,
       situation: "corrected",
+      itemId: null,
     };
     const href = buildHistoryHref(filters, { sector: SHIFT, page: 2 });
     const params = Object.fromEntries(new URL(href, "http://x").searchParams);
@@ -329,5 +333,89 @@ describe("appendPeriodParams", () => {
         range,
       );
     }
+  });
+});
+
+// Situações "entregues" e "esperadas" e o filtro de item (D-F5-3, C-1).
+const ITEM = "44444444-4444-4444-8444-444444444444";
+const ITEM_LETTERS = "abcdefab-abcd-4abc-8abc-abcdefabcdef";
+
+describe("situações entregues e esperadas", () => {
+  it("entregues e esperadas na URL e de volta", () => {
+    expect(
+      parseHistoryFilters({ situacao: "entregues" }, TODAY).situation,
+    ).toBe("delivered");
+    expect(
+      parseHistoryFilters({ situacao: "esperadas" }, TODAY).situation,
+    ).toBe("expected");
+    expect(buildHistoryHref({ ...DEFAULTS, situation: "delivered" })).toBe(
+      "/passagens?situacao=entregues",
+    );
+    expect(buildHistoryHref({ ...DEFAULTS, situation: "expected" })).toBe(
+      "/passagens?situacao=esperadas",
+    );
+  });
+
+  it("os nomes em inglês e as variações de caixa continuam sendo lixo", () => {
+    for (const value of ["delivered", "expected", "ENTREGUES", "Esperadas"]) {
+      expect(parseHistoryFilters({ situacao: value }, TODAY).situation).toBe(
+        "all",
+      );
+    }
+  });
+});
+
+describe("item", () => {
+  it("uuid válido é aceito; maiúsculo é guardado em minúsculas (como o turno)", () => {
+    expect(parseHistoryFilters({ item: ITEM }, TODAY).itemId).toBe(ITEM);
+    expect(
+      parseHistoryFilters({ item: ITEM_LETTERS.toUpperCase() }, TODAY).itemId,
+    ).toBe(ITEM_LETTERS);
+  });
+
+  it("lixo, vazio e ausente viram nenhum item (nunca lança)", () => {
+    for (const item of ["abc", "", "'; drop table item;--", "1".repeat(36)]) {
+      expect(parseHistoryFilters({ item }, TODAY).itemId).toBeNull();
+    }
+    expect(parseHistoryFilters({}, TODAY).itemId).toBeNull();
+    expect(parseHistoryFilters({ item: [] }, TODAY).itemId).toBeNull();
+  });
+
+  it("repetido vale o primeiro", () => {
+    expect(
+      parseHistoryFilters({ item: [ITEM, ITEM_LETTERS] }, TODAY).itemId,
+    ).toBe(ITEM);
+  });
+
+  it("build: o item vem depois da situação e antes do setor; null não vira parâmetro", () => {
+    expect(
+      buildHistoryHref(
+        {
+          ...DEFAULTS,
+          shiftId: SHIFT,
+          situation: "delivered",
+          itemId: ITEM,
+        },
+        { sector: "todos", page: 2 },
+      ),
+    ).toBe(
+      `/passagens?turno=${SHIFT}&situacao=entregues&item=${ITEM}&setor=todos&pagina=2`,
+    );
+    expect(buildHistoryHref({ ...DEFAULTS, itemId: null })).toBe("/passagens");
+  });
+
+  it("ida e volta estável com item, turno e situação", () => {
+    const filters: HistoryFilters = {
+      period: "30",
+      from: "2026-10-23",
+      to: TODAY,
+      shiftId: SHIFT,
+      situation: "delivered",
+      itemId: ITEM,
+    };
+    const href = buildHistoryHref(filters);
+    const params = Object.fromEntries(new URL(href, "http://x").searchParams);
+    expect(parseHistoryFilters(params, TODAY)).toEqual(filters);
+    expect(buildHistoryHref(parseHistoryFilters(params, TODAY))).toBe(href);
   });
 });
