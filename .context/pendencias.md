@@ -369,7 +369,7 @@
 
 #### P60 — Duplicações da Fase 5 para um commit só de refatoração ⚪
 **Estado:** Aberto, não triado
-**Arquivos:** `src/features/handovers/history.ts` · `src/features/dashboard/` · `src/features/requests/` · `src/components/dashboard/` · `test/dashboardWorld.ts` · `src/components/` (`AppError`, `AppNotFound`)
+**Arquivos:** `src/features/handovers/history.ts` · `src/features/dashboard/` · `src/features/requests/` · `src/components/dashboard/` · `test/dashboardWorld.ts` · `src/app/(app)/error.tsx` · `src/app/(app)/not-found.tsx`
 **Impacto:** sem defeito conhecido; só custo de manutenção. A revisão final listou: os comentários de `historySource`/`historyPairsSql` sobre `sectorId` nulo = "todos" valer só para o admin; `AppError`/`AppNotFound` copiam os arquivos da raiz; `STATUS_FILTERS` escrito 3 vezes; a projeção duplicada de `historyChoices`; `EMPTY` devolvido por referência; `test/dashboardWorld.ts` grande demais (dividir); `.mapWith(Number)` apaga o `| null` do tipo; a duplicação dos blocos de item em controles e estoque e o `inRange(string)` com `sql.raw` (só recebe literal hoje); `requests.ts` com os próprios predicados de status em vez de `statusFilterSql` (a paridade guarda hoje); `screenFilters` copia a validação da tela (extrair `validateRequestFilters`); os casts `as` da Tarefa 10 fora os do shadcn; `ALL_SECTORS_HINT` escrito 3 vezes; `inPeriod` do `exportCsv` copia o `WHERE` da `historySource`.
 **Correção:** — (um commit só de refatoração, com os testes verdes antes e depois, nunca junto de uma feature)
 **Registrado em:** 2026-11-25
@@ -377,8 +377,8 @@
 #### P61 — Ajustes de UX da Fase 5 ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/requests/choices.ts` · `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/handovers/historyFilters.ts` · `src/components/dashboard/StockTrendChart.tsx` · `src/components/kokonutui/spending-ring.tsx`
-**Impacto:** sem perda de dados. (1) Em "Todos os setores" o filtro de item de `/solicitacoes` repete opções de mesmo nome de setores diferentes (ui-rules §2.5: mostrar o que a pessoa reconhece). (2) O subtítulo de `/solicitacoes` com Status = Cancelada não explica a janela. (3) Um `?turno=` de outro setor ainda filtra o histórico (os links do dashboard não são afetados: o turno do segmento é sempre do setor do item). (4) O eixo Y do `StockTrendChart` não tem unidade (ela está no cabeçalho do cartão e na dica). (5) A seleção do anel é guardada por posição e não por fatia (só importa numa atualização com a mesma chave).
-**Correção:** — (opções: rótulo com o setor nas opções repetidas; unidade no eixo; guardar a chave da fatia)
+**Impacto:** sem perda de dados. (1) Em "Todos os setores" o filtro de item de `/solicitacoes` repete opções de mesmo nome de setores diferentes (ui-rules §2.5: mostrar o que a pessoa reconhece). (2) O subtítulo de `/solicitacoes` com Status = Cancelada não explica a janela. (3) Um `?turno=` de outro setor ainda filtra o histórico (os links do dashboard não são afetados: o turno do segmento é sempre do setor do item). (4) O eixo Y do `StockTrendChart` não tem unidade (ela está no cabeçalho do cartão e na dica). (5) A seleção do anel é guardada por posição e não por fatia (só importa numa atualização com a mesma chave). (6) O nome acessível do total do anel não tem singular (`1 passagens: ver a lista`) e o componente genérico fixa o substantivo "passagens".
+**Correção:** — (opções: rótulo com o setor nas opções repetidas; unidade no eixo; guardar a chave da fatia; o nome do total por prop, montado com plural pelo `DashboardPassages`)
 **Registrado em:** 2026-11-25
 
 ## 2. Triado, plano pronto

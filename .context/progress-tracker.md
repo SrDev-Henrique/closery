@@ -94,7 +94,7 @@
 - ✅ Tela `/dashboard` (período, blocos independentes com `catchError`, esqueletos, estados vazios), "Dashboard" na navegação e o link "Ver o dashboard" no Início (2026-11-25)
 - ✅ `GET /api/dashboard/export`: CSV com BOM, `;`, CRLF e sem injeção de fórmula, mais o guarda de todo `route.ts` (2026-11-25)
 - ✅ Critério de pronto (spec §12): cada número bate com um oráculo independente (JS sobre leitores crus), num mundo com passagens confirmadas, aguardando, não confirmadas, sem passagem e uma correção (2026-11-25)
-- ✅ P13, P19, P45 e P48 resolvidas; pendências novas P53–P59; P24 e P34 ganharam `Atualização` (2026-11-25)
+- ✅ P13, P19, P45 e P48 resolvidas; pendências novas P53–P61; P24 e P34 ganharam `Atualização` (2026-11-25)
 - ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 35 cenários (7 de acesso, 6 de cadastros, 6 de passagem, 9 de solicitações e 7 do dashboard). Verificado: `check-types`, `lint`, `test`, `test:e2e` (35 passed) e `build` verdes (2026-11-25)
 - ⬜ Deploy, domínio, e-mail e piloto: Fase 6
 
