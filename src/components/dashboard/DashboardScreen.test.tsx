@@ -19,6 +19,7 @@ import { resetDb } from "../../../test/db";
 import { deactivateSector, insertSector } from "../../../test/fixtures";
 import { DashboardBlockBoundary } from "./DashboardBlockBoundary";
 import { DashboardBlockSkeleton } from "./DashboardBlockSkeleton";
+import { DashboardPeriodPicker } from "./DashboardPeriodPicker";
 import { DashboardScreen } from "./DashboardScreen";
 
 const mocks = vi.hoisted(
@@ -452,5 +453,33 @@ describe("DashboardScreen: limite e Suspense de cada bloco", () => {
       new Set([adminUld[0]?.key, adminCamara[0]?.key, adminThirty[0]?.key])
         .size,
     ).toBe(3);
+  });
+
+  it("o seletor de período recomeça ao trocar o período: a key dele muda com o período", async () => {
+    const { uld } = await seed();
+    const actor = authzOf({ role: "operator", sectorId: uld.id });
+    const pickerKey = async (search: Record<string, string>) => {
+      mocks.requireUser.mockResolvedValue(actor);
+      const tree = await DashboardScreen({
+        searchParams: Promise.resolve(search),
+      });
+      const found: ReactElement[] = [];
+      const walk = (node: ReactNode) => {
+        Children.forEach(node, (child) => {
+          if (!isValidElement<{ children?: ReactNode }>(child)) return;
+          if (child.type === DashboardPeriodPicker) found.push(child);
+          walk(child.props.children);
+        });
+      };
+      walk(tree);
+      expect(found).toHaveLength(1);
+      return found[0]?.key;
+    };
+
+    const seven = await pickerKey({ periodo: "7" });
+    const thirty = await pickerKey({ periodo: "30" });
+    expect(seven).not.toBeNull();
+    expect(thirty).not.toBeNull();
+    expect(seven).not.toBe(thirty);
   });
 });

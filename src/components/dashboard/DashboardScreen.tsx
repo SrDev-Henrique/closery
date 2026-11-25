@@ -103,6 +103,7 @@ export async function DashboardScreen({ searchParams }: DashboardScreenProps) {
         />
       )}
       <DashboardPeriodPicker
+        key={blockKey}
         period={scope.period}
         today={scope.today}
         sectorParam={scope.sectorParam}
