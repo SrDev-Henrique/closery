@@ -11,6 +11,9 @@ export type DestinationChoice = { id: string; name: string };
 export type FilterDestination = DestinationChoice & { active: boolean };
 export type StockItemChoice = { id: string; name: string; unit: string };
 export type PersonChoice = { id: string; name: string };
+
+// Item do filtro de itens (nome e unidade do snapshot mais recente).
+export type FilterItem = { id: string; name: string; unit: string };
 // defaultDestinationId null = "Outro".
 export type SectorFormChoices = {
   stockItems: StockItemChoice[];

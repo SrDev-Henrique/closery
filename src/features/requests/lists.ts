@@ -12,7 +12,7 @@ import type { Authz } from "@/features/authz/authz";
 import type { RequestStatus } from "@/lib/requestStatuses";
 
 import { CLOSED_WINDOW_DAYS, DAY_MS } from "./limits";
-import type { RequestFilters } from "./requestFilters";
+import { closedWindowApplies, type RequestFilters } from "./requestFilters";
 import {
   daysInStatusSql,
   destinationNameSql,
@@ -52,17 +52,18 @@ function listColumns(now: Date) {
   };
 }
 
-function recorte(actor: Authz, query: ListQuery): SQL | undefined {
+function recorte(actor: Authz, query: ListQuery, now: Date): SQL | undefined {
   return and(
     requestScopeSql(actor, query.sectorId),
-    requestFilterSql(query.filters),
+    requestFilterSql(query.filters, now),
   );
 }
 
 // Entregue e Cancelada só dos últimos 30 dias (por status_changed_at) quando
-// nenhum período foi escolhido; as abertas nunca saem pela janela.
+// nenhum período (de criação ou de entrega) foi escolhido; as abertas nunca
+// saem pela janela.
 function windowSql(filters: RequestFilters, now: Date): SQL | undefined {
-  if (filters.period !== "all") return undefined;
+  if (!closedWindowApplies(filters)) return undefined;
   const cutoff = new Date(now.getTime() - CLOSED_WINDOW_DAYS * DAY_MS);
   return sql`"request"."status_changed_at" >= ${cutoff.toISOString()}::timestamptz`;
 }
@@ -74,7 +75,7 @@ function groupWhere(
   now: Date,
 ): SQL | undefined {
   return and(
-    recorte(actor, query),
+    recorte(actor, query, now),
     eq(request.status, status),
     isOpenStatus(status) ? undefined : windowSql(query.filters, now),
   );
@@ -101,7 +102,7 @@ export async function getRequestGroups(
     })
     .from(request)
     .leftJoin(destination, eq(destination.id, request.destinationId))
-    .where(recorte(actor, input));
+    .where(recorte(actor, input, now));
 
   const rowsOf = async (status: RequestStatus): Promise<RequestListItem[]> => {
     const order = isOpenStatus(status)
@@ -153,7 +154,7 @@ export async function listRequestTable(
   input: ListQuery,
   now: Date,
 ): Promise<Page<RequestListItem>> {
-  const where = recorte(actor, input);
+  const where = recorte(actor, input, now);
 
   const [counted] = await db
     .select({ total: sql<number>`count(*)`.mapWith(Number) })

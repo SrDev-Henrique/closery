@@ -10,6 +10,7 @@ import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
 import {
   getRequestFormChoices,
   listFilterDestinations,
+  listFilterItems,
   listRequestCreators,
 } from "@/features/requests/choices";
 import { BOARD_MAX_LIMIT, DESTINATION_OTHER } from "@/features/requests/limits";
@@ -17,6 +18,7 @@ import { getRequestGroups, listRequestTable } from "@/features/requests/lists";
 import {
   buildRequestsHref,
   clearFiltersHref,
+  closedWindowApplies,
   filtersActive,
   moreHref,
   parseRequestFilters,
@@ -125,13 +127,15 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
 
   const { sectorId, sectorParam, sectors, cookie } = screen;
 
-  const [creators, destinations] = await Promise.all([
+  const [creators, destinations, items] = await Promise.all([
     listRequestCreators(db, actor, sectorId),
     listFilterDestinations(db),
+    listFilterItems(db, actor, sectorId, parsed.itemId),
   ]);
 
-  // Quem criou e destino que o seletor não sabe mostrar viram "todos" antes da
-  // consulta ("outro" é uma opção fixa, sempre vale).
+  // Quem criou, destino e item que o seletor não sabe mostrar viram "todos"
+  // antes da consulta ("outro" é uma opção fixa, sempre vale; o item vale se
+  // existe no escopo, mesmo além do teto de escolhas).
   const filters: RequestFilters = {
     ...parsed,
     creatorId: creators.some((person) => person.id === parsed.creatorId)
@@ -142,6 +146,9 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
       destinations.some((entry) => entry.id === parsed.destination)
         ? parsed.destination
         : null,
+    itemId: items.some((entry) => entry.id === parsed.itemId)
+      ? parsed.itemId
+      : null,
   };
   const extras = sectorParam === null ? {} : { sector: sectorParam };
   // O seletor leva o query dos filtros já validados (sem o setor): o servidor
@@ -178,7 +185,7 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
   const groups =
     table === null ? await getRequestGroups(db, actor, input, now) : null;
 
-  const closedWindow = filters.period === "all";
+  const closedWindow = closedWindowApplies(filters);
   const subtitle =
     table !== null
       ? tableSummary(table.total)
@@ -204,6 +211,11 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
     ...filters,
     from: filters.from ?? addDays(today, -6),
     to: filters.to ?? today,
+    delivery: {
+      ...filters.delivery,
+      from: filters.delivery.from ?? addDays(today, -6),
+      to: filters.delivery.to ?? today,
+    },
   };
   const hrefs = viewHrefs(filters, extras);
 
@@ -288,6 +300,7 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
         filters={formFilters}
         destinations={destinations}
         creators={creators}
+        items={items}
         sectorParam={sectorParam}
       />
       {filters.view === null ? (

@@ -12,7 +12,7 @@ import { chooseSectorPath, type SectorPickerPath } from "./urls";
  * Para onde a escolha de setor do admin navega (P45). O `query` vem do
  * cliente e **nunca** é usado como veio: é reinterpretado pelo mesmo parse da
  * tela (que nunca lança e só devolve valores válidos) e o href é remontado com
- * o setor novo. Caem o que é do setor antigo (o turno, o criador) e a
+ * o setor novo. Caem o que é do setor antigo (o turno, o item, o criador) e a
  * paginação; período, situação, visão, destino e busca seguem. `/` e
  * `/passagens/nova` ignoram o query: o turno e o dia são do setor antigo.
  * Sem query o destino é o de sempre (`chooseSectorPath`).
@@ -41,6 +41,7 @@ export function sectorRedirectHref(
         {
           ...resetPaging(parseRequestFilters(params, today)),
           creatorId: null,
+          itemId: null,
         },
         { sector: sectorId },
       );

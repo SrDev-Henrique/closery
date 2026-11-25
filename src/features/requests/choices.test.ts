@@ -1,13 +1,17 @@
 import type { PGlite } from "@electric-sql/pglite";
+import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
+import { item } from "@/db/schema/catalog";
 import { CHOICE_LIST_LIMIT } from "@/features/admin/pagination";
 import { authzOf } from "../../../test/authz";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import {
+  deactivateSector,
   insertDestination,
   insertItem,
   insertRequest,
+  insertRequestItem,
   insertSector,
   insertUser,
 } from "../../../test/fixtures";
@@ -15,6 +19,7 @@ import {
   getRequestFormChoices,
   listActiveDestinations,
   listFilterDestinations,
+  listFilterItems,
   listRequestCreators,
   listRequestStockItems,
   mostUsedDestinations,
@@ -460,5 +465,259 @@ describe("listRequestCreators", () => {
     expect(
       (await listRequestCreators(db, admin, other.id)).map((p) => p.name),
     ).toEqual(["Carlos Teste"]);
+  });
+});
+
+describe("listFilterItems", () => {
+  async function world() {
+    const sector = await insertSector(db, "Almoxarifado Teste");
+    const other = await insertSector(db, "Outro Setor");
+    const ana = await insertUser(db, {
+      role: "operator",
+      sectorId: sector.id,
+      name: "Ana Teste",
+    });
+    const bia = await insertUser(db, {
+      role: "operator",
+      sectorId: other.id,
+      name: "Bia Teste",
+    });
+    return { sector, other, ana, bia };
+  }
+
+  async function ask(
+    w: Awaited<ReturnType<typeof world>>,
+    itemId: string,
+    createdAt: Date,
+    quantity = 1,
+  ) {
+    const created = await insertRequest(db, {
+      sectorId: w.sector.id,
+      createdBy: w.ana.id,
+      destinationOther: "Doca Teste",
+      createdAt,
+    });
+    await insertRequestItem(db, {
+      requestId: created.id,
+      itemId,
+      quantity,
+    });
+    return created;
+  }
+
+  it("só itens que aparecem em solicitações do escopo, uma vez cada, por nome", async () => {
+    const w = await world();
+    const rede = await insertItem(db, { sectorId: w.sector.id, name: "rede" });
+    const cinta = await insertItem(db, {
+      sectorId: w.sector.id,
+      name: "Cinta",
+    });
+    await insertItem(db, { sectorId: w.sector.id, name: "Nunca pedido" });
+    await ask(w, rede.id, at(0));
+    await ask(w, rede.id, at(1));
+    await ask(w, cinta.id, at(2));
+
+    const result = await listFilterItems(
+      db,
+      authzOf({ role: "operator", userId: w.ana.id, sectorId: w.sector.id }),
+      null,
+      null,
+    );
+
+    expect(result.map((row) => row.name)).toEqual(["Cinta", "rede"]);
+    expect(result.every((row) => row.unit === "unidade")).toBe(true);
+  });
+
+  it("nome e unidade vêm do snapshot da solicitação mais recente (renomear o item depois não muda)", async () => {
+    const w = await world();
+    const cinta = await insertItem(db, {
+      sectorId: w.sector.id,
+      name: "Cinta velha",
+      unit: "peça",
+    });
+    await ask(w, cinta.id, at(0));
+    await db
+      .update(item)
+      .set({ name: "Cinta nova", unit: "rolo" })
+      .where(eq(item.id, cinta.id));
+    await ask(w, cinta.id, at(1));
+    await db
+      .update(item)
+      .set({ name: "Nome de hoje", unit: "caixa" })
+      .where(eq(item.id, cinta.id));
+
+    const result = await listFilterItems(
+      db,
+      authzOf({ role: "admin" }),
+      w.sector.id,
+      null,
+    );
+
+    expect(result).toEqual([
+      { id: cinta.id, name: "Cinta nova", unit: "rolo" },
+    ]);
+  });
+
+  it("operador vê só o próprio setor; o sectorId de outro setor é ignorado", async () => {
+    const w = await world();
+    const mine = await insertItem(db, {
+      sectorId: w.sector.id,
+      name: "Meu item",
+    });
+    const theirs = await insertItem(db, {
+      sectorId: w.other.id,
+      name: "Item alheio",
+    });
+    await ask(w, mine.id, at(0));
+    const foreign = await insertRequest(db, {
+      sectorId: w.other.id,
+      createdBy: w.bia.id,
+      destinationOther: "Doca Alheia",
+      createdAt: at(1),
+    });
+    await insertRequestItem(db, { requestId: foreign.id, itemId: theirs.id });
+    const operator = authzOf({
+      role: "operator",
+      userId: w.ana.id,
+      sectorId: w.sector.id,
+    });
+
+    const result = await listFilterItems(db, operator, w.other.id, theirs.id);
+
+    expect(result.map((row) => row.name)).toEqual(["Meu item"]);
+  });
+
+  it("admin: todos os setores ou só o escolhido; setor inativo fica de fora", async () => {
+    const w = await world();
+    const inactive = await insertSector(db, "Setor Parado");
+    const a = await insertItem(db, { sectorId: w.sector.id, name: "Item A" });
+    const b = await insertItem(db, { sectorId: w.other.id, name: "Item B" });
+    const c = await insertItem(db, { sectorId: inactive.id, name: "Item C" });
+    await ask(w, a.id, at(0));
+    const fromOther = await insertRequest(db, {
+      sectorId: w.other.id,
+      createdBy: w.bia.id,
+      destinationOther: "Doca B",
+      createdAt: at(1),
+    });
+    await insertRequestItem(db, { requestId: fromOther.id, itemId: b.id });
+    const fromInactive = await insertRequest(db, {
+      sectorId: inactive.id,
+      createdBy: w.bia.id,
+      destinationOther: "Doca C",
+      createdAt: at(2),
+    });
+    await insertRequestItem(db, { requestId: fromInactive.id, itemId: c.id });
+    await deactivateSector(db, inactive.id);
+    const admin = authzOf({ role: "admin" });
+
+    expect(
+      (await listFilterItems(db, admin, null, null)).map((row) => row.name),
+    ).toEqual(["Item A", "Item B"]);
+    expect(
+      (await listFilterItems(db, admin, w.other.id, null)).map(
+        (row) => row.name,
+      ),
+    ).toEqual(["Item B"]);
+    expect(await listFilterItems(db, admin, inactive.id, null)).toEqual([]);
+  });
+
+  it("vazio sem solicitações", async () => {
+    const w = await world();
+    await insertItem(db, { sectorId: w.sector.id, name: "Sem pedidos" });
+
+    expect(
+      await listFilterItems(db, authzOf({ role: "admin" }), null, null),
+    ).toEqual([]);
+  });
+
+  it("teto de CHOICE_LIST_LIMIT; o item escolhido além do teto entra no fim, sem duplicar", async () => {
+    const w = await world();
+    const created = await insertRequest(db, {
+      sectorId: w.sector.id,
+      createdBy: w.ana.id,
+      destinationOther: "Doca Teste",
+      createdAt: at(0),
+    });
+    const ids: string[] = [];
+    for (let i = 0; i <= CHOICE_LIST_LIMIT; i++) {
+      const entry = await insertItem(db, {
+        sectorId: w.sector.id,
+        name: `Item ${String(i).padStart(3, "0")}`,
+      });
+      await insertRequestItem(db, { requestId: created.id, itemId: entry.id });
+      ids.push(entry.id);
+    }
+    const admin = authzOf({ role: "admin" });
+    const lastId = ids[CHOICE_LIST_LIMIT] ?? "";
+
+    const capped = await listFilterItems(db, admin, w.sector.id, null);
+    expect(capped).toHaveLength(CHOICE_LIST_LIMIT);
+    expect(capped.some((row) => row.id === lastId)).toBe(false);
+
+    const selected = await listFilterItems(db, admin, w.sector.id, lastId);
+    expect(selected).toHaveLength(CHOICE_LIST_LIMIT + 1);
+    expect(selected.at(-1)?.id).toBe(lastId);
+
+    const inside = await listFilterItems(db, admin, w.sector.id, ids[0] ?? "");
+    expect(inside).toHaveLength(CHOICE_LIST_LIMIT);
+  }, 60_000);
+
+  it("o item escolhido só entra se existe no mesmo escopo", async () => {
+    const w = await world();
+    const mine = await insertItem(db, {
+      sectorId: w.sector.id,
+      name: "Meu item",
+    });
+    const theirs = await insertItem(db, {
+      sectorId: w.other.id,
+      name: "Item alheio",
+    });
+    const unused = await insertItem(db, {
+      sectorId: w.sector.id,
+      name: "Sem pedidos",
+    });
+    await ask(w, mine.id, at(0));
+    const foreign = await insertRequest(db, {
+      sectorId: w.other.id,
+      createdBy: w.bia.id,
+      destinationOther: "Doca Alheia",
+      createdAt: at(1),
+    });
+    await insertRequestItem(db, { requestId: foreign.id, itemId: theirs.id });
+    const admin = authzOf({ role: "admin" });
+
+    const names = async (selectedId: string) =>
+      (await listFilterItems(db, admin, w.sector.id, selectedId)).map(
+        (row) => row.name,
+      );
+    expect(await names(theirs.id)).toEqual(["Meu item"]);
+    expect(await names(unused.id)).toEqual(["Meu item"]);
+    expect(await names("00000000-0000-4000-8000-000000000000")).toEqual([
+      "Meu item",
+    ]);
+  });
+
+  it("admin em todos os setores: uma lista só, ordenada por nome", async () => {
+    const w = await world();
+    const a = await insertItem(db, { sectorId: w.sector.id, name: "Zebra" });
+    const b = await insertItem(db, { sectorId: w.other.id, name: "Abelha" });
+    await ask(w, a.id, at(0));
+    const foreign = await insertRequest(db, {
+      sectorId: w.other.id,
+      createdBy: w.bia.id,
+      destinationOther: "Doca Alheia",
+      createdAt: at(1),
+    });
+    await insertRequestItem(db, { requestId: foreign.id, itemId: b.id });
+
+    const all = await listFilterItems(
+      db,
+      authzOf({ role: "admin" }),
+      null,
+      null,
+    );
+
+    expect(all.map((row) => row.name)).toEqual(["Abelha", "Zebra"]);
   });
 });

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, eq, isNull, type SQL, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, type SQL, sql } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 
 import { destination } from "@/db/schema/catalog";
@@ -10,8 +10,9 @@ import { scopeToSector } from "@/features/authz/sectorScope";
 import { SAO_PAULO_TIME_ZONE } from "@/features/handovers/saoPaulo";
 
 import { DESTINATION_OTHER, STALE_AFTER_DAYS } from "./limits";
-import type { RequestFilters } from "./requestFilters";
+import type { RequestFilters, RequestStatusFilter } from "./requestFilters";
 import { SEARCH_FOLD_FROM, SEARCH_FOLD_TO, searchPattern } from "./search";
+import { OPEN_STATUSES } from "./status";
 
 // Fragmentos de SQL das leituras de solicitação. As colunas de tempo e status
 // são parâmetros OBRIGATÓRIOS: a seção "na entrega" da passagem calcula sobre
@@ -68,9 +69,47 @@ export function requestScopeSql(actor: Authz, sectorId: string | null): SQL {
   return condition ?? sql`true`;
 }
 
-// Destino, período, criador e busca. Pede o JOIN com `destination`.
-export function requestFilterSql(filters: RequestFilters): SQL | undefined {
+// O instante da PRIMEIRA vez que a solicitação virou entregue (uma reaberta e
+// reentregue conta pela primeira). Selecione com
+// `.mapWith(requestStatusEvent.changedAt)`. `request` sem alias.
+export function firstDeliveredAtSql(): SQL<Date | null> {
+  return sql<Date | null>`(select min("e"."changed_at") from "request_status_event" "e" where "e"."request_id" = "request"."id" and "e"."to_status" = 'delivered')`;
+}
+
+// Dia de São Paulo da 1ª entrega entre duas datas "YYYY-MM-DD". Sem nenhum
+// evento `delivered` o dia é nulo e a solicitação fica de fora.
+export function deliveredBetweenSql(from: string, to: string): SQL {
+  return sql`((${firstDeliveredAtSql()}) at time zone ${SAO_PAULO_TIME_ZONE})::date between ${from}::date and ${to}::date`;
+}
+
+// Status da lista: "open" = solicitada + em trânsito; "not_cancelled" = tudo
+// menos cancelada; um status = ele só; "all" não filtra.
+export function statusFilterSql(status: RequestStatusFilter): SQL | undefined {
+  switch (status) {
+    case "all":
+      return undefined;
+    case "open":
+      return inArray(request.status, [...OPEN_STATUSES]);
+    case "not_cancelled":
+      return ne(request.status, "cancelled");
+    default:
+      return eq(request.status, status);
+  }
+}
+
+// A solicitação pediu esse item (qualquer quantidade).
+export function requestItemFilterSql(itemId: string): SQL {
+  return sql`exists (select 1 from "request_item" "ri" where "ri"."request_id" = "request"."id" and "ri"."item_id" = ${itemId})`;
+}
+
+// Destino, status, parada, período (criação e entrega), item, criador e busca.
+// Pede o JOIN com `destination`. `now` só entra na "parada" (72 h sem fuso).
+export function requestFilterSql(
+  filters: RequestFilters,
+  now: Date,
+): SQL | undefined {
   const pattern = searchPattern(filters.search);
+  const { delivery } = filters;
   return and(
     filters.destination === null
       ? undefined
@@ -80,6 +119,14 @@ export function requestFilterSql(filters: RequestFilters): SQL | undefined {
     filters.period !== "all" && filters.from !== null && filters.to !== null
       ? createdBetweenSql(filters.from, filters.to)
       : undefined,
+    statusFilterSql(filters.status),
+    filters.stale
+      ? staleSql(now, request.status, request.statusChangedAt)
+      : undefined,
+    delivery.period !== "all" && delivery.from !== null && delivery.to !== null
+      ? deliveredBetweenSql(delivery.from, delivery.to)
+      : undefined,
+    filters.itemId === null ? undefined : requestItemFilterSql(filters.itemId),
     filters.creatorId === null
       ? undefined
       : eq(request.createdBy, filters.creatorId),
