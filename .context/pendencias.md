@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P60.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P62.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -96,6 +96,8 @@
 | P57 | Índices do dashboard só sob medição no Neon | ⚪ | Aberto, não triado |
 | P58 | A cor das situações do anel não separa em daltonismo | ⚪ | Aberto, não triado |
 | P59 | O CSV se monta inteiro em memória | ⚪ | Aberto, não triado |
+| P60 | Duplicações da Fase 5 para um commit só de refatoração | ⚪ | Aberto, não triado |
+| P61 | Ajustes de UX da Fase 5 | ⚪ | Aberto, não triado |
 
 ---
 
@@ -292,7 +294,8 @@
 **Impacto:** lacunas que não escondem defeito conhecido, só deixam uma regressão passar: Tarefa 1: o caso do `redirect()` em `runAction.test.ts` usa `revalidate: null` e não confere que `revalidatePath` não foi chamado; usar `"/(app)/admin"` e acrescentar a asserção; Tarefa 2: o caso de outro setor em `awaiting.test.ts` não chama `pendingIdOf`; acrescentar `expect(await pendingIdOf(biaAuthz, uld.id)).toBe(mine.id)`; Tarefa 4: `insertRequest` (`test/fixtures.ts`) escreve até 4 linhas sem transação; `cancelReason` só de espaços e `destinationOther` só de espaços chegam ao banco em vez de lançar o erro do fixture; entradas contraditórias (`cancelReason` com `events: false`, `statusChangedBy` com status `requested`) são ignoradas em silêncio; Tarefa 4: dois casos de FK restrict em `requests.test.ts` (setor, e "não apaga a pessoa que criou, moveu ou comentou") não provam que foram as FKs novas, porque tabelas antigas também referenciam setor e pessoa (a prova é `migration0004.test`); e o caso do padrão do banco só afirma `statusChangedAt >= createdAt`, então o `now()` do título não é provado; Tarefa 7: sem teste de admin cancelando em qualquer setor nem de admin criando solicitação com origem (`move.test.ts`); Tarefa 8: "o admin apaga só o próprio comentário" só confere `{ ok: true }`: conferir `deleted_at`; faltam escritas de admin em setor inativo (`SECTOR_INACTIVE`) em `comments.test.ts`; Tarefa 11: o ramo `NEXT_REDIRECT` do `useRequestMove` nunca é exercitado (o mock de `unstable_rethrow` existe, nenhum caso rejeita com esse erro); Tarefa 12: faltam o teto de 500 (sem "Ver comentários anteriores" com `commentsLimit` 500 e mais de 500 comentários) e o id malformado no Sheet (`RequestDetail.test.tsx`); Tarefa 14: o E2E (a) não confere no banco a quantidade digitada (12); E2E, log do `[app]` (Tarefa 15, investigado em 2026-11-24): na execução completa apareceu de novo, durante o caso (d), um `ERROR [Better Auth]: INTERNAL_SERVER_ERROR` com `portal "" does not exist` (código `34000`, rotina `exec_execute_message`), na consulta `select … from "session" where "session"."token" = $1` (a leitura da sessão do Better Auth), e todos os 28 testes passaram. Não é um caso negativo provocado: é o protocolo estendido do Postgres perdendo o portal sem nome, porque o `pglite-socket` (`e2e/start-db.ts`, `maxConnections` 20) serve vários clientes sobre um único backend PGlite e intercala as mensagens `Bind` e `Execute` de conexões diferentes; as leituras em paralelo (`Promise.all` do detalhe e dos grupos) aumentam a chance. É infraestrutura do E2E, não de produção (Neon é Postgres de verdade).
 **Correção:** — (opção para o último item: pool com `max: 1` só no app do E2E; `maxConnections` 1 no `pglite-socket` não serve, porque derruba a segunda conexão (app mais as conexões do próprio teste, ver `e2e/start-db.ts`); não mexer no pool de produção. Os demais: um commit só de testes)
 **Registrado em:** 2026-11-24
-**Atualização (2026-11-25):** spike F5-13 sobre o `portal "" does not exist` no log do `[app]` (o dashboard faz várias leituras em paralelo). Seis execuções completas de `bun run test:e2e`: com o pool padrão (10), 2, 2 e 2 ocorrências (soma 6); com `DATABASE_POOL_MAX=1` só no `webServer` do app, 0, 0 e 0 (soma 0). Critério de adoção: a linha de base com pelo menos 1 ocorrência, as três execuções com `max: 1` com 0, e nenhum teste estourando o tempo. Decisão: **adotado.** `poolMaxFrom(process.env)` (`src/db/poolSize.ts`, inteiro de 1 a 10 de `DATABASE_POOL_MAX`, senão 10) é lido por `createPool` e só o `webServer` do app no `playwright.config.ts` define `DATABASE_POOL_MAX: "1"`; o processo de teste, o dev e a Vercel seguem com 10. Cuidado: com uma conexão só, um `db` usado dentro do callback de uma transação travaria (nenhuma das 12 chamadas de `.transaction(` de `src` faz isso; o Better Auth mantém `transaction` desligado). Os demais itens de P49 continuam abertos.
+**Atualização (2026-11-25):** spike F5-13 sobre o `portal "" does not exist` no log do `[app]` (o dashboard faz várias leituras em paralelo). Seis execuções completas de `bun run test:e2e`: com o pool padrão (10), 2, 2 e 2 ocorrências (soma 6); com `DATABASE_POOL_MAX=1` só no `webServer` do app, 0, 0 e 0 (soma 0). Critério de adoção: a linha de base com pelo menos 1 ocorrência, as três execuções com `max: 1` com 0, e nenhum teste estourando o tempo. Decisão: **adotado.** `poolMaxFrom(process.env)` (`src/db/poolSize.ts`, inteiro de 1 a 10 de `DATABASE_POOL_MAX`, senão 10) é lido por `createPool` e só o `webServer` do app no `playwright.config.ts` define `DATABASE_POOL_MAX: "1"`; o processo de teste, o dev e a Vercel seguem com 10. Cuidado: com uma conexão só, um `db` usado dentro do callback de uma transação travaria (nenhuma das chamadas de `.transaction(` de `src` faz isso; o Better Auth mantém `transaction` desligado). Os demais itens de P49 continuam abertos.
+**Atualização (2026-11-25):** a revisão final da Fase 5 mandou para cá estas lacunas de teste (todas sem defeito conhecido): as 8 desativações de setor por SQL cru (`update sector set active = false`) que sobraram nos testes de confirm, correction, deliver, draft e formState (usar `deactivateSector`); os títulos dos testes de `RequestGroupSection`; as lacunas de `screenSector.test`; `loaders.test` é o próprio oráculo; o erro de página do P19 dentro do shell não tem E2E; `lists.test` sem parada/item × destino; o nome de status no `RequestsScreen.test`; os escopos de `expected` em `history.test`, o setor sem itens em `HandoverHistory.test` e o comentário `SEVEN`; a paridade do `criterioDePronto` sem afirmar `setor`; os casos de 93 dias, unicode e rascunho de Controles; os casos que faltam em `requests.test`; o teste do ramo do `DashboardScreen`; o nome do arquivo do CSV a partir do escopo de quem chama; o `scopeOf` escrito 3 vezes; o teste do 413 sem conferir os argumentos.
 
 #### P50 — UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas ⚪
 **Estado:** Aberto, não triado
@@ -346,7 +349,7 @@
 #### P57 — Índices do dashboard só sob medição no Neon ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/db/schema/handovers.ts` · `src/db/schema/requests.ts` · `drizzle/`
-**Impacto:** o dashboard só lê, e nenhum índice entrou na Fase 5 (regra: índice só sob medição). Dois candidatos: `handover(operational_date)` para "Todos os setores" (o índice de hoje é `(sector_id, operational_date)`) e `request_status_event(request_id, changed_at) where to_status = 'delivered'` para a primeira entrega (`deliveredBetweenSql` e `firstDeliveredAtSql`). Sem medição não se sabe se importam.
+**Impacto:** o dashboard só lê, e nenhum índice entrou na Fase 5 (regra: índice só sob medição). Dois candidatos: `handover(operational_date)` para "Todos os setores" (o índice de hoje é `(sector_id, operational_date)`) e `request_status_event(request_id, changed_at) where to_status = 'delivered'` para a primeira entrega (`deliveredBetweenSql` e `firstDeliveredAtSql`). Também a CTE `latest` de `src/features/dashboard/stock.ts`, que não tem limite (varre a última contagem de cada item). Sem medição não se sabe se importam.
 **Correção:** — (medir com `EXPLAIN (ANALYZE)` no Neon com o volume do piloto; criar por migração aditiva só o que medir)
 **Registrado em:** 2026-11-25
 
@@ -362,6 +365,20 @@
 **Arquivos:** `src/features/dashboard/exportCsv.ts` · `src/app/api/dashboard/export/route.ts`
 **Impacto:** `buildPassagesCsv` lê até 10.000 linhas (`CSV_MAX_ROWS`) e devolve o texto inteiro; acima disso a rota responde 413 e a pessoa precisa escolher um período menor. Sem problema no piloto; um setor com muitas passagens por dia e período de 93 dias pode bater no teto.
 **Correção:** — (opção: `ReadableStream` com cursor, ou subir o teto sob medição)
+**Registrado em:** 2026-11-25
+
+#### P60 — Duplicações da Fase 5 para um commit só de refatoração ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/history.ts` · `src/features/dashboard/` · `src/features/requests/` · `src/components/dashboard/` · `test/dashboardWorld.ts` · `src/components/` (`AppError`, `AppNotFound`)
+**Impacto:** sem defeito conhecido; só custo de manutenção. A revisão final listou: os comentários de `historySource`/`historyPairsSql` sobre `sectorId` nulo = "todos" valer só para o admin; `AppError`/`AppNotFound` copiam os arquivos da raiz; `STATUS_FILTERS` escrito 3 vezes; a projeção duplicada de `historyChoices`; `EMPTY` devolvido por referência; `test/dashboardWorld.ts` grande demais (dividir); `.mapWith(Number)` apaga o `| null` do tipo; a duplicação dos blocos de item em controles e estoque e o `inRange(string)` com `sql.raw` (só recebe literal hoje); `requests.ts` com os próprios predicados de status em vez de `statusFilterSql` (a paridade guarda hoje); `screenFilters` copia a validação da tela (extrair `validateRequestFilters`); os casts `as` da Tarefa 10 fora os do shadcn; `ALL_SECTORS_HINT` escrito 3 vezes; `inPeriod` do `exportCsv` copia o `WHERE` da `historySource`.
+**Correção:** — (um commit só de refatoração, com os testes verdes antes e depois, nunca junto de uma feature)
+**Registrado em:** 2026-11-25
+
+#### P61 — Ajustes de UX da Fase 5 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/choices.ts` · `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/handovers/historyFilters.ts` · `src/components/dashboard/StockTrendChart.tsx` · `src/components/kokonutui/spending-ring.tsx`
+**Impacto:** sem perda de dados. (1) Em "Todos os setores" o filtro de item de `/solicitacoes` repete opções de mesmo nome de setores diferentes (ui-rules §2.5: mostrar o que a pessoa reconhece). (2) O subtítulo de `/solicitacoes` com Status = Cancelada não explica a janela. (3) Um `?turno=` de outro setor ainda filtra o histórico (os links do dashboard não são afetados: o turno do segmento é sempre do setor do item). (4) O eixo Y do `StockTrendChart` não tem unidade (ela está no cabeçalho do cartão e na dica). (5) A seleção do anel é guardada por posição e não por fatia (só importa numa atualização com a mesma chave).
+**Correção:** — (opções: rótulo com o setor nas opções repetidas; unidade no eixo; guardar a chave da fatia)
 **Registrado em:** 2026-11-25
 
 ## 2. Triado, plano pronto

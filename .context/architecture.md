@@ -224,6 +224,7 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 - **Todo número é um link** (D-F5-3) para a lista que conta exatamente aquilo, gerado por `features/dashboard/links.ts`; os filtros que faltavam nasceram na fase: em `/passagens` as situações `entregues` e `esperadas` e o `item=`; em `/solicitacoes` `status=`, `parada=1`, `entrega=` (com `entrega_de`/`entrega_ate`) e `item=`. Teste de paridade: número × total da lista.
 - **Blocos independentes.** A página é síncrona com uma `<Suspense>` externa (sessão e `searchParams`); cada bloco fica num `catchError` (`next/error`) com `key` do período e do setor e, dentro, a sua `<Suspense>` com esqueleto: um bloco que quebra não derruba os outros. `(app)/error.tsx` e `(app)/not-found.tsx` (P19) mantêm o shell.
 
+## 8. Dados pessoais (LGPD) · 🟢 baseline
 
 - O sistema guarda **nome e e-mail de funcionários**, **autoria de passagens** e **comentários**.
   Coletar só o necessário; nada de documento pessoal (CPF, RG) sem motivo explícito.

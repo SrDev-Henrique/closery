@@ -56,18 +56,19 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
   semana com a equipe (spec §13). O deploy ainda não foi feito: `next build` e o E2E já rodam no CI.
 - **P34–P36 (Fase 3):** "sem passagem" usa os horários atuais do turno (P34); o cartão "Passagem para
   confirmar" não tem teto de idade (P35); dois operadores no mesmo rascunho: o último a salvar vence (P36).
-- **P44–P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); trocar de setor em
-  `/solicitacoes` perde os filtros da URL (P45); um cartão movido para uma coluna aberta e truncada só aparece
-  depois da revalidação (P46); o X só com ícone do `EditDialog` continua sem tooltip (P47).
-- **P48–P52 (revisão final da Fase 4):** refatorações para o início da Fase 5, a de maior prioridade é extrair
-  `resolveScreenSector`/`paginationParams` antes do painel (P48); higiene de testes e o erro `portal "" does not exist`
-  do `pglite-socket` no log do E2E (P49); UX (P50); FK composta do comentário (P51); CTE `last` das abertas (P52).
-- **P53–P59 (Fase 5):** item que muda de unidade ou de tipo no período não é tratado (P53); o erro do detalhe rápido aparece
+- **P44, P46, P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); um cartão movido para uma coluna
+  aberta e truncada só aparece depois da revalidação (P46); o X só com ícone do `EditDialog` continua sem tooltip (P47).
+  (P45, o seletor de setor que perdia os filtros de `/solicitacoes`, foi resolvida na Fase 5.)
+- **P49–P52 (revisão final da Fase 4):** higiene de testes e o erro `portal "" does not exist` do `pglite-socket` no log
+  do E2E (P49); UX (P50); FK composta do comentário (P51); CTE `last` das abertas (P52). (P48, extrair
+  `resolveScreenSector`/`paginationParams`, foi resolvida na Fase 5.)
+- **P53–P61 (Fase 5):** item que muda de unidade ou de tipo no período não é tratado (P53); o erro do detalhe rápido aparece
   fora do Sheet (P54); helpers do E2E repetidos (P55); destino além do teto de 200 escolhas cai do filtro (P56); índices do
-  dashboard só sob medição no Neon (P57); a cor das situações do anel não separa em daltonismo (P58); o CSV se monta em memória (P59).
-  Próximo id livre: P60.
+  dashboard só sob medição no Neon (P57); a cor das situações do anel não separa em daltonismo (P58); o CSV se monta em memória (P59); duplicações para um commit só de refatoração (P60); ajustes de UX
+  (P61). Próximo id livre: P62.
 - **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
 - **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
+  (P24 e P34 ganharam uma `Atualização` datada de 2026-11-25 na Fase 5; seguem abertas.)
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
   **P6/P7/P8:** Apple Developer, app da Meta, provedor de e-mail — só travam Apple, Facebook e "esqueci a senha".
 - **Suposições a validar com o usuário final:** spec §15 (glossário, horários dos turnos, o que é

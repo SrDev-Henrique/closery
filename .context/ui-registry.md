@@ -832,13 +832,13 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Local:** `src/components/passagens/HandoverHistory.tsx` (server, async)
 - **Propósito:** conteúdo de `/passagens`: o histórico de passagens, do dia mais recente ao mais antigo.
 - **Como funciona:** chama `requireUser()`, interpreta os filtros da URL (`parseHistoryFilters`, dia de hoje em São Paulo) e lê `listHandoverHistory` (50 por página, `?pagina=` clampada). Operador usa o próprio setor e nunca vê o seletor; admin vê o `SectorPicker` com "Todos os setores" (que não grava cookie) e o setor vem de `?setor=`, do cookie ou do primeiro ativo. Ordem na tela: título, seletor (admin), `HistoryFilters`, "Período: dd/mm/aaaa a dd/mm/aaaa", lista de `HistoryRowItem` (ou o estado vazio "Nenhuma passagem neste período.") e `Pagination` com os filtros e o setor preservados. Setor inativo (operador) ou nenhum setor ativo (admin) mostram `EmptyState`. Fase 5: as escolhas de Turno e Item vêm de `listHistoryShifts` e `listHistoryItems` (o turno ou o item inativo que a URL escolheu entra no fim como "(inativo)"); `?item=` fora das escolhas (inexistente, de outro setor, ou em "Todos os setores") vira "todos" antes da consulta.
-- **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`, `resolveScreenSector`, `paginationParams`.
+- **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`, `listHistoryShifts`, `listHistoryItems`, `resolveScreenSector`, `paginationParams`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams` (`src/lib/searchParams.ts`); sem mudança de comportamento. 2026-11-25 — Fase 5 (Tarefa 3, P45): o `SectorPicker` recebe `query={hrefQuery(buildHistoryHref(filters))}`: trocar de setor mantém o período e a situação e solta o turno e a página. 2026-11-25 — Fase 5 (Tarefa 6): filtro de item e turno/item inativos no formulário.
 
 ### HistoryFilters
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HistoryFilters.tsx`
-- **Propósito:** filtros do histórico (período, turno, situação) que vivem na URL.
+- **Propósito:** filtros do histórico (período, turno, situação e item) que vivem na URL.
 - **Como funciona:** `"use client"`; formulário controlado que nunca começa em branco (os valores vêm da URL já interpretada: 7 dias, todos os turnos, todas as situações). `SelectField` "Período" (Últimos 7 dias, Últimos 30 dias, Intervalo), "Turno" (só quando há turnos do setor: some em "Todos os setores"), "Situação" e, no Intervalo, `De` e `Até` (`type="date"`, já preenchidos com o período atual). "Aplicar filtros" navega com `router.push(buildHistoryHref(…))` (volta à página 1 e preserva o setor do admin); "Limpar filtros" é um `<Link>` para `/passagens` (preserva só `?setor=`). Fase 5: "Situação" ganha Entregues (logo depois de Todas) e Esperadas (logo depois de Entregues); "Item" (só com itens, logo depois de "Turno"; prop opcional `items`, `Todos os itens` por padrão); o turno e o item inativos que a URL escolheu aparecem selecionados como "{nome} (inativo)" e "{nome} ({unidade}) (inativo)" (prop `shifts` com `active?`), nunca como "Todos os …".
 - **Usa:** `SelectField`, `Field`, `Input`, `Button`, `buttonVariants`, `buildHistoryHref`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10). 2026-11-25 — Fase 5 (Tarefa 6): situações Entregues e Esperadas, Item e o inativo escolhido (D-F5-3, C-1, C-4).
@@ -922,7 +922,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 ### RequestFiltersForm
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestFiltersForm.tsx`
-- **Propósito:** busca, destino, período e quem criou, na URL.
+- **Propósito:** busca, destino, período, quem criou, status, paradas, entrega e item, na URL.
 - **Como funciona:** `"use client"`, controlado, valores iniciais da URL (nunca em branco); `key` = a URL dos filtros. "Aplicar filtros" monta a URL (`buildRequestsHref(resetPaging(...))`, mantém visão e setor); "Limpar filtros" é um `<Link>`. Escolhas, não texto: destinos (inativo marcado "(inativo)" e "Outro"), pessoas, períodos; "De"/"Até" só em "Intervalo". Busca `type="search"`, `text-base`, 80 caracteres. Fase 5: quatro controles novos, para os números do dashboard abrirem a lista exata — "Status" (Todos os status, Abertas, Não canceladas e cada status), "Paradas" (Todas, Só as paradas), "Entregue em" (Qualquer data, Últimos 7 dias, Últimos 30 dias, Intervalo; "Entregue de" e "Entregue até" só em Intervalo) e "Item" (só quando há itens: prop opcional `items`). Nenhum começa em branco.
 - **Usa:** `SelectField`, `Input`, `Field`, `Button`, `buttonVariants`.
 - **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 5): Status, Paradas, Entregue em e Item (D-F5-3).
@@ -1105,7 +1105,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-25)
 - **Local:** `src/components/solicitacoes/RequestGroupSection.tsx` (client-safe: sem `"use client"` próprio, usado dentro de componentes de cliente)
 - **Propósito:** a seção de um status que o Quadro (`RequestColumn`) e a Lista (`RequestList`) compartilham (P48).
-- **Como funciona:** `<section aria-labelledby>` (o id vem de `useId()`: sem `visao` o Quadro e a Lista estão os dois no DOM) com `className` dada pelo chamador; `<header>` com o ícone do status (`REQUEST_STATUS_STYLE`, decorativo), `<h2>` com o rótulo e o total do servidor (`tabular-nums`, com " solicitações" só para leitor de tela); nota opcional (`text-xs`); vazio "Nenhuma solicitação."; `<ul>` com o que `renderRow(row)` devolve (o chamador devolve o `<li>` já com `key`); `LoadMoreButton` só com `moreHref`.
+- **Como funciona:** `<section aria-labelledby>` (o id vem de `useId()`: sem `visao` o Quadro e a Lista estão os dois no DOM) com `className` dada pelo chamador; `<header>` com o ícone do status (`REQUEST_STATUS_STYLE`, decorativo), `<h2>` com o rótulo e, ao lado dele (fora do `<h2>`), o total do servidor (`tabular-nums`, com " solicitações" só para leitor de tela); nota opcional (`text-xs`); vazio "Nenhuma solicitação."; `<ul>` com o que `renderRow(row)` devolve (o chamador devolve o `<li>` já com `key`); `LoadMoreButton` só com `moreHref`.
 - **Usa:** `LoadMoreButton`, `REQUEST_STATUS_STYLE`, `REQUEST_STATUS_LABEL`.
 - **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 1, P48), extraído de `RequestColumn` e do `ListGroup` de `RequestList`.
 

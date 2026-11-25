@@ -165,8 +165,18 @@ describe(".context/pendencias.md", () => {
     }
   });
 
-  it("Fase 5: P53 a P59 entraram como Aberto, não triado", () => {
-    for (const id of ["P53", "P54", "P55", "P56", "P57", "P58", "P59"]) {
+  it("Fase 5: P53 a P61 entraram como Aberto, não triado", () => {
+    for (const id of [
+      "P53",
+      "P54",
+      "P55",
+      "P56",
+      "P57",
+      "P58",
+      "P59",
+      "P60",
+      "P61",
+    ]) {
       const entry = entries.get(id);
       expect(entry?.state, id).toBe("Aberto, não triado");
       expect(entry?.section, id).toBe("1");
