@@ -16,10 +16,12 @@ import {
   type DashboardWorld,
   oracleControls,
   oraclePassages,
+  oracleRequests,
   oracleSlotOf,
   oracleStock,
   rawDeliveredItems,
   rawHandovers,
+  rawRequests,
   rawShifts,
   seedDashboardWorld,
 } from "../../../test/dashboardWorld";
@@ -27,6 +29,7 @@ import { createTestDb, type TestDb } from "../../../test/db";
 import { getControlsData } from "./controls";
 import { lastCountHref, linkExtras, passagesListHref } from "./links";
 import { getPassagesData } from "./passages";
+import { getRequestsData } from "./requests";
 import { getStockData } from "./stock";
 import type { DashboardQuery, PassagesData } from "./types";
 
@@ -480,5 +483,115 @@ describe("Controles e Estoque", () => {
       (metric) => metric.itemId === world.items.film,
     );
     expect(film?.last).toBeNull();
+  });
+});
+
+describe("Solicitações", () => {
+  const SCOPES: readonly [string, () => string | null][] = [
+    ["ULD", () => world.uld.id],
+    ["Câmara", () => world.camara.id],
+    ["Todos os setores", () => null],
+  ];
+
+  it.each(
+    SCOPES,
+  )("(%s) abertas, paradas, entregues, destinos e itens batem com o oráculo sobre os eventos crus", async (_name, sector) => {
+    const sectorId = sector();
+    const sectorIds =
+      sectorId === null ? [world.uld.id, world.camara.id] : [sectorId];
+    const data = await getRequestsData(db, ADMIN, queryOf(sectorId), world.now);
+    const oracle = oracleRequests({
+      requests: await rawRequests(db, sectorIds),
+      now: world.now,
+      period: world.period,
+    });
+
+    expect(data.open).toBe(oracle.open);
+    expect(data.stale).toBe(oracle.stale);
+    expect(data.deliveredInPeriod).toBe(oracle.deliveredInPeriod);
+
+    expect(data.totalDestinations).toBe(
+      Object.keys(oracle.destinations).length,
+    );
+    expect(data.destinations.length).toBe(data.totalDestinations);
+    for (const destination of data.destinations) {
+      const expected = oracle.destinations[destination.key];
+      expect(expected, destination.name).toBeDefined();
+      expect(destination.deliveredCount, destination.name).toBe(
+        expected?.deliveredCount,
+      );
+      expect(destination.averageSeconds, destination.name).toBeCloseTo(
+        expected?.averageSeconds ?? Number.NaN,
+        3,
+      );
+    }
+
+    expect(data.totalItems).toBe(Object.keys(oracle.items).length);
+    expect(data.items.length).toBe(data.totalItems);
+    for (const row of data.items) {
+      const expected = oracle.items[row.itemId];
+      expect(expected, row.name).toBeDefined();
+      expect(row.quantity, row.name).toBe(expected?.quantity);
+      expect(row.requestCount, row.name).toBe(expected?.requestCount);
+    }
+  });
+
+  it("os literais da tabela do mundo (a 1ª entrega decide: R3 reaberta uma vez, R4 cancelada depois, R5 antes do período)", async () => {
+    const uld = await getRequestsData(
+      db,
+      ADMIN,
+      queryOf(world.uld.id),
+      world.now,
+    );
+    expect([uld.open, uld.stale, uld.deliveredInPeriod]).toEqual([3, 1, 5]);
+    expect(
+      uld.destinations.map((row) => [
+        row.name,
+        row.deliveredCount,
+        row.averageSeconds,
+      ]),
+    ).toEqual([
+      ["Doca 3", 3, 66_000],
+      ["Doca Antiga", 1, 21_600],
+      ["Outro", 1, 1_800],
+    ]);
+    expect(
+      uld.items.map((row) => [
+        row.name,
+        row.quantity,
+        row.requestCount,
+        row.unit,
+      ]),
+    ).toEqual([
+      ["Rede de proteção", 6, 2, "rede"],
+      ["Stretch", 5, 2, "rolo"],
+      ["Cinta", 2, 1, "peça"],
+    ]);
+
+    const camara = await getRequestsData(
+      db,
+      ADMIN,
+      queryOf(world.camara.id),
+      world.now,
+    );
+    expect([camara.open, camara.stale, camara.deliveredInPeriod]).toEqual([
+      0, 0, 1,
+    ]);
+    expect(camara.destinations.map((row) => row.averageSeconds)).toEqual([
+      2_100,
+    ]);
+    expect(camara.items.map((row) => [row.name, row.quantity])).toEqual([
+      ["Lacre", 3],
+    ]);
+
+    const todos = await getRequestsData(db, ADMIN, queryOf(null), world.now);
+    expect([todos.open, todos.stale, todos.deliveredInPeriod]).toEqual([
+      3, 1, 6,
+    ]);
+    expect(todos.destinations[0]).toMatchObject({
+      name: "Doca 3",
+      deliveredCount: 4,
+      averageSeconds: 50_025,
+    });
   });
 });
