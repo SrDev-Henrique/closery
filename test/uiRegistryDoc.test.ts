@@ -35,21 +35,29 @@ function nameOf(file: string): string {
 const adminFiles = sourceFiles(join("src", "components", "admin"));
 const handoverFiles = sourceFiles(join("src", "components", "passagens"));
 const requestFiles = sourceFiles(join("src", "components", "solicitacoes"));
+const kokonutFiles = sourceFiles(join("src", "components", "kokonutui"));
+const dashboardFiles = sourceFiles(join("src", "components", "dashboard"));
 const primitiveFiles = [
   "toggle",
   "toggle-group",
   "native-select",
   "dialog",
   "table",
+  "chart",
 ]
   .map((name) => join("src", "components", "ui", `${name}.tsx`))
   .filter((file) => existsSync(file));
 
-describe("ui-registry.md cobre os componentes das Fases 2, 3 e 4", () => {
+describe("ui-registry.md cobre os componentes das Fases 2 a 5", () => {
   it.each(
-    [...adminFiles, ...handoverFiles, ...requestFiles, ...primitiveFiles].map(
-      (file) => [file, nameOf(file)],
-    ),
+    [
+      ...adminFiles,
+      ...handoverFiles,
+      ...requestFiles,
+      ...kokonutFiles,
+      ...dashboardFiles,
+      ...primitiveFiles,
+    ].map((file) => [file, nameOf(file)]),
   )("%s está no catálogo", (file, name) => {
     expect(
       new RegExp(String.raw`\b${name}\b`, "i").test(registry),
@@ -61,6 +69,22 @@ describe("ui-registry.md cobre os componentes das Fases 2, 3 e 4", () => {
     expect(
       sourceFiles(join("src", "components", "pasta-que-nao-existe")),
     ).toEqual([]);
+  });
+
+  it.each([
+    "Chart",
+    "MetricCard",
+    "SpendingRing",
+    "chartColors",
+    "usePrefersReducedMotion",
+    "StockTrendChart",
+  ])("%s tem cabeçalho próprio no catálogo (a menção solta não basta)", (name) => {
+    expect(registry).toMatch(new RegExp(`^### ${name}(?![\\w])`, "m"));
+  });
+
+  it("os componentes do dashboard e do KokonutUI existem em disco (a varredura não é vazia)", () => {
+    expect(kokonutFiles.length).toBeGreaterThanOrEqual(2);
+    expect(dashboardFiles.length).toBeGreaterThanOrEqual(3);
   });
 
   it("AdminOverview descreve os cartões da Fase 2", () => {

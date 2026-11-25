@@ -231,6 +231,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** tokens `border`, `muted`, `foreground`.
 - **Histórico:** 2026-11-24 — `shadcn add table` na Fase 4 (Tarefa 11).
 
+### Chart (ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent)
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/ui/chart.tsx` (`"use client"`)
+- **Propósito:** o primitivo de gráfico do shadcn sobre o recharts 3.8.0 (a linha da evolução do estoque).
+- **Como funciona:** adicionado pelo CLI (`echo n | bunx shadcn@latest add chart --yes`: o `n` recusa sobrescrever o `card.tsx`). O `ChartContainer` injeta as cores do `ChartConfig` como `--color-<chave>` nos dois temas (aceita `var(--foreground)`) e quem usa dá altura explícita (`className="aspect-auto h-48 w-full"`); no jsdom ele renderiza sem `ResizeObserver` (usa `initialDimension`). Ajustes depois do CLI: `organizeImports` e formatação do Biome; `biome-ignore lint/security/noDangerouslySetInnerHtml` dentro da tag `<style>` do `ChartStyle` (CSS gerado só do `ChartConfig` do código, nunca de entrada de pessoa; a regra segue ligada no `biome.json`); no `ChartTooltipContent`, `formatInteger` (pt-BR) no lugar de `toLocaleString()` e `tabular-nums` no lugar de `font-mono`. Nunca `Fragment` dentro de um gráfico do recharts. O peer `react-is@19.3.0` é fixado junto com o `recharts` no `package.json`.
+- **Usa:** `cn`, `formatInteger`, `recharts`.
+- **Histórico:** 2026-11-25 — `shadcn add chart` na Fase 5 (Tarefa 10).
+
 ## 2. Componentes de aplicação — `src/components/<área>`
 
 ### AppSidebar
@@ -1100,6 +1108,52 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Como funciona:** `<section aria-labelledby>` (o id vem de `useId()`: sem `visao` o Quadro e a Lista estão os dois no DOM) com `className` dada pelo chamador; `<header>` com o ícone do status (`REQUEST_STATUS_STYLE`, decorativo), `<h2>` com o rótulo e o total do servidor (`tabular-nums`, com " solicitações" só para leitor de tela); nota opcional (`text-xs`); vazio "Nenhuma solicitação."; `<ul>` com o que `renderRow(row)` devolve (o chamador devolve o `<li>` já com `key`); `LoadMoreButton` só com `moreHref`.
 - **Usa:** `LoadMoreButton`, `REQUEST_STATUS_STYLE`, `REQUEST_STATUS_LABEL`.
 - **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 1, P48), extraído de `RequestColumn` e do `ListGroup` de `RequestList`.
+
+### Dashboard — `src/components/dashboard/*` e `src/components/kokonutui/*` (Fase 5)
+
+Gráficos e blocos do dashboard. Os componentes de gráfico são Client Components que recebem só números e strings já agregados no servidor (nunca somam, nunca buscam). A cor pertence à entidade (turno, situação) e nunca cicla: classes literais em `chartColors.ts`, medidas por `chartPalette.test.ts`. Número com `tabular-nums`; animação com `motion-reduce:`; tema claro e escuro.
+
+### MetricCard
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/kokonutui/metric-card.tsx` (`"use client"`; KokonutUI `metric-card` 2.0.0 adaptado)
+- **Propósito:** o cartão de um item de controle: total do período, média por turno, variação contra o período anterior, detalhamento por turno e a linha diária (atual e anterior).
+- **Como funciona:** props `label`, `unit`, `context` (setor, admin em "Todos os setores"), `periodDays`, `total`, `average`, `handoverCount`, `delta`, `segments` (um por turno, todos com `href`), `series` (2N dias; cada ponto traz o `total` do dia e as `parts` por turno), `href`. O número grande e a legenda `{n} passagens` são `Link` para a lista que o total conta; `handoverCount` 0 mostra "Sem passagens no período", sem gráfico. A variação é neutra (ícone `ArrowUp`/`ArrowDown`/`Minus` e texto de `deltaText`, sem verde nem vermelho). A escala vai de 0 ao maior valor desenhado, rotulada com a unidade. O `slider` lê um dia por vez (setas, Home, End, Escape; `aria-valuetext` `dd/mm/aaaa: n unidade`) e o botão "Voltar ao período" volta à leitura do período. Com 2 ou mais segmentos aparece "Por turno": barra de participação, uma linha por turno (cor fixa, total como `Link`, `sharePercent`) e o botão "Mostrar só {turno}" / "Mostrar todos os turnos" (`aria-pressed`); em foco o número e a variação são do turno (`segment.total` e `previousTotal` vindos do SQL), a linha usa a cor do turno e **nenhuma classe de swatch muda**. Nada é somado no cliente.
+- **Adaptações do original:** só tokens (`border-border bg-card`, `stroke-foreground`, `stroke-muted-foreground/50` tracejado…); pt-BR e unidade; export nomeado; período por prop e sem pílulas, sem dados de demonstração, sem Shift/intervalo; escala a partir de 0 (saiu o `mínimo × 0,85`); vazio; `clipId` com `useId().replace(/[^a-zA-Z0-9_-]/g, "")`; `motion-reduce` no `RollingNumber`, nas barras e no morph em JS; alvos `max-md:min-h-11`; resumo `sr-only` e `<output>` anunciando só a troca de foco.
+- **Usa:** `Link`, `computeDelta`/`deltaText`/`deltaAriaLabel`, `sharePercent`, `formatInteger`/`formatDecimal`, `formatDateBR`, `pluralize`, `cn`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10); `bun scripts/rc-check.mjs` com `compiled: 4` e nenhum `CompileError`.
+
+### SpendingRing
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/kokonutui/spending-ring.tsx` (`"use client"`; KokonutUI `spending-ring` 1.0.0 adaptado; exporta também `ringSpans`)
+- **Propósito:** o anel de parte-do-todo das Passagens (4 fatias: confirmadas, aguardando recebimento, não confirmadas, sem passagem).
+- **Como funciona:** props `title`, `legendLabel`, `total` (do SQL; o anel não soma as fatias), `slices` (`key`, `label`, `value`, `href`, `strokeClass`, `dotClass`, `icon?`), `emptyText`. `ringSpans` (pura) desenha só as fatias com valor, com sweep mínimo de 3° e soma de 360° menos os vãos. O anel é um `slider` (setas, Home, End, arrastar, tocar na fatia; `aria-valuetext` `{rótulo}: {n} ({p}%)`) e o centro mostra o valor, o rótulo e `{p}% do total` da fatia selecionada. A legenda é uma `<ul aria-label={legendLabel}>` com um `Link` por fatia (todas, inclusive as zeradas): ponto, ícone, rótulo, valor e porcentagem; foco ou passagem do mouse numa linha seleciona a fatia. `total` 0 mostra `emptyText` no lugar do anel e mantém a legenda.
+- **Adaptações do original:** só tokens; pt-BR, sem moeda; export nomeado; `legendLabel` e links; vazio e fatia minúscula (sem arco invertido); `motion-reduce:transition-none`; linhas da legenda `max-md:min-h-11`; `touch-none` só no anel. **React Compiler:** o original o fazia desistir em silêncio; corrigido com `turnTo(restAt?)` (padrão resolvido no corpo), `tickRef` (o `tick` se reagenda por ref), `ringSpans` com `reduce` (sem `let` reatribuído) e `transform` inicial calculado dos `spans`; `bun scripts/rc-check.mjs` com `compiled: 3`.
+- **Usa:** `Link`, `sharePercent`, `formatInteger`, `cn`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### chartColors
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/chartColors.ts` (server-safe e client-safe)
+- **Propósito:** a única fonte das classes de cor dos gráficos, lida pelo guarda de paleta.
+- **Como funciona:** `SHIFT_SWATCHES`/`SHIFT_STROKES` (turno nos slots 1 a 4 = `chart-1..4`), `OTHERS_SWATCH`/`OTHERS_STROKE` (turno do 5º em diante = `foreground`, sem número agregado "Outros turnos"), `segmentSwatch(slot)`/`segmentStroke(slot)`, `SITUATION_CHART` (o `-foreground` do selo de cada situação e `muted-foreground` para "sem passagem"), `SINGLE_SERIES_COLOR` (`var(--foreground)`) e `SINGLE_BAR_CLASS`. Classes literais (o Tailwind só gera o que aparece escrito inteiro). Nunca `chart-5` ou acima.
+- **Usa:** os tokens de `globals.css`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### usePrefersReducedMotion
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/usePrefersReducedMotion.ts` (`"use client"`)
+- **Propósito:** saber se a pessoa pediu menos movimento, para desligar animação em JS (o recharts).
+- **Como funciona:** `useSyncExternalStore` sobre `matchMedia("(prefers-reduced-motion: reduce)")`; acompanha a mudança sem recarregar; o snapshot do servidor é `false`.
+- **Usa:** `matchMedia`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### StockTrendChart
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/StockTrendChart.tsx` (`"use client"`)
+- **Propósito:** a evolução da contagem de um item de estoque no período, numa linha.
+- **Como funciona:** props `label`, `unit`, `points` (um por dia; dia sem contagem = `quantity: null`, a linha liga os pontos). `ChartContainer` com altura `h-48`, `LineChart accessibilityLayer`, série única em `var(--foreground)`, eixo X `dd/mm`, eixo Y inteiro, tooltip `{n} {unidade}` em `tabular-nums` com a data `dd/mm/aaaa`, `isAnimationActive` desligado com movimento reduzido. Uma `<table className="sr-only">` (legenda `{label} por dia`, colunas `Dia` e `Contagem ({unidade})`, `sem contagem`) traz o número exato de cada dia. Sem nenhuma contagem no período mostra "Sem contagem no período." no lugar do gráfico.
+- **Usa:** `Chart` (`ChartContainer`, `ChartTooltip`, `ChartTooltipContent`), `usePrefersReducedMotion`, `chartColors`, `formatDateBR`, `formatInteger`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

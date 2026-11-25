@@ -152,16 +152,39 @@
 
 ## 6. Componentes de registry de terceiros (KokonutUI) — D17
 
-- Entram **pelo CLI**: `bunx shadcn@latest add @kokonutui/<nome>` → `src/components/kokonutui/`.
-  Antes de instalar, `bunx shadcn@latest view @kokonutui/<nome>` mostra o código.
+- O registry vem declarado no `components.json` (`"registries": { "@kokonutui": "https://kokonutui.com/r/{name}.json" }`).
+  Sem essa chave, `bunx shadcn@latest add @kokonutui/<nome>` falha (registry não configurado).
+- Entram **pelo CLI**: `bunx shadcn@latest view @kokonutui/<nome>` mostra o código e
+  `bunx shadcn@latest add @kokonutui/metric-card @kokonutui/spending-ring --yes` grava em
+  `src/components/kokonutui/` (os dois não trazem dependência nova). Depois de todo `add`, rode
+  `git status` e restaure (`git checkout -- src/components/ui/<arquivo>.tsx`) qualquer primitivo
+  que o CLI tenha tocado: o CLI nunca decide sozinho sobre um arquivo que já existe.
+- O primitivo `chart` (recharts) puxa o `card.tsx`, que já existe: `echo n | bunx shadcn@latest add chart --yes`.
+  O `--yes` **não** responde o prompt "overwrite?" (sem stdin o CLI aborta e não grava nada; não
+  existe `--skip-existing`); o `n` recusa e o CLI grava só `src/components/ui/chart.tsx`,
+  acrescenta `"recharts": "3.8.0"` ao `package.json` e relata `Skipped 1 file: card.tsx`.
+  Fixe junto, no mesmo commit, `bun add --exact react-is@19.3.0`: o `react-is` que o Bun içou é o
+  17.0.2 (do `pretty-format`), que satisfaz o peer do recharts mas não reconhece elementos do
+  React 19, e o `isFragment` do recharts falharia em silêncio. Nunca `Fragment` dentro de um
+  gráfico do recharts.
 - **Adaptação obrigatória na instalação** (o código vem em inglês e com cor crua):
   1. trocar `zinc-*`/`emerald-*`/`rose-*`/`orange-*`/`sky-*`… por tokens (`foreground`,
-     `muted-foreground`, `border`, `muted`, `success`, `destructive`, `warning`, `chart-1..4`);
-  2. textos e `Intl.NumberFormat`/datas em **pt-BR**;
-  3. formato numérico com unidade (o `spending-ring` só formata moeda; o `metric-card` aceita
-     `format: "number"`);
+     `muted-foreground`, `border`, `muted`, `card`, `chart-1..4`, `*-foreground` das situações);
+     a cor pertence à entidade (turno, situação) e nunca cicla; `chart-5` e acima são proibidos
+     (guarda em `chartPalette.test.ts`);
+  2. textos e `Intl.NumberFormat`/datas em **pt-BR** (`formatInteger`, `formatDecimal`, `formatDateBR`);
+  3. número com unidade, sem moeda; `export default` vira export nomeado (`MetricCard`, `SpendingRing`);
   4. `metric-card`: período **controlado** pelo dashboard (prop), sem as pílulas internas; os
-     dados precisam cobrir **2× o período** (ele compara com o período anterior).
+     dados cobrem **2× o período** (ele compara com o período anterior); o cartão **nunca soma**:
+     o total, o total anterior, o total de cada dia e o de cada turno vêm do SQL;
+  5. estados: vazio ensina (sem passagens, sem fatia), um segmento só, mais de quatro turnos
+     (do 5º em diante a cor neutra, cada turno com a própria linha);
+  6. `motion-reduce:` nas transições CSS e `prefers-reduced-motion` nas animações em JS; alvo de
+     toque ≥ 44px abaixo de `md`; alternativa em texto (`aria-valuetext`, tabela `sr-only`);
+  7. **React Compiler**: o `spending-ring` cru faz o Compiler desistir do componente inteiro, em
+     silêncio (o `bun run build` não avisa). Evite parâmetro padrão que lê ref, função que se
+     reagenda dentro do próprio `useCallback` e `let` reatribuído dentro de `useMemo`; confira
+     com `bun scripts/rc-check.mjs <arquivos>` (cada arquivo com `compiled` ≥ 1 e nenhum `CompileError`; o script é do repositório e sai com código 1 se algum arquivo falhar).
 - São `"use client"` com animação própria (respeitam `prefers-reduced-motion`). Recebem dados
   já agregados no servidor — nunca buscam nada.
 - Registre cada um no `ui-registry.md`, com as adaptações feitas.
