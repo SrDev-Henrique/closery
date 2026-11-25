@@ -42,6 +42,9 @@ export default defineConfig({
         BETTER_AUTH_URL: APP_URL,
         BETTER_AUTH_SECRET:
           "e2e-segredo-de-teste-nao-usar-em-producao-0123456789",
+        // Só o app do E2E: o pglite-socket intercala as mensagens de várias
+        // conexões e o dashboard lê em paralelo (P49). Nunca na Vercel.
+        DATABASE_POOL_MAX: "1",
         GOOGLE_CLIENT_ID: "",
         GOOGLE_CLIENT_SECRET: "",
         FACEBOOK_CLIENT_ID: "",

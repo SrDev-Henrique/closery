@@ -1,6 +1,7 @@
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 
+import { poolMaxFrom } from "./poolSize";
 import * as schema from "./schema";
 import type { Schema } from "./types";
 
@@ -9,7 +10,11 @@ import type { Schema } from "./types";
 export function createPool(connectionString: string): Pool {
   // enableChannelBinding: o pg ignora o `channel_binding=require` da URL; esta
   // opção é que liga o SCRAM-SHA-256-PLUS que o Neon oferece.
-  return new Pool({ connectionString, max: 10, enableChannelBinding: true });
+  return new Pool({
+    connectionString,
+    max: poolMaxFrom(process.env),
+    enableChannelBinding: true,
+  });
 }
 
 // node-postgres + Pool (D18): suporta db.transaction() interativa, exigida por
