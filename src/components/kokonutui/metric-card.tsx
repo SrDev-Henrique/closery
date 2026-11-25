@@ -458,7 +458,11 @@ function MetricCardBody({
           </span>
         ) : (
           <Link
-            aria-label={`${withUnit}: ver as passagens do período`}
+            aria-label={
+              focusSegment
+                ? `${withUnit} em ${focusSegment.label}: ver as passagens`
+                : `${withUnit}: ver as passagens do período`
+            }
             className={cn(LINK_FOCUS, "hover:underline")}
             href={numberHref}
           >

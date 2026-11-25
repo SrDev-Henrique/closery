@@ -260,10 +260,19 @@ describe("MetricCard", () => {
     await user.click(screen.getByRole("button", { name: "Mostrar só Manhã" }));
 
     // O número grande vira o total do turno (30), com o link do turno.
-    const big = screen.getByRole("link", {
-      name: "30 peças: ver as passagens do período",
+    expect(
+      screen.queryByRole("link", {
+        name: "30 peças: ver as passagens do período",
+      }),
+    ).not.toBeInTheDocument();
+    const big = screen.getAllByRole("link", {
+      name: "30 peças em Manhã: ver as passagens",
     });
-    expect(big).toHaveAttribute("href", `${ITEM_HREF}&turno=manha`);
+    // O número grande e a linha do turno abrem a mesma lista.
+    expect(big).toHaveLength(2);
+    for (const link of big) {
+      expect(link).toHaveAttribute("href", `${ITEM_HREF}&turno=manha`);
+    }
     // Variação do turno: 30 contra 20 = +50%, e não a do item (+40%).
     expect(
       screen.getByRole("img", { name: deltaText(computeDelta(30, 20)) }),
