@@ -268,17 +268,21 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
     );
     // Sem `visao` o servidor não sabe a largura: as duas visões vão no DOM e o
     // CSS mostra a Lista abaixo de md e o Quadro de md em diante.
-    body =
-      filters.view === "board" ? (
-        board
-      ) : filters.view === "list" ? (
-        list
-      ) : (
-        <>
-          <div className="hidden md:block">{board}</div>
-          <div className="md:hidden">{list}</div>
-        </>
-      );
+    // O Quadro não tem coluna de Canceladas: com Status = Cancelada a Lista
+    // (que tem os quatro grupos) ocupa o lugar dele, em qualquer largura.
+    const boardHasNoCancelled = filters.status === "cancelled";
+    body = boardHasNoCancelled ? (
+      list
+    ) : filters.view === "board" ? (
+      board
+    ) : filters.view === "list" ? (
+      list
+    ) : (
+      <>
+        <div className="hidden md:block">{board}</div>
+        <div className="md:hidden">{list}</div>
+      </>
+    );
   }
 
   return (

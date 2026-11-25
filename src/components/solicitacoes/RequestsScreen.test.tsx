@@ -636,6 +636,23 @@ describe("RequestsScreen: filtros novos", () => {
     expect(screen.getByLabelText("Status")).toHaveValue("not_cancelled");
   });
 
+  it("Quadro com status=cancelada mostra a Lista, onde as canceladas aparecem", async () => {
+    const { sector, ana } = await seed();
+    await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      description: "Pedido desistido",
+      status: "cancelled",
+      createdAt: new Date(NOW.getTime() - 3 * DAY),
+      statusChangedAt: new Date(NOW.getTime() - DAY),
+    });
+    operator(sector.id, ana.id);
+
+    await renderScreen({ visao: "quadro", status: "cancelada" });
+
+    expect(screen.getByText("Pedido desistido")).toBeInTheDocument();
+  });
+
   it("?status= desconhecido cai em Todos os status", async () => {
     const { sector, ana } = await seed();
     await insertRequest(db, {
