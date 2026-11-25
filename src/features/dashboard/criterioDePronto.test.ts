@@ -2,21 +2,32 @@ import type { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { listHandoverHistory } from "@/features/handovers/history";
 import {
+  listHistoryItems,
+  listHistoryShifts,
+} from "@/features/handovers/historyChoices";
+import {
   type HistorySituationFilter,
   parseHistoryFilters,
 } from "@/features/handovers/historyFilters";
+import { addDays } from "@/features/handovers/saoPaulo";
 import { hrefQuery, queryRecord } from "@/lib/searchParams";
 import { authzOf } from "../../../test/authz";
 import {
   type DashboardWorld,
+  oracleControls,
   oraclePassages,
+  oracleSlotOf,
+  oracleStock,
+  rawDeliveredItems,
   rawHandovers,
   rawShifts,
   seedDashboardWorld,
 } from "../../../test/dashboardWorld";
 import { createTestDb, type TestDb } from "../../../test/db";
-import { passagesListHref } from "./links";
+import { getControlsData } from "./controls";
+import { lastCountHref, linkExtras, passagesListHref } from "./links";
 import { getPassagesData } from "./passages";
+import { getStockData } from "./stock";
 import type { DashboardQuery, PassagesData } from "./types";
 
 // O teste do critério de pronto (spec §12): num setor com turnos, passagens
@@ -203,5 +214,271 @@ describe("Passagens", () => {
       world.now,
     );
     expect(asOperator).toEqual(asAdmin);
+  });
+});
+
+describe("Controles e Estoque", () => {
+  const sectorIdsOf = (sectorId: string | null) =>
+    sectorId === null ? [world.uld.id, world.camara.id] : [sectorId];
+
+  async function controlsOracle(sectorId: string | null) {
+    const sectorIds = sectorIdsOf(sectorId);
+    const lines = await rawDeliveredItems(db, {
+      sectorIds,
+      range: { from: world.previous.from, to: world.period.to },
+      kind: "control",
+    });
+    const shifts = await rawShifts(db, sectorIds);
+    const data = await getControlsData(db, ADMIN, queryOf(sectorId));
+    const metrics = oracleControls({
+      lines,
+      itemIds: data.items.map((metric) => metric.itemId),
+      period: world.period,
+      previous: world.previous,
+    });
+    return { data, metrics, lines, shifts };
+  }
+
+  const SCOPES: readonly [string, () => string | null][] = [
+    ["ULD", () => world.uld.id],
+    ["Câmara", () => world.camara.id],
+    ["Todos os setores", () => null],
+  ];
+
+  it.each(
+    SCOPES,
+  )("Controles (%s): total, anterior, passagens, média e segmentos batem com o oráculo (valor vigente, depois da correção)", async (_name, sector) => {
+    const { data, metrics, lines, shifts } = await controlsOracle(sector());
+    expect(data.items.length).toBeGreaterThan(0);
+    for (const metric of data.items) {
+      const expected = metrics.find((entry) => entry.itemId === metric.itemId);
+      if (!expected) throw new Error("oráculo sem o item");
+      expect(metric.total, metric.name).toBe(expected.total);
+      expect(metric.previousTotal, metric.name).toBe(expected.previousTotal);
+      expect(metric.handoverCount, metric.name).toBe(expected.handoverCount);
+      expect(metric.average, metric.name).toBe(expected.average);
+
+      // Um segmento por turno: os ativos do setor do item + o inativo com linha.
+      const wanted = shifts
+        .filter(
+          (shift) =>
+            shift.sectorId === metric.sectorId &&
+            (shift.active || expected.byShift[shift.id] !== undefined),
+        )
+        .map((shift) => shift.id)
+        .sort();
+      expect(metric.segments.map((seg) => seg.shiftId).sort()).toEqual(wanted);
+      for (const segment of metric.segments) {
+        const part = expected.byShift[segment.shiftId] ?? {
+          total: 0,
+          previousTotal: 0,
+        };
+        expect(segment.total, `${metric.name} ${segment.label}`).toBe(
+          part.total,
+        );
+        expect(segment.previousTotal, `${metric.name} ${segment.label}`).toBe(
+          part.previousTotal,
+        );
+        expect(segment.slot).toBe(
+          oracleSlotOf(shifts, metric.sectorId, segment.shiftId),
+        );
+      }
+
+      // A série: 2N dias contíguos, o dia e cada parte batem com as linhas cruas.
+      expect(metric.series).toHaveLength(2 * 7);
+      for (const [index, point] of metric.series.entries()) {
+        const day = addDays(world.previous.from, index);
+        expect(point.date).toBe(day);
+        expect(point.total, `${metric.name} ${day}`).toBe(
+          expected.byDay[day] ?? 0,
+        );
+        expect(point.parts).toEqual(
+          metric.segments.map((segment) =>
+            lines
+              .filter(
+                (line) =>
+                  line.itemId === metric.itemId &&
+                  line.shiftId === segment.shiftId &&
+                  line.operationalDate === day,
+              )
+              .reduce((acc, line) => acc + line.quantity, 0),
+          ),
+        );
+      }
+    }
+  });
+
+  it("Controles: os literais da tabela do mundo (Rede 5 → 8 depois da correção vale 8)", async () => {
+    const data = await getControlsData(db, ADMIN, queryOf(null));
+    const by = (itemId: string) => {
+      const found = data.items.find((metric) => metric.itemId === itemId);
+      if (!found) throw new Error("item fora do resultado");
+      return found;
+    };
+    expect(
+      [world.items.net, world.items.strap, world.items.oldStrap].map((id) => [
+        by(id).total,
+        by(id).previousTotal,
+        by(id).handoverCount,
+        by(id).average,
+      ]),
+    ).toEqual([
+      [35, 6, 10, 3.5],
+      [36, 9, 10, 3.6],
+      [3, 0, 2, 1.5],
+    ]);
+    expect(by(world.items.seal)).toMatchObject({
+      total: 6,
+      previousTotal: 5,
+      handoverCount: 2,
+      average: 3,
+    });
+    expect(by(world.items.uldSeal)).toMatchObject({
+      total: 0,
+      handoverCount: 0,
+      average: null,
+    });
+    const net = by(world.items.net);
+    expect(net.series.map((point) => point.total)).toEqual([
+      0, 0, 0, 4, 0, 2, 0, 5, 5, 5, 8, 0, 3, 9,
+    ]);
+    expect(
+      net.series.slice(7).reduce((acc, point) => acc + point.total, 0),
+    ).toBe(35);
+  });
+
+  it("Controles (C-1): o total, a legenda e cada segmento são o total da lista que o link abre, depois da mesma validação da tela", async () => {
+    const { data, lines } = await controlsOracle(null);
+    const current = lines.filter(
+      (line) => line.operationalDate >= world.period.from,
+    );
+    for (const metric of data.items) {
+      const extras = { ...linkExtras(metric.sectorId), itemId: metric.itemId };
+      const totalHref = passagesListHref(world.period, "delivered", extras);
+      const filters = parseHistoryFilters(
+        queryRecord(hrefQuery(totalHref)),
+        world.today,
+      );
+      // A tela só mantém o item que está nas escolhas do setor (inclusive o
+      // inativo escolhido pela URL, como a Cinta antiga).
+      const choices = await listHistoryItems(
+        db,
+        metric.sectorId,
+        filters.itemId,
+      );
+      expect(
+        choices.map((choice) => choice.id),
+        metric.name,
+      ).toContain(metric.itemId);
+      const list = await listHandoverHistory(
+        db,
+        ADMIN,
+        { filters, sectorId: metric.sectorId, page: 1 },
+        world.now,
+      );
+      expect(list.total, metric.name).toBe(metric.handoverCount);
+
+      for (const segment of metric.segments) {
+        const href = passagesListHref(world.period, "delivered", {
+          ...extras,
+          shiftId: segment.shiftId,
+        });
+        const segFilters = parseHistoryFilters(
+          queryRecord(hrefQuery(href)),
+          world.today,
+        );
+        const shiftChoices = await listHistoryShifts(
+          db,
+          metric.sectorId,
+          segFilters.shiftId,
+        );
+        expect(shiftChoices.map((choice) => choice.id)).toContain(
+          segment.shiftId,
+        );
+        const segList = await listHandoverHistory(
+          db,
+          ADMIN,
+          { filters: segFilters, sectorId: metric.sectorId, page: 1 },
+          world.now,
+        );
+        // As passagens do item naquele turno (uma linha por passagem).
+        expect(segList.total, `${metric.name} ${segment.label}`).toBe(
+          current.filter(
+            (line) =>
+              line.itemId === metric.itemId && line.shiftId === segment.shiftId,
+          ).length,
+        );
+      }
+    }
+  });
+
+  it.each(
+    SCOPES,
+  )("Estoque (%s): a última contagem e os pontos batem com o oráculo, na ordem cronológica", async (_name, sector) => {
+    const sectorId = sector();
+    const sectorIds = sectorIdsOf(sectorId);
+    const data = await getStockData(db, ADMIN, queryOf(sectorId));
+    const metrics = oracleStock({
+      lines: await rawDeliveredItems(db, {
+        sectorIds,
+        range: { from: "2026-01-01", to: world.period.to },
+        kind: "stock",
+      }),
+      handovers: await rawHandovers(db, sectorIds),
+      shifts: await rawShifts(db, sectorIds),
+      itemIds: data.items.map((metric) => metric.itemId),
+      period: world.period,
+    });
+    const shifts = await rawShifts(db, sectorIds);
+    expect(data.items.length).toBeGreaterThan(0);
+    for (const metric of data.items) {
+      const expected = metrics.find((entry) => entry.itemId === metric.itemId);
+      if (!expected) throw new Error("oráculo sem o item");
+      expect(metric.last?.quantity ?? null, metric.name).toBe(
+        expected.last?.quantity ?? null,
+      );
+      expect(metric.last?.operationalDate ?? null, metric.name).toBe(
+        expected.last?.operationalDate ?? null,
+      );
+      expect(metric.last?.handoverId ?? null, metric.name).toBe(
+        expected.last?.handoverId ?? null,
+      );
+      expect(metric.last?.shiftName ?? null, metric.name).toBe(
+        shifts.find((shift) => shift.id === expected.last?.shiftId)?.name ??
+          null,
+      );
+      expect(metric.lastBeforePeriod, metric.name).toBe(
+        expected.lastBeforePeriod,
+      );
+      expect(metric.points, metric.name).toEqual(expected.points);
+    }
+  });
+
+  it("Estoque: os literais do mundo e o link da última contagem abre a passagem", async () => {
+    const data = await getStockData(db, ADMIN, queryOf(world.uld.id));
+    const stretch = data.items.find(
+      (metric) => metric.itemId === world.items.stretch,
+    );
+    expect(stretch?.last).toMatchObject({
+      quantity: 12,
+      operationalDate: "2026-11-20",
+      shiftName: "Tarde",
+    });
+    expect(stretch?.points.map((point) => point.quantity)).toEqual([
+      9,
+      7,
+      6,
+      5,
+      null,
+      3,
+      12,
+    ]);
+    expect(lastCountHref(stretch?.last?.handoverId ?? "")).toBe(
+      `/passagens/${world.handovers["20T"]}`,
+    );
+    const film = data.items.find(
+      (metric) => metric.itemId === world.items.film,
+    );
+    expect(film?.last).toBeNull();
   });
 });
