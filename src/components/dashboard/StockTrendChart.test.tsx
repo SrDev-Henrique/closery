@@ -72,16 +72,21 @@ describe("StockTrendChart", () => {
     const normal = render(
       <StockTrendChart label="Stretch" points={POINTS} unit="rolos" />,
     );
-    expect(normal.container.querySelector(".recharts-line")).not.toBeNull();
+    // Só a linha animada ganha o stroke-dasharray da animação de desenho.
+    expect(
+      normal.container
+        .querySelector("path.recharts-line-curve")
+        ?.getAttribute("stroke-dasharray"),
+    ).not.toBeNull();
     normal.unmount();
     mockReducedMotion(true);
     const reduced = render(
       <StockTrendChart label="Stretch" points={POINTS} unit="rolos" />,
     );
     // Sem animação a curva já está inteira no primeiro render.
-    expect(
-      reduced.container.querySelector("path.recharts-line-curve"),
-    ).not.toBeNull();
+    const curve = reduced.container.querySelector("path.recharts-line-curve");
+    expect(curve).not.toBeNull();
+    expect(curve?.getAttribute("stroke-dasharray")).toBeNull();
   });
 
   it("um dia só (período de 1 dia) renderiza", () => {
