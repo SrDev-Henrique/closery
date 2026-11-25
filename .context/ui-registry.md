@@ -697,7 +697,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Propósito:** mostrar a situação da passagem (aguardando, confirmada, não confirmada, sem passagem) e o selo "Corrigida".
 - **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-muted`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
 - **Usa:** `Badge`, tokens `info`, `success`, `warning`, `muted`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 11): exporta `SITUATION_STYLE` (ícone e classe de cada situação), que o anel do dashboard reusa para o ícone das fatias; nada mais muda.
 
 ### PendingHandoverCard
 - **Status:** ✅ pronto (2026-11-21)
@@ -1154,6 +1154,70 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Como funciona:** props `label`, `unit`, `points` (um por dia; dia sem contagem = `quantity: null`, a linha liga os pontos). `ChartContainer` com altura `h-48`, `LineChart accessibilityLayer`, série única em `var(--foreground)`, eixo X `dd/mm`, eixo Y inteiro, tooltip `{n} {unidade}` em `tabular-nums` com a data `dd/mm/aaaa`, `isAnimationActive` desligado com movimento reduzido. Uma `<table className="sr-only">` (legenda `{label} por dia`, colunas `Dia` e `Contagem ({unidade})`, `sem contagem`) traz o número exato de cada dia. Sem nenhuma contagem no período mostra "Sem contagem no período." no lugar do gráfico.
 - **Usa:** `Chart` (`ChartContainer`, `ChartTooltip`, `ChartTooltipContent`), `usePrefersReducedMotion`, `chartColors`, `formatDateBR`, `formatInteger`.
 - **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### StatLink
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/StatLink.tsx` (server-safe)
+- **Propósito:** um número do dashboard que é sempre um link para a lista que conta exatamente aquilo (D-F5-3).
+- **Como funciona:** props `label`, `value`, `href`, `icon` (ícone do lucide, decorativo) e `caption` opcional. `<Link>` com `min-h-11`, número em `text-3xl tabular-nums` (`formatInteger`), ícone + rótulo e legenda em `text-xs`. O nome acessível é número + rótulo + legenda ("19 Esperadas turnos já encerrados"); zero é escrito, nunca vazio. Ícone e texto, nunca só cor.
+- **Usa:** `Link`, tokens `card`, `muted`, `ring`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### BarList
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/BarList.tsx` (server-safe)
+- **Propósito:** linhas com o valor escrito ao lado e, opcionalmente, uma barra proporcional: o tempo até a entrega por destino (com barras) e a quantidade pedida por item (só números, porque as unidades diferem).
+- **Como funciona:** `<ul aria-label>` com um `<Link>` por linha (`min-h-11`): rótulo (+ contexto, o setor, em "Todos os setores"), `valueText` em `tabular-nums` e `detail`. Com `bars`, a barra tem `width = barPercent(value, max)%` (`max` = maior valor mostrado; valor maior que zero nunca some, piso de 2%) e a cor `SINGLE_BAR_CLASS` (`bg-foreground`); a barra é decorativa, o número escrito é a escala. Sem linhas mostra `emptyText`; `moreText` ("Mostrando 8 de 11 destinos.") fica abaixo da lista.
+- **Usa:** `Link`, `barPercent`, `chartColors`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardBlockSkeleton
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardBlockSkeleton.tsx` (server-safe; exporta também `DashboardSkeleton`)
+- **Propósito:** o que aparece enquanto um bloco (ou a página inteira) carrega: carregando é esqueleto, nunca zero.
+- **Como funciona:** `DashboardBlockSkeleton({ title })` é uma `<section aria-busy="true" aria-label={title}>` com o `<h2>` do bloco já visível e três `Skeleton`; nenhum dígito. `DashboardSkeleton()` é o fallback da página: título, rótulo do período, o seletor e os quatro blocos.
+- **Usa:** `Skeleton`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardBlockBoundary
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardBlockBoundary.tsx` (`"use client"`)
+- **Propósito:** um bloco que quebra não derruba os outros.
+- **Como funciona:** `DashboardBlockBoundary = catchError(DashboardBlockError)` (`next/error`). O fallback mostra o `<h2>` do bloco, "Não foi possível carregar este bloco." num `Alert` e o botão "Tentar de novo" (`retry()`, que busca o bloco de novo sem perder o estado de fora). O `catchError` só limpa o erro quando muda o **pathname**; como `?periodo=` e `?setor=` não mudam o pathname, quem usa passa uma `key` (título + href do período e do setor) **no limite**, para trocar o período remontar o limite e a `<Suspense>` dele. Roda no jsdom (só lê contextos que valem `null` fora do App Router).
+- **Usa:** `catchError`, `Alert`, `Button`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardPassages
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardPassages.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Passagens: esperadas, entregues, confirmadas, aguardando recebimento, não confirmadas e sem passagem, e o anel das 4 situações.
+- **Como funciona:** `getPassagesData` (uma consulta sobre a mesma fonte da lista de `/passagens`) com o escopo e o `now` por prop. Seis `StatLink` numa `<ul aria-label="Números das passagens">` (cada um leva a `/passagens?…&situacao=<esperadas|entregues|confirmada|aguardando|nao-confirmada|sem-passagem>` com o período e o `setor` do admin) e o `SpendingRing` com as quatro fatias na ordem fixa da entidade (cores `SITUATION_CHART`, ícone do selo `SITUATION_STYLE`, total = `listed` do SQL). Sem turno encerrado nem passagem no período mostra o `EmptyState` "Nenhum turno encerrado no período.".
+- **Usa:** `StatLink`, `SpendingRing`, `SITUATION_STYLE`, `SITUATION_CHART`, `EmptyState`, `passagesListHref`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardControls
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardControls.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Controles: um `MetricCard` por item de controle.
+- **Como funciona:** `getControlsData` (agregado no SQL). Um cartão por item (`key` = item + período), com o total, a média por turno, `computeDelta(total, previousTotal)`, um segmento por turno (cor `segmentSwatch`/`segmentStroke` pelo slot; todos com link, inclusive o turno inativo) e a série de 2N dias. Links (C-1): total e legenda `{n} passagens` = `/passagens?…&situacao=entregues&item=<id>`, cada segmento + `turno=<id>`; em "Todos os setores" o `setor` é o do item, nunca `todos`. Sem item mostra o `EmptyState` (o admin ganha "Ir para Itens"); acima de 30 mostra "Mostrando 30 de {total} itens.".
+- **Usa:** `MetricCard`, `chartColors`, `passagesListHref`, `computeDelta`, `EmptyState`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardStock
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardStock.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Estoque: a última contagem de cada item e a evolução no período.
+- **Como funciona:** `getStockData`. Um `Card` por item: nome, unidade (e setor em "Todos os setores"), a última contagem como link para a passagem (`/passagens/<id>`, "{n} {unidade}") com "Contado em {dd/mm/aaaa}, {turno}" (+ " · antes do período") ou "Sem contagem"; a evolução é sempre o `StockTrendChart`, que mostra "Sem contagem no período." quando nenhum dia tem contagem (o bloco não repete o texto). Sem item mostra o `EmptyState`; acima de 30 mostra "Mostrando 30 de {total} itens.".
+- **Usa:** `Card`, `StockTrendChart`, `lastCountHref`, `EmptyState`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardRequests
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardRequests.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Solicitações: abertas e paradas agora, entregues no período, tempo até a entrega por destino e quantidade pedida por item.
+- **Como funciona:** `getRequestsData`. Três `StatLink` (links da Tabela de `/solicitacoes`), o `BarList` com barras do tempo médio por destino (top 8, "Outro" é um destino, link `destino=`) e o `BarList` sem barras da quantidade pedida (`{n} {unidade}` · `em {n} solicitações`, link `status=nao-canceladas&item=`). **Sem anel** (desvio registrado da spec §8, C-2): itens têm unidades diferentes e somar ou fatiar rolos com peças mentiria.
+- **Usa:** `StatLink`, `BarList`, `formatDuration`, `links` do dashboard.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 
