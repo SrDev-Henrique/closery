@@ -145,6 +145,16 @@ describe(".context/pendencias.md", () => {
     }
   });
 
+  it("Fase 5: P48 resolvida", () => {
+    const entry = entries.get("P48");
+    expect(entry?.state).toBe("Resolvido");
+    expect(entry?.section).toBe("5");
+    expect(
+      entry?.updates.some((date) => date >= "2026-11-24"),
+      "P48",
+    ).toBe(true);
+  });
+
   it("Fase 4: P44 a P47 entraram como Aberto, não triado", () => {
     for (const id of ["P44", "P45", "P46", "P47"]) {
       const entry = entries.get(id);
