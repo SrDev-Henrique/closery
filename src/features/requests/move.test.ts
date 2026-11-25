@@ -12,6 +12,7 @@ import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import {
+  deactivateSector,
   insertRequest,
   insertSector,
   insertUser,
@@ -330,9 +331,7 @@ describe("moveRequest e cancelRequest", () => {
     it("setor inativo: SECTOR_INACTIVE, nada muda", async () => {
       const { anaAuthz, uld, open } = await setup();
       const created = await open();
-      await client.exec(
-        `UPDATE "sector" SET "active" = false WHERE "id" = '${uld.id}'`,
-      );
+      await deactivateSector(db, uld.id);
 
       const result = await moveRequest(
         db,
@@ -511,9 +510,7 @@ describe("moveRequest e cancelRequest", () => {
         { id: created.id, from: "requested", reason: "Intruso" },
         T1,
       );
-      await client.exec(
-        `UPDATE "sector" SET "active" = false WHERE "id" = '${uld.id}'`,
-      );
+      await deactivateSector(db, uld.id);
       const inactive = await cancelRequest(
         db,
         anaAuthz,

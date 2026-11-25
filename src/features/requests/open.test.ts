@@ -13,7 +13,12 @@ import {
   insertUser,
 } from "../../../test/fixtures";
 import { HANDOVER_OPEN_LIMIT } from "./limits";
-import { listOpenRequests, listOpenRequestsAtDelivery } from "./open";
+import {
+  listOpenRequests,
+  listOpenRequestsAtDelivery,
+  toOpenSummaries,
+} from "./open";
+import type { OpenStatus, RequestStatus } from "./types";
 
 // 2026-11-21 12:00 em São Paulo = 15:00Z.
 const NOW = spDate("2026-11-21", "12:00");
@@ -469,5 +474,61 @@ describe("listOpenRequestsAtDelivery", () => {
       total: 0,
       staleCount: 0,
     });
+  });
+});
+
+describe("toOpenSummaries", () => {
+  const row = (status: RequestStatus, id: string) => ({
+    id,
+    description: `Solicitação ${id}`,
+    status,
+    daysInStatus: 2,
+  });
+
+  it("mantém só as abertas, na ordem, com os outros campos intactos", () => {
+    const result = toOpenSummaries([
+      row("requested", "a"),
+      row("delivered", "b"),
+      row("in_transit", "c"),
+      row("cancelled", "d"),
+    ]);
+
+    expect(result).toEqual([
+      {
+        id: "a",
+        description: "Solicitação a",
+        status: "requested",
+        daysInStatus: 2,
+      },
+      {
+        id: "c",
+        description: "Solicitação c",
+        status: "in_transit",
+        daysInStatus: 2,
+      },
+    ]);
+  });
+
+  it("o status do resultado é do tipo OpenStatus (a prova é o compilador)", () => {
+    const [first] = toOpenSummaries([row("requested", "a")]);
+    const status: OpenStatus | undefined = first?.status;
+
+    expect(status).toBe("requested");
+  });
+
+  it("lista vazia e lista só de fechadas dão lista vazia", () => {
+    expect(toOpenSummaries([])).toEqual([]);
+    expect(
+      toOpenSummaries([row("delivered", "a"), row("cancelled", "b")]),
+    ).toEqual([]);
+  });
+
+  it("não muda a lista de entrada", () => {
+    const input = [row("requested", "a"), row("delivered", "b")];
+    const copy = structuredClone(input);
+
+    toOpenSummaries(input);
+
+    expect(input).toEqual(copy);
   });
 });

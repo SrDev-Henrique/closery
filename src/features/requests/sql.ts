@@ -3,6 +3,7 @@ import "server-only";
 import { and, eq, isNull, type SQL, sql } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 
+import { destination } from "@/db/schema/catalog";
 import { request } from "@/db/schema/requests";
 import { type Authz, isAdmin } from "@/features/authz/authz";
 import { scopeToSector } from "@/features/authz/sectorScope";
@@ -40,6 +41,12 @@ export function foldSql(column: SQL | PgColumn): SQL<string> {
 // escape padrão do ILIKE é a barra invertida. Pede o JOIN com `destination`.
 export function searchSql(pattern: string): SQL {
   return sql`(${foldSql(sql`"request"."description"`)} ilike ${pattern} or ${foldSql(sql`"destination"."name"`)} ilike ${pattern} or ${foldSql(sql`"request"."destination_other"`)} ilike ${pattern})`;
+}
+
+// Nome do destino da linha: o do cadastro (inativo também) ou o texto livre
+// do "Outro". Pede o leftJoin com `destination`.
+export function destinationNameSql(): SQL<string> {
+  return sql<string>`coalesce(${destination.name}, ${request.destinationOther})`;
 }
 
 // Dia de São Paulo em que a solicitação foi criada, entre duas datas "YYYY-MM-DD".

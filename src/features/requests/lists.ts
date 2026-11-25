@@ -9,12 +9,13 @@ import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
 import { PAGE_SIZE, type Page, resolvePage } from "@/features/admin/pagination";
 import type { Authz } from "@/features/authz/authz";
-import { REQUEST_STATUSES, type RequestStatus } from "@/lib/requestStatuses";
+import type { RequestStatus } from "@/lib/requestStatuses";
 
 import { CLOSED_WINDOW_DAYS, DAY_MS } from "./limits";
 import type { RequestFilters } from "./requestFilters";
 import {
   daysInStatusSql,
+  destinationNameSql,
   requestFilterSql,
   requestScopeSql,
   staleSql,
@@ -32,7 +33,7 @@ function listColumns(now: Date) {
     sectorId: request.sectorId,
     sectorName: sector.name,
     description: request.description,
-    destinationName: sql<string>`coalesce(${destination.name}, ${request.destinationOther})`,
+    destinationName: destinationNameSql(),
     destinationIsOther: sql<boolean>`(${request.destinationId} is null)`,
     status: request.status,
     createdByName: user.name,
@@ -117,14 +118,17 @@ export async function getRequestGroups(
       .limit(input.filters.limits[status]);
   };
 
-  const [requested, inTransit, delivered, cancelled] = await Promise.all(
-    REQUEST_STATUSES.map(rowsOf),
-  );
+  const [requested, in_transit, delivered, cancelled] = await Promise.all([
+    rowsOf("requested"),
+    rowsOf("in_transit"),
+    rowsOf("delivered"),
+    rowsOf("cancelled"),
+  ]);
   const rows: Record<RequestStatus, RequestListItem[]> = {
-    requested: requested ?? [],
-    in_transit: inTransit ?? [],
-    delivered: delivered ?? [],
-    cancelled: cancelled ?? [],
+    requested,
+    in_transit,
+    delivered,
+    cancelled,
   };
 
   const group = (status: RequestStatus) => ({

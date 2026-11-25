@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  appendPeriodParams,
   buildHistoryHref,
   type HistoryFilters,
+  type HistoryPeriodRange,
   parseHistoryFilters,
+  parseHistoryPeriod,
   SITUATION_PARAM,
 } from "./historyFilters";
 import { HISTORY_MAX_DAYS } from "./limits";
@@ -195,5 +198,136 @@ describe("buildHistoryHref", () => {
     const href = buildHistoryHref(filters, { sector: SHIFT, page: 2 });
     const params = Object.fromEntries(new URL(href, "http://x").searchParams);
     expect(parseHistoryFilters(params, TODAY)).toEqual(filters);
+  });
+});
+
+describe("parseHistoryPeriod", () => {
+  const cases: Array<{
+    name: string;
+    params: Record<string, string | string[] | undefined>;
+    expected: HistoryPeriodRange;
+  }> = [
+    {
+      name: "ausente: últimos 7 dias",
+      params: {},
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "lixo: últimos 7 dias",
+      params: { periodo: "<script>" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "30: hoje − 29 até hoje",
+      params: { periodo: "30" },
+      expected: { period: "30", from: "2026-10-23", to: TODAY },
+    },
+    {
+      name: "intervalo válido",
+      params: { periodo: "intervalo", de: "2026-11-01", ate: "2026-11-10" },
+      expected: { period: "range", from: "2026-11-01", to: "2026-11-10" },
+    },
+    {
+      name: "intervalo invertido: pontas trocadas",
+      params: { periodo: "intervalo", de: "2026-11-10", ate: "2026-11-01" },
+      expected: { period: "range", from: "2026-11-01", to: "2026-11-10" },
+    },
+    {
+      name: "ate no futuro: cortado em hoje",
+      params: { periodo: "intervalo", de: "2026-11-15", ate: "2026-12-31" },
+      expected: { period: "range", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "tudo no futuro: últimos 7 dias",
+      params: { periodo: "intervalo", de: "2026-12-01", ate: "2026-12-31" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "94 dias: de encurtado para ate − 92",
+      params: { periodo: "intervalo", de: "2026-08-20", ate: TODAY },
+      expected: { period: "range", from: "2026-08-21", to: TODAY },
+    },
+    {
+      name: "data irreal (2026-02-30): últimos 7 dias",
+      params: { periodo: "intervalo", de: "2026-02-30", ate: "2026-03-01" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "intervalo sem ate: últimos 7 dias",
+      params: { periodo: "intervalo", de: "2026-11-01" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "parâmetro repetido vale o primeiro",
+      params: { periodo: ["30", "7"] },
+      expected: { period: "30", from: "2026-10-23", to: TODAY },
+    },
+  ];
+
+  it.each(cases)("$name", ({ params, expected }) => {
+    expect(parseHistoryPeriod(params, TODAY)).toEqual(expected);
+  });
+
+  it("é o bloco de período de parseHistoryFilters, em todos os casos", () => {
+    for (const { params } of cases) {
+      const { period, from, to } = parseHistoryFilters(params, TODAY);
+      expect({ period, from, to }).toEqual(parseHistoryPeriod(params, TODAY));
+    }
+  });
+
+  it("o período de 93 dias cabe inteiro e o limite é o de HISTORY_MAX_DAYS", () => {
+    const { from, to } = parseHistoryPeriod(
+      { periodo: "intervalo", de: "2026-08-21", ate: TODAY },
+      TODAY,
+    );
+    expect(daysBetween(from, to) + 1).toBe(HISTORY_MAX_DAYS);
+    expect(from).toBe("2026-08-21");
+  });
+});
+
+describe("appendPeriodParams", () => {
+  function written(range: HistoryPeriodRange): string {
+    const query = new URLSearchParams();
+    appendPeriodParams(query, range);
+    return query.toString();
+  }
+
+  it("7 (o padrão) não escreve nada", () => {
+    expect(written({ period: "7", from: "2026-11-15", to: TODAY })).toBe("");
+  });
+
+  it("30 escreve periodo=30", () => {
+    expect(written({ period: "30", from: "2026-10-23", to: TODAY })).toBe(
+      "periodo=30",
+    );
+  });
+
+  it("intervalo escreve periodo, de e ate, nessa ordem", () => {
+    expect(
+      written({ period: "range", from: "2026-11-01", to: "2026-11-10" }),
+    ).toBe("periodo=intervalo&de=2026-11-01&ate=2026-11-10");
+  });
+
+  it("mantém o que já estava na query", () => {
+    const query = new URLSearchParams({ setor: "x" });
+    appendPeriodParams(query, { period: "30", from: "2026-10-23", to: TODAY });
+    expect(query.toString()).toBe("setor=x&periodo=30");
+  });
+
+  it("ida e volta: o que escreve, parseHistoryPeriod devolve", () => {
+    for (const { params } of [
+      { params: {} },
+      { params: { periodo: "30" } },
+      {
+        params: { periodo: "intervalo", de: "2026-11-01", ate: "2026-11-10" },
+      },
+    ]) {
+      const range = parseHistoryPeriod(params, TODAY);
+      const query = new URLSearchParams();
+      appendPeriodParams(query, range);
+      expect(parseHistoryPeriod(Object.fromEntries(query), TODAY)).toEqual(
+        range,
+      );
+    }
   });
 });

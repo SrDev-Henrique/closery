@@ -22,6 +22,7 @@ import { authzOf } from "../../../../test/authz";
 import { spDate } from "../../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../../test/db";
 import {
+  deactivateSector,
   insertDestination,
   insertItem,
   insertRequest,
@@ -607,9 +608,7 @@ describe("addCommentAction", () => {
       body: "Intruso",
     });
     asAna();
-    await client.exec(
-      `UPDATE "sector" SET "active" = false WHERE "id" = '${uld.id}'`,
-    );
+    await deactivateSector(db, uld.id);
     const inactive = await addCommentAction({
       requestId: created.id,
       body: "Setor parado",

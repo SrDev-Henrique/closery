@@ -8,9 +8,15 @@ import type { Db } from "@/db/types";
 import { type Authz, canAccessSector } from "@/features/authz/authz";
 
 import { HOME_STALE_LIMIT } from "./limits";
-import { daysInStatusSql, requestScopeSql, staleSql } from "./sql";
-import { isOpenStatus, OPEN_STATUSES } from "./status";
-import type { HomeRequests, OpenRequestSummary } from "./types";
+import { toOpenSummaries } from "./open";
+import {
+  daysInStatusSql,
+  destinationNameSql,
+  requestScopeSql,
+  staleSql,
+} from "./sql";
+import { OPEN_STATUSES } from "./status";
+import type { HomeRequests } from "./types";
 
 // Cartão "Solicitações" do Início: quantas abertas, quantas paradas e as
 // paradas há mais tempo (até HOME_STALE_LIMIT). Contagens do SQL.
@@ -41,7 +47,7 @@ export async function getHomeRequests(
     .select({
       id: request.id,
       description: request.description,
-      destinationName: sql<string>`coalesce(${destination.name}, ${request.destinationOther})`,
+      destinationName: destinationNameSql(),
       status: request.status,
       daysInStatus: daysInStatusSql(now, request.statusChangedAt),
       stale,
@@ -55,8 +61,6 @@ export async function getHomeRequests(
   return {
     openCount: counted?.openCount ?? 0,
     staleCount: counted?.staleCount ?? 0,
-    stale: rows.flatMap((row): OpenRequestSummary[] =>
-      isOpenStatus(row.status) ? [{ ...row, status: row.status }] : [],
-    ),
+    stale: toOpenSummaries(rows),
   };
 }

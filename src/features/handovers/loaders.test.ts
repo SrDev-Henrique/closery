@@ -1,5 +1,8 @@
 import type { PGlite } from "@electric-sql/pglite";
+import { drizzle } from "drizzle-orm/pglite";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+
+import * as schema from "@/db/schema";
 
 import { authzOf } from "../../../test/authz";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
@@ -61,6 +64,72 @@ describe("loaders da passagem", () => {
       });
       expect(await loadSector(db, operator, other.id)).toBeNull();
       expect(await loadSector(db, operator, NIL_ID)).toBeNull();
+    });
+  });
+
+  describe("loadSector com lock: share", () => {
+    it("dentro da transação devolve o mesmo que sem lock", async () => {
+      const own = await insertSector(db, "ULD");
+      const admin = authzOf({ role: "admin" });
+      const operator = authzOf({ role: "operator", sectorId: own.id });
+
+      const plain = await loadSector(db, admin, own.id);
+      const locked = await db.transaction((tx) =>
+        loadSector(tx, admin, own.id, { lock: "share" }),
+      );
+      const lockedOperator = await db.transaction((tx) =>
+        loadSector(tx, operator, own.id, { lock: "share" }),
+      );
+
+      expect(locked).toEqual(plain);
+      expect(lockedOperator).toEqual(plain);
+    });
+
+    it("setor inativo continua legível, com active falso", async () => {
+      const parado = await insertSector(db, "Parado", { active: false });
+      const admin = authzOf({ role: "admin" });
+
+      const locked = await db.transaction((tx) =>
+        loadSector(tx, admin, parado.id, { lock: "share" }),
+      );
+
+      expect(locked).toMatchObject({ id: parado.id, active: false });
+    });
+
+    it("fora do escopo do operador e setor inexistente: null, como sem lock", async () => {
+      const own = await insertSector(db, "ULD");
+      const other = await insertSector(db, "Outro");
+      const operator = authzOf({ role: "operator", sectorId: own.id });
+
+      const [outside, missing] = await db.transaction(async (tx) => [
+        await loadSector(tx, operator, other.id, { lock: "share" }),
+        await loadSector(tx, operator, NIL_ID, { lock: "share" }),
+      ]);
+
+      expect(outside).toBeNull();
+      expect(missing).toBeNull();
+    });
+
+    it("o lock é um FOR SHARE no SQL; sem lock, nenhum", async () => {
+      const own = await insertSector(db, "ULD");
+      const admin = authzOf({ role: "admin" });
+      const queries: string[] = [];
+      const logged = drizzle(client, {
+        schema,
+        logger: { logQuery: (query) => queries.push(query) },
+      });
+
+      await logged.transaction((tx) =>
+        loadSector(tx, admin, own.id, { lock: "share" }),
+      );
+      await loadSector(logged, admin, own.id);
+
+      const selects = queries.filter((query) =>
+        query.startsWith('select "id", "name", "active" from "sector"'),
+      );
+      expect(selects).toHaveLength(2);
+      expect(selects[0]).toMatch(/ for share$/);
+      expect(selects[1]).not.toMatch(/for share/);
     });
   });
 

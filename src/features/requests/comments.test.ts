@@ -8,6 +8,7 @@ import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import {
+  deactivateSector,
   insertRequest,
   insertRequestComment,
   insertSector,
@@ -98,10 +99,6 @@ describe("comentários das solicitações", () => {
 
   const total = async () =>
     (await db.select({ n: count() }).from(requestComment))[0]?.n ?? 0;
-  const deactivate = (sectorId: string) =>
-    client.exec(
-      `UPDATE "sector" SET "active" = false WHERE "id" = '${sectorId}'`,
-    );
 
   describe("addComment", () => {
     it("grava com o autor e created_at = now", async () => {
@@ -170,7 +167,7 @@ describe("comentários das solicitações", () => {
 
     it("setor inativo: SECTOR_INACTIVE, nada gravado", async () => {
       const { anaAuthz, uld, requestId } = await setup();
-      await deactivate(uld.id);
+      await deactivateSector(db, uld.id);
 
       const result = await addComment(
         db,
@@ -351,7 +348,7 @@ describe("comentários das solicitações", () => {
         requestId,
         authorId: ana.id,
       });
-      await deactivate(uld.id);
+      await deactivateSector(db, uld.id);
 
       const result = await deleteComment(db, anaAuthz, { id: own.id }, NOW);
 
