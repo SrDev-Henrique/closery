@@ -244,14 +244,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 ### AppSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
-- **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Conta e, só para admin, Administração.
+- **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Dashboard (ícone `ChartColumn`), Conta e, só para admin, Administração.
 - **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
   `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
   `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
   gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
   atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
 - **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava. 2026-11-25 — Fase 5 (Tarefa 12): o menu ganha o item Dashboard (`/dashboard`, ícone `ChartColumn`) entre Solicitações e Conta.
 
 ### AuthedSidebar
 - **Status:** ✅ pronto (2026-11-20)
@@ -282,11 +282,11 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 ### Greeting
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/Greeting.tsx`
-- **Propósito:** título "Olá, {primeiro nome}" e texto do Início.
+- **Propósito:** título "Olá, {primeiro nome}" e o link para o dashboard.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu.
 
 ### AppError e AppNotFound
 - **Status:** ✅ pronto (2026-11-25)
@@ -1218,6 +1218,30 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Como funciona:** `getRequestsData`. Três `StatLink` (links da Tabela de `/solicitacoes`), o `BarList` com barras do tempo médio por destino (top 8, "Outro" é um destino, link `destino=`) e o `BarList` sem barras da quantidade pedida (`{n} {unidade}` · `em {n} solicitações`, link `status=nao-canceladas&item=`). **Sem anel** (desvio registrado da spec §8, C-2): itens têm unidades diferentes e somar ou fatiar rolos com peças mentiria.
 - **Usa:** `StatLink`, `BarList`, `formatDuration`, `links` do dashboard.
 - **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardScreen
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardScreen.tsx` (Server Component assíncrono, dentro do `<Suspense>` da página)
+- **Propósito:** a tela `/dashboard`: título, período, exportar, setor, seletor de período e os quatro blocos.
+- **Como funciona:** `requireUser()` na primeira instrução, depois `await searchParams`, `now = new Date()` e `resolveDashboardScope` (a mesma resolução do CSV). Admin sem setor ativo e operador de setor inativo têm o estado vazio próprio. Com escopo: `<h1>Dashboard</h1>`, o rótulo do período (`formatPeriodLabel`, ex. "últimos 7 dias · 14–20 nov"), `ExportCsvLink` com os mesmos período e setor da tela, `SectorPicker` (só admin: `path="/dashboard"`, `allowAll`, `query` com o período, para trocar de setor manter o período), `DashboardPeriodPicker` e os quatro blocos na ordem Passagens, Controles, Estoque, Solicitações. Cada bloco fica num `DashboardBlockBoundary` com `key` = título + `buildDashboardHref(período, setor)` e, dentro dele, a `<Suspense>` com o `DashboardBlockSkeleton`: um bloco quebrado não derruba os outros e trocar o período ou o setor remonta limite e `<Suspense>`. O operador nunca recebe o `?setor=` de outro setor.
+- **Usa:** `resolveDashboardScope`, `SectorPicker`, `DashboardPeriodPicker`, `ExportCsvLink`, `DashboardBlockBoundary`, `DashboardBlockSkeleton`, os quatro blocos, `EmptyState`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 12).
+
+### DashboardPeriodPicker
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardPeriodPicker.tsx` (`"use client"`)
+- **Propósito:** trocar o período do dashboard: últimos 7 dias, últimos 30 dias ou um intervalo de até 93 dias.
+- **Como funciona:** `<nav aria-label="Período">` com dois `<Link className={buttonVariants(...)}>` (o do período ativo é `default` e tem `aria-current="page"`) e o botão "Intervalo", um disclosure (`aria-expanded`, `aria-controls` do formulário, sem `aria-pressed`). O formulário "Intervalo do período" começa com as datas atuais (nunca em branco; aberto de início quando o período ativo é um intervalo) e dois `<input type="date">` com `max` em hoje e `text-base`. "Aplicar intervalo" valida com `validateRangeInput` **antes** de navegar: o erro aparece no campo (`FieldError`, `aria-invalid`) e nada navega; ok → `router.push(buildDashboardHref(...))` levando o `setor` do admin. Nunca volta em silêncio para outro período (o servidor continua corrigindo o que chegar, por defesa).
+- **Usa:** `Button`, `buttonVariants`, `Field`, `Input`, `validateRangeInput`, `buildDashboardHref`, `dashboardPresetHref`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 12); `bun scripts/rc-check.mjs` com `compiled: 1` e nenhum `CompileError`.
+
+### ExportCsvLink
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/ExportCsvLink.tsx` (server-safe)
+- **Propósito:** baixar as passagens do período em CSV.
+- **Como funciona:** um `<a href download>` comum com `buttonVariants({ variant: "outline" })` (`max-md:h-11` vem do botão), ícone `Download` decorativo e o texto "Exportar CSV" (o rótulo nomeia o resultado). Nunca `next/link`: o link não navega nem faz prefetch, baixa o arquivo do Route Handler `GET /api/dashboard/export`.
+- **Usa:** `buttonVariants`, `lucide-react`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 12).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

@@ -24,7 +24,7 @@ describe("Greeting", () => {
     mocks.requireUser.mockReset();
   });
 
-  it("mostra 'Olá, {primeiro nome}' e o texto do Início", async () => {
+  it("mostra 'Olá, {primeiro nome}' e o link para o dashboard", async () => {
     mocks.requireUser.mockResolvedValue(authz({ name: "Maria Souza" }));
 
     render(await Greeting());
@@ -32,7 +32,10 @@ describe("Greeting", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Olá, Maria" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Em breve: dashboard.")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ver o dashboard" }),
+    ).toHaveAttribute("href", "/dashboard");
+    expect(screen.queryByText(/Em breve/)).not.toBeInTheDocument();
     expect(screen.queryByText(/solicitações/)).not.toBeInTheDocument();
     expect(screen.queryByText(/passagem de turno/)).not.toBeInTheDocument();
   });

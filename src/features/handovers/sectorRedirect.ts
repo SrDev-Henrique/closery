@@ -1,3 +1,4 @@
+import { buildDashboardHref } from "@/features/dashboard/period";
 import {
   buildRequestsHref,
   parseRequestFilters,
@@ -5,7 +6,11 @@ import {
 } from "@/features/requests/requestFilters";
 import { queryRecord } from "@/lib/searchParams";
 
-import { buildHistoryHref, parseHistoryFilters } from "./historyFilters";
+import {
+  buildHistoryHref,
+  parseHistoryFilters,
+  parseHistoryPeriod,
+} from "./historyFilters";
 import { chooseSectorPath, type SectorPickerPath } from "./urls";
 
 /**
@@ -15,7 +20,9 @@ import { chooseSectorPath, type SectorPickerPath } from "./urls";
  * o setor novo. Caem o que é do setor antigo (o turno, o item, o criador) e a
  * paginação; período, situação, visão, destino e busca seguem. `/` e
  * `/passagens/nova` ignoram o query: o turno e o dia são do setor antigo.
- * Sem query o destino é o de sempre (`chooseSectorPath`).
+ * Sem query o destino é o de sempre (`chooseSectorPath`). `/dashboard` mantém
+ * só o período (o intervalo inválido, invertido ou no futuro é corrigido pelo
+ * mesmo parse da página).
  */
 export function sectorRedirectHref(
   path: SectorPickerPath,
@@ -45,5 +52,9 @@ export function sectorRedirectHref(
         },
         { sector: sectorId },
       );
+    case "/dashboard":
+      return buildDashboardHref(parseHistoryPeriod(params, today), {
+        sector: sectorId,
+      });
   }
 }

@@ -308,8 +308,14 @@ describe("correctHandoverSchema", () => {
 });
 
 describe("chooseSectorSchema", () => {
-  it("aceita setor, 'todos' e os três caminhos", () => {
-    for (const path of ["/", "/passagens", "/passagens/nova"]) {
+  it("aceita setor, 'todos' e os caminhos da lista", () => {
+    for (const path of [
+      "/",
+      "/passagens",
+      "/passagens/nova",
+      "/solicitacoes",
+      "/dashboard",
+    ]) {
       expect(
         chooseSectorSchema.safeParse({ sectorId: SECTOR, path }).success,
       ).toBe(true);

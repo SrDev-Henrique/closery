@@ -7,6 +7,7 @@ export const SECTOR_PICKER_PATHS = [
   "/passagens",
   "/passagens/nova",
   "/solicitacoes",
+  "/dashboard",
 ] as const;
 export type SectorPickerPath = (typeof SECTOR_PICKER_PATHS)[number];
 

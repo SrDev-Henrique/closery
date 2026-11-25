@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sectorRedirectHref } from "./sectorRedirect";
-import { SECTOR_PICKER_PATHS } from "./urls";
+import { chooseSectorPath, SECTOR_PICKER_PATHS } from "./urls";
 
 const TODAY = "2026-11-21";
 const OLD = "11111111-1111-4111-8111-111111111111";
@@ -207,5 +207,82 @@ describe("sectorRedirectHref: /passagens e o item", () => {
         hoje,
       ),
     ).toBe(`/passagens?situacao=esperadas&setor=${setorNovo}`);
+  });
+});
+
+describe("sectorRedirectHref (Tarefa 12): /dashboard", () => {
+  const NEW_SECTOR = "22222222-2222-4222-8222-222222222222";
+  const OLD_SECTOR = "11111111-1111-4111-8111-111111111111";
+  const TODAY = "2026-11-20";
+
+  it("query vazia dá o mesmo destino de chooseSectorPath", () => {
+    expect(sectorRedirectHref("/dashboard", NEW_SECTOR, "", TODAY)).toBe(
+      chooseSectorPath("/dashboard", NEW_SECTOR),
+    );
+  });
+
+  it("mantém o período 30 e põe o setor novo; o setor antigo e o resto caem", () => {
+    expect(
+      sectorRedirectHref(
+        "/dashboard",
+        NEW_SECTOR,
+        `periodo=30&setor=${OLD_SECTOR}&turno=x&pagina=2`,
+        TODAY,
+      ),
+    ).toBe(`/dashboard?periodo=30&setor=${NEW_SECTOR}`);
+  });
+
+  it("mantém um intervalo válido (o '?' inicial é aceito)", () => {
+    expect(
+      sectorRedirectHref(
+        "/dashboard",
+        NEW_SECTOR,
+        "?periodo=intervalo&de=2026-11-01&ate=2026-11-05",
+        TODAY,
+      ),
+    ).toBe(
+      `/dashboard?periodo=intervalo&de=2026-11-01&ate=2026-11-05&setor=${NEW_SECTOR}`,
+    );
+  });
+
+  it("intervalo inválido, lixo e período no futuro caem nos últimos 7 dias", () => {
+    for (const query of [
+      "periodo=intervalo&de=2026-02-30&ate=2026-11-05",
+      "periodo=lixo",
+      "periodo=intervalo&de=2026-12-01&ate=2026-12-05",
+    ]) {
+      expect(sectorRedirectHref("/dashboard", NEW_SECTOR, query, TODAY)).toBe(
+        `/dashboard?setor=${NEW_SECTOR}`,
+      );
+    }
+  });
+
+  it("intervalo invertido é trocado e 'ate' futuro é cortado em hoje", () => {
+    expect(
+      sectorRedirectHref(
+        "/dashboard",
+        NEW_SECTOR,
+        "periodo=intervalo&de=2026-11-05&ate=2026-11-01",
+        TODAY,
+      ),
+    ).toBe(
+      `/dashboard?periodo=intervalo&de=2026-11-01&ate=2026-11-05&setor=${NEW_SECTOR}`,
+    );
+    expect(
+      sectorRedirectHref(
+        "/dashboard",
+        NEW_SECTOR,
+        "periodo=intervalo&de=2026-11-15&ate=2026-12-31",
+        TODAY,
+      ),
+    ).toBe(
+      `/dashboard?periodo=intervalo&de=2026-11-15&ate=2026-11-20&setor=${NEW_SECTOR}`,
+    );
+  });
+
+  it("'todos' como setor novo é aceito e o parâmetro repetido vale o primeiro", () => {
+    expect(
+      sectorRedirectHref("/dashboard", "todos", "periodo=30&periodo=7", TODAY),
+    ).toBe("/dashboard?periodo=30&setor=todos");
   });
 });
