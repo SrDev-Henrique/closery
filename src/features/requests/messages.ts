@@ -1,8 +1,4 @@
-import {
-  formatDateBR,
-  formatTimeBR,
-  saoPauloParts,
-} from "@/features/handovers/saoPaulo";
+import { formatDateAtTimeBR } from "@/features/handovers/saoPaulo";
 import type { RequestStatus } from "@/lib/requestStatuses";
 
 import { REQUEST_STATUS_LABEL } from "./status";
@@ -45,11 +41,6 @@ export const COMMENT_DELETE_FORBIDDEN_MESSAGE =
 export const CANCEL_REASON_LOCKED_MESSAGE =
   "O motivo do cancelamento não pode ser apagado.";
 
-// "dd/mm/aaaa às HH:mm", em hora de São Paulo.
-function whenLabel(at: Date): string {
-  return `${formatDateBR(saoPauloParts(at).date)} às ${formatTimeBR(at)}`;
-}
-
 /** "O status desta solicitação já é {status}." */
 export function sameStatusMessage(status: RequestStatus): string {
   return `O status desta solicitação já é ${REQUEST_STATUS_LABEL[status]}.`;
@@ -61,12 +52,12 @@ export function alreadyMovedMessage(
   byName: string,
   at: Date,
 ): string {
-  return `Esta solicitação já foi movida para ${REQUEST_STATUS_LABEL[status]} por ${byName} em ${whenLabel(at)}.`;
+  return `Esta solicitação já foi movida para ${REQUEST_STATUS_LABEL[status]} por ${byName} em ${formatDateAtTimeBR(at)}.`;
 }
 
 /** "Esta solicitação já foi cancelada por {nome} em {dd/mm/aaaa} às {HH:mm}." */
 export function alreadyCancelledMessage(byName: string, at: Date): string {
-  return `Esta solicitação já foi cancelada por ${byName} em ${whenLabel(at)}.`;
+  return `Esta solicitação já foi cancelada por ${byName} em ${formatDateAtTimeBR(at)}.`;
 }
 
 /** Outra pessoa moveu para outro status: o status que a tela mostrava ficou velho. */
@@ -75,7 +66,7 @@ export function statusConflictMessage(
   byName: string,
   at: Date,
 ): string {
-  return `Esta solicitação mudou para ${REQUEST_STATUS_LABEL[status]} por ${byName} em ${whenLabel(at)}. Confira e tente de novo.`;
+  return `Esta solicitação mudou para ${REQUEST_STATUS_LABEL[status]} por ${byName} em ${formatDateAtTimeBR(at)}. Confira e tente de novo.`;
 }
 
 /** Toast de sucesso: “{prévia}” movida para {status}. */

@@ -11,9 +11,8 @@ import { getHandoverFormStateById } from "@/features/handovers/formState";
 import { MAX_DAYS_BACK } from "@/features/handovers/limits";
 import {
   addDays,
+  formatDateAtTimeBR,
   formatDateBR,
-  formatTimeBR,
-  saoPauloParts,
   todayInSaoPaulo,
 } from "@/features/handovers/saoPaulo";
 import { getHandoverSummary } from "@/features/handovers/summary";
@@ -34,10 +33,6 @@ type HandoverDetailProps = {
   id: string;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
-
-function dateAndTime(value: Date): string {
-  return `em ${formatDateBR(saoPauloParts(value).date)} às ${formatTimeBR(value)}`;
-}
 
 function EditShell({
   description,
@@ -225,12 +220,12 @@ export async function HandoverDetail({
         </h2>
         {summary.deliveredAt && (
           <p>
-            {`Entregue por ${summary.deliveredByName ?? "—"} ${dateAndTime(summary.deliveredAt)}.`}
+            {`Entregue por ${summary.deliveredByName ?? "—"} em ${formatDateAtTimeBR(summary.deliveredAt)}.`}
           </p>
         )}
         {summary.confirmedAt && (
           <p>
-            {`Recebido por ${summary.confirmedByName ?? "—"} ${dateAndTime(summary.confirmedAt)}.`}
+            {`Recebido por ${summary.confirmedByName ?? "—"} em ${formatDateAtTimeBR(summary.confirmedAt)}.`}
           </p>
         )}
         {summary.confirmationNote && (

@@ -10,9 +10,8 @@ import { idSchema } from "@/features/admin/schemas";
 import { isAdmin } from "@/features/authz/authz";
 import { formatQuantity } from "@/features/handovers/quantity";
 import {
+  formatDateAtTimeBR,
   formatDateBR,
-  formatTimeBR,
-  saoPauloParts,
 } from "@/features/handovers/saoPaulo";
 import { handoverHref } from "@/features/handovers/urls";
 import { getRequestDetail } from "@/features/requests/detail";
@@ -36,11 +35,6 @@ type RequestDetailProps = {
   variant: "page" | "sheet";
   commentsLimit: number;
 };
-
-// "dd/mm/aaaa às HH:mm" no fuso de São Paulo.
-function dateAndTime(date: Date): string {
-  return `${formatDateBR(saoPauloParts(date).date)} às ${formatTimeBR(date)}`;
-}
 
 // Mesmo componente servidor na página completa e no Sheet (rota interceptada).
 export async function RequestDetail({
@@ -129,7 +123,7 @@ export async function RequestDetail({
         </dd>
         <dt className="text-muted-foreground">Criada por</dt>
         <dd>
-          {detail.createdByName} em {dateAndTime(detail.createdAt)}
+          {detail.createdByName} em {formatDateAtTimeBR(detail.createdAt)}
         </dd>
         {detail.origin && (
           <>

@@ -4,13 +4,11 @@ import { EmptyState } from "@/components/admin/EmptyState";
 import { NewRequestDialog } from "@/components/solicitacoes/NewRequestDialog";
 import { OpenRequestsNowSection } from "@/components/solicitacoes/OpenRequestsNowSection";
 import { db } from "@/db";
-import { listActiveSectors } from "@/features/admin/sectors";
 import { getHandoverFormState } from "@/features/handovers/formState";
 import { MAX_DAYS_BACK } from "@/features/handovers/limits";
 import { loadSector } from "@/features/handovers/loaders";
 import { addDays, todayInSaoPaulo } from "@/features/handovers/saoPaulo";
-import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
-import { readRememberedSector } from "@/features/handovers/sectorCookie";
+import { resolveScreenSector } from "@/features/handovers/screenSector";
 import { resolveHandoverTarget } from "@/features/handovers/shiftSuggestion";
 import { listActiveShifts } from "@/features/handovers/targets";
 import { handoverHref } from "@/features/handovers/urls";
@@ -18,12 +16,13 @@ import { getRequestFormChoices } from "@/features/requests/choices";
 import { listOpenRequests } from "@/features/requests/open";
 import { requestsHref } from "@/features/requests/urls";
 import { requireUser } from "@/lib/auth/session";
+import type { SearchParams } from "@/lib/searchParams";
 
 import { HandoverForm } from "./HandoverForm";
 import { SectorPicker } from "./SectorPicker";
 
 type NewHandoverProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 };
 
 function PageTitle() {
@@ -47,43 +46,14 @@ export async function NewHandover({ searchParams }: NewHandoverProps) {
   const now = new Date();
   const isAdmin = actor.role === "admin";
 
-  let sectorId: string;
-  let picker: React.ReactNode = null;
+  if (!isAdmin && actor.sectorId === null) notFound();
 
-  if (isAdmin) {
-    const sectors = await listActiveSectors(db);
-    const selection = resolveHandoverSector(sectors, {
-      url: params.setor,
-      cookie: await readRememberedSector(),
-    });
-    if (selection.kind !== "sector") {
-      return (
-        <div className="flex flex-col gap-6">
-          <PageTitle />
-          <EmptyState
-            title="Nenhum setor ativo."
-            description="Cadastre ou reative um setor para usar a passagem de turno."
-            action={{ label: "Ir para Setores", href: "/admin/setores" }}
-          />
-        </div>
-      );
-    }
-    sectorId = selection.sector.id;
-    picker = (
-      <SectorPicker
-        sectors={sectors}
-        selectedId={selection.sector.id}
-        path="/passagens/nova"
-      />
-    );
-  } else {
-    if (actor.sectorId === null) notFound();
-    sectorId = actor.sectorId;
-  }
-
-  const sector = await loadSector(db, actor, sectorId);
-  if (!sector) notFound();
-  if (!sector.active) {
+  const screen = await resolveScreenSector(db, actor, {
+    url: params.setor,
+    allowAll: false,
+  });
+  if (screen.kind === "missing") notFound();
+  if (screen.kind === "inactive") {
     return (
       <div className="flex flex-col gap-6">
         <PageTitle />
@@ -94,6 +64,30 @@ export async function NewHandover({ searchParams }: NewHandoverProps) {
       </div>
     );
   }
+  if (screen.kind !== "sector") {
+    return (
+      <div className="flex flex-col gap-6">
+        <PageTitle />
+        <EmptyState
+          title="Nenhum setor ativo."
+          description="Cadastre ou reative um setor para usar a passagem de turno."
+          action={{ label: "Ir para Setores", href: "/admin/setores" }}
+        />
+      </div>
+    );
+  }
+
+  const picker =
+    screen.sectorParam === null ? null : (
+      <SectorPicker
+        sectors={screen.sectors}
+        selectedId={screen.sectorParam}
+        path="/passagens/nova"
+      />
+    );
+
+  const sector = await loadSector(db, actor, screen.sectorId);
+  if (!sector) notFound();
 
   const shifts = await listActiveShifts(db, sector.id);
   const target = resolveHandoverTarget(shifts, now, {

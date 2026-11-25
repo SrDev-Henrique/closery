@@ -3,13 +3,10 @@ import type { ReactNode } from "react";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { SectorPicker } from "@/components/passagens/SectorPicker";
 import { db } from "@/db";
-import { listActiveSectors, type SectorChoice } from "@/features/admin/sectors";
 import { isAdmin } from "@/features/authz/authz";
-import { ALL_SECTORS } from "@/features/handovers/limits";
-import { loadSector } from "@/features/handovers/loaders";
 import { addDays, todayInSaoPaulo } from "@/features/handovers/saoPaulo";
+import { resolveScreenSector } from "@/features/handovers/screenSector";
 import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
-import { readRememberedSector } from "@/features/handovers/sectorCookie";
 import {
   getRequestFormChoices,
   listFilterDestinations,
@@ -30,6 +27,7 @@ import { boardSummary, tableSummary } from "@/features/requests/text";
 import type { RequestGroups, RequestStatus } from "@/features/requests/types";
 import { requireUser } from "@/lib/auth/session";
 import { REQUEST_STATUSES } from "@/lib/requestStatuses";
+import { paginationParams, type SearchParams } from "@/lib/searchParams";
 
 import { NewRequestDialog } from "./NewRequestDialog";
 import { RequestBoard } from "./RequestBoard";
@@ -39,7 +37,7 @@ import { RequestTable } from "./RequestTable";
 import { RequestViewSwitcher } from "./RequestViewSwitcher";
 
 type RequestsScreenProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 };
 
 const TITLE = "Solicitações";
@@ -60,11 +58,6 @@ function Header({
       {action}
     </header>
   );
-}
-
-// Os filtros que a Pagination preserva: a mesma URL que buildRequestsHref monta.
-function paginationParams(href: string): Record<string, string> {
-  return Object.fromEntries(new URL(href, "http://closery.local").searchParams);
 }
 
 function moreHrefs(
@@ -98,36 +91,37 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
 
   // Admin escolhe o setor (ou "Todos os setores", sem cookie); operador usa o
   // próprio setor e nunca vê o seletor.
-  let sectorId: string | null = null;
-  let sectorParam: string | null = null;
-  let picker: ReactNode = null;
-  let sectors: SectorChoice[] = [];
-  let cookie: string | undefined;
-
-  if (admin) {
-    sectors = await listActiveSectors(db);
-    cookie = await readRememberedSector();
-    const selection = resolveHandoverSector(
-      sectors,
-      { url: params.setor, cookie },
-      { allowAll: true },
+  const screen = await resolveScreenSector(db, actor, {
+    url: params.setor,
+    allowAll: true,
+  });
+  if (screen.kind === "none") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Header />
+        <EmptyState
+          title="Nenhum setor ativo."
+          description="Cadastre ou reative um setor para usar as solicitações."
+          action={{ label: "Ir para Setores", href: "/admin/setores" }}
+        />
+      </div>
     );
-    if (selection.kind === "none") {
-      return (
-        <div className="flex flex-col gap-6">
-          <Header />
-          <EmptyState
-            title="Nenhum setor ativo."
-            description="Cadastre ou reative um setor para usar as solicitações."
-            action={{ label: "Ir para Setores", href: "/admin/setores" }}
-          />
-        </div>
-      );
-    }
-    sectorId = selection.kind === "sector" ? selection.sector.id : null;
-    sectorParam =
-      selection.kind === "sector" ? selection.sector.id : ALL_SECTORS;
-    picker = (
+  }
+  if (screen.kind === "missing" || screen.kind === "inactive") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Header />
+        <EmptyState
+          title="Seu setor está inativo."
+          description="Peça a um administrador para reativá-lo."
+        />
+      </div>
+    );
+  }
+
+  const { sectorId, sectorParam, sectors, cookie } = screen;
+  const picker: ReactNode =
+    sectorParam === null ? null : (
       <SectorPicker
         sectors={sectors}
         selectedId={sectorParam}
@@ -135,23 +129,6 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
         allowAll
       />
     );
-  } else {
-    const own = actor.sectorId
-      ? await loadSector(db, actor, actor.sectorId)
-      : null;
-    if (!own?.active) {
-      return (
-        <div className="flex flex-col gap-6">
-          <Header />
-          <EmptyState
-            title="Seu setor está inativo."
-            description="Peça a um administrador para reativá-lo."
-          />
-        </div>
-      );
-    }
-    sectorId = own.id;
-  }
 
   const [creators, destinations] = await Promise.all([
     listRequestCreators(db, actor, sectorId),

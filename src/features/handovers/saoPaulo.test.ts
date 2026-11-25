@@ -4,6 +4,7 @@ import { spDate } from "../../../test/clock";
 import {
   addDays,
   daysBetween,
+  formatDateAtTimeBR,
   formatDateBR,
   formatTimeBR,
   isIsoDate,
@@ -137,5 +138,28 @@ describe("formatDateBR", () => {
   it("lança RangeError para data inválida", () => {
     expect(() => formatDateBR("2026-02-30")).toThrow(RangeError);
     expect(() => formatDateBR("21/11/2026")).toThrow(RangeError);
+  });
+});
+
+describe("formatDateAtTimeBR", () => {
+  it("junta o dia e a hora de São Paulo", () => {
+    expect(formatDateAtTimeBR(new Date("2026-11-21T10:05:00Z"))).toBe(
+      "21/11/2026 às 07:05",
+    );
+  });
+
+  it("a virada do dia é a de São Paulo, não a de UTC (02:59Z × 03:00Z)", () => {
+    expect(formatDateAtTimeBR(new Date("2026-11-21T02:59:00Z"))).toBe(
+      "20/11/2026 às 23:59",
+    );
+    expect(formatDateAtTimeBR(new Date("2026-11-21T03:00:00Z"))).toBe(
+      "21/11/2026 às 00:00",
+    );
+  });
+
+  it("vira de ano em São Paulo", () => {
+    expect(formatDateAtTimeBR(new Date("2027-01-01T02:59:00Z"))).toBe(
+      "31/12/2026 às 23:59",
+    );
   });
 });
