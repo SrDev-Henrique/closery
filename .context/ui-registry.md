@@ -231,19 +231,27 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** tokens `border`, `muted`, `foreground`.
 - **Histórico:** 2026-11-24 — `shadcn add table` na Fase 4 (Tarefa 11).
 
+### Chart (ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent)
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/ui/chart.tsx` (`"use client"`)
+- **Propósito:** o primitivo de gráfico do shadcn sobre o recharts 3.8.0 (a linha da evolução do estoque).
+- **Como funciona:** adicionado pelo CLI (`echo n | bunx shadcn@latest add chart --yes`: o `n` recusa sobrescrever o `card.tsx`). O `ChartContainer` injeta as cores do `ChartConfig` como `--color-<chave>` nos dois temas (aceita `var(--foreground)`) e quem usa dá altura explícita (`className="aspect-auto h-48 w-full"`); no jsdom ele renderiza sem `ResizeObserver` (usa `initialDimension`). Ajustes depois do CLI: `organizeImports` e formatação do Biome; `biome-ignore lint/security/noDangerouslySetInnerHtml` dentro da tag `<style>` do `ChartStyle` (CSS gerado só do `ChartConfig` do código, nunca de entrada de pessoa; a regra segue ligada no `biome.json`); no `ChartTooltipContent`, `formatInteger` (pt-BR) no lugar de `toLocaleString()` e `tabular-nums` no lugar de `font-mono`. Nunca `Fragment` dentro de um gráfico do recharts. O peer `react-is@19.3.0` é fixado junto com o `recharts` no `package.json`.
+- **Usa:** `cn`, `formatInteger`, `recharts`.
+- **Histórico:** 2026-11-25 — `shadcn add chart` na Fase 5 (Tarefa 10).
+
 ## 2. Componentes de aplicação — `src/components/<área>`
 
 ### AppSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
-- **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Conta e, só para admin, Administração.
+- **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Dashboard (ícone `ChartColumn`), Conta e, só para admin, Administração.
 - **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
   `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
   `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
   gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
   atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
 - **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava. 2026-11-25 — Fase 5 (Tarefa 12): o menu ganha o item Dashboard (`/dashboard`, ícone `ChartColumn`) entre Solicitações e Conta.
 
 ### AuthedSidebar
 - **Status:** ✅ pronto (2026-11-20)
@@ -274,11 +282,19 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 ### Greeting
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/Greeting.tsx`
-- **Propósito:** título "Olá, {primeiro nome}" e texto do Início.
+- **Propósito:** título "Olá, {primeiro nome}" e o link para o dashboard.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu.
+
+### AppError e AppNotFound
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/app/(app)/error.tsx` (`"use client"`) e `src/app/(app)/not-found.tsx` (arquivos de convenção do Next, não componentes de `src/components`)
+- **Propósito:** o erro e o 404 de uma página de `(app)` aparecem dentro do shell: a barra lateral continua na tela (P19).
+- **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para o `console.error` e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
+- **Usa:** `Button`, `buttonVariants`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19).
 
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)
@@ -671,9 +687,9 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/SectorPicker.tsx`
 - **Propósito:** o admin escolher o setor no Início, na Nova passagem e no Histórico (D-F3-3).
-- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
+- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; com a prop `query` (o query canônico dos filtros da tela, sem o setor) o payload é `{ sectorId, path, query }` e o servidor o reinterpreta pelo parse da tela, mantendo os filtros que valem para qualquer setor e soltando os do setor antigo (P45); o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
 - **Usa:** `Button`, `FieldSet`, `FieldLegend`, `chooseSectorAction`, `sonner`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 3, P45): prop opcional `query`; sem ela o payload continua exatamente `{ sectorId, path }`.
 
 ### HandoverStatusBadge
 - **Status:** ✅ pronto (2026-11-21)
@@ -681,7 +697,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Propósito:** mostrar a situação da passagem (aguardando, confirmada, não confirmada, sem passagem) e o selo "Corrigida".
 - **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-muted`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
 - **Usa:** `Badge`, tokens `info`, `success`, `warning`, `muted`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 11): exporta `SITUATION_STYLE` (ícone e classe de cada situação), que o anel do dashboard reusa para o ícone das fatias; nada mais muda.
 
 ### PendingHandoverCard
 - **Status:** ✅ pronto (2026-11-21)
@@ -703,9 +719,9 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HomeHandovers.tsx`
 - **Propósito:** os cartões de passagem do Início.
-- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveHandoverSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Depois deles vem o `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
-- **Usa:** `getHomeHandovers`, `resolveHandoverSector`, `readRememberedSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno".
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveScreenSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Depois deles vem o `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
+- **Usa:** `getHomeHandovers`, `resolveScreenSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento).
 
 ### QuantityCounter
 - **Status:** ✅ pronto (2026-11-21)
@@ -767,9 +783,9 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/NewHandover.tsx`
 - **Propósito:** a página `/passagens/nova`.
-- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>`. `requireUser()`; operador usa o próprio setor, admin escolhe (`resolveHandoverSector` + `SectorPicker`). Turno e data vêm de `resolveHandoverTarget` (URL válida ou sugestão pelo horário). **GET nunca escreve**: o rascunho nasce no primeiro salvamento. Combinação já entregue ou confirmada redireciona para o resumo. Estados vazios: sem setor ativo, setor inativo, sem turnos (admin: link "Ir para Turnos"). No rascunho (`mode: "draft"`) lê as abertas de agora (`listOpenRequests`) e as escolhas do formulário (`getRequestFormChoices`) e passa ao `HandoverForm` a seção `OpenRequestsNowSection` com o `NewRequestDialog` (`originRef` = a tripla setor + turno + dia da tela, `sectors={null}`, `triggerVariant="outline"`); o rascunho só nasce se a pessoa criar a solicitação (escrita iniciada por ela, nunca pelo GET).
-- **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `HandoverForm`, `SectorPicker`, `EmptyState`. Também: `listOpenRequests`, `getRequestFormChoices`, `OpenRequestsNowSection`, `NewRequestDialog`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-24 — Fase 4 (Tarefa 13): seção "Solicitações abertas" no formulário do rascunho.
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>`. `requireUser()`; operador usa o próprio setor, admin escolhe (`resolveScreenSector` + `SectorPicker`). Turno e data vêm de `resolveHandoverTarget` (URL válida ou sugestão pelo horário). **GET nunca escreve**: o rascunho nasce no primeiro salvamento. Combinação já entregue ou confirmada redireciona para o resumo. Estados vazios: sem setor ativo, setor inativo, sem turnos (admin: link "Ir para Turnos"). No rascunho (`mode: "draft"`) lê as abertas de agora (`listOpenRequests`) e as escolhas do formulário (`getRequestFormChoices`) e passa ao `HandoverForm` a seção `OpenRequestsNowSection` com o `NewRequestDialog` (`originRef` = a tripla setor + turno + dia da tela, `sectors={null}`, `triggerVariant="outline"`); o rascunho só nasce se a pessoa criar a solicitação (escrita iniciada por ela, nunca pelo GET).
+- **Usa:** `getHandoverFormState`, `listActiveShifts`, `resolveHandoverTarget`, `resolveScreenSector`, `HandoverForm`, `SectorPicker`, `EmptyState`. Também: `listOpenRequests`, `getRequestFormChoices`, `OpenRequestsNowSection`, `NewRequestDialog`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 8). 2026-11-24 — Fase 4 (Tarefa 13): seção "Solicitações abertas" no formulário do rascunho. 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento).
 
 ### SummaryItemList
 - **Status:** ✅ pronto (2026-11-21)
@@ -801,7 +817,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Propósito:** resumo de `/passagens/[id]` na ordem do briefing (F3-10).
 - **Como funciona:** server (async); `requireUser()` primeiro; id que não é uuid, passagem inexistente ou de outro setor = `notFound()`; rascunho redireciona para `/passagens/nova` do mesmo turno e dia (com `setor`). Ordem: título e subtítulo (`{setor} · {turno} · {data}`) com `HandoverStatusBadge` (+ selo "Corrigida") → "Fica para o próximo turno" (borda `border-warning`) → "Solicitações abertas" (`OpenRequestsAtDeliverySection`: as abertas no instante da entrega, com o status daquele instante e "Agora: …"; só no resumo, nunca em `?editar=1`) → Controles → Estoque (só itens com valor ≠ 0 ou observação; os demais recolhidos em `<details>` "Demais itens: 0 (n)") → "Ocorrências do turno" → "Entrega" (quem entregou, quem recebeu, observação, `ConfirmReceiptForm` para quem pode confirmar ou o aviso para quem entregou) → "Correções" (`CorrectionsTimeline`) → links "Corrigir" (entregue; quem entregou e admin), "Corrigir com motivo" (confirmada; admin) e "Ver todas as passagens". Setor inativo (`summary.sectorActive` falso): `ReadOnlySectorNotice` logo depois do cabeçalho e nenhuma ação de escrita (sem `ConfirmReceiptForm`, sem a frase "Você entregou este turno…", sem "Corrigir" nem "Corrigir com motivo"); `?editar=1` cai no resumo.
 - **Usa:** `getHandoverSummary`, `getHandoverFormStateById`, `SummaryItemList`, `CorrectionsTimeline`, `ConfirmReceiptForm`, `HandoverForm`, `CorrectionForm`, `HandoverStatusBadge`, `buttonVariants`. Também: `listOpenRequestsAtDelivery`, `OpenRequestsAtDeliverySection`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo. 2026-11-24 — Fase 4 (Tarefa 3, P37): setor inativo é só leitura, com `ReadOnlySectorNotice`. 2026-11-24 — Fase 4 (Tarefa 13): seção "Solicitações abertas" (as abertas na entrega) logo depois de "Fica para o próximo turno".
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 9). 2026-11-21 — Fase 3 (Tarefa 11): `?editar=1` troca o resumo pelo formulário quando a pessoa pode editar (título "Corrigir passagem"): `HandoverForm` em modo `edit` para a entregue (quem entregou e admin, salvamento automático) e `CorrectionForm` para a confirmada (só admin); quem não pode cai no resumo. 2026-11-24 — Fase 4 (Tarefa 3, P37): setor inativo é só leitura, com `ReadOnlySectorNotice`. 2026-11-24 — Fase 4 (Tarefa 13): seção "Solicitações abertas" (as abertas na entrega) logo depois de "Fica para o próximo turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): "em {data} às {hora}" vem de `formatDateAtTimeBR` (a cópia local `dateAndTime` saiu; o texto é o mesmo).
 
 ### ReadOnlySectorNotice
 - **Status:** ✅ pronto (2026-11-24)
@@ -815,17 +831,17 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverHistory.tsx` (server, async)
 - **Propósito:** conteúdo de `/passagens`: o histórico de passagens, do dia mais recente ao mais antigo.
-- **Como funciona:** chama `requireUser()`, interpreta os filtros da URL (`parseHistoryFilters`, dia de hoje em São Paulo) e lê `listHandoverHistory` (50 por página, `?pagina=` clampada). Operador usa o próprio setor e nunca vê o seletor; admin vê o `SectorPicker` com "Todos os setores" (que não grava cookie) e o setor vem de `?setor=`, do cookie ou do primeiro ativo. Ordem na tela: título, seletor (admin), `HistoryFilters`, "Período: dd/mm/aaaa a dd/mm/aaaa", lista de `HistoryRowItem` (ou o estado vazio "Nenhuma passagem neste período.") e `Pagination` com os filtros e o setor preservados. Setor inativo (operador) ou nenhum setor ativo (admin) mostram `EmptyState`.
-- **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+- **Como funciona:** chama `requireUser()`, interpreta os filtros da URL (`parseHistoryFilters`, dia de hoje em São Paulo) e lê `listHandoverHistory` (50 por página, `?pagina=` clampada). Operador usa o próprio setor e nunca vê o seletor; admin vê o `SectorPicker` com "Todos os setores" (que não grava cookie) e o setor vem de `?setor=`, do cookie ou do primeiro ativo. Ordem na tela: título, seletor (admin), `HistoryFilters`, "Período: dd/mm/aaaa a dd/mm/aaaa", lista de `HistoryRowItem` (ou o estado vazio "Nenhuma passagem neste período.") e `Pagination` com os filtros e o setor preservados. Setor inativo (operador) ou nenhum setor ativo (admin) mostram `EmptyState`. Fase 5: as escolhas de Turno e Item vêm de `listHistoryShifts` e `listHistoryItems` (o turno ou o item inativo que a URL escolheu entra no fim como "(inativo)"); `?item=` fora das escolhas (inexistente, de outro setor, ou em "Todos os setores") vira "todos" antes da consulta.
+- **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`, `listHistoryShifts`, `listHistoryItems`, `resolveScreenSector`, `paginationParams`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams` (`src/lib/searchParams.ts`); sem mudança de comportamento. 2026-11-25 — Fase 5 (Tarefa 3, P45): o `SectorPicker` recebe `query={hrefQuery(buildHistoryHref(filters))}`: trocar de setor mantém o período e a situação e solta o turno e a página. 2026-11-25 — Fase 5 (Tarefa 6): filtro de item e turno/item inativos no formulário.
 
 ### HistoryFilters
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HistoryFilters.tsx`
-- **Propósito:** filtros do histórico (período, turno, situação) que vivem na URL.
-- **Como funciona:** `"use client"`; formulário controlado que nunca começa em branco (os valores vêm da URL já interpretada: 7 dias, todos os turnos, todas as situações). `SelectField` "Período" (Últimos 7 dias, Últimos 30 dias, Intervalo), "Turno" (só quando há turnos do setor: some em "Todos os setores"), "Situação" e, no Intervalo, `De` e `Até` (`type="date"`, já preenchidos com o período atual). "Aplicar filtros" navega com `router.push(buildHistoryHref(…))` (volta à página 1 e preserva o setor do admin); "Limpar filtros" é um `<Link>` para `/passagens` (preserva só `?setor=`).
+- **Propósito:** filtros do histórico (período, turno, situação e item) que vivem na URL.
+- **Como funciona:** `"use client"`; formulário controlado que nunca começa em branco (os valores vêm da URL já interpretada: 7 dias, todos os turnos, todas as situações). `SelectField` "Período" (Últimos 7 dias, Últimos 30 dias, Intervalo), "Turno" (só quando há turnos do setor: some em "Todos os setores"), "Situação" e, no Intervalo, `De` e `Até` (`type="date"`, já preenchidos com o período atual). "Aplicar filtros" navega com `router.push(buildHistoryHref(…))` (volta à página 1 e preserva o setor do admin); "Limpar filtros" é um `<Link>` para `/passagens` (preserva só `?setor=`). Fase 5: "Situação" ganha Entregues (logo depois de Todas) e Esperadas (logo depois de Entregues); "Item" (só com itens, logo depois de "Turno"; prop opcional `items`, `Todos os itens` por padrão); o turno e o item inativos que a URL escolheu aparecem selecionados como "{nome} (inativo)" e "{nome} ({unidade}) (inativo)" (prop `shifts` com `active?`), nunca como "Todos os …".
 - **Usa:** `SelectField`, `Field`, `Input`, `Button`, `buttonVariants`, `buildHistoryHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10). 2026-11-25 — Fase 5 (Tarefa 6): situações Entregues e Esperadas, Item e o inativo escolhido (D-F5-3, C-1, C-4).
 
 ### HistoryRowItem
 - **Status:** ✅ pronto (2026-11-21)
@@ -891,9 +907,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestsScreen.tsx`
 - **Propósito:** a tela `/solicitacoes`: cabeçalho, filtros, seletor de visão e a visão escolhida (Quadro, Lista ou Tabela).
-- **Como funciona:** server component async (dentro do `<Suspense>` da página). Lê a sessão, os filtros da URL (`parseRequestFilters`) e o setor (admin: `SectorPicker` com "Todos os setores"; operador: o próprio, nunca o seletor). `?criador=` e `?destino=` (uuid) fora das escolhas viram "todos" antes da consulta. Sem `visao` renderiza o Quadro (`hidden md:block`) e a Lista (`md:hidden`) com os mesmos dados e dois `RequestViewSwitcher` (um por largura, para o `aria-current` dizer a verdade). O subtítulo vem do servidor (`boardSummary`/`tableSummary`). Vazio novo × vazio filtrado; operador de setor inativo e admin sem setor ativo têm estado vazio próprio.
-- **Usa:** `RequestFiltersForm`, `RequestViewSwitcher`, `RequestBoard`, `RequestList`, `RequestTable`, `NewRequestDialog`, `SectorPicker`, `EmptyState`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+- **Como funciona:** server component async (dentro do `<Suspense>` da página). Lê a sessão, os filtros da URL (`parseRequestFilters`) e o setor (admin: `SectorPicker` com "Todos os setores"; operador: o próprio, nunca o seletor). `?criador=` e `?destino=` (uuid) fora das escolhas viram "todos" antes da consulta. Sem `visao` renderiza o Quadro (`hidden md:block`) e a Lista (`md:hidden`) com os mesmos dados e dois `RequestViewSwitcher` (um por largura, para o `aria-current` dizer a verdade). O subtítulo vem do servidor (`boardSummary`/`tableSummary`). Vazio novo × vazio filtrado; operador de setor inativo e admin sem setor ativo têm estado vazio próprio. Fase 5: `?item=` vale se existe nas solicitações do escopo (`listFilterItems`, mesmo além do teto de escolhas) e senão vira "todos" antes da consulta; a janela de 30 dias do Quadro e da Lista some também com filtro de entrega (`closedWindowApplies`); o intervalo de entrega abre com a última semana, nunca em branco.
+- **Usa:** `RequestFiltersForm`, `RequestViewSwitcher`, `RequestBoard`, `RequestList`, `RequestTable`, `NewRequestDialog`, `SectorPicker`, `EmptyState`, `resolveScreenSector`, `paginationParams`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams`; sem mudança de comportamento. 2026-11-25 — Fase 5 (Tarefa 3, P45): o `SectorPicker` recebe `query={hrefQuery(buildRequestsHref(filters))}` (os filtros já validados, depois das escolhas de criador e destino): trocar de setor mantém a visão, o destino, o período e a busca e solta o criador e a paginação. 2026-11-25 — Fase 5 (Tarefa 5): filtros de status, parada, entrega e item. Correção: com `?status=cancelada` o Quadro (sem coluna de canceladas) cede o lugar à Lista, em qualquer largura.
 
 ### RequestViewSwitcher
 - **Status:** ✅ pronto (2026-11-24)
@@ -906,10 +922,10 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 ### RequestFiltersForm
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestFiltersForm.tsx`
-- **Propósito:** busca, destino, período e quem criou, na URL.
-- **Como funciona:** `"use client"`, controlado, valores iniciais da URL (nunca em branco); `key` = a URL dos filtros. "Aplicar filtros" monta a URL (`buildRequestsHref(resetPaging(...))`, mantém visão e setor); "Limpar filtros" é um `<Link>`. Escolhas, não texto: destinos (inativo marcado "(inativo)" e "Outro"), pessoas, períodos; "De"/"Até" só em "Intervalo". Busca `type="search"`, `text-base`, 80 caracteres.
+- **Propósito:** busca, destino, período, quem criou, status, paradas, entrega e item, na URL.
+- **Como funciona:** `"use client"`, controlado, valores iniciais da URL (nunca em branco); `key` = a URL dos filtros. "Aplicar filtros" monta a URL (`buildRequestsHref(resetPaging(...))`, mantém visão e setor); "Limpar filtros" é um `<Link>`. Escolhas, não texto: destinos (inativo marcado "(inativo)" e "Outro"), pessoas, períodos; "De"/"Até" só em "Intervalo". Busca `type="search"`, `text-base`, 80 caracteres. Fase 5: quatro controles novos, para os números do dashboard abrirem a lista exata — "Status" (Todos os status, Abertas, Não canceladas e cada status), "Paradas" (Todas, Só as paradas), "Entregue em" (Qualquer data, Últimos 7 dias, Últimos 30 dias, Intervalo; "Entregue de" e "Entregue até" só em Intervalo) e "Item" (só quando há itens: prop opcional `items`). Nenhum começa em branco.
 - **Usa:** `SelectField`, `Input`, `Field`, `Button`, `buttonVariants`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 5): Status, Paradas, Entregue em e Item (D-F5-3).
 
 ### useRequestMove
 - **Status:** ✅ pronto (2026-11-24)
@@ -931,9 +947,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestColumn.tsx`
 - **Propósito:** uma coluna do Quadro: cabeçalho com ícone do status, contagem do servidor, cartões e "Carregar mais".
-- **Como funciona:** `<section aria-labelledby>` com o id de `useId()` (sem `visao` o Quadro e a Lista estão os dois no DOM); contagem `tabular-nums` com "solicitações" só para leitor de tela; vazio "Nenhuma solicitação."; nota opcional.
-- **Usa:** `RequestCard`, `LoadMoreButton`, `REQUEST_STATUS_STYLE`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+- **Como funciona:** desde a Fase 5 é só a `className` da coluna (`min-w-0`, borda, `bg-muted/30`, `p-3`) e um `<li><RequestCard/></li>` por linha, sobre `RequestGroupSection`; o cabeçalho, a contagem, o vazio, a nota e o "Carregar mais" são dela.
+- **Usa:** `RequestGroupSection`, `RequestCard`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 1, P48): o miolo (cabeçalho, contagem, nota, vazio, `LoadMoreButton`) sai para `RequestGroupSection`; mesmo HTML e mesmos testes.
 
 ### RequestCard
 - **Status:** ✅ pronto (2026-11-24)
@@ -963,9 +979,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestList.tsx`
 - **Propósito:** a Lista agrupada por status (os quatro, com Cancelada): a visão padrão no celular.
-- **Como funciona:** `"use client"`; mesmo `useRequestMove` do Quadro; uma `<section>` por status (id de `useId()` em um componente interno); vazio "Nenhuma solicitação."; nota "Últimos 30 dias" em Entregue e Cancelada só sem período; "Carregar mais" por grupo.
-- **Usa:** `RequestListRow`, `LoadMoreButton`, `useRequestMove`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11).
+- **Como funciona:** `"use client"`; mesmo `useRequestMove` do Quadro; uma `RequestGroupSection` por status (cada grupo com `className="flex flex-col gap-2"` e uma `RequestListRow` por linha); nota "Últimos 30 dias" em Entregue e Cancelada só sem período.
+- **Usa:** `RequestGroupSection`, `RequestListRow`, `useRequestMove`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 1, P48): o `ListGroup` local passa a usar `RequestGroupSection`; mesmo HTML e mesmos testes.
 
 ### RequestListRow
 - **Status:** ✅ pronto (2026-11-24)
@@ -987,8 +1003,8 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Local:** `src/components/solicitacoes/RequestDetail.tsx`
 - **Propósito:** o detalhe da solicitação: a página completa `/solicitacoes/[id]` e o conteúdo do Sheet do detalhe rápido.
 - **Como funciona:** server component async, `variant="page" | "sheet"`. `page`: título `<h1>` "Solicitação para {destino}", seções `h2`, link "Ver todas as solicitações", `notFound()` para id malformado, inexistente ou de outro setor. `sheet`: título pelo `SheetTitle`, seções `h3`, link `<a href>` "Abrir página completa" (navegação de documento: uma navegação no cliente para a mesma URL seria interceptada de novo), e o estado "Solicitação não encontrada." dentro do Sheet (um `notFound()` no slot derrubaria a tela). Mostra o aviso `ReadOnlySectorNotice` em setor inativo, propriedades (`<dl>`: status e selo de parada, setor só para o admin, destino, quem criou, origem com link para a passagem), itens com quantidade e unidade, "Mudar status" (só com `canMove`), linha do tempo e comentários; "Ver comentários anteriores" é sempre `<a href>` e some no teto de 500.
-- **Usa:** `getRequestDetail`, `RequestStatusBadge`, `StaleBadge`, `RequestStatusActions`, `RequestTimeline`, `RequestComments`, `ReadOnlySectorNotice`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12).
+- **Usa:** `getRequestDetail`, `RequestStatusBadge`, `StaleBadge`, `RequestStatusActions`, `RequestTimeline`, `RequestComments`, `ReadOnlySectorNotice`, `formatDateAtTimeBR`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-25 — Fase 5 (Tarefa 1, P48): "Criada por {nome} em {data} às {hora}" vem de `formatDateAtTimeBR` (a cópia local `dateAndTime` saiu; o texto é o mesmo).
 
 ### RequestSheet
 - **Status:** ✅ pronto (2026-11-24)
@@ -1084,6 +1100,148 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Como funciona:** `Card` com `<h2>` "Solicitações"; linha "{n abertas} · {m paradas}" (`tabular-nums`, singular em 1) ou "Nenhuma solicitação aberta."; havendo paradas, o rótulo `<h3>` "Paradas há mais tempo" e até 5 `OpenRequestItem` (as mais antigas no status); link-botão "Ver solicitações" (`allHref`; o admin leva `?setor=`).
 - **Usa:** `Card`, `OpenRequestItem`, `openCountLabel`, `staleCountLabel`, `buttonVariants`.
 - **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+
+### RequestGroupSection
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/solicitacoes/RequestGroupSection.tsx` (client-safe: sem `"use client"` próprio, usado dentro de componentes de cliente)
+- **Propósito:** a seção de um status que o Quadro (`RequestColumn`) e a Lista (`RequestList`) compartilham (P48).
+- **Como funciona:** `<section aria-labelledby>` (o id vem de `useId()`: sem `visao` o Quadro e a Lista estão os dois no DOM) com `className` dada pelo chamador; `<header>` com o ícone do status (`REQUEST_STATUS_STYLE`, decorativo), `<h2>` com o rótulo e, ao lado dele (fora do `<h2>`), o total do servidor (`tabular-nums`, com " solicitações" só para leitor de tela); nota opcional (`text-xs`); vazio "Nenhuma solicitação."; `<ul>` com o que `renderRow(row)` devolve (o chamador devolve o `<li>` já com `key`); `LoadMoreButton` só com `moreHref`.
+- **Usa:** `LoadMoreButton`, `REQUEST_STATUS_STYLE`, `REQUEST_STATUS_LABEL`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 1, P48), extraído de `RequestColumn` e do `ListGroup` de `RequestList`.
+
+### Dashboard — `src/components/dashboard/*` e `src/components/kokonutui/*` (Fase 5)
+
+Gráficos e blocos do dashboard. Os componentes de gráfico são Client Components que recebem só números e strings já agregados no servidor (nunca somam, nunca buscam). A cor pertence à entidade (turno, situação) e nunca cicla: classes literais em `chartColors.ts`, medidas por `chartPalette.test.ts`. Número com `tabular-nums`; animação com `motion-reduce:`; tema claro e escuro.
+
+### MetricCard
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/kokonutui/metric-card.tsx` (`"use client"`; KokonutUI `metric-card` 2.0.0 adaptado)
+- **Propósito:** o cartão de um item de controle: total do período, média por turno, variação contra o período anterior, detalhamento por turno e a linha diária (atual e anterior).
+- **Como funciona:** props `label`, `unit`, `context` (setor, admin em "Todos os setores"), `periodDays`, `total`, `average`, `handoverCount`, `delta`, `segments` (um por turno, todos com `href`), `series` (2N dias; cada ponto traz o `total` do dia e as `parts` por turno), `href`. O número grande e a legenda `{n} passagens` são `Link` para a lista que o total conta; `handoverCount` 0 mostra "Sem passagens no período", sem gráfico. A variação é neutra (ícone `ArrowUp`/`ArrowDown`/`Minus` e texto de `deltaText`, sem verde nem vermelho). A escala vai de 0 ao maior valor desenhado, rotulada com a unidade. O `slider` lê um dia por vez (setas, Home, End, Escape; `aria-valuetext` `dd/mm/aaaa: n unidade`) e o botão "Voltar ao período" volta à leitura do período. Com 2 ou mais segmentos aparece "Por turno": barra de participação, uma linha por turno (cor fixa, total como `Link`, `sharePercent`) e o botão "Mostrar só {turno}" / "Mostrar todos os turnos" (`aria-pressed`); em foco o número e a variação são do turno (`segment.total` e `previousTotal` vindos do SQL), a linha usa a cor do turno e **nenhuma classe de swatch muda**. Nada é somado no cliente.
+- **Adaptações do original:** só tokens (`border-border bg-card`, `stroke-foreground`, `stroke-muted-foreground/50` tracejado…); pt-BR e unidade; export nomeado; período por prop e sem pílulas, sem dados de demonstração, sem Shift/intervalo; escala a partir de 0 (saiu o `mínimo × 0,85`); vazio; `clipId` com `useId().replace(/[^a-zA-Z0-9_-]/g, "")`; `motion-reduce` no `RollingNumber`, nas barras e no morph em JS; alvos `max-md:min-h-11`; resumo `sr-only` e `<output>` anunciando só a troca de foco.
+- **Usa:** `Link`, `computeDelta`/`deltaText`/`deltaAriaLabel`, `sharePercent`, `formatInteger`/`formatDecimal`, `formatDateBR`, `pluralize`, `cn`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10); `bun scripts/rc-check.mjs` com `compiled: 4` e nenhum `CompileError`.
+
+### SpendingRing
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/kokonutui/spending-ring.tsx` (`"use client"`; KokonutUI `spending-ring` 1.0.0 adaptado; exporta também `ringSpans`)
+- **Propósito:** o anel de parte-do-todo das Passagens (4 fatias: confirmadas, aguardando recebimento, não confirmadas, sem passagem).
+- **Como funciona:** props `title`, `legendLabel`, `total` (do SQL; o anel não soma as fatias), `totalHref` (obrigatório: o total do cabeçalho, e o `0` do vazio, são um `Link` com nome `{n} passagens: ver a lista`), `slices` (`key`, `label`, `value`, `href`, `strokeClass`, `dotClass`, `icon?`), `emptyText`. `ringSpans` (pura) desenha só as fatias com valor, com sweep mínimo de 3° e soma de 360° menos os vãos. O anel é um `slider` (setas, Home, End, arrastar, tocar na fatia; `aria-valuetext` `{rótulo}: {n} ({p}%)`) e o centro mostra o valor, o rótulo e `{p}% do total` da fatia selecionada. A legenda é uma `<ul aria-label={legendLabel}>` com um `Link` por fatia (todas, inclusive as zeradas): ponto, ícone, rótulo, valor e porcentagem; foco ou passagem do mouse numa linha seleciona a fatia. `total` 0 mostra `emptyText` no lugar do anel e mantém a legenda.
+- **Adaptações do original:** só tokens; pt-BR, sem moeda; export nomeado; `legendLabel` e links; vazio e fatia minúscula (sem arco invertido); `motion-reduce:transition-none`; linhas da legenda `max-md:min-h-11`; `touch-none` só no anel. **React Compiler:** o original o fazia desistir em silêncio; corrigido com `turnTo(restAt?)` (padrão resolvido no corpo), `tickRef` (o `tick` se reagenda por ref), `ringSpans` com `reduce` (sem `let` reatribuído) e `transform` inicial calculado dos `spans`; `bun scripts/rc-check.mjs` com `compiled: 3`.
+- **Usa:** `Link`, `sharePercent`, `formatInteger`, `cn`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### chartColors
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/chartColors.ts` (server-safe e client-safe)
+- **Propósito:** a única fonte das classes de cor dos gráficos, lida pelo guarda de paleta.
+- **Como funciona:** `SHIFT_SWATCHES`/`SHIFT_STROKES` (turno nos slots 1 a 4 = `chart-1..4`), `OTHERS_SWATCH`/`OTHERS_STROKE` (turno do 5º em diante = `foreground`, sem número agregado "Outros turnos"), `segmentSwatch(slot)`/`segmentStroke(slot)`, `SITUATION_CHART` (o `-foreground` do selo de cada situação e `muted-foreground` para "sem passagem"), `SINGLE_SERIES_COLOR` (`var(--foreground)`) e `SINGLE_BAR_CLASS`. Classes literais (o Tailwind só gera o que aparece escrito inteiro). Nunca `chart-5` ou acima.
+- **Usa:** os tokens de `globals.css`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### usePrefersReducedMotion
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/usePrefersReducedMotion.ts` (`"use client"`)
+- **Propósito:** saber se a pessoa pediu menos movimento, para desligar animação em JS (o recharts).
+- **Como funciona:** `useSyncExternalStore` sobre `matchMedia("(prefers-reduced-motion: reduce)")`; acompanha a mudança sem recarregar; o snapshot do servidor é `false`.
+- **Usa:** `matchMedia`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### StockTrendChart
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/StockTrendChart.tsx` (`"use client"`)
+- **Propósito:** a evolução da contagem de um item de estoque no período, numa linha.
+- **Como funciona:** props `label`, `unit`, `points` (um por dia; dia sem contagem = `quantity: null`, a linha liga os pontos). `ChartContainer` com altura `h-48`, `LineChart accessibilityLayer`, série única em `var(--foreground)`, eixo X `dd/mm`, eixo Y inteiro, tooltip `{n} {unidade}` em `tabular-nums` com a data `dd/mm/aaaa`, `isAnimationActive` desligado com movimento reduzido. Uma `<table className="sr-only">` (legenda `{label} por dia`, colunas `Dia` e `Contagem ({unidade})`, `sem contagem`) traz o número exato de cada dia. Sem nenhuma contagem no período mostra "Sem contagem no período." no lugar do gráfico.
+- **Usa:** `Chart` (`ChartContainer`, `ChartTooltip`, `ChartTooltipContent`), `usePrefersReducedMotion`, `chartColors`, `formatDateBR`, `formatInteger`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+
+### StatLink
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/StatLink.tsx` (server-safe)
+- **Propósito:** um número do dashboard que é sempre um link para a lista que conta exatamente aquilo (D-F5-3).
+- **Como funciona:** props `label`, `value`, `href`, `icon` (ícone do lucide, decorativo) e `caption` opcional. `<Link>` com `min-h-11`, número em `text-3xl tabular-nums` (`formatInteger`), ícone + rótulo e legenda em `text-xs`. O nome acessível é número + rótulo + legenda ("19 Esperadas turnos já encerrados"); zero é escrito, nunca vazio. Ícone e texto, nunca só cor.
+- **Usa:** `Link`, tokens `card`, `muted`, `ring`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### BarList
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/BarList.tsx` (server-safe)
+- **Propósito:** linhas com o valor escrito ao lado e, opcionalmente, uma barra proporcional: o tempo até a entrega por destino (com barras) e a quantidade pedida por item (só números, porque as unidades diferem).
+- **Como funciona:** `<ul aria-label>` com um `<Link>` por linha (`min-h-11`): rótulo (+ contexto, o setor, em "Todos os setores"), `valueText` em `tabular-nums` e `detail`. Com `bars`, a barra tem `width = barPercent(value, max)%` (`max` = maior valor mostrado; valor maior que zero nunca some, piso de 2%) e a cor `SINGLE_BAR_CLASS` (`bg-foreground`); a barra é decorativa, o número escrito é a escala. Sem linhas mostra `emptyText`; `moreText` ("Mostrando 8 de 11 destinos.") fica abaixo da lista.
+- **Usa:** `Link`, `barPercent`, `chartColors`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardBlockSkeleton
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardBlockSkeleton.tsx` (server-safe; exporta também `DashboardSkeleton`)
+- **Propósito:** o que aparece enquanto um bloco (ou a página inteira) carrega: carregando é esqueleto, nunca zero.
+- **Como funciona:** `DashboardBlockSkeleton({ title })` é uma `<section aria-busy="true" aria-label={title}>` com o `<h2>` do bloco já visível e três `Skeleton`; nenhum dígito. `DashboardSkeleton()` é o fallback da página: título, rótulo do período, o seletor e os quatro blocos.
+- **Usa:** `Skeleton`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardBlockBoundary
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardBlockBoundary.tsx` (`"use client"`)
+- **Propósito:** um bloco que quebra não derruba os outros.
+- **Como funciona:** `DashboardBlockBoundary = catchError(DashboardBlockError)` (`next/error`). O fallback mostra o `<h2>` do bloco, "Não foi possível carregar este bloco." num `Alert` e o botão "Tentar de novo" (`retry()`, que busca o bloco de novo sem perder o estado de fora). O `catchError` só limpa o erro quando muda o **pathname**; como `?periodo=` e `?setor=` não mudam o pathname, quem usa passa uma `key` (título + href do período e do setor) **no limite**, para trocar o período remontar o limite e a `<Suspense>` dele. Roda no jsdom (só lê contextos que valem `null` fora do App Router).
+- **Usa:** `catchError`, `Alert`, `Button`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardPassages
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardPassages.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Passagens: esperadas, entregues, confirmadas, aguardando recebimento, não confirmadas e sem passagem, e o anel das 4 situações.
+- **Como funciona:** `getPassagesData` (uma consulta sobre a mesma fonte da lista de `/passagens`) com o escopo e o `now` por prop. Seis `StatLink` numa `<ul aria-label="Números das passagens">` (cada um leva a `/passagens?…&situacao=<esperadas|entregues|confirmada|aguardando|nao-confirmada|sem-passagem>` com o período e o `setor` do admin) e o `SpendingRing` com as quatro fatias na ordem fixa da entidade (cores `SITUATION_CHART`, ícone do selo `SITUATION_STYLE`, total = `listed` do SQL, link para `passagesListHref(período, "all")`). Sem turno encerrado nem passagem no período mostra o `EmptyState` "Nenhum turno encerrado no período.".
+- **Usa:** `StatLink`, `SpendingRing`, `SITUATION_STYLE`, `SITUATION_CHART`, `EmptyState`, `passagesListHref`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardControls
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardControls.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Controles: um `MetricCard` por item de controle.
+- **Como funciona:** `getControlsData` (agregado no SQL). Um cartão por item (`key` = item + período), com o total, a média por turno, `computeDelta(total, previousTotal)`, um segmento por turno (cor `segmentSwatch`/`segmentStroke` pelo slot; todos com link, inclusive o turno inativo) e a série de 2N dias. Links (C-1): total e legenda `{n} passagens` = `/passagens?…&situacao=entregues&item=<id>`, cada segmento + `turno=<id>`; em "Todos os setores" o `setor` é o do item, nunca `todos`. Sem item mostra o `EmptyState` (o admin ganha "Ir para Itens"); acima de 30 mostra "Mostrando 30 de {total} itens.".
+- **Usa:** `MetricCard`, `chartColors`, `passagesListHref`, `computeDelta`, `EmptyState`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardStock
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardStock.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Estoque: a última contagem de cada item e a evolução no período.
+- **Como funciona:** `getStockData`. Um `Card` por item: nome, unidade (e setor em "Todos os setores"), a última contagem como link para a passagem (`/passagens/<id>`, "{n} {unidade}") com "Contado em {dd/mm/aaaa}, {turno}" (+ " · antes do período") ou "Sem contagem"; a evolução é sempre o `StockTrendChart`, que mostra "Sem contagem no período." quando nenhum dia tem contagem (o bloco não repete o texto). Sem item mostra o `EmptyState`; acima de 30 mostra "Mostrando 30 de {total} itens.".
+- **Usa:** `Card`, `StockTrendChart`, `lastCountHref`, `EmptyState`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardRequests
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardRequests.tsx` (Server Component assíncrono)
+- **Propósito:** o bloco Solicitações: abertas e paradas agora, entregues no período, tempo até a entrega por destino e quantidade pedida por item.
+- **Como funciona:** `getRequestsData`. Três `StatLink` (links da Tabela de `/solicitacoes`), o `BarList` com barras do tempo médio por destino (top 8, "Outro" é um destino, link `destino=`) e o `BarList` sem barras da quantidade pedida (`{n} {unidade}` · `em {n} solicitações`, link `status=nao-canceladas&item=`). **Sem anel** (desvio registrado da spec §8, C-2): itens têm unidades diferentes e somar ou fatiar rolos com peças mentiria.
+- **Usa:** `StatLink`, `BarList`, `formatDuration`, `links` do dashboard.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+
+### DashboardScreen
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardScreen.tsx` (Server Component assíncrono, dentro do `<Suspense>` da página)
+- **Propósito:** a tela `/dashboard`: título, período, exportar, setor, seletor de período e os quatro blocos.
+- **Como funciona:** `requireUser()` na primeira instrução, depois `await searchParams`, `now = new Date()` e `resolveDashboardScope` (a mesma resolução do CSV). Admin sem setor ativo e operador de setor inativo têm o estado vazio próprio. Com escopo: `<h1>Dashboard</h1>`, o rótulo do período (`formatPeriodLabel`, ex. "últimos 7 dias · 14–20 nov"), `ExportCsvLink` com os mesmos período e setor da tela, `SectorPicker` (só admin: `path="/dashboard"`, `allowAll`, `query` com o período, para trocar de setor manter o período), `DashboardPeriodPicker` e os quatro blocos na ordem Passagens, Controles, Estoque, Solicitações. Cada bloco fica num `DashboardBlockBoundary` com `key` = título + `buildDashboardHref(período, setor)` e, dentro dele, a `<Suspense>` com o `DashboardBlockSkeleton`: um bloco quebrado não derruba os outros e trocar o período ou o setor remonta limite e `<Suspense>`. O operador nunca recebe o `?setor=` de outro setor.
+- **Usa:** `resolveDashboardScope`, `SectorPicker`, `DashboardPeriodPicker`, `ExportCsvLink`, `DashboardBlockBoundary`, `DashboardBlockSkeleton`, os quatro blocos, `EmptyState`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 12).
+
+### DashboardPeriodPicker
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/DashboardPeriodPicker.tsx` (`"use client"`)
+- **Propósito:** trocar o período do dashboard: últimos 7 dias, últimos 30 dias ou um intervalo de até 93 dias.
+- **Como funciona:** `<nav aria-label="Período">` com dois `<Link className={buttonVariants(...)}>` (o do período ativo é `default` e tem `aria-current="page"`) e o botão "Intervalo", um disclosure (`aria-expanded`, `aria-controls` do formulário, sem `aria-pressed`). O formulário "Intervalo do período" começa com as datas atuais (nunca em branco; aberto de início quando o período ativo é um intervalo) e dois `<input type="date">` com `max` em hoje e `text-base`. "Aplicar intervalo" valida com `validateRangeInput` **antes** de navegar: o erro aparece no campo (`FieldError`, `aria-invalid`) e nada navega; ok → `router.push(buildDashboardHref(...))` levando o `setor` do admin. Nunca volta em silêncio para outro período (o servidor continua corrigindo o que chegar, por defesa).
+- **Usa:** `Button`, `buttonVariants`, `Field`, `Input`, `validateRangeInput`, `buildDashboardHref`, `dashboardPresetHref`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 12); `bun scripts/rc-check.mjs` com `compiled: 1` e nenhum `CompileError`.
+
+### ExportCsvLink
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/components/dashboard/ExportCsvLink.tsx` (server-safe)
+- **Propósito:** baixar as passagens do período em CSV.
+- **Como funciona:** um `<a href download>` comum com `buttonVariants({ variant: "outline" })` (`max-md:h-11` vem do botão), ícone `Download` decorativo e o texto "Exportar CSV" (o rótulo nomeia o resultado). Nunca `next/link`: o link não navega nem faz prefetch, baixa o arquivo do Route Handler `GET /api/dashboard/export`.
+- **Usa:** `buttonVariants`, `lucide-react`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 12).
 
 ## 3. Componentes de domínio — `src/features/<domínio>/components`
 

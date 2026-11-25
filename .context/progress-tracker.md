@@ -11,12 +11,10 @@
 
 ## ▸ Próximo passo
 
-- **2026-11-24 — Fases 0, 1, 2, 3 e 4 concluídas. Próximo: plano de implementação da Fase 5
-  (Dashboard: consultas de quantidades e de solicitações — abertas, paradas, tempo até a entrega —,
-  `metric-card` e `spending-ring` adaptados e exportação CSV)** com a skill `writing-plans`, a
-  partir da spec §13 (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`). As
-  solicitações já gravam o histórico de status (`request_status_event`) e a passagem guarda o que
-  o dashboard conta; a Fase 5 só lê.
+- **2026-11-25 — Fases 0, 1, 2, 3, 4 e 5 concluídas. Próximo: plano de implementação da Fase 6
+  (Produção: Vercel, domínio, e-mail transacional (P8) e o piloto de uma semana com a equipe)** com a
+  skill `writing-plans`, a partir da spec §13 (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`).
+  O produto está completo para o piloto: passagem, solicitações e dashboard com CSV.
 - **Neon ligado** (P1 resolvida, 2026-11-20). P6/P7/P8 só travam Apple, Facebook e "esqueci a
   senha".
 
@@ -85,7 +83,20 @@
 - ✅ Telas: `/solicitacoes` (Quadro com `useOptimistic`, Lista, Tabela com o primitivo `table`, filtros na URL, "Carregar mais"), detalhe rápido em Sheet (rota interceptada `@detalhe`) e página completa, cancelar com motivo, linha do tempo, comentários, "Nova solicitação" (também pela passagem), seção "Solicitações abertas" no formulário e no resumo, cartão no Início e "Solicitações" na navegação (2026-11-24)
 - ✅ P29, P33, P37 e P40 resolvidas; pendências novas P44–P47 e, da revisão final, P48–P52 (2026-11-24)
 - ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 28 cenários (7 de acesso, 6 de cadastros, 6 de passagem e 9 de solicitações). Verificado: `check-types`, `lint`, `test`, `test:e2e` (28 passed) e `build` verdes (2026-11-24)
-- ⬜ Dashboard e CSV: Fase 5
+- ✅ Dashboard e CSV: entraram na Fase 5
+
+## Fase 5 — Dashboard · ✅
+
+- ✅ Pendências antes da feature, cada uma no seu commit: P48 (`resolveScreenSector` e `paginationParams`, `RequestGroupSection`, `destinationNameSql` e `toOpenSummaries`, `loadSector` com trava, `deactivateSector`, a fonte do histórico exportada, `formatDateAtTimeBR`), P13 (`--chart-5` = `--foreground`), P19 (`error.tsx` e `not-found.tsx` dentro do shell) e P45 (trocar de setor preserva os filtros da URL, validados) (2026-11-25)
+- ✅ Filtros novos para todo número ser um link: `/solicitacoes` (`status`, `parada`, `entrega`, `item`) e `/passagens` (situações `entregues` e `esperadas`, `item`, turno e item inativos no formulário) (2026-11-25)
+- ✅ Domínio (só leitura, sem migração): `resolveDashboardScope`, Passagens sobre a fonte do histórico, Controles (total, média por turno, variação, um segmento por turno, série diária), Estoque (última contagem e pontos do período) e Solicitações (abertas e paradas agora, entregues no período, tempo até a entrega por destino, quantidade pedida por item), tudo agregado no SQL (2026-11-25)
+- ✅ KokonutUI `metric-card` e `spending-ring` adaptados (tokens, pt-BR, sem as pílulas, React Compiler), primitivo `chart` (recharts 3.8.0 + react-is 19.3.0), cores por entidade e guarda de paleta estendido (2026-11-25)
+- ✅ Tela `/dashboard` (período, blocos independentes com `catchError`, esqueletos, estados vazios), "Dashboard" na navegação e o link "Ver o dashboard" no Início (2026-11-25)
+- ✅ `GET /api/dashboard/export`: CSV com BOM, `;`, CRLF e sem injeção de fórmula, mais o guarda de todo `route.ts` (2026-11-25)
+- ✅ Critério de pronto (spec §12): cada número bate com um oráculo independente (JS sobre leitores crus), num mundo com passagens confirmadas, aguardando, não confirmadas, sem passagem e uma correção (2026-11-25)
+- ✅ P13, P19, P45 e P48 resolvidas; pendências novas P53–P61; P24 e P34 ganharam `Atualização` (2026-11-25)
+- ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 35 cenários (7 de acesso, 6 de cadastros, 6 de passagem, 9 de solicitações e 7 do dashboard). Verificado: `check-types`, `lint`, `test`, `test:e2e` (35 passed) e `build` verdes (2026-11-25)
+- ⬜ Deploy, domínio, e-mail e piloto: Fase 6
 
 ## Histórico
 
@@ -96,3 +107,4 @@
 - **2026-11-21** — Fase 2 concluída: cadastros e equipe em `/admin` (setores, turnos, itens, destinos, pessoas e convites), P11 e P18 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-2-cadastros.md`.
 - **2026-11-21** — Fase 3 concluída: passagem de turno de ponta a ponta (rascunho com salvamento automático, entregar, receber, corrigir com motivo e histórico), P26 e P27 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.
 - **2026-11-24** — Fase 4 concluída: solicitações de ponta a ponta (Quadro, Lista e Tabela, detalhe rápido em Sheet, cancelar com motivo, comentários, ligação com a passagem e o Início), P29, P33, P37 e P40 resolvidas. Plano em `docs/superpowers/plans/2026-11-23-fase-4-solicitacoes.md`.
+- **2026-11-25** — Fase 5 concluída: dashboard de ponta a ponta (passagens, controles, estoque e solicitações, com período, comparação e todo número como link para a lista filtrada) e exportação CSV; P13, P19, P45 e P48 resolvidas. Plano em `docs/superpowers/plans/2026-11-24-fase-5-dashboard.md`.

@@ -4,6 +4,8 @@ import { BOARD_MAX_LIMIT, BOARD_PAGE_SIZE, SEARCH_MAX_LENGTH } from "./limits";
 import {
   buildRequestsHref,
   clearFiltersHref,
+  closedWindowApplies,
+  DELIVERY_PARAMS,
   defaultRequestFilters,
   filtersActive,
   LIMIT_PARAM,
@@ -11,6 +13,7 @@ import {
   parseRequestFilters,
   type RequestFilters,
   resetPaging,
+  STATUS_FILTER_PARAM,
   VIEW_PARAM,
   viewHrefs,
 } from "./requestFilters";
@@ -19,6 +22,8 @@ const TODAY = "2026-11-23";
 const DEST = "11111111-1111-4111-8111-111111111111";
 const DEST_LETTERS = "abcdefab-abcd-4abc-8abc-abcdefabcdef"; // com letras: só ele tem versão em maiúsculas
 const SECTOR = "22222222-2222-4222-8222-222222222222";
+const ITEM = "33333333-3333-4333-8333-333333333333";
+const ITEM_LETTERS = "abcdefab-abcd-4abc-8abc-abcdefabcdef";
 
 const DEFAULTS = defaultRequestFilters();
 
@@ -45,6 +50,10 @@ describe("defaultRequestFilters", () => {
         cancelled: 20,
       },
       page: 1,
+      status: "all",
+      stale: false,
+      delivery: { period: "all", from: null, to: null },
+      itemId: null,
     });
   });
 
@@ -591,5 +600,338 @@ describe("viewHrefs", () => {
       list: "/solicitacoes?visao=lista",
       table: "/solicitacoes?visao=tabela",
     });
+  });
+});
+
+describe("filtros novos: status, parada, entrega e item", () => {
+  it("os nomes dos parâmetros são os do contrato", () => {
+    expect(STATUS_FILTER_PARAM).toEqual({
+      open: "abertas",
+      not_cancelled: "nao-canceladas",
+      requested: "solicitada",
+      in_transit: "transito",
+      delivered: "entregue",
+      cancelled: "cancelada",
+    });
+    expect(DELIVERY_PARAMS).toEqual({
+      period: "entrega",
+      from: "entrega_de",
+      to: "entrega_ate",
+    });
+  });
+
+  describe("status", () => {
+    it.each([
+      ["abertas", "open"],
+      ["nao-canceladas", "not_cancelled"],
+      ["solicitada", "requested"],
+      ["transito", "in_transit"],
+      ["entregue", "delivered"],
+      ["cancelada", "cancelled"],
+    ] as const)("status=%s → %s", (param, status) => {
+      expect(parseRequestFilters({ status: param }, TODAY).status).toBe(status);
+    });
+
+    it.each([
+      "ABERTAS",
+      "open",
+      "",
+      "todas",
+      "delivered",
+      "'; drop table request;--",
+    ])("status=%j cai em todos", (param) => {
+      expect(parseRequestFilters({ status: param }, TODAY).status).toBe("all");
+    });
+
+    it("repetido vale o primeiro; lista vazia é todos", () => {
+      expect(
+        parseRequestFilters({ status: ["entregue", "abertas"] }, TODAY).status,
+      ).toBe("delivered");
+      expect(parseRequestFilters({ status: [] }, TODAY).status).toBe("all");
+    });
+  });
+
+  describe("parada", () => {
+    it("só parada=1 liga", () => {
+      expect(parseRequestFilters({ parada: "1" }, TODAY).stale).toBe(true);
+    });
+
+    it.each([
+      "0",
+      "true",
+      "",
+      "sim",
+      "2",
+      " 1",
+    ])("parada=%j não liga", (param) => {
+      expect(parseRequestFilters({ parada: param }, TODAY).stale).toBe(false);
+    });
+  });
+
+  describe("entrega (mesmas regras do período, outras chaves)", () => {
+    const delivery = (params: Record<string, string | undefined>) =>
+      parseRequestFilters(params, TODAY).delivery;
+
+    it("sem parâmetro: qualquer data", () => {
+      expect(delivery({})).toEqual({ period: "all", from: null, to: null });
+    });
+
+    it("7 e 30 dias terminam hoje", () => {
+      expect(delivery({ entrega: "7" })).toEqual({
+        period: "7",
+        from: "2026-11-17",
+        to: TODAY,
+      });
+      expect(delivery({ entrega: "30" })).toEqual({
+        period: "30",
+        from: "2026-10-25",
+        to: TODAY,
+      });
+    });
+
+    it("intervalo válido", () => {
+      expect(
+        delivery({
+          entrega: "intervalo",
+          entrega_de: "2026-11-01",
+          entrega_ate: "2026-11-10",
+        }),
+      ).toEqual({ period: "range", from: "2026-11-01", to: "2026-11-10" });
+    });
+
+    it("intervalo de um dia e invertido (trocado)", () => {
+      expect(
+        delivery({
+          entrega: "intervalo",
+          entrega_de: "2026-11-05",
+          entrega_ate: "2026-11-05",
+        }),
+      ).toMatchObject({ from: "2026-11-05", to: "2026-11-05" });
+      expect(
+        delivery({
+          entrega: "intervalo",
+          entrega_de: "2026-11-10",
+          entrega_ate: "2026-11-01",
+        }),
+      ).toEqual({ period: "range", from: "2026-11-01", to: "2026-11-10" });
+    });
+
+    it("entrega_ate no futuro é cortado em hoje; tudo no futuro volta a qualquer data", () => {
+      expect(
+        delivery({
+          entrega: "intervalo",
+          entrega_de: "2026-11-20",
+          entrega_ate: "2027-01-01",
+        }),
+      ).toEqual({ period: "range", from: "2026-11-20", to: TODAY });
+      expect(
+        delivery({
+          entrega: "intervalo",
+          entrega_de: "2026-12-01",
+          entrega_ate: "2026-12-31",
+        }),
+      ).toEqual({ period: "all", from: null, to: null });
+    });
+
+    it("data irreal, ausente ou fora do formato volta a qualquer data", () => {
+      for (const params of [
+        { entrega: "intervalo", entrega_de: "2026-02-30", entrega_ate: TODAY },
+        { entrega: "intervalo", entrega_de: "2026-11-01" },
+        { entrega: "intervalo", entrega_ate: "2026-11-01" },
+        { entrega: "intervalo", entrega_de: "ontem", entrega_ate: "hoje" },
+        { entrega: "9999" },
+        { entrega: "" },
+      ]) {
+        expect(delivery(params)).toEqual({
+          period: "all",
+          from: null,
+          to: null,
+        });
+      }
+    });
+
+    it("de e ate do período de criação não vazam para a entrega (e vice-versa)", () => {
+      const filters = parseRequestFilters(
+        {
+          periodo: "intervalo",
+          de: "2026-11-01",
+          ate: "2026-11-05",
+          entrega: "7",
+        },
+        TODAY,
+      );
+      expect(filters.period).toBe("range");
+      expect(filters.from).toBe("2026-11-01");
+      expect(filters.delivery.period).toBe("7");
+      expect(
+        parseRequestFilters(
+          { entrega_de: "2026-11-01", entrega_ate: "2026-11-05" },
+          TODAY,
+        ).delivery.period,
+      ).toBe("all");
+    });
+  });
+
+  describe("item", () => {
+    it("uuid minúsculo é aceito", () => {
+      expect(parseRequestFilters({ item: ITEM }, TODAY).itemId).toBe(ITEM);
+    });
+
+    it("maiúsculo, lixo e vazio viram nenhum item", () => {
+      for (const item of [
+        ITEM_LETTERS.toUpperCase(),
+        "abc",
+        "",
+        "'; drop table item;--",
+      ]) {
+        expect(parseRequestFilters({ item }, TODAY).itemId).toBeNull();
+      }
+      expect(parseRequestFilters({ item: ITEM_LETTERS }, TODAY).itemId).toBe(
+        ITEM_LETTERS,
+      );
+    });
+
+    it("repetido vale o primeiro", () => {
+      expect(
+        parseRequestFilters({ item: [ITEM, ITEM_LETTERS] }, TODAY).itemId,
+      ).toBe(ITEM);
+    });
+  });
+});
+
+describe("buildRequestsHref: filtros novos", () => {
+  it("status, parada, entrega e item na ordem do contrato, entre o período e o criador", () => {
+    const filters: RequestFilters = {
+      ...DEFAULTS,
+      view: "table",
+      destination: DEST,
+      period: "7",
+      from: "2026-11-17",
+      to: TODAY,
+      status: "open",
+      stale: true,
+      delivery: { period: "range", from: "2026-11-01", to: "2026-11-10" },
+      itemId: ITEM,
+      creatorId: "ana",
+      search: "rede",
+      limits: { ...DEFAULTS.limits, requested: 40 },
+      page: 2,
+    };
+    expect(buildRequestsHref(filters, { sector: "todos" })).toBe(
+      `/solicitacoes?visao=tabela&destino=${DEST}&periodo=7&status=abertas&parada=1&entrega=intervalo&entrega_de=2026-11-01&entrega_ate=2026-11-10&item=${ITEM}&criador=ana&busca=rede&setor=todos&mais_solicitada=40&pagina=2`,
+    );
+  });
+
+  it("o padrão não vira parâmetro", () => {
+    expect(buildRequestsHref(DEFAULTS)).toBe("/solicitacoes");
+    expect(
+      buildRequestsHref({ ...DEFAULTS, status: "all", stale: false }),
+    ).toBe("/solicitacoes");
+  });
+
+  it("entrega 7 e 30 só levam o preset (sem de e ate)", () => {
+    const delivery7 = { period: "7", from: "2026-11-17", to: TODAY } as const;
+    expect(buildRequestsHref({ ...DEFAULTS, delivery: delivery7 })).toBe(
+      "/solicitacoes?entrega=7",
+    );
+    expect(
+      buildRequestsHref({
+        ...DEFAULTS,
+        delivery: { period: "30", from: "2026-10-25", to: TODAY },
+      }),
+    ).toBe("/solicitacoes?entrega=30");
+  });
+
+  it.each([
+    ["abertas", "open"],
+    ["nao-canceladas", "not_cancelled"],
+    ["solicitada", "requested"],
+    ["transito", "in_transit"],
+    ["entregue", "delivered"],
+    ["cancelada", "cancelled"],
+  ] as const)("status %s", (param, status) => {
+    expect(buildRequestsHref({ ...DEFAULTS, status })).toBe(
+      `/solicitacoes?status=${param}`,
+    );
+  });
+
+  it("ida e volta estável: parse → build → parse dá o mesmo filtro", () => {
+    const hrefs = [
+      "/solicitacoes?visao=tabela&status=abertas",
+      "/solicitacoes?visao=tabela&parada=1",
+      "/solicitacoes?visao=tabela&entrega=7",
+      "/solicitacoes?visao=tabela&entrega=intervalo&entrega_de=2026-11-01&entrega_ate=2026-11-10",
+      `/solicitacoes?visao=tabela&destino=outro&entrega=30&item=${ITEM}`,
+      `/solicitacoes?visao=tabela&periodo=7&status=nao-canceladas&item=${ITEM}`,
+      `/solicitacoes?status=entregue&item=${ITEM_LETTERS}&setor=${SECTOR}`,
+    ];
+    for (const href of hrefs) {
+      const filters = parseRequestFilters(paramsOf(href), TODAY);
+      const extras = paramsOf(href).setor ? { sector: SECTOR } : {};
+      expect(buildRequestsHref(filters, extras)).toBe(href);
+      expect(
+        parseRequestFilters(paramsOf(buildRequestsHref(filters)), TODAY),
+      ).toEqual(filters);
+    }
+  });
+});
+
+describe("filtros novos: filtersActive, clearFiltersHref, resetPaging", () => {
+  it.each([
+    ["status", { status: "open" }],
+    ["parada", { stale: true }],
+    ["entrega", { delivery: { period: "7", from: "2026-11-17", to: TODAY } }],
+    ["item", { itemId: ITEM }],
+  ] as const)("%s conta como filtro", (_label, patch) => {
+    expect(filtersActive({ ...DEFAULTS, ...patch })).toBe(true);
+  });
+
+  it("Limpar filtros zera os novos e mantém a visão e o setor", () => {
+    expect(clearFiltersHref("table", { sector: SECTOR })).toBe(
+      `/solicitacoes?visao=tabela&setor=${SECTOR}`,
+    );
+  });
+
+  it("resetPaging mantém os filtros novos", () => {
+    const filters: RequestFilters = {
+      ...DEFAULTS,
+      status: "open",
+      stale: true,
+      delivery: { period: "30", from: "2026-10-25", to: TODAY },
+      itemId: ITEM,
+      page: 4,
+    };
+    expect(resetPaging(filters)).toEqual({ ...filters, page: 1 });
+  });
+});
+
+describe("closedWindowApplies", () => {
+  it("a janela de 30 dias só vale sem filtro de tempo", () => {
+    expect(closedWindowApplies(DEFAULTS)).toBe(true);
+    expect(
+      closedWindowApplies({
+        ...DEFAULTS,
+        period: "7",
+        from: "2026-11-17",
+        to: TODAY,
+      }),
+    ).toBe(false);
+    expect(
+      closedWindowApplies({
+        ...DEFAULTS,
+        delivery: { period: "7", from: "2026-11-17", to: TODAY },
+      }),
+    ).toBe(false);
+  });
+
+  it("status, parada e item não tiram a janela", () => {
+    expect(
+      closedWindowApplies({
+        ...DEFAULTS,
+        status: "delivered",
+        stale: true,
+        itemId: ITEM,
+      }),
+    ).toBe(true);
   });
 });

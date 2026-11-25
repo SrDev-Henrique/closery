@@ -103,3 +103,8 @@ export function formatDateBR(isoDate: string): string {
   }
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
+
+/** "21/11/2026 às 07:05": o dia e a hora de São Paulo juntos. */
+export function formatDateAtTimeBR(date: Date): string {
+  return `${formatDateBR(saoPauloParts(date).date)} às ${formatTimeBR(date)}`;
+}

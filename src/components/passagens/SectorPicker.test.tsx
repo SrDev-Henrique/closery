@@ -73,6 +73,46 @@ describe("SectorPicker", () => {
     });
   });
 
+  it("com query, a action recebe o query dos filtros junto (P45)", async () => {
+    mocks.chooseSectorAction.mockResolvedValue({ ok: true });
+    render(
+      <SectorPicker
+        sectors={[ULD, CARGA]}
+        selectedId={ULD.id}
+        path="/passagens"
+        query="periodo=30&situacao=aguardando"
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+
+    expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: CARGA.id,
+      path: "/passagens",
+      query: "periodo=30&situacao=aguardando",
+    });
+  });
+
+  it("com query vazio, a action recebe o query vazio (a tela sem filtros)", async () => {
+    mocks.chooseSectorAction.mockResolvedValue({ ok: true });
+    render(
+      <SectorPicker
+        sectors={[ULD, CARGA]}
+        selectedId={ULD.id}
+        path="/solicitacoes"
+        query=""
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+
+    expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: CARGA.id,
+      path: "/solicitacoes",
+      query: "",
+    });
+  });
+
   it("clicar no setor já selecionado não chama a action", async () => {
     render(
       <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,

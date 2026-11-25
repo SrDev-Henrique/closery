@@ -3,20 +3,19 @@ import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { RequestsHomeCard } from "@/components/solicitacoes/RequestsHomeCard";
 import { db } from "@/db";
-import { listActiveSectors } from "@/features/admin/sectors";
 import { getHomeHandovers } from "@/features/handovers/home";
-import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
-import { readRememberedSector } from "@/features/handovers/sectorCookie";
+import { resolveScreenSector } from "@/features/handovers/screenSector";
 import { getHomeRequests } from "@/features/requests/home";
 import { requestsHref } from "@/features/requests/urls";
 import { requireUser } from "@/lib/auth/session";
+import type { SearchParams } from "@/lib/searchParams";
 
 import { MyShiftCard } from "./MyShiftCard";
 import { PendingHandoverCard } from "./PendingHandoverCard";
 import { SectorPicker } from "./SectorPicker";
 
 type HomeHandoversProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 };
 
 // Cartões do Início. Lê sessão, cookie e URL: só dentro de <Suspense>.
@@ -24,39 +23,41 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
   const actor = await requireUser();
   const params = await searchParams;
 
-  let sectorId: string;
-  let picker: React.ReactNode = null;
-  let sectorParam: string | null = null;
+  // Operador sempre usa o próprio setor (toAuthz garante que existe).
+  if (actor.role !== "admin" && actor.sectorId === null) notFound();
 
-  if (actor.role === "admin") {
-    const sectors = await listActiveSectors(db);
-    const selection = resolveHandoverSector(sectors, {
-      url: params.setor,
-      cookie: await readRememberedSector(),
-    });
-    if (selection.kind !== "sector") {
-      return (
-        <EmptyState
-          title="Nenhum setor ativo."
-          description="Cadastre ou reative um setor para usar a passagem de turno."
-          action={{ label: "Ir para Setores", href: "/admin/setores" }}
-        />
-      );
-    }
-    sectorId = selection.sector.id;
-    sectorParam = selection.sector.id;
-    picker = (
+  const screen = await resolveScreenSector(db, actor, {
+    url: params.setor,
+    allowAll: false,
+  });
+  if (screen.kind === "missing") notFound();
+  if (screen.kind === "inactive") {
+    return (
+      <EmptyState
+        title="Seu setor está inativo."
+        description="Peça a um administrador para reativá-lo."
+      />
+    );
+  }
+  if (screen.kind !== "sector") {
+    return (
+      <EmptyState
+        title="Nenhum setor ativo."
+        description="Cadastre ou reative um setor para usar a passagem de turno."
+        action={{ label: "Ir para Setores", href: "/admin/setores" }}
+      />
+    );
+  }
+
+  const { sectorId, sectorParam } = screen;
+  const picker =
+    sectorParam === null ? null : (
       <SectorPicker
-        sectors={sectors}
-        selectedId={selection.sector.id}
+        sectors={screen.sectors}
+        selectedId={sectorParam}
         path="/"
       />
     );
-  } else {
-    // Operador sempre usa o próprio setor (toAuthz garante que existe).
-    if (actor.sectorId === null) notFound();
-    sectorId = actor.sectorId;
-  }
 
   const now = new Date();
   const result = await getHomeHandovers(db, actor, sectorId, now);

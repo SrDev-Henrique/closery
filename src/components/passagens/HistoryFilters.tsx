@@ -14,7 +14,10 @@ import {
   type HistoryPeriod,
   type HistorySituationFilter,
 } from "@/features/handovers/historyFilters";
-import type { ShiftChoice } from "@/features/handovers/types";
+import type {
+  HistoryItemChoice,
+  ShiftChoice,
+} from "@/features/handovers/types";
 
 const PERIOD_OPTIONS: readonly { value: HistoryPeriod; label: string }[] = [
   { value: "7", label: "Últimos 7 dias" },
@@ -27,6 +30,8 @@ const SITUATION_OPTIONS: readonly {
   label: string;
 }[] = [
   { value: "all", label: "Todas" },
+  { value: "delivered", label: "Entregues" },
+  { value: "expected", label: "Esperadas" },
   { value: "awaiting", label: "Aguardando" },
   { value: "confirmed", label: "Confirmada" },
   { value: "unconfirmed", label: "Não confirmada" },
@@ -35,6 +40,7 @@ const SITUATION_OPTIONS: readonly {
 ];
 
 const ALL_SHIFTS = "all";
+const ALL_ITEMS = "all";
 
 function isPeriod(value: string): value is HistoryPeriod {
   return PERIOD_OPTIONS.some((option) => option.value === value);
@@ -50,10 +56,13 @@ function isSituation(value: string): value is HistorySituationFilter {
 export function HistoryFilters({
   filters,
   shifts,
+  items = [],
   sectorParam,
 }: {
   filters: Filters;
-  shifts: readonly ShiftChoice[];
+  // `active: false` = turno desativado que a URL escolheu: aparece como "(inativo)".
+  shifts: readonly (ShiftChoice & { active?: boolean })[];
+  items?: readonly HistoryItemChoice[];
   sectorParam: string | null;
 }) {
   const router = useRouter();
@@ -61,6 +70,7 @@ export function HistoryFilters({
   const [from, setFrom] = useState(filters.from);
   const [to, setTo] = useState(filters.to);
   const [shiftId, setShiftId] = useState(filters.shiftId ?? ALL_SHIFTS);
+  const [itemId, setItemId] = useState(filters.itemId ?? ALL_ITEMS);
   const [situation, setSituation] = useState<HistorySituationFilter>(
     filters.situation,
   );
@@ -75,6 +85,7 @@ export function HistoryFilters({
           to,
           shiftId: shiftId === ALL_SHIFTS ? null : shiftId,
           situation,
+          itemId: itemId === ALL_ITEMS ? null : itemId,
         },
         sectorParam === null ? {} : { sector: sectorParam },
       ),
@@ -110,7 +121,26 @@ export function HistoryFilters({
               { value: ALL_SHIFTS, label: "Todos os turnos" },
               ...shifts.map((shift) => ({
                 value: shift.id,
-                label: shift.name,
+                label:
+                  shift.active === false
+                    ? `${shift.name} (inativo)`
+                    : shift.name,
+              })),
+            ]}
+          />
+        )}
+        {items.length > 0 && (
+          <SelectField
+            label="Item"
+            value={itemId}
+            onValueChange={setItemId}
+            options={[
+              { value: ALL_ITEMS, label: "Todos os itens" },
+              ...items.map((entry) => ({
+                value: entry.id,
+                label: entry.active
+                  ? `${entry.name} (${entry.unit})`
+                  : `${entry.name} (${entry.unit}) (inativo)`,
               })),
             ]}
           />

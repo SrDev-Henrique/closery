@@ -67,6 +67,34 @@ describe("AppSidebar", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("operador e admin veem o Dashboard apontando para /dashboard", () => {
+    const { unmount } = renderSidebar({ isAdmin: false });
+    expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
+    unmount();
+
+    renderSidebar({ isAdmin: true });
+    expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "href",
+      "/dashboard",
+    );
+  });
+
+  it("Dashboard fica ativo em /dashboard e só nele", () => {
+    mocks.pathname = "/dashboard";
+    renderSidebar();
+
+    expect(screen.getByRole("link", { name: "Dashboard" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Passagens" })).not.toHaveAttribute(
+      "aria-current",
+    );
+  });
+
   it("admin vê Administração apontando para /admin", () => {
     renderSidebar({ isAdmin: true });
 

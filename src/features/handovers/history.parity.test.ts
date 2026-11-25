@@ -105,6 +105,7 @@ describe("paridade hasShiftEnded (JS) × SQL de pares encerrados", () => {
             to: days[2] ?? DAY,
             shiftId: null,
             situation: "missing",
+            itemId: null,
           },
           sectorId: uld.id,
           page: 1,

@@ -14,6 +14,7 @@ import {
 } from "./fieldRules";
 import {
   ALL_SECTORS,
+  CHOOSE_SECTOR_QUERY_MAX,
   CONFIRMATION_NOTE_MAX_LENGTH,
   ITEM_NOTE_MAX_LENGTH,
   MAX_QUANTITY,
@@ -169,6 +170,12 @@ export const chooseSectorSchema = z.object({
     error: INVALID_INPUT_MESSAGE,
   }),
   path: z.enum(SECTOR_PICKER_PATHS, { error: INVALID_INPUT_MESSAGE }),
+  // O query dos filtros da tela (sem o setor). O servidor nunca o usa como
+  // veio: sectorRedirectHref o reinterpreta pelo parse da tela.
+  query: z
+    .string({ error: INVALID_INPUT_MESSAGE })
+    .max(CHOOSE_SECTOR_QUERY_MAX, { error: INVALID_INPUT_MESSAGE })
+    .optional(),
 });
 
 export type SaveFieldInputParsed = z.infer<typeof saveFieldSchema>;

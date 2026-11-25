@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { HandoverStatusBadge } from "./HandoverStatusBadge";
+import { HandoverStatusBadge, SITUATION_STYLE } from "./HandoverStatusBadge";
 
 describe("HandoverStatusBadge", () => {
   it.each([
@@ -46,5 +46,28 @@ describe("HandoverStatusBadge", () => {
       /\b(?:bg|text|border)-(?:red|green|blue|yellow|amber|orange|gray|slate|zinc)-\d+/,
     );
     expect(container.innerHTML).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+});
+
+describe("SITUATION_STYLE", () => {
+  it("exporta o ícone e as classes de token de cada situação (o anel do dashboard reusa o ícone)", () => {
+    expect(
+      Object.fromEntries(
+        Object.entries(SITUATION_STYLE).map(([situation, style]) => [
+          situation,
+          style.className,
+        ]),
+      ),
+    ).toEqual({
+      awaiting: "bg-info text-info-foreground",
+      confirmed: "bg-success text-success-foreground",
+      unconfirmed: "bg-warning text-warning-foreground",
+      missing: "bg-muted text-muted-foreground",
+    });
+    for (const { icon: Icon } of Object.values(SITUATION_STYLE)) {
+      const { container, unmount } = render(<Icon aria-hidden="true" />);
+      expect(container.querySelector("svg")).not.toBeNull();
+      unmount();
+    }
   });
 });

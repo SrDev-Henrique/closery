@@ -15,11 +15,11 @@
  *
  * Piso nunca se afrouxa para a paleta passar: reprovou, ajuste o token.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-/** Nº de cores da série. `chart-5` é o cinza de "Outros" e NÃO é série. */
+/** Nº de cores da série. `chart-5` é o neutro de "Outros" (o `foreground`, P13) e NÃO é série. */
 const SERIES = 4;
 /** Pisos: banda de lightness OKLCH, croma mínimo, contraste WCAG (não-texto) e ΔE2000. */
 const L_BAND = [0.43, 0.77] as const;
@@ -352,6 +352,46 @@ for (const [theme, selector] of THEMES) {
   });
 }
 
+// ---------------------------------------------------------------- neutro de "Outros" (P13)
+/**
+ * O neutro de "Outros" (e do 5º turno em diante nos gráficos) é o `foreground` do tema:
+ * `muted-foreground` passa o contraste, mas reprova a separação em tritanopia contra `chart-4`
+ * (ver o caso negativo abaixo). `--chart-5` tem o mesmo valor, para o token deixar de ser a
+ * armadilha de um cinza que some no tema escuro.
+ */
+for (const [theme, selector] of THEMES) {
+  describe(`neutro de Outros (P13) — tema ${theme}`, () => {
+    const card = readToken(css, selector, "card");
+    const foreground = readToken(css, selector, "foreground");
+    const others = readToken(css, selector, "chart-5");
+    const series = Array.from({ length: SERIES }, (_, i) =>
+      readToken(css, selector, `chart-${i + 1}`),
+    );
+
+    it("chart-5 tem o mesmo valor de foreground", () => {
+      expect(others).toEqual(foreground);
+    });
+
+    it("tem contraste ≥3:1 sobre o card do tema", () => {
+      const ratio = contrast(others, card);
+      expect(
+        ratio,
+        `chart-5 sobre card: ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(CONTRAST_MIN);
+    });
+
+    it.each(VISIONS)("separa de chart-1..4 em %s (ΔE2000 ≥ 15)", (vision) => {
+      series.forEach((rgb, i) => {
+        const de = pairDeltaE(others, rgb, vision);
+        expect(
+          de,
+          `chart-5 × chart-${i + 1} em ${vision}: ΔE ${de.toFixed(1)}`,
+        ).toBeGreaterThanOrEqual(DELTA_E_MIN);
+      });
+    });
+  });
+}
+
 // ---------------------------------------------------------------- pares de status
 const STATUS_TOKENS = ["success", "warning", "info"] as const;
 
@@ -446,5 +486,270 @@ describe("o validador reprova o que deve reprovar", () => {
     ]) {
       expect(oklchOf(parseColor(old)).C).toBeLessThan(C_MIN);
     }
+  });
+
+  it("o chart-5 antigo (oklch(0.269 0 0)) reprova o contraste no tema escuro: P13 detectado", () => {
+    const card = readToken(css, ".dark", "card");
+    expect(contrast(parseColor("oklch(0.269 0 0)"), card)).toBeLessThan(
+      CONTRAST_MIN,
+    );
+  });
+
+  it("muted-foreground reprova a separação de chart-4 em tritanopia, nos dois temas: por isso Outros é foreground", () => {
+    for (const [, selector] of THEMES) {
+      const muted = readToken(css, selector, "muted-foreground");
+      const chart4 = readToken(css, selector, "chart-4");
+      expect(pairDeltaE(muted, chart4, "tritanopia")).toBeLessThan(DELTA_E_MIN);
+    }
+  });
+});
+
+// ---------------------------------------------------------------- Fase 5: cores dos gráficos
+/**
+ * O guarda mede o que a tela PINTA: lê `chartColors.ts` (a única fonte das classes dos gráficos) e
+ * varre os componentes de gráfico atrás de cor crua. Quem trocar uma cor em `chartColors.ts` por
+ * outra reprova aqui; quem escrever `bg-zinc-900` num componente também.
+ */
+const COMPONENTS_DIR = join(import.meta.dirname, "..", "components");
+const read = (...parts: string[]) =>
+  readFileSync(join(COMPONENTS_DIR, ...parts), "utf8").replaceAll("\r\n", "\n");
+const chartColors = read("dashboard", "chartColors.ts");
+
+/** O token que cada situação do anel deve usar: o `-foreground` do selo (o fundo pastel não passa 3:1). */
+const SITUATION_TOKENS = {
+  confirmed: "success-foreground",
+  awaiting: "info-foreground",
+  unconfirmed: "warning-foreground",
+  missing: "muted-foreground",
+} as const;
+type SituationKey = keyof typeof SITUATION_TOKENS;
+const SITUATION_KEYS = Object.keys(SITUATION_TOKENS) as SituationKey[];
+
+/** `{ stroke, dot }` de uma situação, sem o prefixo `stroke-` e `bg-`. */
+function situationEntry(source: string, key: SituationKey) {
+  const hit = new RegExp(
+    `${key}:\\s*\\{\\s*stroke:\\s*"stroke-([a-z-]+)",\\s*dot:\\s*"bg-([a-z-]+)"`,
+  ).exec(source);
+  if (!hit?.[1] || !hit[2]) {
+    throw new Error(`SITUATION_CHART.${key} não encontrado em chartColors.ts`);
+  }
+  return { stroke: hit[1], dot: hit[2] };
+}
+
+/** Os textos de `export const NAME = [ "a", "b" ]`. */
+function stringList(source: string, name: string): string[] {
+  const hit = new RegExp(`export const ${name} = \\[([^\\]]*)\\]`).exec(source);
+  if (!hit?.[1]) {
+    throw new Error(`${name} não encontrado em chartColors.ts`);
+  }
+  return [...hit[1].matchAll(/"([^"]+)"/g)].map((match) => match[1] ?? "");
+}
+
+function stringConstant(source: string, name: string): string {
+  const hit = new RegExp(`export const ${name} = "([^"]+)"`).exec(source);
+  if (!hit?.[1]) {
+    throw new Error(`${name} não encontrado em chartColors.ts`);
+  }
+  return hit[1];
+}
+
+for (const [theme, selector] of THEMES) {
+  describe(`cores dos gráficos da Fase 5 — tema ${theme}`, () => {
+    const card = readToken(css, selector, "card");
+
+    it.each(
+      SITUATION_KEYS,
+    )("situação %s: chartColors.ts usa o -foreground do selo (traço e ponto)", (key) => {
+      expect(situationEntry(chartColors, key)).toEqual({
+        stroke: SITUATION_TOKENS[key],
+        dot: SITUATION_TOKENS[key],
+      });
+    });
+
+    it.each(
+      SITUATION_KEYS,
+    )("a cor lida para %s tem contraste ≥3:1 sobre o card", (key) => {
+      const token = situationEntry(chartColors, key).stroke;
+      const ratio = contrast(readToken(css, selector, token), card);
+      expect(
+        ratio,
+        `${key} (${token}): ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(CONTRAST_MIN);
+    });
+
+    it("as quatro situações se distinguem em visão normal (ΔE2000 ≥ 15)", () => {
+      const colors = SITUATION_KEYS.map((key) =>
+        readToken(css, selector, situationEntry(chartColors, key).stroke),
+      );
+      for (let i = 0; i < colors.length; i++) {
+        for (let j = i + 1; j < colors.length; j++) {
+          const de = pairDeltaE(colors[i] ?? card, colors[j] ?? card, "normal");
+          expect(
+            de,
+            `${SITUATION_KEYS[i]} × ${SITUATION_KEYS[j]}: ΔE ${de.toFixed(1)}`,
+          ).toBeGreaterThanOrEqual(DELTA_E_MIN);
+        }
+      }
+    });
+
+    it("o neutro dos turnos do 5º em diante é o foreground: contraste ≥3:1 e ΔE ≥ 15 de chart-1..4", () => {
+      const neutral = readToken(css, selector, "foreground");
+      expect(contrast(neutral, card)).toBeGreaterThanOrEqual(CONTRAST_MIN);
+      for (const vision of VISIONS) {
+        for (let n = 1; n <= SERIES; n++) {
+          const de = pairDeltaE(
+            neutral,
+            readToken(css, selector, `chart-${n}`),
+            vision,
+          );
+          expect(
+            de,
+            `foreground × chart-${n} em ${vision}: ΔE ${de.toFixed(1)}`,
+          ).toBeGreaterThanOrEqual(DELTA_E_MIN);
+        }
+      }
+    });
+  });
+}
+
+describe("chartColors.ts: a cor pertence à entidade e nunca cicla", () => {
+  it("o neutro de 'Outros turnos' é bg-foreground e stroke-foreground", () => {
+    expect(stringConstant(chartColors, "OTHERS_SWATCH")).toBe("bg-foreground");
+    expect(stringConstant(chartColors, "OTHERS_STROKE")).toBe(
+      "stroke-foreground",
+    );
+  });
+
+  it("as cores de turno são exatamente chart-1 a chart-4, nessa ordem", () => {
+    expect(stringList(chartColors, "SHIFT_SWATCHES")).toEqual([
+      "bg-chart-1",
+      "bg-chart-2",
+      "bg-chart-3",
+      "bg-chart-4",
+    ]);
+    expect(stringList(chartColors, "SHIFT_STROKES")).toEqual([
+      "stroke-chart-1",
+      "stroke-chart-2",
+      "stroke-chart-3",
+      "stroke-chart-4",
+    ]);
+  });
+
+  it("série única e barra única são o foreground", () => {
+    expect(stringConstant(chartColors, "SINGLE_SERIES_COLOR")).toBe(
+      "var(--foreground)",
+    );
+    expect(stringConstant(chartColors, "SINGLE_BAR_CLASS")).toBe(
+      "bg-foreground",
+    );
+  });
+
+  it("a leitura falha alto quando o nome some (não passa em vazio)", () => {
+    expect(() => stringList("", "SHIFT_SWATCHES")).toThrow("não encontrado");
+    expect(() => stringConstant("", "OTHERS_SWATCH")).toThrow("não encontrado");
+    expect(() => situationEntry("", "missing")).toThrow("não encontrado");
+  });
+});
+
+// ---------------------------------------------------------------- varredura dos componentes de gráfico
+const CLASS_PREFIX =
+  "(?:bg|text|stroke|fill|border|ring|ring-offset|outline|from|via|to|shadow|divide|accent|caret|decoration|placeholder)";
+const RAW_COLOR =
+  "(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)";
+// `(?<![\w-])` + variantes (`dark:`, `focus-visible:`, `hover:`…) antes do prefixo.
+const VARIANTS = "(?<![\\w-])(?:[\\w-]+:)*";
+
+const FORBIDDEN: readonly (readonly [string, RegExp])[] = [
+  ["chart-5 ou acima", /chart-(?:[5-9]|\d{2,})(?!\d)/],
+  [
+    "cor crua do Tailwind",
+    new RegExp(`${VARIANTS}${CLASS_PREFIX}-${RAW_COLOR}-\\d{2,3}(?![\\w-])`),
+  ],
+  [
+    "branco ou preto crus",
+    new RegExp(`${VARIANTS}${CLASS_PREFIX}-(?:white|black)(?![\\w-])`),
+  ],
+  ["hex", /#[0-9a-fA-F]{3,8}(?![\w-])/],
+  ["cor arbitrária", /-\[(?:#|rgb|hsl|oklch)/],
+];
+
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
+}
+
+/** Os nomes das regras que o código reprova (vazio = limpo). */
+function violationsIn(source: string): string[] {
+  const code = stripComments(source);
+  return FORBIDDEN.filter(([, pattern]) => pattern.test(code)).map(
+    ([name]) => name,
+  );
+}
+
+function chartSources(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) return chartSources(full);
+    return /\.(ts|tsx)$/.test(name) && !/\.test\.(ts|tsx)$/.test(name)
+      ? [full]
+      : [];
+  });
+}
+
+describe("varredura: nenhum componente de gráfico usa cor crua nem chart-5 ou acima", () => {
+  const kokonut = chartSources(join(COMPONENTS_DIR, "kokonutui"));
+  const dashboard = chartSources(join(COMPONENTS_DIR, "dashboard"));
+
+  it("anti-vacuidade: acha os arquivos que deve varrer", () => {
+    expect(kokonut.length).toBeGreaterThanOrEqual(2);
+    expect(dashboard.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it.each(
+    [...kokonut, ...dashboard].map(
+      (file) =>
+        [
+          file.slice(COMPONENTS_DIR.length + 1).replaceAll("\\", "/"),
+          file,
+        ] as const,
+    ),
+  )("%s", (_name, file) => {
+    expect(violationsIn(readFileSync(file, "utf8"))).toEqual([]);
+  });
+});
+
+describe("a varredura reprova o que deve reprovar (caso negativo)", () => {
+  it.each([
+    ['className="bg-zinc-900"', "cor crua do Tailwind"],
+    ['className="stroke-chart-5"', "chart-5 ou acima"],
+    ['className="bg-chart-12"', "chart-5 ou acima"],
+    ["const stroke = 'var(--chart-7)'", "chart-5 ou acima"],
+    ['const color = "#ccc"', "hex"],
+    ['const color = "#1A2B3C4D"', "hex"],
+    [
+      'className="dark:focus-visible:ring-offset-zinc-950"',
+      "cor crua do Tailwind",
+    ],
+    ['className="ring-white"', "branco ou preto crus"],
+    ['className="hover:text-black"', "branco ou preto crus"],
+    ['className="placeholder-gray-400"', "cor crua do Tailwind"],
+    ['className="text-[#fff]"', "cor arbitrária"],
+    ['className="fill-[oklch(0.5_0.1_20)]"', "cor arbitrária"],
+  ])("%s reprova", (source, rule) => {
+    expect(violationsIn(source)).toContain(rule);
+  });
+
+  it("código limpo passa: tokens, chart-1 a chart-4, ids de clipPath e comentários", () => {
+    expect(
+      violationsIn(`
+        // bg-zinc-900 num comentário não conta
+        /* #ccc stroke-chart-5 */
+        const clip = \`url(#\${id}-lit)\`;
+        const a = "bg-chart-4 stroke-foreground ring-offset-background text-muted-foreground";
+        const b = "dark:bg-card focus-visible:ring-ring fill-foreground/5 stroke-muted-foreground/50";
+        const c = "https://kokonutui.com";
+      `),
+    ).toEqual([]);
   });
 });

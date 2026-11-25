@@ -6,16 +6,32 @@ import { destination } from "@/db/schema/catalog";
 import { request, requestStatusEvent } from "@/db/schema/requests";
 import type { Db } from "@/db/types";
 import { type Authz, canAccessSector } from "@/features/authz/authz";
+import type { RequestStatus } from "@/lib/requestStatuses";
 
 import { HANDOVER_OPEN_LIMIT } from "./limits";
-import { daysInStatusSql, requestScopeSql, staleSql } from "./sql";
+import {
+  daysInStatusSql,
+  destinationNameSql,
+  requestScopeSql,
+  staleSql,
+} from "./sql";
 import { isOpenStatus, OPEN_STATUSES } from "./status";
 import type {
-  OpenRequestSummary,
   OpenRequestsAtDelivery,
   OpenRequestsNow,
-  RequestAtDelivery,
+  OpenStatus,
 } from "./types";
+
+// As linhas que a leitura devolveu com `status` aberto, com o tipo `OpenStatus`.
+// Quem lê já filtra no SQL: isto só estreita o tipo (e descarta o que não
+// for aberto) sem o `as`.
+export function toOpenSummaries<T extends { status: RequestStatus }>(
+  rows: readonly T[],
+): Array<Omit<T, "status"> & { status: OpenStatus }> {
+  return rows.flatMap((row) =>
+    isOpenStatus(row.status) ? [{ ...row, status: row.status }] : [],
+  );
+}
 
 // "Solicitações abertas" do formulário da passagem: as abertas AGORA do setor
 // (Solicitada e Em separação / Trânsito), as paradas há mais tempo primeiro.
@@ -47,7 +63,7 @@ export async function listOpenRequests(
     .select({
       id: request.id,
       description: request.description,
-      destinationName: sql<string>`coalesce(${destination.name}, ${request.destinationOther})`,
+      destinationName: destinationNameSql(),
       status: request.status,
       daysInStatus: daysInStatusSql(now, request.statusChangedAt),
       stale,
@@ -59,9 +75,7 @@ export async function listOpenRequests(
     .limit(HANDOVER_OPEN_LIMIT);
 
   return {
-    rows: rows.flatMap((row): OpenRequestSummary[] =>
-      isOpenStatus(row.status) ? [{ ...row, status: row.status }] : [],
-    ),
+    rows: toOpenSummaries(rows),
     total: counted?.total ?? 0,
     staleCount: counted?.staleCount ?? 0,
   };
@@ -129,7 +143,7 @@ export async function listOpenRequestsAtDelivery(
     .select({
       id: request.id,
       description: request.description,
-      destinationName: sql<string>`coalesce(${destination.name}, ${request.destinationOther})`,
+      destinationName: destinationNameSql(),
       status: last.toStatus,
       daysInStatus: daysInStatusSql(deliveredAt, last.changedAt),
       stale,
@@ -144,9 +158,7 @@ export async function listOpenRequestsAtDelivery(
 
   return {
     deliveredAt,
-    rows: rows.flatMap((row): RequestAtDelivery[] =>
-      isOpenStatus(row.status) ? [{ ...row, status: row.status }] : [],
-    ),
+    rows: toOpenSummaries(rows),
     total: counted?.total ?? 0,
     staleCount: counted?.staleCount ?? 0,
   };

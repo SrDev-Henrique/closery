@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  appendPeriodParams,
   buildHistoryHref,
   type HistoryFilters,
+  type HistoryPeriodRange,
   parseHistoryFilters,
+  parseHistoryPeriod,
   SITUATION_PARAM,
 } from "./historyFilters";
 import { HISTORY_MAX_DAYS } from "./limits";
@@ -18,6 +21,7 @@ const DEFAULTS: HistoryFilters = {
   to: TODAY,
   shiftId: null,
   situation: "all",
+  itemId: null,
 };
 
 describe("parseHistoryFilters", () => {
@@ -146,6 +150,8 @@ describe("SITUATION_PARAM", () => {
       unconfirmed: "nao-confirmada",
       missing: "sem-passagem",
       corrected: "corrigida",
+      delivered: "entregues",
+      expected: "esperadas",
     });
   });
 });
@@ -191,9 +197,225 @@ describe("buildHistoryHref", () => {
       to: "2026-11-10",
       shiftId: SHIFT,
       situation: "corrected",
+      itemId: null,
     };
     const href = buildHistoryHref(filters, { sector: SHIFT, page: 2 });
     const params = Object.fromEntries(new URL(href, "http://x").searchParams);
     expect(parseHistoryFilters(params, TODAY)).toEqual(filters);
+  });
+});
+
+describe("parseHistoryPeriod", () => {
+  const cases: Array<{
+    name: string;
+    params: Record<string, string | string[] | undefined>;
+    expected: HistoryPeriodRange;
+  }> = [
+    {
+      name: "ausente: últimos 7 dias",
+      params: {},
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "lixo: últimos 7 dias",
+      params: { periodo: "<script>" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "30: hoje − 29 até hoje",
+      params: { periodo: "30" },
+      expected: { period: "30", from: "2026-10-23", to: TODAY },
+    },
+    {
+      name: "intervalo válido",
+      params: { periodo: "intervalo", de: "2026-11-01", ate: "2026-11-10" },
+      expected: { period: "range", from: "2026-11-01", to: "2026-11-10" },
+    },
+    {
+      name: "intervalo invertido: pontas trocadas",
+      params: { periodo: "intervalo", de: "2026-11-10", ate: "2026-11-01" },
+      expected: { period: "range", from: "2026-11-01", to: "2026-11-10" },
+    },
+    {
+      name: "ate no futuro: cortado em hoje",
+      params: { periodo: "intervalo", de: "2026-11-15", ate: "2026-12-31" },
+      expected: { period: "range", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "tudo no futuro: últimos 7 dias",
+      params: { periodo: "intervalo", de: "2026-12-01", ate: "2026-12-31" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "94 dias: de encurtado para ate − 92",
+      params: { periodo: "intervalo", de: "2026-08-20", ate: TODAY },
+      expected: { period: "range", from: "2026-08-21", to: TODAY },
+    },
+    {
+      name: "data irreal (2026-02-30): últimos 7 dias",
+      params: { periodo: "intervalo", de: "2026-02-30", ate: "2026-03-01" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "intervalo sem ate: últimos 7 dias",
+      params: { periodo: "intervalo", de: "2026-11-01" },
+      expected: { period: "7", from: "2026-11-15", to: TODAY },
+    },
+    {
+      name: "parâmetro repetido vale o primeiro",
+      params: { periodo: ["30", "7"] },
+      expected: { period: "30", from: "2026-10-23", to: TODAY },
+    },
+  ];
+
+  it.each(cases)("$name", ({ params, expected }) => {
+    expect(parseHistoryPeriod(params, TODAY)).toEqual(expected);
+  });
+
+  it("é o bloco de período de parseHistoryFilters, em todos os casos", () => {
+    for (const { params } of cases) {
+      const { period, from, to } = parseHistoryFilters(params, TODAY);
+      expect({ period, from, to }).toEqual(parseHistoryPeriod(params, TODAY));
+    }
+  });
+
+  it("o período de 93 dias cabe inteiro e o limite é o de HISTORY_MAX_DAYS", () => {
+    const { from, to } = parseHistoryPeriod(
+      { periodo: "intervalo", de: "2026-08-21", ate: TODAY },
+      TODAY,
+    );
+    expect(daysBetween(from, to) + 1).toBe(HISTORY_MAX_DAYS);
+    expect(from).toBe("2026-08-21");
+  });
+});
+
+describe("appendPeriodParams", () => {
+  function written(range: HistoryPeriodRange): string {
+    const query = new URLSearchParams();
+    appendPeriodParams(query, range);
+    return query.toString();
+  }
+
+  it("7 (o padrão) não escreve nada", () => {
+    expect(written({ period: "7", from: "2026-11-15", to: TODAY })).toBe("");
+  });
+
+  it("30 escreve periodo=30", () => {
+    expect(written({ period: "30", from: "2026-10-23", to: TODAY })).toBe(
+      "periodo=30",
+    );
+  });
+
+  it("intervalo escreve periodo, de e ate, nessa ordem", () => {
+    expect(
+      written({ period: "range", from: "2026-11-01", to: "2026-11-10" }),
+    ).toBe("periodo=intervalo&de=2026-11-01&ate=2026-11-10");
+  });
+
+  it("mantém o que já estava na query", () => {
+    const query = new URLSearchParams({ setor: "x" });
+    appendPeriodParams(query, { period: "30", from: "2026-10-23", to: TODAY });
+    expect(query.toString()).toBe("setor=x&periodo=30");
+  });
+
+  it("ida e volta: o que escreve, parseHistoryPeriod devolve", () => {
+    for (const { params } of [
+      { params: {} },
+      { params: { periodo: "30" } },
+      {
+        params: { periodo: "intervalo", de: "2026-11-01", ate: "2026-11-10" },
+      },
+    ]) {
+      const range = parseHistoryPeriod(params, TODAY);
+      const query = new URLSearchParams();
+      appendPeriodParams(query, range);
+      expect(parseHistoryPeriod(Object.fromEntries(query), TODAY)).toEqual(
+        range,
+      );
+    }
+  });
+});
+
+// Situações "entregues" e "esperadas" e o filtro de item (D-F5-3, C-1).
+const ITEM = "44444444-4444-4444-8444-444444444444";
+const ITEM_LETTERS = "abcdefab-abcd-4abc-8abc-abcdefabcdef";
+
+describe("situações entregues e esperadas", () => {
+  it("entregues e esperadas na URL e de volta", () => {
+    expect(
+      parseHistoryFilters({ situacao: "entregues" }, TODAY).situation,
+    ).toBe("delivered");
+    expect(
+      parseHistoryFilters({ situacao: "esperadas" }, TODAY).situation,
+    ).toBe("expected");
+    expect(buildHistoryHref({ ...DEFAULTS, situation: "delivered" })).toBe(
+      "/passagens?situacao=entregues",
+    );
+    expect(buildHistoryHref({ ...DEFAULTS, situation: "expected" })).toBe(
+      "/passagens?situacao=esperadas",
+    );
+  });
+
+  it("os nomes em inglês e as variações de caixa continuam sendo lixo", () => {
+    for (const value of ["delivered", "expected", "ENTREGUES", "Esperadas"]) {
+      expect(parseHistoryFilters({ situacao: value }, TODAY).situation).toBe(
+        "all",
+      );
+    }
+  });
+});
+
+describe("item", () => {
+  it("uuid válido é aceito; maiúsculo é guardado em minúsculas (como o turno)", () => {
+    expect(parseHistoryFilters({ item: ITEM }, TODAY).itemId).toBe(ITEM);
+    expect(
+      parseHistoryFilters({ item: ITEM_LETTERS.toUpperCase() }, TODAY).itemId,
+    ).toBe(ITEM_LETTERS);
+  });
+
+  it("lixo, vazio e ausente viram nenhum item (nunca lança)", () => {
+    for (const item of ["abc", "", "'; drop table item;--", "1".repeat(36)]) {
+      expect(parseHistoryFilters({ item }, TODAY).itemId).toBeNull();
+    }
+    expect(parseHistoryFilters({}, TODAY).itemId).toBeNull();
+    expect(parseHistoryFilters({ item: [] }, TODAY).itemId).toBeNull();
+  });
+
+  it("repetido vale o primeiro", () => {
+    expect(
+      parseHistoryFilters({ item: [ITEM, ITEM_LETTERS] }, TODAY).itemId,
+    ).toBe(ITEM);
+  });
+
+  it("build: o item vem depois da situação e antes do setor; null não vira parâmetro", () => {
+    expect(
+      buildHistoryHref(
+        {
+          ...DEFAULTS,
+          shiftId: SHIFT,
+          situation: "delivered",
+          itemId: ITEM,
+        },
+        { sector: "todos", page: 2 },
+      ),
+    ).toBe(
+      `/passagens?turno=${SHIFT}&situacao=entregues&item=${ITEM}&setor=todos&pagina=2`,
+    );
+    expect(buildHistoryHref({ ...DEFAULTS, itemId: null })).toBe("/passagens");
+  });
+
+  it("ida e volta estável com item, turno e situação", () => {
+    const filters: HistoryFilters = {
+      period: "30",
+      from: "2026-10-23",
+      to: TODAY,
+      shiftId: SHIFT,
+      situation: "delivered",
+      itemId: ITEM,
+    };
+    const href = buildHistoryHref(filters);
+    const params = Object.fromEntries(new URL(href, "http://x").searchParams);
+    expect(parseHistoryFilters(params, TODAY)).toEqual(filters);
+    expect(buildHistoryHref(parseHistoryFilters(params, TODAY))).toBe(href);
   });
 });

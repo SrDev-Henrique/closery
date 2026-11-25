@@ -20,16 +20,23 @@ export const sameRef = (ref: HandoverRef) =>
     eq(handover.operationalDate, ref.operationalDate),
   );
 
-/** null se o setor não existe OU o operador não pode acessá-lo (a mesma resposta: não revela o que existe). */
+/**
+ * null se o setor não existe OU o operador não pode acessá-lo (a mesma resposta:
+ * não revela o que existe). Com `lock: "share"` a leitura é `FOR SHARE` (só
+ * dentro de transação): serializa com o `FOR UPDATE` de `setSectorActive`, então
+ * um setor desativado no meio não recebe escrita.
+ */
 export async function loadSector(
   db: Db,
   actor: Authz,
   sectorId: string,
+  options: { lock?: "share" } = {},
 ): Promise<SectorRow | null> {
-  const [row] = await db
+  const query = db
     .select({ id: sector.id, name: sector.name, active: sector.active })
     .from(sector)
     .where(eq(sector.id, sectorId));
+  const [row] = await (options.lock === "share" ? query.for("share") : query);
   if (!row || !canAccessSector(actor, row.id)) return null;
   return row;
 }

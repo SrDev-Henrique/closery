@@ -124,12 +124,14 @@ Tudo que é construído ganha teste que roda no terminal e reporta pass/fail.
   (cerca de 1 min) e cobre os fluxos críticos: acesso por convite, passkey, permissão por papel,
   cadastros, a passagem (entregar, receber/confirmar, corrigir com motivo e histórico) e as
   solicitações (Quadro com movimento otimista, detalhe em Sheet, cancelar com motivo e a ligação com a
-  passagem) e, na próxima fase, o dashboard. Rode antes de fechar
+  passagem) e o dashboard (o número abre a lista filtrada certa, o CSV baixa com BOM, o operador não vê outro setor). Rode antes de fechar
   qualquer fase que mexa em rota, login ou permissão. Ver `library-docs.md §10`.
 - **Relógio:** função de domínio e função pura recebem `now: Date`; componente servidor que lê
-  `new Date()` (`RequestsScreen`, `RequestDetail`, `NewHandover`, `HandoverDetail`, `HomeHandovers`) é testado com
+  `new Date()` (`RequestsScreen`, `RequestDetail`, `NewHandover`, `HandoverDetail`, `HomeHandovers`, `DashboardScreen`) é testado com
   `vi.useFakeTimers({ toFake: ["Date"] })` + `vi.setSystemTime(spDate(…))`. Nenhum teste depende do dia em que roda;
   fixture de E2E usa datas relativas a `Date.now()` (`library-docs.md §9` e `§10`).
+- **Número de painel se prova contra um oráculo independente** (JS sobre leitores crus do banco, regras escritas no teste) **e** contra a
+  lista que o link abre (número = total da lista); nunca contra a mesma SQL que o painel roda (`library-docs.md §9` e `§15`).
 - **Profundidade mínima por fluxo novo:** caminho feliz **+** entrada inválida **+** limites
   (vazio, `0`, máximo, texto longo/unicode, virada de dia no fuso) **+** permissão negada
   **+** corrida quando houver trava. **Teste que só cobre o caminho feliz não conta.**

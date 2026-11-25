@@ -17,15 +17,19 @@ import {
   clearFiltersHref,
   type RequestFilters,
   type RequestPeriod,
+  type RequestStatusFilter,
   resetPaging,
 } from "@/features/requests/requestFilters";
 import { normalizeSearch } from "@/features/requests/search";
+import { REQUEST_STATUS_LABEL } from "@/features/requests/status";
 import type {
   FilterDestination,
+  FilterItem,
   PersonChoice,
 } from "@/features/requests/types";
 
 const ALL = "all";
+const STALE = "stale";
 
 const PERIOD_OPTIONS: readonly { value: RequestPeriod; label: string }[] = [
   { value: "all", label: "Todo o período" },
@@ -34,8 +38,37 @@ const PERIOD_OPTIONS: readonly { value: RequestPeriod; label: string }[] = [
   { value: "range", label: "Intervalo" },
 ];
 
+const DELIVERY_OPTIONS: readonly { value: RequestPeriod; label: string }[] = [
+  { value: "all", label: "Qualquer data" },
+  { value: "7", label: "Últimos 7 dias" },
+  { value: "30", label: "Últimos 30 dias" },
+  { value: "range", label: "Intervalo" },
+];
+
+const STATUS_OPTIONS: readonly {
+  value: RequestStatusFilter;
+  label: string;
+}[] = [
+  { value: "all", label: "Todos os status" },
+  { value: "open", label: "Abertas" },
+  { value: "not_cancelled", label: "Não canceladas" },
+  { value: "requested", label: REQUEST_STATUS_LABEL.requested },
+  { value: "in_transit", label: REQUEST_STATUS_LABEL.in_transit },
+  { value: "delivered", label: REQUEST_STATUS_LABEL.delivered },
+  { value: "cancelled", label: REQUEST_STATUS_LABEL.cancelled },
+];
+
+const STALE_OPTIONS = [
+  { value: ALL, label: "Todas" },
+  { value: STALE, label: "Só as paradas" },
+] as const;
+
 function isPeriod(value: string): value is RequestPeriod {
   return PERIOD_OPTIONS.some((option) => option.value === value);
+}
+
+function isStatus(value: string): value is RequestStatusFilter {
+  return STATUS_OPTIONS.some((option) => option.value === value);
 }
 
 // Filtros das solicitações, controlados. Os valores iniciais vêm da URL já
@@ -46,11 +79,13 @@ export function RequestFiltersForm({
   filters,
   destinations,
   creators,
+  items = [],
   sectorParam,
 }: {
   filters: RequestFilters;
   destinations: readonly FilterDestination[];
   creators: readonly PersonChoice[];
+  items?: readonly FilterItem[];
   sectorParam: string | null;
 }) {
   const router = useRouter();
@@ -61,6 +96,14 @@ export function RequestFiltersForm({
   const [to, setTo] = useState(filters.to ?? "");
   const [creatorId, setCreatorId] = useState(filters.creatorId ?? ALL);
   const [search, setSearch] = useState(filters.search);
+  const [status, setStatus] = useState<RequestStatusFilter>(filters.status);
+  const [stale, setStale] = useState(filters.stale ? STALE : ALL);
+  const [delivery, setDelivery] = useState<RequestPeriod>(
+    filters.delivery.period,
+  );
+  const [deliveryFrom, setDeliveryFrom] = useState(filters.delivery.from ?? "");
+  const [deliveryTo, setDeliveryTo] = useState(filters.delivery.to ?? "");
+  const [itemId, setItemId] = useState(filters.itemId ?? ALL);
   const extras = sectorParam === null ? {} : { sector: sectorParam };
 
   function apply(event: FormEvent<HTMLFormElement>) {
@@ -75,6 +118,14 @@ export function RequestFiltersForm({
           to: period === "range" ? to : null,
           creatorId: creatorId === ALL ? null : creatorId,
           search: normalizeSearch(search),
+          status,
+          stale: stale === STALE,
+          delivery: {
+            period: delivery,
+            from: delivery === "range" ? deliveryFrom : null,
+            to: delivery === "range" ? deliveryTo : null,
+          },
+          itemId: itemId === ALL ? null : itemId,
         }),
         extras,
       ),
@@ -115,24 +166,26 @@ export function RequestFiltersForm({
           ]}
         />
         <SelectField
+          label="Status"
+          value={status}
+          onValueChange={(value) => {
+            if (isStatus(value)) setStatus(value);
+          }}
+          options={STATUS_OPTIONS}
+        />
+        <SelectField
+          label="Paradas"
+          value={stale}
+          onValueChange={setStale}
+          options={STALE_OPTIONS}
+        />
+        <SelectField
           label="Período"
           value={period}
           onValueChange={(value) => {
             if (isPeriod(value)) setPeriod(value);
           }}
           options={PERIOD_OPTIONS}
-        />
-        <SelectField
-          label="Quem criou"
-          value={creatorId}
-          onValueChange={setCreatorId}
-          options={[
-            { value: ALL, label: "Todas as pessoas" },
-            ...creators.map((person) => ({
-              value: person.id,
-              label: person.name,
-            })),
-          ]}
         />
         {period === "range" && (
           <>
@@ -157,6 +210,68 @@ export function RequestFiltersForm({
               />
             </Field>
           </>
+        )}
+        <SelectField
+          label="Entregue em"
+          value={delivery}
+          onValueChange={(value) => {
+            if (isPeriod(value)) setDelivery(value);
+          }}
+          options={DELIVERY_OPTIONS}
+        />
+        {delivery === "range" && (
+          <>
+            <Field>
+              <FieldLabel htmlFor={`${uid}-delivery-from`}>
+                Entregue de
+              </FieldLabel>
+              <Input
+                id={`${uid}-delivery-from`}
+                type="date"
+                className="text-base md:text-base"
+                value={deliveryFrom}
+                onChange={(event) => setDeliveryFrom(event.target.value)}
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`${uid}-delivery-to`}>
+                Entregue até
+              </FieldLabel>
+              <Input
+                id={`${uid}-delivery-to`}
+                type="date"
+                className="text-base md:text-base"
+                value={deliveryTo}
+                onChange={(event) => setDeliveryTo(event.target.value)}
+              />
+            </Field>
+          </>
+        )}
+        <SelectField
+          label="Quem criou"
+          value={creatorId}
+          onValueChange={setCreatorId}
+          options={[
+            { value: ALL, label: "Todas as pessoas" },
+            ...creators.map((person) => ({
+              value: person.id,
+              label: person.name,
+            })),
+          ]}
+        />
+        {items.length > 0 && (
+          <SelectField
+            label="Item"
+            value={itemId}
+            onValueChange={setItemId}
+            options={[
+              { value: ALL, label: "Todos os itens" },
+              ...items.map((entry) => ({
+                value: entry.id,
+                label: `${entry.name} (${entry.unit})`,
+              })),
+            ]}
+          />
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">

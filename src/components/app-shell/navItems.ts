@@ -1,4 +1,5 @@
 import {
+  ChartColumn,
   ClipboardList,
   House,
   type LucideIcon,
@@ -26,6 +27,12 @@ export const NAV_ITEMS: readonly NavItem[] = [
     href: "/solicitacoes",
     label: "Solicitações",
     icon: PackageOpen,
+    adminOnly: false,
+  },
+  {
+    href: "/dashboard",
+    label: "Dashboard",
+    icon: ChartColumn,
     adminOnly: false,
   },
   { href: "/conta", label: "Conta", icon: UserRound, adminOnly: false },

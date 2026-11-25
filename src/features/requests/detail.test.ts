@@ -9,6 +9,7 @@ import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import {
+  deactivateSector,
   insertDestination,
   insertHandover,
   insertItem,
@@ -450,9 +451,7 @@ describe("detalhe da solicitação", () => {
         createdBy: ana.id,
       });
       if (!active) {
-        await client.exec(
-          `UPDATE "sector" SET "active" = false WHERE "id" = '${uld.id}'`,
-        );
+        await deactivateSector(db, uld.id);
       }
 
       const detail = await detailOf(

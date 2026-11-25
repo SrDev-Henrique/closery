@@ -61,6 +61,19 @@
 - **Diálogos e Sheet da Fase 4 usam `showCloseButton={false}`** e um botão com texto ("Voltar" nos diálogos,
   "Fechar" no Sheet): o X só com ícone do primitivo não tem tooltip, e todo controle só com ícone precisa de um
   (P47 registra o `EditDialog` da Fase 2, único uso restante).
+- **`chart` (Fase 5).** A linha do Estoque usa o primitivo `chart` (recharts 3.8.0, exato). O comando é
+  `echo n | bunx shadcn@latest add chart --yes`: o `--yes` sozinho aborta no prompt "The file card.tsx already
+  exists. Would you like to overwrite?" e não grava nada (não existe `--skip-existing`); o `n` recusa, o CLI grava só
+  `src/components/ui/chart.tsx` e relata `Skipped 1 file: card.tsx`. Depois, `git diff --quiet -- src/components/ui/card.tsx`
+  (sai 0) e `git status` mostrando só `chart.tsx`, `package.json` e `bun.lock`; qualquer outro primitivo que o CLI tenha
+  tocado volta com `git checkout -- src/components/ui/<arquivo>.tsx`. **`react-is` 19.3.0 exato** entra no mesmo commit
+  (`bun add --exact react-is@19.3.0`): o que o Bun iça sozinho é o 17.0.2 do `pretty-format`, que satisfaz o peer do
+  recharts mas não reconhece elementos do React 19 (o `isFragment` do recharts falharia em silêncio). Edições no primitivo,
+  registradas no `ui-registry`: `// biome-ignore lint/security/noDangerouslySetInnerHtml: …` dentro da tag do `ChartStyle`
+  (acima de `dangerouslySetInnerHTML=`; nunca desligar a regra no `biome.json`), `formatInteger` no lugar de
+  `item.value.toLocaleString()` e `tabular-nums` no lugar de `font-mono` no `ChartTooltipContent`. O `chart.tsx` importa
+  `cn` de `"cn"`, como todo primitivo. No gráfico: `accessibilityLayer`, altura explícita, `isAnimationActive` falso com
+  `prefers-reduced-motion` e uma tabela `sr-only` com o número de cada dia. Nunca `Fragment` dentro de `LineChart`.
 
 ## 3. Tailwind CSS v4
 
@@ -118,6 +131,17 @@
   `lower('ÁGUA') = lower('água')`, então "Água" e "ÁGUA" colidem em produção como no PGlite.
 - **`FOR UPDATE`:** `tx.select(…).from(t).where(…).for("update")` roda no `pg` e no PGlite; o domínio
   usa para trancar os administradores ativos (último admin) e as linhas de um setor (reordenar).
+- **O dashboard lê a mesma fonte do histórico (Fase 5).** `historySource` e `historyPairsSql` (`features/handovers/history.ts`, extraídas
+  em commit só de refatoração) alimentam a lista `/passagens`, os números das Passagens e o CSV: esperadas, situação e "sem passagem"
+  nunca têm SQL próprio, então número e lista não divergem. A coluna `u.expected` marca o par encerrado. `endsLocalSql(dia)` e
+  `nowLocalSql(now)` escrevem o fim do turno e o "agora" em São Paulo (o `now` injetado entra como `${now.toISOString()}::timestamptz`).
+- **Zeros e dias sem contagem vêm do SQL, nunca do JS:** `generate_series(from::date, to::date, '1 day')` para a série diária dos
+  Controles (2N dias, os zeros incluídos) e para os pontos do Estoque (`null` no dia sem contagem); `DISTINCT ON (item_id)` com
+  `ORDER BY operational_date desc, ends_local desc, delivered_at desc, id desc` para "a última contagem"; `count(*) filter (where …)`
+  para as situações. `bigint` e `sum` voltam como texto: `.mapWith(Number)`; `avg` e `extract(epoch …)` ganham `::float8`. Nunca
+  `rows.length` como número do painel e nunca soma de pontos ou de fatias em JS.
+- **Tabela `request` sem alias** nas consultas do dashboard: os fragmentos de `features/requests/sql.ts` escrevem `"request"` por extenso;
+  `request r` falha com `missing FROM-clause entry for table "request"`.
 - **`db.select({ … })` sem `.from()` não executa** nesta versão do Drizzle (o builder não é
   "thenable"). Para um SELECT só de subconsultas use ``.from(sql`(values (1)) as one(n)`)``
   (`getAdminOverviewCounts`). `count(*)` volta como `bigint` (texto no driver): converta com
@@ -152,16 +176,39 @@
 
 ## 6. Componentes de registry de terceiros (KokonutUI) — D17
 
-- Entram **pelo CLI**: `bunx shadcn@latest add @kokonutui/<nome>` → `src/components/kokonutui/`.
-  Antes de instalar, `bunx shadcn@latest view @kokonutui/<nome>` mostra o código.
+- O registry vem declarado no `components.json` (`"registries": { "@kokonutui": "https://kokonutui.com/r/{name}.json" }`).
+  Sem essa chave, `bunx shadcn@latest add @kokonutui/<nome>` falha (registry não configurado).
+- Entram **pelo CLI**: `bunx shadcn@latest view @kokonutui/<nome>` mostra o código e
+  `bunx shadcn@latest add @kokonutui/metric-card @kokonutui/spending-ring --yes` grava em
+  `src/components/kokonutui/` (os dois não trazem dependência nova). Depois de todo `add`, rode
+  `git status` e restaure (`git checkout -- src/components/ui/<arquivo>.tsx`) qualquer primitivo
+  que o CLI tenha tocado: o CLI nunca decide sozinho sobre um arquivo que já existe.
+- O primitivo `chart` (recharts) puxa o `card.tsx`, que já existe: `echo n | bunx shadcn@latest add chart --yes`.
+  O `--yes` **não** responde o prompt "overwrite?" (sem stdin o CLI aborta e não grava nada; não
+  existe `--skip-existing`); o `n` recusa e o CLI grava só `src/components/ui/chart.tsx`,
+  acrescenta `"recharts": "3.8.0"` ao `package.json` e relata `Skipped 1 file: card.tsx`.
+  Fixe junto, no mesmo commit, `bun add --exact react-is@19.3.0`: o `react-is` que o Bun içou é o
+  17.0.2 (do `pretty-format`), que satisfaz o peer do recharts mas não reconhece elementos do
+  React 19, e o `isFragment` do recharts falharia em silêncio. Nunca `Fragment` dentro de um
+  gráfico do recharts.
 - **Adaptação obrigatória na instalação** (o código vem em inglês e com cor crua):
   1. trocar `zinc-*`/`emerald-*`/`rose-*`/`orange-*`/`sky-*`… por tokens (`foreground`,
-     `muted-foreground`, `border`, `muted`, `success`, `destructive`, `warning`, `chart-1..4`);
-  2. textos e `Intl.NumberFormat`/datas em **pt-BR**;
-  3. formato numérico com unidade (o `spending-ring` só formata moeda; o `metric-card` aceita
-     `format: "number"`);
+     `muted-foreground`, `border`, `muted`, `card`, `chart-1..4`, `*-foreground` das situações);
+     a cor pertence à entidade (turno, situação) e nunca cicla; `chart-5` e acima são proibidos
+     (guarda em `chartPalette.test.ts`);
+  2. textos e `Intl.NumberFormat`/datas em **pt-BR** (`formatInteger`, `formatDecimal`, `formatDateBR`);
+  3. número com unidade, sem moeda; `export default` vira export nomeado (`MetricCard`, `SpendingRing`);
   4. `metric-card`: período **controlado** pelo dashboard (prop), sem as pílulas internas; os
-     dados precisam cobrir **2× o período** (ele compara com o período anterior).
+     dados cobrem **2× o período** (ele compara com o período anterior); o cartão **nunca soma**:
+     o total, o total anterior, o total de cada dia e o de cada turno vêm do SQL;
+  5. estados: vazio ensina (sem passagens, sem fatia), um segmento só, mais de quatro turnos
+     (do 5º em diante a cor neutra, cada turno com a própria linha);
+  6. `motion-reduce:` nas transições CSS e `prefers-reduced-motion` nas animações em JS; alvo de
+     toque ≥ 44px abaixo de `md`; alternativa em texto (`aria-valuetext`, tabela `sr-only`);
+  7. **React Compiler**: o `spending-ring` cru faz o Compiler desistir do componente inteiro, em
+     silêncio (o `bun run build` não avisa). Evite parâmetro padrão que lê ref, função que se
+     reagenda dentro do próprio `useCallback` e `let` reatribuído dentro de `useMemo`; confira
+     com `bun scripts/rc-check.mjs <arquivos>` (cada arquivo com `compiled` ≥ 1 e nenhum `CompileError`; o script é do repositório e sai com código 1 se algum arquivo falhar).
 - São `"use client"` com animação própria (respeitam `prefers-reduced-motion`). Recebem dados
   já agregados no servidor — nunca buscam nada.
 - Registre cada um no `ui-registry.md`, com as adaptações feitas.
@@ -214,6 +261,23 @@
   (páginas), `actionsAuth.test.ts`, `actionsInventory.test.ts` e `actionsGuards.test.ts` (actions e
   qualquer `"use server"`), `pendenciasDoc.test.ts` (índice, seções e próximo id de `pendencias.md`) e
   `uiRegistryDoc.test.ts` (todo componente de `/admin`, `/passagens` e `/solicitacoes` e cada primitivo novo aparece em `ui-registry.md`). Na Fase 4 o `appPagesAuth.test.ts` ganhou a lista fechada `NULL_SLOT_PAGES` (páginas do slot `@detalhe` que só devolvem `null`) e o harness dos testes de migração é `test/migrations.ts`.
+- **Route Handler (Fase 5).** Testa-se chamando `GET(new Request("http://closery.local/api/dashboard/export?periodo=7"))` com
+  `@/lib/auth/session` (`requireUser`), `@/db` (getter que registra o toque no banco) e `next/headers` (`cookies`) mockados e o
+  relógio falso. **O BOM se prova em bytes:** `new Uint8Array(await res.arrayBuffer())` e os 3 primeiros bytes `239, 187, 191`;
+  `res.text()` remove o BOM e esconderia o defeito. Sem sessão, `requireUser` lança o `NEXT_REDIRECT` e o banco não é tocado. O teto
+  (413) se prova num arquivo à parte que mocka o domínio (`route.tooLarge.test.ts`): o teto real não se alcança com dados de teste.
+  `src/app/routeHandlersAuth.test.ts` varre todo `route.ts` de `src/app` (lista fechada `PUBLIC_ROUTE_HANDLERS`: `api/auth/[...all]`
+  e `api/health`): só `GET`, `requireUser()`/`requireAdmin()` na primeira instrução, sem `"use cache"`.
+- **O mundo do critério de pronto (Fase 5).** `test/dashboardWorld.ts` (`seedDashboardWorld`) semeia um cenário só (2 setores ativos e 1
+  inativo, turnos, passagens confirmadas, aguardando, não confirmadas, sem passagem, uma correção feita por `correctHandover` e 12
+  solicitações) com os números esperados escritos à mão; `dashboardWorld.test.ts` os confere com leitores crus e oráculos em JS
+  (`rawHandovers`, `oracle*`: nunca a mesma SQL do painel) antes de os blocos e o CSV dependerem deles; `criterioDePronto.test.ts` tem um
+  `describe` por bloco (Passagens, Controles e Estoque, Solicitações, CSV). Caso que precisa de dado fora do mundo (5º turno, fim do turno
+  == agora, outro `now`) semeia o próprio cenário no próprio arquivo.
+- **Gráficos no jsdom.** O recharts 3.8 com o `ChartContainer` renderiza sem `ResizeObserver` (usa `initialDimension`): não substitua; só
+  um teste que precise medir largura faz `vi.stubGlobal` no próprio arquivo, nunca em `test/setup-dom.ts`. O limite de erro de bloco
+  (`catchError` de `next/error`) roda no jsdom (só lê contextos que valem `null` fora do App Router): teste o limite real, com
+  `console.error` espionado e silenciado. Componente servidor async (`DashboardScreen`, os quatro blocos): `render(await Componente(props))`.
 - **Relógio em componente servidor:** `RequestsScreen`, `RequestDetail`, `NewHandover`, `HandoverDetail` e `HomeHandovers` leem `new Date()` (janela de 30 dias, "parada", turno sugerido). O teste usa `vi.useFakeTimers({ toFake: ["Date"] })` + `vi.setSystemTime(spDate(…))` (só o `Date` é falso: PGlite e o resto seguem reais) e restaura com `vi.useRealTimers()` no `afterEach`; nunca depende do dia em que roda.
 
 ## 10. Playwright + pglite-socket
@@ -235,6 +299,19 @@
   `createdAt` e `statusChangedAt` relativos a `Date.now()` (o padrão fixo da fixture é para o Vitest e sairia da janela de 30
   dias). Fechar o Sheet é o botão "Fechar"; depois `getByRole("dialog")` conta 0 e a URL volta à do Quadro. `/nao-existe`
   logado responde 404 com "Página não encontrada": o `[...catchAll]` do slot não engole URL desconhecida.
+- **`e2e/dashboard.spec.ts` (Fase 5).** Os helpers (`PASSWORD`, `test` com `clientIp`, `text`, `unique`, `uniqueEmail`, `ago`,
+  `signUpOperator(page, db, sectorId, name)`, `signUpAdmin`, `seedSector(db, { shiftCreatedAt })`) estão em `e2e/helpers.ts`; os quatro specs
+  antigos continuam com as cópias deles (P55). `seedSector({ shiftCreatedAt: ago(10 * DAY_MS) })` cria o turno 00:00–23:59 no passado, para os
+  dias do período terem pares encerrados e virarem "Sem passagem"; nunca se afirma o par de hoje (só encerra às 23:59). Números se acham
+  **dentro da lista ou da região dele**: `getByRole("list", { name: "Números das passagens" })` e `getByRole("region", { name: "Solicitações" })`
+  (cada situação aparece duas vezes nas Passagens, no número e na legenda do anel, e `/Entregues/` também casa `Entregues no período`).
+  **Download:** `const downloading = page.waitForEvent("download")`, o clique em `Exportar CSV`, `download.path()` e `readFileSync` para
+  conferir os bytes do BOM (`EF BB BF`); o navegador sugere o nome do `filename*` (UTF-8, o setor como está), não o ASCII. Para o CSV de
+  outro escopo use `page.request.get("/api/dashboard/export?…")` (leva os cookies e o `x-forwarded-for` da página). Dentro de `(app)`, "Página não
+  encontrada" se afirma pelo texto, pela barra lateral e por um só `main` (`getByRole("main")` com `toHaveCount(1)`), nunca por `response.status()` (o `notFound()` dentro do `<Suspense>` responde 200).
+- **Pool do app no E2E (P49).** O dashboard faz várias leituras em paralelo e isso aumenta o `portal "" does not exist` do `pglite-socket` no log
+  do `[app]` (é infraestrutura do E2E, não de produção). O resultado do spike da Fase 5 (3 execuções com o pool padrão e 3 com
+  `DATABASE_POOL_MAX=1` só no `webServer` do app) está na `Atualização` de P49. A variável nunca existe na Vercel nem no `.env.local`.
 - Cada teste cria os próprios dados (e-mail único, nomes fictícios). Login social ao vivo é checklist manual.
 - **`e2e/cadastros.spec.ts`:** a linha de uma lista é um `<li>` dentro de `<main>` (`rowWith(page, texto)`),
   para não casar com a barra lateral; o link do convite sai do campo `Link do convite`;
@@ -319,6 +396,18 @@
 - **GET nunca escreve; origem.** Abrir o quadro, o detalhe, a passagem ou o Início não cria linha. `createRequest` com `originRef` chama `ensureHandover` **dentro** da transação (escrita iniciada pela pessoa; efeito aceito: o Início passa a "Continuar passagem"); passagem confirmada → `HANDOVER_LOCKED`, nada gravado e o digitado fica no formulário.
 - **Setor inativo é só leitura.** Criar, mover, cancelar, comentar e apagar comentário recusam com `SECTOR_INACTIVE`; o detalhe e o resumo da passagem continuam legíveis, sem botões de escrita e com `ReadOnlySectorNotice`. Listas, escolhas, "quem criou", "abertas agora" e o cartão do Início juntam `sector.active = true` (padrão P26).
 - **Cache Components.** `cookies()`, `headers()`, `await params`/`searchParams` e a sessão só dentro de `<Suspense>`; nada de `"use cache"` em dado escopado por usuário.
+
+## 15. Dashboard (Fase 5)
+
+- **Onde:** domínio em `src/features/dashboard/*` (`server-only`: `scope`, `sql`, `passages`, `controls`, `stock`, `requests`, `exportCsv`; recebe `db: Db`, o escopo e, quando o tempo importa, `now: Date`); lógica pura sem I/O (`limits`, `types`, `period`, `delta`, `format`, `links`, `csv`, `src/lib/numberFormat.ts`) que o cliente importa; componentes em `src/components/dashboard/*` (blocos, `StatLink`, `BarList`, `StockTrendChart`, `chartColors`) e `src/components/kokonutui/*` (`MetricCard`, `SpendingRing`); o CSV em `src/app/api/dashboard/export/route.ts`.
+- **Escopo e período numa função só.** `resolveDashboardScope(db, actor, params, now)` serve a página **e** o CSV; cada função de domínio refaz o escopo com `sectorScopeOf(actor, sectorId)` e exige setor ativo (nunca confia na tela). Operador que monta o `?setor=` de outro setor vê o próprio.
+- **Todo número é um `<Link>` gerado por `links.ts`** (nunca uma query montada à mão) para a lista que conta exatamente aquilo; o CSV é `<a href download>` comum, nunca `next/link`. Teste de paridade: o número do painel é o total da lista, **depois da mesma validação que a tela faz** (`itemId` em `listHistoryItems`/`listFilterItems`, `destinationId` em `listFilterDestinations`), senão a tela descartaria o filtro e a paridade mentiria.
+- **Agregação no SQL** (`§5`): o cliente só recebe números e strings; o total, o total anterior e o dos segmentos de um turno em foco vêm do servidor (o cartão nunca soma partes).
+- **KokonutUI e chart:** `components.json` registra `@kokonutui`; o CLI baixa e o conteúdo final é o código adaptado do plano (tokens, pt-BR, período por prop, estado vazio, `motion-reduce`, alvo de 44 px, número exato acessível, sem dados de demonstração). **React Compiler:** o `spending-ring` cru faz o Compiler desistir do componente inteiro, em silêncio (`bun run build` não avisa); `bun scripts/rc-check.mjs <arquivos>` confere que os arquivos compilam.
+- **Cores por entidade**, num módulo só (`chartColors.ts`): turno no slot 1–4 = `chart-1..4`, do 5º em diante `foreground`; situação = o `-foreground` do token do selo, `muted-foreground` para "sem passagem"; série única = `foreground`. Nunca `chart-5` ou acima, nunca cor crua; o guarda `chartPalette.test.ts` mede o que a tela pinta.
+- **Blocos que não se derrubam:** `<Suspense>` externa na página (sessão e `searchParams`) e, por bloco, `catchError` de `next/error` com `key` do período e do setor no limite e a `<Suspense>` com esqueleto dentro dele (o `catchError` só limpa o erro quando muda o pathname). Carregando é esqueleto, nunca zero.
+- **Teto em toda lista:** 30 cartões por bloco, 8 barras de destino, 12 itens pedidos, 10.000 linhas no CSV, período de até 93 dias; o que passa do teto mostra "Mostrando {n} de {total} …" com o total do SQL.
+- **CSV:** BOM, `;`, CRLF em toda linha (inclusive a última), aspas RFC 4180, neutralização de fórmula (`'` antes de `= + - @`, TAB ou CR) só em texto de pessoa, datas `dd/mm/aaaa`, item que a passagem não tem = célula vazia (não `0`); `Content-Disposition` com `filename` ASCII e `filename*` UTF-8.
 
 ## Como adicionar uma biblioteca nova
 

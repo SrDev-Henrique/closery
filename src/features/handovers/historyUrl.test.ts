@@ -25,6 +25,7 @@ describe("filtros do histórico: ida e volta pela URL", () => {
         to: TODAY,
         shiftId: null,
         situation: "all",
+        itemId: null,
       },
     ],
     [
@@ -35,6 +36,7 @@ describe("filtros do histórico: ida e volta pela URL", () => {
         to: TODAY,
         shiftId: null,
         situation: "all",
+        itemId: null,
       },
     ],
     [
@@ -45,6 +47,7 @@ describe("filtros do histórico: ida e volta pela URL", () => {
         to: "2026-11-10",
         shiftId: SHIFT,
         situation: "unconfirmed",
+        itemId: null,
       },
     ],
     [
@@ -55,6 +58,7 @@ describe("filtros do histórico: ida e volta pela URL", () => {
         to: TODAY,
         shiftId: null,
         situation: "corrected",
+        itemId: null,
       },
     ],
     [
@@ -65,6 +69,7 @@ describe("filtros do histórico: ida e volta pela URL", () => {
         to: "2026-11-21",
         shiftId: null,
         situation: "missing",
+        itemId: null,
       },
     ],
   ];

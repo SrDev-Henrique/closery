@@ -13,7 +13,7 @@ import {
   situationLabel,
 } from "@/features/handovers/status";
 
-const SITUATION_STYLE = {
+export const SITUATION_STYLE = {
   awaiting: { icon: Clock, className: "bg-info text-info-foreground" },
   confirmed: {
     icon: CircleCheck,

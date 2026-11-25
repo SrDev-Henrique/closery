@@ -95,7 +95,7 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
   );
 
   it("encontra as páginas guardadas do grupo", () => {
-    expect(pages.length).toBeGreaterThanOrEqual(15);
+    expect(pages.length).toBeGreaterThanOrEqual(16);
   });
 
   it("a lista fechada de slots nulos: cada entrada é de um slot, existe e só devolve null", () => {
@@ -156,6 +156,15 @@ describe("toda página do grupo (app) chama requireUser ou requireAdmin", () => 
       "solicitacoes/[id]/page.tsx",
       "@detalhe/(.)solicitacoes/[id]/page.tsx",
     ]) {
+      expect(routes).toContain(route);
+    }
+  });
+
+  it("inclui a página de /dashboard", () => {
+    const routes = pages.map((file) =>
+      relative(APP_GROUP, file).replaceAll("\\", "/"),
+    );
+    for (const route of ["dashboard/page.tsx"]) {
       expect(routes).toContain(route);
     }
   });

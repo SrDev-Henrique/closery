@@ -200,3 +200,212 @@ describe("RequestFiltersForm", () => {
     ).toHaveAttribute("href", "/solicitacoes");
   });
 });
+
+const ITEM_REDE = "33333333-3333-4333-8333-333333333333";
+const ITEM_CINTA = "44444444-4444-4444-8444-444444444444";
+const ITEMS = [
+  { id: ITEM_REDE, name: "Rede de proteção", unit: "rede" },
+  { id: ITEM_CINTA, name: "Cinta", unit: "peça" },
+];
+
+function setupWithItems(
+  filters: RequestFilters = defaultRequestFilters(),
+  sectorParam: string | null = null,
+  items: readonly { id: string; name: string; unit: string }[] = ITEMS,
+) {
+  render(
+    <RequestFiltersForm
+      filters={filters}
+      destinations={DESTINATIONS}
+      creators={CREATORS}
+      items={items}
+      sectorParam={sectorParam}
+    />,
+  );
+}
+
+describe("RequestFiltersForm: Status, Paradas, Entregue em e Item", () => {
+  beforeEach(() => {
+    mocks.push.mockReset();
+  });
+
+  const options = (label: string) =>
+    within(screen.getByLabelText(label))
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+
+  it("os controles novos nunca começam em branco", () => {
+    setupWithItems();
+
+    expect(screen.getByLabelText("Status")).toHaveValue("all");
+    expect(screen.getByLabelText("Paradas")).toHaveValue("all");
+    expect(screen.getByLabelText("Entregue em")).toHaveValue("all");
+    expect(screen.getByLabelText("Item")).toHaveValue("all");
+  });
+
+  it("as opções são escolhas fechadas, com os rótulos do contrato", () => {
+    setupWithItems();
+
+    expect(options("Status")).toEqual([
+      "Todos os status",
+      "Abertas",
+      "Não canceladas",
+      "Solicitada",
+      "Em separação / Trânsito",
+      "Entregue",
+      "Cancelada",
+    ]);
+    expect(options("Paradas")).toEqual(["Todas", "Só as paradas"]);
+    expect(options("Entregue em")).toEqual([
+      "Qualquer data",
+      "Últimos 7 dias",
+      "Últimos 30 dias",
+      "Intervalo",
+    ]);
+    expect(options("Item")).toEqual([
+      "Todos os itens",
+      "Rede de proteção (rede)",
+      "Cinta (peça)",
+    ]);
+  });
+
+  it("Item só aparece quando há itens", () => {
+    setupWithItems(defaultRequestFilters(), null, []);
+
+    expect(screen.queryByLabelText("Item")).toBeNull();
+    expect(screen.getByLabelText("Status")).toBeInTheDocument();
+  });
+
+  it("os filtros que o formulário não recebe de `items` continuam funcionando (prop opcional)", () => {
+    setup();
+
+    expect(screen.queryByLabelText("Item")).toBeNull();
+    expect(screen.getByLabelText("Paradas")).toHaveValue("all");
+  });
+
+  it("começam com os valores da URL", () => {
+    setupWithItems(
+      parseRequestFilters(
+        {
+          status: "nao-canceladas",
+          parada: "1",
+          entrega: "30",
+          item: ITEM_CINTA,
+        },
+        "2026-11-23",
+      ),
+    );
+
+    expect(screen.getByLabelText("Status")).toHaveValue("not_cancelled");
+    expect(screen.getByLabelText("Paradas")).toHaveValue("stale");
+    expect(screen.getByLabelText("Entregue em")).toHaveValue("30");
+    expect(screen.getByLabelText("Item")).toHaveValue(ITEM_CINTA);
+  });
+
+  it("Entregue de e Entregue até só aparecem em Intervalo, já preenchidos", async () => {
+    setupWithItems({
+      ...defaultRequestFilters(),
+      delivery: { period: "all", from: "2026-11-17", to: "2026-11-23" },
+    });
+    expect(screen.queryByLabelText("Entregue de")).toBeNull();
+    expect(screen.queryByLabelText("Entregue até")).toBeNull();
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Entregue em"),
+      "range",
+    );
+
+    expect(screen.getByLabelText("Entregue de")).toHaveValue("2026-11-17");
+    expect(screen.getByLabelText("Entregue até")).toHaveValue("2026-11-23");
+    // Os campos De e Até do período de criação continuam escondidos.
+    expect(screen.queryByLabelText("De")).toBeNull();
+  });
+
+  it("os dois intervalos convivem, cada um com os próprios campos", async () => {
+    setupWithItems({
+      ...defaultRequestFilters(),
+      period: "range",
+      from: "2026-11-01",
+      to: "2026-11-05",
+      delivery: { period: "range", from: "2026-11-10", to: "2026-11-12" },
+    });
+
+    expect(screen.getByLabelText("De")).toHaveValue("2026-11-01");
+    expect(screen.getByLabelText("Entregue de")).toHaveValue("2026-11-10");
+  });
+
+  it("Aplicar filtros leva os filtros novos para a URL e zera a paginação", async () => {
+    const filters = parseRequestFilters(
+      { visao: "tabela", pagina: "3", mais_solicitada: "60" },
+      "2026-11-23",
+    );
+    setupWithItems(filters, "todos");
+
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "open");
+    await userEvent.selectOptions(screen.getByLabelText("Paradas"), "stale");
+    await userEvent.selectOptions(screen.getByLabelText("Entregue em"), "7");
+    await userEvent.selectOptions(screen.getByLabelText("Item"), ITEM_REDE);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Aplicar filtros" }),
+    );
+
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith(
+      `/solicitacoes?visao=tabela&status=abertas&parada=1&entrega=7&item=${ITEM_REDE}&setor=todos`,
+    );
+  });
+
+  it("Entregue em Intervalo vai para a URL com entrega_de e entrega_ate", async () => {
+    setupWithItems({
+      ...defaultRequestFilters(),
+      delivery: { period: "all", from: "2026-11-01", to: "2026-11-10" },
+    });
+
+    await userEvent.selectOptions(
+      screen.getByLabelText("Entregue em"),
+      "range",
+    );
+    fireEvent.change(screen.getByLabelText("Entregue de"), {
+      target: { value: "2026-11-02" },
+    });
+    await userEvent.click(
+      screen.getByRole("button", { name: "Aplicar filtros" }),
+    );
+
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith(
+      "/solicitacoes?entrega=intervalo&entrega_de=2026-11-02&entrega_ate=2026-11-10",
+    );
+  });
+
+  it("voltar tudo ao padrão limpa os filtros novos da URL", async () => {
+    setupWithItems(
+      parseRequestFilters(
+        { status: "abertas", parada: "1", entrega: "7", item: ITEM_REDE },
+        "2026-11-23",
+      ),
+    );
+
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "all");
+    await userEvent.selectOptions(screen.getByLabelText("Paradas"), "all");
+    await userEvent.selectOptions(screen.getByLabelText("Entregue em"), "all");
+    await userEvent.selectOptions(screen.getByLabelText("Item"), "all");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Aplicar filtros" }),
+    );
+
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith("/solicitacoes");
+  });
+
+  it("Limpar filtros zera os novos e mantém visão e setor", () => {
+    setupWithItems(
+      parseRequestFilters(
+        { visao: "tabela", status: "abertas", parada: "1", item: ITEM_REDE },
+        "2026-11-23",
+      ),
+      "abc",
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Limpar filtros" }),
+    ).toHaveAttribute("href", "/solicitacoes?visao=tabela&setor=abc");
+  });
+});

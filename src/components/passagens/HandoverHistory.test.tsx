@@ -1,8 +1,9 @@
 import type { PGlite } from "@electric-sql/pglite";
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { chooseSectorAction } from "@/app/(app)/actions";
 import { db } from "@/db";
 import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
@@ -10,6 +11,8 @@ import { resetDb } from "../../../test/db";
 import {
   insertHandover,
   insertHandoverCorrection,
+  insertHandoverItem,
+  insertItem,
   insertSector,
   insertShift,
   insertUser,
@@ -285,6 +288,53 @@ describe("HandoverHistory", () => {
     expect(String(mocks.push.mock.calls[0][0])).not.toContain("turno=");
   });
 
+  it("admin: o seletor leva o query canônico dos filtros, sem o setor, sem a paginação e sem o que é lixo (P45)", async () => {
+    const { sector, other } = await seed();
+    vi.mocked(chooseSectorAction).mockReset();
+    vi.mocked(chooseSectorAction).mockResolvedValue({ ok: true });
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({
+      setor: sector.id,
+      periodo: "30",
+      situacao: "aguardando",
+      pagina: "2",
+      foo: "bar",
+    });
+    await userEvent.click(
+      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
+        name: other.name,
+      }),
+    );
+
+    expect(chooseSectorAction).toHaveBeenCalledTimes(1);
+    expect(chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: other.id,
+      path: "/passagens",
+      query: "periodo=30&situacao=aguardando",
+    });
+  });
+
+  it("admin sem filtros: o seletor leva o query vazio", async () => {
+    const { sector, other } = await seed();
+    vi.mocked(chooseSectorAction).mockReset();
+    vi.mocked(chooseSectorAction).mockResolvedValue({ ok: true });
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({ setor: sector.id });
+    await userEvent.click(
+      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
+        name: other.name,
+      }),
+    );
+
+    expect(chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: other.id,
+      path: "/passagens",
+      query: "",
+    });
+  });
+
   it("sem nenhuma passagem no período: estado vazio com a dica", async () => {
     const { sector } = await seed();
     mocks.requireUser.mockResolvedValue(
@@ -398,5 +448,261 @@ describe("HandoverHistory", () => {
     expect(
       screen.getByRole("link", { name: "Ir para Setores" }),
     ).toHaveAttribute("href", "/admin/setores");
+  });
+});
+
+// Os filtros que os números do dashboard abrem: situações entregues e
+// esperadas, item, e o turno ou item inativo escolhido pela URL.
+describe("HandoverHistory: filtros novos", () => {
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    if (mocks.client) await resetDb(mocks.client);
+    mocks.requireUser.mockReset();
+    mocks.push.mockReset();
+    mocks.readRememberedSector.mockReset();
+    mocks.readRememberedSector.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const NIL_ID = "00000000-0000-4000-8000-000000000000";
+
+  async function seedItems() {
+    const world = await seed();
+    const { sector, morning, ana, bia } = world;
+    const antigo = await insertShift(db, {
+      sectorId: sector.id,
+      name: "Turno Antigo",
+      startsAt: "10:00",
+      endsAt: "12:00",
+      active: false,
+      createdAt: LONG_AGO,
+    });
+    const rede = await insertItem(db, {
+      sectorId: sector.id,
+      name: "Rede de proteção",
+      unit: "rede",
+      kind: "control",
+    });
+    const cinta = await insertItem(db, {
+      sectorId: sector.id,
+      name: "Cinta antiga",
+      unit: "peça",
+      kind: "control",
+      active: false,
+    });
+    const withRede = await insertHandover(db, {
+      sectorId: sector.id,
+      shiftId: morning.id,
+      operationalDate: "2026-11-19",
+      status: "confirmed",
+      deliveredBy: ana.id,
+      confirmedBy: bia.id,
+      deliveredAt: new Date("2026-11-19T17:00:00Z"),
+    });
+    await insertHandoverItem(db, {
+      handoverId: withRede.id,
+      itemId: rede.id,
+      quantity: 4,
+      snapshot: true,
+    });
+    const withCinta = await insertHandover(db, {
+      sectorId: sector.id,
+      shiftId: antigo.id,
+      operationalDate: "2026-11-20",
+      status: "delivered",
+      deliveredBy: ana.id,
+      deliveredAt: new Date("2026-11-20T17:00:00Z"),
+    });
+    await insertHandoverItem(db, {
+      handoverId: withCinta.id,
+      itemId: cinta.id,
+      quantity: 2,
+      snapshot: true,
+    });
+    return { ...world, antigo, rede, cinta };
+  }
+
+  function rows() {
+    return screen
+      .queryAllByRole("listitem")
+      .map((row) => row.textContent ?? "");
+  }
+
+  it("?situacao=entregues lista só o que foi entregue; ?situacao=esperadas, os pares encerrados", async () => {
+    const { sector } = await seedItems();
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    await renderHistory({ situacao: "entregues" });
+    const delivered = rows();
+    expect(delivered).toHaveLength(2);
+    for (const row of delivered) expect(row).not.toContain("Sem passagem");
+    expect(screen.getByLabelText("Situação")).toHaveValue("delivered");
+    cleanup();
+
+    await renderHistory({ situacao: "esperadas" });
+    const expected = rows();
+    // A do Turno Antigo (desativado) fica fora; entram a confirmada de 19/11 e
+    // os pares encerrados sem passagem.
+    expect(expected.some((row) => row.includes("Turno Antigo"))).toBe(false);
+    expect(expected.some((row) => row.includes("Confirmada"))).toBe(true);
+    expect(expected.some((row) => row.includes("Sem passagem"))).toBe(true);
+    expect(screen.getByLabelText("Situação")).toHaveValue("expected");
+  });
+
+  it("?item= de um item ativo filtra as passagens e o select mostra o item", async () => {
+    const { sector, rede } = await seedItems();
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    await renderHistory({ item: rede.id });
+
+    const items = rows();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toContain("19/11/2026");
+    const select = screen.getByLabelText("Item");
+    expect(select).toHaveValue(rede.id);
+    expect(
+      within(select)
+        .getAllByRole("option")
+        .map((option) => option.textContent),
+    ).toEqual(["Todos os itens", "Rede de proteção (rede)"]);
+  });
+
+  it("item inativo escolhido pela URL: a lista aplica e o select mostra '(inativo)' (C-4)", async () => {
+    const { sector, cinta } = await seedItems();
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    await renderHistory({ item: cinta.id });
+
+    const items = rows();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toContain("20/11/2026");
+    const select = screen.getByLabelText("Item");
+    expect(select).toHaveValue(cinta.id);
+    expect(
+      within(select).getByRole("option", {
+        name: "Cinta antiga (peça) (inativo)",
+        selected: true,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("turno inativo escolhido pela URL: a lista aplica e o select mostra '(inativo)' (C-4)", async () => {
+    const { sector, antigo } = await seedItems();
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    await renderHistory({ turno: antigo.id });
+
+    const items = rows();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toContain("Turno Antigo");
+    const select = screen.getByLabelText("Turno");
+    expect(select).toHaveValue(antigo.id);
+    expect(
+      within(select).getByRole("option", {
+        name: "Turno Antigo (inativo)",
+        selected: true,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("turno inativo que ninguém escolheu não aparece no select", async () => {
+    const { sector } = await seedItems();
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    await renderHistory();
+
+    const select = screen.getByLabelText("Turno");
+    expect(
+      within(select).queryByRole("option", { name: /Turno Antigo/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Item")).queryByRole("option", {
+        name: /Cinta antiga/,
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("?item= de outro setor ou inexistente é ignorado antes da consulta", async () => {
+    const { sector, other } = await seedItems();
+    const alheio = await insertItem(db, {
+      sectorId: other.id,
+      name: "Item alheio",
+      kind: "control",
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    for (const item of [alheio.id, NIL_ID]) {
+      await renderHistory({ item });
+      // Sem o filtro: a lista tem as duas passagens e as linhas "sem passagem".
+      expect(rows().length).toBeGreaterThan(2);
+      expect(screen.getByLabelText("Item")).toHaveValue("all");
+      cleanup();
+    }
+  });
+
+  it("'Todos os setores': sem os selects de Turno e Item e o ?item= é ignorado", async () => {
+    const { rede } = await seedItems();
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({ setor: "todos", item: rede.id });
+
+    expect(screen.queryByLabelText("Turno")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Item")).not.toBeInTheDocument();
+    expect(rows().length).toBeGreaterThan(1);
+  });
+
+  it("admin com setor escolhido: o item vale nesse setor, e trocar de setor tira o item do select", async () => {
+    const { sector, other, rede } = await seedItems();
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({ setor: sector.id, item: rede.id });
+    expect(screen.getByLabelText("Item")).toHaveValue(rede.id);
+    cleanup();
+
+    await renderHistory({ setor: other.id, item: rede.id });
+    // O item é do setor antigo: no setor novo ele não existe e o filtro cai.
+    expect(screen.queryByLabelText("Item")).not.toBeInTheDocument();
+  });
+
+  it("setor sem itens cadastrados: sem o campo Item", async () => {
+    const { other } = await seed();
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({ setor: other.id });
+
+    expect(screen.queryByLabelText("Item")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Turno")).toBeInTheDocument();
+  });
+
+  it("Aplicar filtros mantém o item e a situação escolhidos", async () => {
+    const { sector, rede } = await seedItems();
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", sectorId: sector.id }),
+    );
+
+    await renderHistory({ item: rede.id, situacao: "entregues" });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Aplicar filtros" }),
+    );
+    expect(mocks.push).toHaveBeenCalledExactlyOnceWith(
+      `/passagens?situacao=entregues&item=${rede.id}`,
+    );
   });
 });

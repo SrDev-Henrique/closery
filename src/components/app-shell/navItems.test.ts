@@ -7,11 +7,12 @@ import {
 } from "@/components/app-shell/navItems";
 
 describe("visibleNavItems", () => {
-  it("operador vê Início, Passagens, Solicitações e Conta, sem Administração", () => {
+  it("operador vê Início, Passagens, Solicitações, Dashboard e Conta, sem Administração", () => {
     expect(visibleNavItems(false).map((item) => item.label)).toEqual([
       "Início",
       "Passagens",
       "Solicitações",
+      "Dashboard",
       "Conta",
     ]);
   });
@@ -21,6 +22,7 @@ describe("visibleNavItems", () => {
       "Início",
       "Passagens",
       "Solicitações",
+      "Dashboard",
       "Conta",
       "Administração",
     ]);
@@ -31,6 +33,7 @@ describe("visibleNavItems", () => {
       "/",
       "/passagens",
       "/solicitacoes",
+      "/dashboard",
       "/conta",
       "/admin",
     ]);
@@ -70,6 +73,13 @@ describe("isNavItemActive", () => {
       false,
     );
     expect(isNavItemActive("/passagens", "/solicitacoes")).toBe(false);
+  });
+
+  it("Dashboard fica ativo em /dashboard, não em prefixo parecido", () => {
+    expect(isNavItemActive("/dashboard", "/dashboard")).toBe(true);
+    expect(isNavItemActive("/dashboard/qualquer", "/dashboard")).toBe(true);
+    expect(isNavItemActive("/dashboard-antigo", "/dashboard")).toBe(false);
+    expect(isNavItemActive("/solicitacoes", "/dashboard")).toBe(false);
   });
 
   it("prefixo parecido que não é subrota não é ativo", () => {

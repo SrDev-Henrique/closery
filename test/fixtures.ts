@@ -39,6 +39,21 @@ export async function insertSector(
   return created;
 }
 
+// Desativa o setor direto na tabela (os testes só precisam do estado, não do
+// fluxo de `setSectorActive`). Lança com id inexistente, para o teste nunca
+// passar em silêncio com um id errado.
+export async function deactivateSector(
+  db: Db,
+  sectorId: string,
+): Promise<void> {
+  const updated = await db
+    .update(sector)
+    .set({ active: false })
+    .where(eq(sector.id, sectorId))
+    .returning({ id: sector.id });
+  if (updated.length === 0) throw new Error("fixture: setor inexistente");
+}
+
 // Turno do setor. Padrões: nome único, 06:00–14:00, ordem = maior do setor + 1;
 // `createdAt` opcional simula um turno antigo (o histórico só gera "sem passagem" a partir dele).
 export async function insertShift(

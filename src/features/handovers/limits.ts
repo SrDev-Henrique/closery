@@ -12,3 +12,4 @@ export const SECTOR_COOKIE = "closery_setor";
 export const SECTOR_COOKIE_MAX_AGE_SECONDS = 31_536_000;
 export const ALL_SECTORS = "todos"; // valor de ?setor= no histórico do admin
 export const NEXT_SHIFT_PREVIEW_LENGTH = 200; // trecho no cartão do Início
+export const CHOOSE_SECTOR_QUERY_MAX = 2000; // query dos filtros que o seletor de setor leva

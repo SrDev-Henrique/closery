@@ -1,11 +1,18 @@
-import { firstValue } from "@/lib/searchParams";
+import { firstValue, type SearchParams } from "@/lib/searchParams";
 
 import { HISTORY_MAX_DAYS } from "./limits";
 import { addDays, daysBetween, isIsoDate } from "./saoPaulo";
 import type { HistorySituation } from "./status";
 
 export type HistoryPeriod = "7" | "30" | "range";
-export type HistorySituationFilter = "all" | HistorySituation | "corrected";
+// "delivered" = confirmada + aguardando + não confirmada (tudo que foi entregue);
+// "expected" = os pares de turno já encerrados (a entregue de cada um ou "sem passagem").
+export type HistorySituationFilter =
+  | "all"
+  | "delivered"
+  | "expected"
+  | HistorySituation
+  | "corrected";
 
 // Valor de ?situacao= na URL (pt-BR).
 export const SITUATION_PARAM: Readonly<Record<HistorySituationFilter, string>> =
@@ -16,6 +23,8 @@ export const SITUATION_PARAM: Readonly<Record<HistorySituationFilter, string>> =
     unconfirmed: "nao-confirmada",
     missing: "sem-passagem",
     corrected: "corrigida",
+    delivered: "entregues",
+    expected: "esperadas",
   };
 
 export type HistoryFilters = {
@@ -24,12 +33,16 @@ export type HistoryFilters = {
   to: string; // "YYYY-MM-DD"
   shiftId: string | null;
   situation: HistorySituationFilter;
+  itemId: string | null; // só as passagens que têm linha desse item
 };
-
-type Params = Record<string, string | string[] | undefined>;
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+// uuid guardado em minúsculas; qualquer outra coisa vira "nenhum".
+function uuidFrom(value: string | undefined): string | null {
+  return value !== undefined && UUID.test(value) ? value.toLowerCase() : null;
+}
 
 function situationFromParam(param: string | undefined): HistorySituationFilter {
   const entry = Object.entries(SITUATION_PARAM).find(
@@ -37,6 +50,8 @@ function situationFromParam(param: string | undefined): HistorySituationFilter {
   );
   const key = entry?.[0];
   switch (key) {
+    case "delivered":
+    case "expected":
     case "awaiting":
     case "confirmed":
     case "unconfirmed":
@@ -54,7 +69,7 @@ function lastDays(today: string, days: number): { from: string; to: string } {
 
 // null = intervalo ausente ou inválido (cai nos últimos 7 dias).
 function parseRange(
-  params: Params,
+  params: SearchParams,
   today: string,
 ): { from: string; to: string } | null {
   const rawFrom = firstValue(params.de);
@@ -79,50 +94,67 @@ function parseRange(
   return { from, to };
 }
 
+export type HistoryPeriodRange = Pick<HistoryFilters, "period" | "from" | "to">;
+
+/**
+ * O período da URL (`periodo`, `de`, `ate`), sempre válido: ausente ou lixo
+ * = últimos 7 dias; `30` = últimos 30; `intervalo` com pontas trocadas, futuro
+ * cortado e no máximo HISTORY_MAX_DAYS. Nunca lança. É o mesmo parse do
+ * histórico e do dashboard.
+ */
+export function parseHistoryPeriod(
+  params: SearchParams,
+  today: string,
+): HistoryPeriodRange {
+  const period = firstValue(params.periodo);
+  if (period === "30") return { period: "30", ...lastDays(today, 30) };
+  const range = period === "intervalo" ? parseRange(params, today) : null;
+  return range
+    ? { period: "range", ...range }
+    : { period: "7", ...lastDays(today, 7) };
+}
+
+/** Escreve o período na query: "7" (o padrão) não escreve nada. */
+export function appendPeriodParams(
+  query: URLSearchParams,
+  range: HistoryPeriodRange,
+): void {
+  if (range.period === "30") query.set("periodo", "30");
+  if (range.period === "range") {
+    query.set("periodo", "intervalo");
+    query.set("de", range.from);
+    query.set("ate", range.to);
+  }
+}
+
 /**
  * Lê os filtros da URL. Nada aqui lança: valor desconhecido cai no padrão
  * (últimos 7 dias, todos os turnos, todas as situações).
  */
 export function parseHistoryFilters(
-  params: Params,
+  params: SearchParams,
   today: string,
 ): HistoryFilters {
-  const period = firstValue(params.periodo);
-  let resolved: Pick<HistoryFilters, "period" | "from" | "to">;
-  if (period === "30") {
-    resolved = { period: "30", ...lastDays(today, 30) };
-  } else {
-    const range = period === "intervalo" ? parseRange(params, today) : null;
-    resolved = range
-      ? { period: "range", ...range }
-      : { period: "7", ...lastDays(today, 7) };
-  }
-
-  const shift = firstValue(params.turno);
   return {
-    ...resolved,
-    shiftId:
-      shift !== undefined && UUID.test(shift) ? shift.toLowerCase() : null,
+    ...parseHistoryPeriod(params, today),
+    shiftId: uuidFrom(firstValue(params.turno)),
     situation: situationFromParam(firstValue(params.situacao)),
+    itemId: uuidFrom(firstValue(params.item)),
   };
 }
 
-/** URL do histórico; omite o que é padrão (período 7, situação todas, sem turno, página 1). */
+/** URL do histórico; omite o que é padrão (período 7, situação todas, sem turno nem item, página 1). */
 export function buildHistoryHref(
   filters: HistoryFilters,
   extras: { sector?: string; page?: number } = {},
 ): string {
   const query = new URLSearchParams();
-  if (filters.period === "30") query.set("periodo", "30");
-  if (filters.period === "range") {
-    query.set("periodo", "intervalo");
-    query.set("de", filters.from);
-    query.set("ate", filters.to);
-  }
+  appendPeriodParams(query, filters);
   if (filters.shiftId) query.set("turno", filters.shiftId);
   if (filters.situation !== "all") {
     query.set("situacao", SITUATION_PARAM[filters.situation]);
   }
+  if (filters.itemId) query.set("item", filters.itemId);
   if (extras.sector) query.set("setor", extras.sector);
   if (extras.page !== undefined && extras.page > 1) {
     query.set("pagina", String(extras.page));

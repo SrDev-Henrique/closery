@@ -10,6 +10,7 @@ import {
   insertItem,
   insertRequest,
   insertRequestComment,
+  insertRequestEvent,
   insertRequestItem,
   insertSector,
   insertUser,
@@ -638,5 +639,418 @@ describe("listRequestTable", () => {
       "Almoxarifado Teste",
       "Outro Setor",
     ]);
+  });
+});
+
+// Os filtros que os números do dashboard abrem (D-F5-3): status, parada,
+// entrega e item. Cada um sozinho e combinado, no Quadro/Lista e na Tabela.
+describe("filtros novos: status, parada, entrega e item", () => {
+  function table(
+    input: Partial<RequestFilters> = {},
+    options: {
+      actor?: Authz;
+      sectorId?: string | null;
+      now?: Date;
+    } = {},
+  ) {
+    return listRequestTable(
+      db,
+      options.actor ?? w.operator,
+      { sectorId: options.sectorId ?? null, filters: filters(input) },
+      options.now ?? NOW,
+    );
+  }
+
+  const idsOf = (rows: readonly { id: string }[]) =>
+    rows.map((row) => row.id).sort();
+
+  describe("status", () => {
+    async function seedStatuses() {
+      const requested = await seed({ description: "solicitada" });
+      const inTransit = await seed({
+        status: "in_transit",
+        createdAt: ago(2 * HOUR),
+        statusChangedAt: ago(HOUR),
+        description: "em trânsito",
+      });
+      const delivered = await seed({
+        status: "delivered",
+        createdAt: ago(3 * HOUR),
+        statusChangedAt: ago(2 * HOUR),
+        description: "entregue",
+      });
+      const cancelled = await seed({
+        status: "cancelled",
+        createdAt: ago(3 * HOUR),
+        statusChangedAt: ago(2 * HOUR),
+        description: "cancelada",
+      });
+      return { requested, inTransit, delivered, cancelled };
+    }
+
+    it("cada valor conta exatamente o que o nome diz (Tabela)", async () => {
+      const s = await seedStatuses();
+      const expected: [RequestFilters["status"], { id: string }[]][] = [
+        ["all", [s.requested, s.inTransit, s.delivered, s.cancelled]],
+        ["open", [s.requested, s.inTransit]],
+        ["not_cancelled", [s.requested, s.inTransit, s.delivered]],
+        ["requested", [s.requested]],
+        ["in_transit", [s.inTransit]],
+        ["delivered", [s.delivered]],
+        ["cancelled", [s.cancelled]],
+      ];
+      for (const [status, rows] of expected) {
+        const page = await table({ status });
+        expect(page.total, status).toBe(rows.length);
+        expect(idsOf(page.rows), status).toEqual(idsOf(rows));
+      }
+    });
+
+    it("no Quadro e na Lista, só o grupo do status escolhido tem linhas", async () => {
+      const s = await seedStatuses();
+
+      const open = await groups({ status: "open" });
+      expect(open.requested.rows.map((row) => row.id)).toEqual([
+        s.requested.id,
+      ]);
+      expect(open.in_transit.rows.map((row) => row.id)).toEqual([
+        s.inTransit.id,
+      ]);
+      expect(open.delivered.total).toBe(0);
+      expect(open.cancelled.total).toBe(0);
+
+      const notCancelled = await groups({ status: "not_cancelled" });
+      expect(notCancelled.delivered.total).toBe(1);
+      expect(notCancelled.cancelled.total).toBe(0);
+
+      const delivered = await groups({ status: "delivered" });
+      expect(delivered.requested.total).toBe(0);
+      expect(delivered.delivered.total).toBe(1);
+    });
+
+    it("sem nenhuma solicitação, todos os valores dão zero", async () => {
+      for (const status of [
+        "open",
+        "not_cancelled",
+        "requested",
+        "in_transit",
+        "delivered",
+        "cancelled",
+      ] as const) {
+        expect((await table({ status })).total, status).toBe(0);
+      }
+    });
+
+    it("combina com destino", async () => {
+      const other = await insertDestination(db, { name: "Doca 9" });
+      const mine = await seed({ description: "na doca 3" });
+      await seed({ destinationId: other.id, description: "na doca 9" });
+      await seed({
+        status: "delivered",
+        createdAt: ago(3 * HOUR),
+        statusChangedAt: ago(2 * HOUR),
+      });
+
+      const page = await table({ status: "open", destination: w.doca.id });
+
+      expect(page.rows.map((row) => row.id)).toEqual([mine.id]);
+    });
+  });
+
+  describe("parada", () => {
+    it("72 h exatas não; 72 h + 1 ms sim; entregue e cancelada nunca", async () => {
+      await seed({ createdAt: ago(72 * HOUR), description: "exata" });
+      const over = await seed({
+        createdAt: ago(72 * HOUR + 1),
+        description: "passou",
+      });
+      const overTransit = await seed({
+        status: "in_transit",
+        createdAt: ago(100 * HOUR),
+        statusChangedAt: ago(73 * HOUR),
+        description: "em trânsito parada",
+      });
+      await seed({
+        status: "delivered",
+        createdAt: ago(10 * DAY),
+        statusChangedAt: ago(9 * DAY),
+      });
+      await seed({
+        status: "cancelled",
+        createdAt: ago(10 * DAY),
+        statusChangedAt: ago(9 * DAY),
+      });
+
+      const page = await table({ stale: true });
+
+      expect(idsOf(page.rows)).toEqual(idsOf([over, overTransit]));
+      expect(page.total).toBe(2);
+      expect((await groups({ stale: true })).requested.total).toBe(1);
+    });
+
+    it("usa o relógio injetado: 1 ms depois, a de 72 h exatas passa a parada", async () => {
+      const exact = await seed({ createdAt: ago(72 * HOUR) });
+
+      expect((await table({ stale: true })).total).toBe(0);
+      const later = await table(
+        { stale: true },
+        { now: new Date(NOW.getTime() + 1) },
+      );
+      expect(later.rows.map((row) => row.id)).toEqual([exact.id]);
+    });
+
+    it("combina com status: parada + entregue é vazio", async () => {
+      await seed({ createdAt: ago(100 * HOUR) });
+
+      expect((await table({ stale: true, status: "delivered" })).total).toBe(0);
+      expect((await table({ stale: true, status: "open" })).total).toBe(1);
+    });
+  });
+
+  describe("entrega", () => {
+    // Hoje é 21/11 (12:00 em SP): "últimos 7 dias" = 15/11 a 21/11.
+    async function deliveredAt(
+      description: string,
+      events: readonly {
+        to: "delivered" | "in_transit" | "cancelled";
+        at: Date;
+      }[],
+      currentStatus: "delivered" | "in_transit" | "cancelled" = "delivered",
+    ) {
+      const created = await seed({
+        createdAt: spDate("2026-11-01", "08:00"),
+        status: currentStatus,
+        statusChangedAt: events.at(-1)?.at ?? spDate("2026-11-01", "08:00"),
+        description,
+        events: false,
+      });
+      for (const event of events) {
+        await insertRequestEvent(db, {
+          requestId: created.id,
+          fromStatus: "requested",
+          toStatus: event.to,
+          changedBy: w.ana.id,
+          changedAt: event.at,
+        });
+      }
+      return created;
+    }
+
+    it("pela 1ª entrega no dia de São Paulo, nas duas pontas", async () => {
+      const today = await deliveredAt("hoje cedo", [
+        { to: "delivered", at: spDate("2026-11-21", "00:00") },
+      ]);
+      const first = await deliveredAt("no primeiro dia", [
+        { to: "delivered", at: spDate("2026-11-15", "00:00") },
+      ]);
+      await deliveredAt("véspera", [
+        {
+          to: "delivered",
+          at: new Date(spDate("2026-11-14", "23:59").getTime() + 59_999),
+        },
+      ]);
+
+      const page = await table({
+        delivery: { period: "7", from: "2026-11-15", to: TODAY },
+      });
+
+      expect(idsOf(page.rows)).toEqual(idsOf([today, first]));
+      expect(page.total).toBe(2);
+    });
+
+    it("reaberta conta pela 1ª entrega; cancelada depois de entregue conta; nunca entregue não", async () => {
+      const reopened = await deliveredAt(
+        "reaberta",
+        [
+          { to: "delivered", at: spDate("2026-11-10", "09:00") },
+          { to: "in_transit", at: spDate("2026-11-17", "09:00") },
+          { to: "delivered", at: spDate("2026-11-18", "09:00") },
+        ],
+        "delivered",
+      );
+      const cancelledAfter = await deliveredAt(
+        "cancelada depois",
+        [
+          { to: "delivered", at: spDate("2026-11-10", "10:00") },
+          { to: "cancelled", at: spDate("2026-11-10", "12:00") },
+        ],
+        "cancelled",
+      );
+      await deliveredAt(
+        "cancelada sem entrega",
+        [{ to: "cancelled", at: spDate("2026-11-10", "11:00") }],
+        "cancelled",
+      );
+
+      const day10 = await table({
+        delivery: { period: "range", from: "2026-11-10", to: "2026-11-10" },
+      });
+      expect(idsOf(day10.rows)).toEqual(idsOf([reopened, cancelledAfter]));
+
+      // A 2ª entrega (18/11) não conta: nos últimos 7 dias a reaberta fica fora.
+      const last7 = await table({
+        delivery: { period: "7", from: "2026-11-15", to: TODAY },
+      });
+      expect(last7.total).toBe(0);
+    });
+
+    it("a janela de 30 dias das fechadas some com o filtro de entrega", async () => {
+      const old = await seed({
+        status: "delivered",
+        createdAt: spDate("2026-10-01", "08:00"),
+        statusChangedAt: spDate("2026-10-12", "10:00"),
+        description: "entregue há 40 dias",
+      });
+
+      const withoutFilter = await groups();
+      expect(withoutFilter.delivered.total).toBe(0);
+
+      const withFilter = await groups({
+        delivery: { period: "range", from: "2026-10-01", to: "2026-10-31" },
+      });
+      expect(withFilter.delivered.rows.map((row) => row.id)).toEqual([old.id]);
+      expect(withFilter.delivered.total).toBe(1);
+    });
+
+    it("combina com destino e com o período de criação (os dois valem)", async () => {
+      const other = await insertDestination(db, { name: "Doca 9" });
+      const match = await deliveredAt("casa", [
+        { to: "delivered", at: spDate("2026-11-18", "10:00") },
+      ]);
+      await insertRequest(db, {
+        sectorId: w.sector.id,
+        createdBy: w.ana.id,
+        destinationId: other.id,
+        createdAt: spDate("2026-11-01", "08:00"),
+        status: "delivered",
+        statusChangedAt: spDate("2026-11-18", "10:00"),
+      });
+
+      const page = await table({
+        destination: w.doca.id,
+        delivery: { period: "7", from: "2026-11-15", to: TODAY },
+        period: "range",
+        from: "2026-11-01",
+        to: "2026-11-01",
+      });
+      expect(page.rows.map((row) => row.id)).toEqual([match.id]);
+
+      const tight = await table({
+        delivery: { period: "7", from: "2026-11-15", to: TODAY },
+        period: "range",
+        from: "2026-11-02",
+        to: TODAY,
+      });
+      expect(tight.total).toBe(0);
+    });
+  });
+
+  describe("item", () => {
+    async function seedItems() {
+      const rede = await insertItem(db, {
+        sectorId: w.sector.id,
+        name: "Rede de proteção",
+        unit: "rede",
+        kind: "stock",
+      });
+      const cinta = await insertItem(db, {
+        sectorId: w.sector.id,
+        name: "Cinta",
+        unit: "peça",
+        kind: "stock",
+      });
+      const withRede = await seed({ description: "pede rede" });
+      await insertRequestItem(db, {
+        requestId: withRede.id,
+        itemId: rede.id,
+        quantity: 2,
+      });
+      const both = await seed({ description: "pede as duas" });
+      await insertRequestItem(db, { requestId: both.id, itemId: rede.id });
+      await insertRequestItem(db, { requestId: both.id, itemId: cinta.id });
+      const none = await seed({ description: "sem itens" });
+      return { rede, cinta, withRede, both, none };
+    }
+
+    it("só as solicitações que pedem o item (uma linha por solicitação, sem duplicar)", async () => {
+      const s = await seedItems();
+
+      const rede = await table({ itemId: s.rede.id });
+      expect(idsOf(rede.rows)).toEqual(idsOf([s.withRede, s.both]));
+      expect(rede.total).toBe(2);
+
+      const cinta = await table({ itemId: s.cinta.id });
+      expect(cinta.rows.map((row) => row.id)).toEqual([s.both.id]);
+      expect(cinta.total).toBe(1);
+    });
+
+    it("no Quadro e na Lista a contagem do grupo é a mesma", async () => {
+      const s = await seedItems();
+
+      const result = await groups({ itemId: s.rede.id });
+
+      expect(result.requested.total).toBe(2);
+      expect(idsOf(result.requested.rows)).toEqual(idsOf([s.withRede, s.both]));
+    });
+
+    it("item de outro setor não vaza: o operador vê zero", async () => {
+      const foreign = await insertItem(db, {
+        sectorId: w.other.id,
+        name: "Item alheio",
+        kind: "stock",
+      });
+      const request = await insertRequest(db, {
+        sectorId: w.other.id,
+        createdBy: w.bia.id,
+        destinationOther: "Em outro setor",
+        createdAt: ago(HOUR),
+      });
+      await insertRequestItem(db, {
+        requestId: request.id,
+        itemId: foreign.id,
+      });
+
+      expect((await table({ itemId: foreign.id })).total).toBe(0);
+      expect(
+        (await table({ itemId: foreign.id }, { actor: w.admin })).total,
+      ).toBe(1);
+    });
+
+    it("item inexistente e item sem pedidos: vazio, sem erro", async () => {
+      await seedItems();
+      const unused = await insertItem(db, {
+        sectorId: w.sector.id,
+        name: "Sem pedidos",
+        kind: "stock",
+      });
+
+      expect((await table({ itemId: unused.id })).total).toBe(0);
+      expect(
+        (await table({ itemId: "00000000-0000-4000-8000-000000000000" })).total,
+      ).toBe(0);
+    });
+
+    it("combina com status (a quantidade pedida do dashboard: sem as canceladas)", async () => {
+      const s = await seedItems();
+      const cancelled = await seed({
+        status: "cancelled",
+        createdAt: ago(3 * HOUR),
+        statusChangedAt: ago(2 * HOUR),
+        description: "cancelada com rede",
+      });
+      await insertRequestItem(db, {
+        requestId: cancelled.id,
+        itemId: s.rede.id,
+      });
+
+      const all = await table({ itemId: s.rede.id });
+      const notCancelled = await table({
+        itemId: s.rede.id,
+        status: "not_cancelled",
+      });
+
+      expect(all.total).toBe(3);
+      expect(idsOf(notCancelled.rows)).toEqual(idsOf([s.withRede, s.both]));
+    });
   });
 });

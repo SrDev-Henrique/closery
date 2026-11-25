@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P53.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P62.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -49,13 +49,13 @@
 | P10 | Credenciais OAuth do Google não criadas | 🟡 | Bloqueado no dono |
 | P11 | Sessões abertas de usuário desativado continuam aceitas por /api/auth/* | 🟠 | Resolvido |
 | P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Aberto, não triado |
-| P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Aberto, não triado |
+| P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Resolvido |
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
 | P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Aberto, não triado |
 | P17 | Tema escuro nunca é ativado | 🟡 | Aberto, não triado |
 | P18 | user.role e invite.role sem CHECK no banco | 🟡 | Resolvido |
-| P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Aberto, não triado |
+| P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Resolvido |
 | P20 | Login social: ajustes antes de ligar | 🟡 | Aberto, não triado |
 | P21 | Lacunas do E2E de acesso | 🟡 | Aberto, não triado |
 | P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Aberto, não triado |
@@ -81,14 +81,23 @@
 | P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
 | P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
 | P44 | Detalhe rápido das solicitações depende do cabeçalho next-url | ⚪ | Aberto, não triado |
-| P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Aberto, não triado |
+| P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Resolvido |
 | P46 | Cartão movido para uma coluna aberta e truncada some até a revalidação | ⚪ | Aberto, não triado |
 | P47 | X só com ícone do EditDialog continua sem tooltip | ⚪ | Aberto, não triado |
-| P48 | Refatorações da Fase 4 para o início da Fase 5 | 🟡 | Aberto, não triado |
+| P48 | Refatorações da Fase 4 para o início da Fase 5 | 🟡 | Resolvido |
 | P49 | Higiene de testes da Fase 4 | ⚪ | Aberto, não triado |
 | P50 | UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas | ⚪ | Aberto, não triado |
 | P51 | Defesa em profundidade no banco das solicitações | ⚪ | Aberto, não triado |
 | P52 | Desempenho: a CTE `last` das abertas na entrega varre todo o histórico do setor | ⚪ | Aberto, não triado |
+| P53 | Item que muda de unidade ou de tipo no período não é tratado pelo dashboard | 🟡 | Aberto, não triado |
+| P54 | Erro do detalhe rápido aparece fora do Sheet | ⚪ | Aberto, não triado |
+| P55 | Helpers do E2E repetidos nos quatro specs antigos e em helpers.ts | ⚪ | Aberto, não triado |
+| P56 | Destino além do teto de 200 escolhas cai do filtro de /solicitacoes | ⚪ | Aberto, não triado |
+| P57 | Índices do dashboard só sob medição no Neon | ⚪ | Aberto, não triado |
+| P58 | A cor das situações do anel não separa em daltonismo | ⚪ | Aberto, não triado |
+| P59 | O CSV se monta inteiro em memória | ⚪ | Aberto, não triado |
+| P60 | Duplicações da Fase 5 para um commit só de refatoração | ⚪ | Aberto, não triado |
+| P61 | Ajustes de UX da Fase 5 | ⚪ | Aberto, não triado |
 
 ---
 
@@ -99,13 +108,6 @@
 **Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
 **Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
 **Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
-**Registrado em:** 2026-11-20
-
-#### P13 — chart-5 ("Outros") quase invisível no tema escuro 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/globals.css` (`--chart-5`) · `src/app/chartPalette.test.ts`
-**Impacto:** `chart-5` tem 1,19:1 de contraste sobre o card no tema escuro; uma fatia "Outros" some.
-**Correção:** — (opção: resolver antes de qualquer gráfico com fatia "Outros" (Fase 5): escolher valor com contraste ≥ 3:1 e medir no guarda)
 **Registrado em:** 2026-11-20
 
 #### P14 — Destino perdido no login: depois de entrar a pessoa cai em / 🟡
@@ -134,13 +136,6 @@
 **Arquivos:** `src/app/globals.css` · `src/app/layout.tsx` · `src/components/ui/sonner.tsx`
 **Impacto:** `globals.css` usa a classe `.dark`, mas nada a aplica (sem ThemeProvider) e o Sonner chama `useTheme` sem provider; o tema escuro dos tokens nunca aparece.
 **Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
-**Registrado em:** 2026-11-20
-
-#### P19 — Erro e 404 dentro do app derrubam o shell inteiro 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/error.tsx` · `src/app/not-found.tsx`
-**Impacto:** os boundaries só existem na raiz: um erro ou 404 numa página do grupo `(app)` troca o shell (barra lateral) pela página de erro.
-**Correção:** — (opção: considerar `(app)/error.tsx` e `(app)/not-found.tsx` sem `<main>` próprio)
 **Registrado em:** 2026-11-20
 
 #### P20 — Login social: ajustes antes de ligar 🟡
@@ -178,6 +173,7 @@
 **Correção:** — (opção: `ORDER BY name COLLATE "pt-BR-x-icu"` se o Neon tiver ICU, ou coluna normalizada sem acento)
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-24):** a Fase 4 repete o padrão nas escolhas de /solicitacoes (`listActiveDestinations`, `listFilterDestinations` e `listRequestCreators` em `src/features/requests/choices.ts` ordenam por `lower(name)` na collation C.UTF-8: "Área 1" sai depois de "Doca 3"); a correção, quando vier, vale para as duas.
+**Atualização (2026-11-25):** a Fase 5 repete o padrão nas listas do dashboard (Controles e Estoque ordenam por `lower(sector.name)`, o filtro de itens de /passagens e de /solicitacoes e as colunas do CSV também); a correção, quando vier, vale para todas.
 
 #### P25 — Corrida entre cadastro por convite e desativação do setor 🟡
 **Estado:** Aberto, não triado
@@ -220,6 +216,7 @@
 **Impacto:** o par (turno × dia) "sem passagem" é calculado com os horários e o estado atuais do turno e só existe a partir do dia em que o turno foi criado: mudar o horário de um turno reescreve o passado e desativar um turno some com os "sem passagem" dele (nada guarda quando ele esteve ativo). O dashboard da Fase 5 herda a mesma definição.
 **Correção:** — (opção: aceitar no MVP; se o piloto ou o dashboard exigirem, guardar o histórico de horários e de atividade do turno)
 **Registrado em:** 2026-11-21
+**Atualização (2026-11-25):** o dashboard da Fase 5 herdou a definição de propósito: "Esperadas" e "Sem passagem" saem da mesma `historySource` da lista (`/passagens`) e do CSV, então os três concordam, mas todos usam os horários e o estado atuais do turno. Quando a P34 for corrigida, a correção vale para os três de uma vez.
 
 #### P35 — Cartão "Passagem para confirmar" não tem teto de idade 🟡
 **Estado:** Aberto, não triado
@@ -277,13 +274,6 @@
 **Correção:** — (opção: conferir na Vercel, na Fase 6, que o `Vary: next-url` passa; se não passar, aceitar a página completa como fallback)
 **Registrado em:** 2026-11-24
 
-#### P45 — Trocar de setor em /solicitacoes perde os filtros da URL 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/(app)/actions.ts` (`chooseSectorAction`) · `src/components/passagens/SectorPicker.tsx` · `src/components/solicitacoes/RequestsScreen.tsx`
-**Impacto:** o admin que troca de setor volta para `/solicitacoes?setor={id}`: a visão, o destino, o período, quem criou e a busca somem, porque o `chooseSectorAction` só leva `?setor=`.
-**Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
-**Registrado em:** 2026-11-24
-
 #### P46 — Cartão movido para uma coluna aberta e truncada some até a revalidação ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/requests/boardMove.ts` (`applyMove`) · `src/components/solicitacoes/useRequestMove.ts`
@@ -298,19 +288,14 @@
 **Correção:** — (opção: `EditDialog` com `showCloseButton={false}` e botão "Voltar", ou tooltip no X do primitivo)
 **Registrado em:** 2026-11-24
 
-#### P48 — Refatorações da Fase 4 para o início da Fase 5 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/requests/loaders.ts` · `src/features/requests/lists.ts` · `src/features/requests/home.ts` · `src/features/requests/open.ts` · `src/components/solicitacoes/RequestList.tsx` · `src/components/solicitacoes/RequestColumn.tsx` · `src/components/solicitacoes/RequestDetail.tsx` · `src/features/requests/messages.ts` · `src/features/handovers/loaders.ts` (`loadSector`) · `src/components/passagens/HandoverDetail.tsx` (`dateAndTime`) · `src/components/passagens/HandoverHistory.tsx`, `HomeHandovers.tsx` e `NewHandover.tsx` (as outras cópias da resolução de setor) · `test/`
-**Impacto:** nenhum defeito de comportamento; duplicações que o painel da Fase 5 copiaria e que deixam duas cópias da mesma regra divergirem. Em ordem de prioridade: (1) `resolveScreenSector` e `paginationParams`: a resolução de setor do `RequestsScreen` é a 4ª cópia (as outras estão nas telas de passagens, como `HandoverHistory.tsx`); o painel da Fase 5 seria a 5ª. Maior prioridade: extrair antes de qualquer tela nova; (2) `destinationNameSql` e `toOpenSummaries` compartilhados entre `home.ts` e `open.ts`: o `coalesce` do nome do destino está escrito 4 vezes; (3) A seção compartilhada, com `renderRow`, entre `ListGroup` (`RequestList`) e `RequestColumn`: a contagem do E2E depende das duas cópias; (4) `lockSectorShare` duplica o corpo de `loadSector` (Tarefa 7): o select, o `where` e o `canAccessSector` só diferem pelo `.for("share")`; (5) O fixture `deactivateSector` (SQL cru com interpolação) repetido em 5 arquivos de teste (Tarefa 8); (6) O `Promise.all` posicional (desestruturação por índice) em `lists.ts` (Tarefa 9); (7) `dateAndTime` copiado 3 vezes (`RequestDetail.tsx`, `whenLabel` em `messages.ts` e `HandoverDetail.tsx`) (Tarefa 12).
-**Correção:** — (um commit só de refatoração, sem feature e sem mudar asserção, como o primeiro da Fase 5, no modelo de P33 e P40)
-**Registrado em:** 2026-11-24
-
 #### P49 — Higiene de testes da Fase 4 ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `src/features/admin/runAction.test.ts` · `src/features/handovers/awaiting.test.ts` · `test/fixtures.ts` · `src/db/schema/requests.test.ts` · `src/features/requests/move.test.ts` · `src/features/requests/comments.test.ts` · `src/components/solicitacoes/useRequestMove.test.tsx` · `src/components/solicitacoes/RequestDetail.test.tsx` · `e2e/solicitacoes.spec.ts` · `e2e/start-db.ts`
 **Impacto:** lacunas que não escondem defeito conhecido, só deixam uma regressão passar: Tarefa 1: o caso do `redirect()` em `runAction.test.ts` usa `revalidate: null` e não confere que `revalidatePath` não foi chamado; usar `"/(app)/admin"` e acrescentar a asserção; Tarefa 2: o caso de outro setor em `awaiting.test.ts` não chama `pendingIdOf`; acrescentar `expect(await pendingIdOf(biaAuthz, uld.id)).toBe(mine.id)`; Tarefa 4: `insertRequest` (`test/fixtures.ts`) escreve até 4 linhas sem transação; `cancelReason` só de espaços e `destinationOther` só de espaços chegam ao banco em vez de lançar o erro do fixture; entradas contraditórias (`cancelReason` com `events: false`, `statusChangedBy` com status `requested`) são ignoradas em silêncio; Tarefa 4: dois casos de FK restrict em `requests.test.ts` (setor, e "não apaga a pessoa que criou, moveu ou comentou") não provam que foram as FKs novas, porque tabelas antigas também referenciam setor e pessoa (a prova é `migration0004.test`); e o caso do padrão do banco só afirma `statusChangedAt >= createdAt`, então o `now()` do título não é provado; Tarefa 7: sem teste de admin cancelando em qualquer setor nem de admin criando solicitação com origem (`move.test.ts`); Tarefa 8: "o admin apaga só o próprio comentário" só confere `{ ok: true }`: conferir `deleted_at`; faltam escritas de admin em setor inativo (`SECTOR_INACTIVE`) em `comments.test.ts`; Tarefa 11: o ramo `NEXT_REDIRECT` do `useRequestMove` nunca é exercitado (o mock de `unstable_rethrow` existe, nenhum caso rejeita com esse erro); Tarefa 12: faltam o teto de 500 (sem "Ver comentários anteriores" com `commentsLimit` 500 e mais de 500 comentários) e o id malformado no Sheet (`RequestDetail.test.tsx`); Tarefa 14: o E2E (a) não confere no banco a quantidade digitada (12); E2E, log do `[app]` (Tarefa 15, investigado em 2026-11-24): na execução completa apareceu de novo, durante o caso (d), um `ERROR [Better Auth]: INTERNAL_SERVER_ERROR` com `portal "" does not exist` (código `34000`, rotina `exec_execute_message`), na consulta `select … from "session" where "session"."token" = $1` (a leitura da sessão do Better Auth), e todos os 28 testes passaram. Não é um caso negativo provocado: é o protocolo estendido do Postgres perdendo o portal sem nome, porque o `pglite-socket` (`e2e/start-db.ts`, `maxConnections` 20) serve vários clientes sobre um único backend PGlite e intercala as mensagens `Bind` e `Execute` de conexões diferentes; as leituras em paralelo (`Promise.all` do detalhe e dos grupos) aumentam a chance. É infraestrutura do E2E, não de produção (Neon é Postgres de verdade).
 **Correção:** — (opção para o último item: pool com `max: 1` só no app do E2E; `maxConnections` 1 no `pglite-socket` não serve, porque derruba a segunda conexão (app mais as conexões do próprio teste, ver `e2e/start-db.ts`); não mexer no pool de produção. Os demais: um commit só de testes)
 **Registrado em:** 2026-11-24
+**Atualização (2026-11-25):** spike F5-13 sobre o `portal "" does not exist` no log do `[app]` (o dashboard faz várias leituras em paralelo). Seis execuções completas de `bun run test:e2e`: com o pool padrão (10), 2, 2 e 2 ocorrências (soma 6); com `DATABASE_POOL_MAX=1` só no `webServer` do app, 0, 0 e 0 (soma 0). Critério de adoção: a linha de base com pelo menos 1 ocorrência, as três execuções com `max: 1` com 0, e nenhum teste estourando o tempo. Decisão: **adotado.** `poolMaxFrom(process.env)` (`src/db/poolSize.ts`, inteiro de 1 a 10 de `DATABASE_POOL_MAX`, senão 10) é lido por `createPool` e só o `webServer` do app no `playwright.config.ts` define `DATABASE_POOL_MAX: "1"`; o processo de teste, o dev e a Vercel seguem com 10. Cuidado: com uma conexão só, um `db` usado dentro do callback de uma transação travaria (nenhuma das chamadas de `.transaction(` de `src` faz isso; o Better Auth mantém `transaction` desligado). Os demais itens de P49 continuam abertos.
+**Atualização (2026-11-25):** a revisão final da Fase 5 mandou para cá estas lacunas de teste (todas sem defeito conhecido): as 8 desativações de setor por SQL cru (`update sector set active = false`) que sobraram nos testes de confirm, correction, deliver, draft e formState (usar `deactivateSector`); os títulos dos testes de `RequestGroupSection`; as lacunas de `screenSector.test`; `loaders.test` é o próprio oráculo; o erro de página do P19 dentro do shell não tem E2E; `lists.test` sem parada/item × destino; o nome de status no `RequestsScreen.test`; os escopos de `expected` em `history.test`, o setor sem itens em `HandoverHistory.test` e o comentário `SEVEN`; a paridade do `criterioDePronto` sem afirmar `setor`; os casos de 93 dias, unicode e rascunho de Controles; os casos que faltam em `requests.test`; o teste do ramo do `DashboardScreen`; o nome do arquivo do CSV a partir do escopo de quem chama; o `scopeOf` escrito 3 vezes; o teste do 413 sem conferir os argumentos.
 
 #### P50 — UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas ⚪
 **Estado:** Aberto, não triado
@@ -332,6 +317,69 @@
 **Impacto:** a CTE `last` faz `DISTINCT ON` sobre todos os eventos do setor até o instante T da entrega, então cresce com todo o histórico e roda em cada abertura de um resumo de passagem, inclusive os antigos. Sem defeito de resultado.
 **Correção:** — (limite seguro sugerido pela revisão final: acrescentar à CTE `request.created_at <= T and (request.status in ('requested','in_transit') or request.status_changed_at > T)`; vale porque `status_changed_at` sempre é o instante do último evento: uma solicitação hoje fechada com `status_changed_at <= T` estava fechada em T)
 **Registrado em:** 2026-11-24
+
+#### P53 — Item que muda de unidade ou de tipo no período não é tratado pelo dashboard 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/dashboard/controls.ts` · `src/features/dashboard/stock.ts` · `src/features/dashboard/requests.ts` · `src/features/dashboard/exportCsv.ts`
+**Impacto:** o dashboard agrupa por `item_id` e mostra o nome e a unidade do snapshot mais recente do período. Um item cuja unidade mudou no meio do período soma "12 rolos" e "30 peças" no mesmo cartão (o número perde o sentido); um item que passou de controle para estoque entra pelo tipo do snapshot nas linhas e pelo tipo do cadastro na lista de itens ativos. A quantidade pedida das solicitações (`request_item.item_unit_snapshot`) e a coluna do CSV têm a mesma lacuna.
+**Correção:** — (opção: agrupar por `(item_id, unidade)` e mostrar uma linha por unidade, ou impedir a troca de unidade e de tipo de um item que já tem histórico)
+**Registrado em:** 2026-11-25
+
+#### P54 — Erro do detalhe rápido aparece fora do Sheet ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/error.tsx` · `src/app/(app)/@detalhe/`
+**Impacto:** o `(app)/error.tsx` (P19) também envolve o slot `@detalhe` (o `not-found.tsx` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra "Algo deu errado" no lugar do slot, fora do Sheet, e "Tentar de novo" re-renderiza o slot. Sem perda de dados; a página completa continua certa.
+**Correção:** — (opção: um `error.tsx` próprio em `@detalhe`, com o fallback dentro do Sheet)
+**Registrado em:** 2026-11-25
+
+#### P55 — Helpers do E2E repetidos nos quatro specs antigos e em helpers.ts ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `e2e/helpers.ts` · `e2e/auth.spec.ts` · `e2e/cadastros.spec.ts` · `e2e/passagem.spec.ts` · `e2e/solicitacoes.spec.ts`
+**Impacto:** `ipPrefix`/`clientIp`, `text`, `unique`, `uniqueEmail`, `ago`, `signUp*` e `seedSector` existem em cinco arquivos; `e2e/helpers.ts` nasceu só para `dashboard.spec.ts` porque migrar os specs antigos seria refatoração no commit de feature. Uma correção de helper precisa ser feita em cinco lugares.
+**Correção:** — (um commit só de refatoração: os quatro specs passam a importar de `e2e/helpers.ts`, sem mudar asserção)
+**Registrado em:** 2026-11-25
+
+#### P56 — Destino além do teto de 200 escolhas cai do filtro de /solicitacoes ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/choices.ts` (`listFilterDestinations`) · `src/components/solicitacoes/RequestsScreen.tsx`
+**Impacto:** o filtro `destino=` só aceita um destino que esteja entre as 200 escolhas do `listFilterDestinations` (ordenadas por `lower(name)`). A barra de destino do dashboard leva a `/solicitacoes?visao=tabela&entrega=…&destino=<uuid>`; com mais de 200 destinos, o destino além do teto é descartado pela tela e a lista deixa de bater com o número do dashboard. Hoje há poucos destinos.
+**Correção:** — (opção: validar `?destino=` por existência, como o `?item=` já faz com `listFilterItems(db, actor, sectorId, selectedItemId)`)
+**Registrado em:** 2026-11-25
+
+#### P57 — Índices do dashboard só sob medição no Neon ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/handovers.ts` · `src/db/schema/requests.ts` · `drizzle/`
+**Impacto:** o dashboard só lê, e nenhum índice entrou na Fase 5 (regra: índice só sob medição). Dois candidatos: `handover(operational_date)` para "Todos os setores" (o índice de hoje é `(sector_id, operational_date)`) e `request_status_event(request_id, changed_at) where to_status = 'delivered'` para a primeira entrega (`deliveredBetweenSql` e `firstDeliveredAtSql`). Também a CTE `latest` de `src/features/dashboard/stock.ts`, que não tem limite (varre a última contagem de cada item). Sem medição não se sabe se importam.
+**Correção:** — (medir com `EXPLAIN (ANALYZE)` no Neon com o volume do piloto; criar por migração aditiva só o que medir)
+**Registrado em:** 2026-11-25
+
+#### P58 — A cor das situações do anel não separa em daltonismo ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/dashboard/chartColors.ts` · `src/app/chartPalette.test.ts`
+**Impacto:** as fatias do anel usam o `-foreground` do token do selo de cada situação (o fundo pastel do selo não passa 3:1 sobre o card): o ΔE mínimo entre elas é 19,5 em visão normal, e em daltonismo as cores se aproximam. A identidade de cada fatia fica no ícone e no texto da legenda (sempre presentes), nunca só na cor.
+**Correção:** — (aceitar enquanto ícone e texto estiverem na legenda; opção: padrões de preenchimento nas fatias)
+**Registrado em:** 2026-11-25
+
+#### P59 — O CSV se monta inteiro em memória ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/dashboard/exportCsv.ts` · `src/app/api/dashboard/export/route.ts`
+**Impacto:** `buildPassagesCsv` lê até 10.000 linhas (`CSV_MAX_ROWS`) e devolve o texto inteiro; acima disso a rota responde 413 e a pessoa precisa escolher um período menor. Sem problema no piloto; um setor com muitas passagens por dia e período de 93 dias pode bater no teto.
+**Correção:** — (opção: `ReadableStream` com cursor, ou subir o teto sob medição)
+**Registrado em:** 2026-11-25
+
+#### P60 — Duplicações da Fase 5 para um commit só de refatoração ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/history.ts` · `src/features/dashboard/` · `src/features/requests/` · `src/components/dashboard/` · `test/dashboardWorld.ts` · `src/app/(app)/error.tsx` · `src/app/(app)/not-found.tsx`
+**Impacto:** sem defeito conhecido; só custo de manutenção. A revisão final listou: os comentários de `historySource`/`historyPairsSql` sobre `sectorId` nulo = "todos" valer só para o admin; `AppError`/`AppNotFound` copiam os arquivos da raiz; `STATUS_FILTERS` escrito 3 vezes; a projeção duplicada de `historyChoices`; `EMPTY` devolvido por referência; `test/dashboardWorld.ts` grande demais (dividir); `.mapWith(Number)` apaga o `| null` do tipo; a duplicação dos blocos de item em controles e estoque e o `inRange(string)` com `sql.raw` (só recebe literal hoje); `requests.ts` com os próprios predicados de status em vez de `statusFilterSql` (a paridade guarda hoje); `screenFilters` copia a validação da tela (extrair `validateRequestFilters`); os casts `as` da Tarefa 10 fora os do shadcn; `ALL_SECTORS_HINT` escrito 3 vezes; `inPeriod` do `exportCsv` copia o `WHERE` da `historySource`.
+**Correção:** — (um commit só de refatoração, com os testes verdes antes e depois, nunca junto de uma feature)
+**Registrado em:** 2026-11-25
+
+#### P61 — Ajustes de UX da Fase 5 ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/choices.ts` · `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/handovers/historyFilters.ts` · `src/components/dashboard/StockTrendChart.tsx` · `src/components/kokonutui/spending-ring.tsx`
+**Impacto:** sem perda de dados. (1) Em "Todos os setores" o filtro de item de `/solicitacoes` repete opções de mesmo nome de setores diferentes (ui-rules §2.5: mostrar o que a pessoa reconhece). (2) O subtítulo de `/solicitacoes` com Status = Cancelada não explica a janela. (3) Um `?turno=` de outro setor ainda filtra o histórico (os links do dashboard não são afetados: o turno do segmento é sempre do setor do item). (4) O eixo Y do `StockTrendChart` não tem unidade (ela está no cabeçalho do cartão e na dica). (5) A seleção do anel é guardada por posição e não por fatia (só importa numa atualização com a mesma chave). (6) O nome acessível do total do anel não tem singular (`1 passagens: ver a lista`) e o componente genérico fixa o substantivo "passagens".
+**Correção:** — (opções: rótulo com o setor nas opções repetidas; unidade no eixo; guardar a chave da fatia; o nome do total por prop, montado com plural pelo `DashboardPassages`)
+**Registrado em:** 2026-11-25
 
 ## 2. Triado, plano pronto
 
@@ -533,3 +581,36 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: `sectorActive` em `HandoverSummary` e esconder as ações, com um aviso "Setor inativo: só leitura")
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-24):** resolvida na Fase 4 (Tarefa 3). `HandoverSummary` ganhou `sectorActive`; em setor inativo o resumo mostra o aviso `ReadOnlySectorNotice` ("Setor inativo: só leitura.") e esconde "Confirmar recebimento", "Corrigir", "Corrigir com motivo" e "Você entregou este turno…", para operador e admin, na entregue e na confirmada; `?editar=1` cai no resumo com o aviso. O comportamento de setor ativo não mudou.
+
+#### P48 — Refatorações da Fase 4 para o início da Fase 5 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/components/solicitacoes/RequestsScreen.tsx` · `src/features/requests/loaders.ts` · `src/features/requests/lists.ts` · `src/features/requests/home.ts` · `src/features/requests/open.ts` · `src/components/solicitacoes/RequestList.tsx` · `src/components/solicitacoes/RequestColumn.tsx` · `src/components/solicitacoes/RequestDetail.tsx` · `src/features/requests/messages.ts` · `src/features/handovers/loaders.ts` (`loadSector`) · `src/components/passagens/HandoverDetail.tsx` (`dateAndTime`) · `src/components/passagens/HandoverHistory.tsx`, `HomeHandovers.tsx` e `NewHandover.tsx` (as outras cópias da resolução de setor) · `test/`
+**Impacto:** nenhum defeito de comportamento; duplicações que o painel da Fase 5 copiaria e que deixam duas cópias da mesma regra divergirem. Em ordem de prioridade: (1) `resolveScreenSector` e `paginationParams`: a resolução de setor do `RequestsScreen` é a 4ª cópia (as outras estão nas telas de passagens, como `HandoverHistory.tsx`); o painel da Fase 5 seria a 5ª. Maior prioridade: extrair antes de qualquer tela nova; (2) `destinationNameSql` e `toOpenSummaries` compartilhados entre `home.ts` e `open.ts`: o `coalesce` do nome do destino está escrito 4 vezes; (3) A seção compartilhada, com `renderRow`, entre `ListGroup` (`RequestList`) e `RequestColumn`: a contagem do E2E depende das duas cópias; (4) `lockSectorShare` duplica o corpo de `loadSector` (Tarefa 7): o select, o `where` e o `canAccessSector` só diferem pelo `.for("share")`; (5) O fixture `deactivateSector` (SQL cru com interpolação) repetido em 5 arquivos de teste (Tarefa 8); (6) O `Promise.all` posicional (desestruturação por índice) em `lists.ts` (Tarefa 9); (7) `dateAndTime` copiado 3 vezes (`RequestDetail.tsx`, `whenLabel` em `messages.ts` e `HandoverDetail.tsx`) (Tarefa 12).
+**Correção:** — (um commit só de refatoração, sem feature e sem mudar asserção, como o primeiro da Fase 5, no modelo de P33 e P40)
+**Registrado em:** 2026-11-24
+**Atualização (2026-11-25):** itens 1, 3 e 7 feitos na Fase 5 (Tarefa 1), em commit só de refatoração: `resolveScreenSector` (`src/features/handovers/screenSector.ts`) e `paginationParams` (`src/lib/searchParams.ts`) nas quatro telas (`HandoverHistory`, `RequestsScreen`, `HomeHandovers`, `NewHandover`); `RequestGroupSection` compartilhada por `RequestColumn` e `RequestList`; `formatDateAtTimeBR` (`saoPaulo.ts`) no lugar das três cópias de `dateAndTime`. Os testes existentes passaram sem nenhuma edição. Faltam os itens 2, 4, 5 e 6 (Tarefa 2); a pendência continua aberta.
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 2), em commit só de refatoração. `destinationNameSql` (`src/features/requests/sql.ts`) e `toOpenSummaries` (`src/features/requests/open.ts`) substituem as 4 cópias do `coalesce` do destino e as 3 do filtro de status aberto (item 2); `lockSectorShare` é `loadSector(…, { lock: "share" })` (item 4); o fixture `deactivateSector` (`test/fixtures.ts`) substitui o SQL cru dos 4 arquivos de teste que o repetiam (item 5); `getRequestGroups` nomeia as quatro leituras do `Promise.all` (item 6). Os itens 1, 3 e 7 estão na Atualização anterior (Tarefa 1). Junto, o que o dashboard reaproveita: `sectorScopeOf`, a fonte do histórico exportada (`historySource`, `historyPairsSql`, `endsLocalSql`, `nowLocalSql`) e `parseHistoryPeriod`/`appendPeriodParams`. Os testes existentes passaram sem mudar nenhuma asserção (só o helper que cada um usa).
+
+#### P13 — chart-5 ("Outros") quase invisível no tema escuro 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/globals.css` (`--chart-5`) · `src/app/chartPalette.test.ts`
+**Impacto:** `chart-5` tem 1,19:1 de contraste sobre o card no tema escuro; uma fatia "Outros" some.
+**Correção:** — (opção: resolver antes de qualquer gráfico com fatia "Outros" (Fase 5): escolher valor com contraste ≥ 3:1 e medir no guarda)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). `--chart-5` passou a ter o valor de `--foreground` em cada tema (`oklch(0.145 0 0)` no claro, `oklch(0.985 0 0)` no escuro) e `src/app/chartPalette.test.ts` o mede: contraste 19,79 (claro) e 17,16 (escuro) sobre o card e ΔE2000 mínimo de 20,6 contra `chart-1..4` nas quatro visões. O valor antigo e o `muted-foreground` ficam como casos negativos do guarda (1,19:1 no escuro; ΔE 8,6 e 6,8 em tritanopia contra `chart-4`). `ui-tokens.md §2` descreve o neutro. Nenhum componente usa `chart-5`: o gráfico que precisar de "Outros" usa `foreground` direto.
+
+#### P19 — Erro e 404 dentro do app derrubam o shell inteiro 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/error.tsx` · `src/app/not-found.tsx`
+**Impacto:** os boundaries só existem na raiz: um erro ou 404 numa página do grupo `(app)` troca o shell (barra lateral) pela página de erro.
+**Correção:** — (opção: considerar `(app)/error.tsx` e `(app)/not-found.tsx` sem `<main>` próprio)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). `src/app/(app)/error.tsx` e `src/app/(app)/not-found.tsx` (`<div>`, sem `<main>`) mantêm o shell no erro e no 404 de uma página de `(app)`. O erro era o que trocava a barra lateral pela página de erro da raiz (o `error.tsx` da raiz envolve o layout de `(app)`; o de `(app)` envolve só a página). No 404 a barra lateral já ficava (o Next renderiza o `not-found` da raiz dentro do layout mais próximo), mas com um `<main>` dentro do `<main>` do `SidebarInset`; agora há um só, e a URL sem rota continua com o 404 de verdade da raiz. Efeito aceito: o `error.tsx` de `(app)` também envolve o slot `@detalhe`, então um erro dentro do Sheet do detalhe rápido aparece fora do Sheet; vira pendência nova no fim da Fase 5.
+
+#### P45 — Trocar de setor em /solicitacoes perde os filtros da URL 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/(app)/actions.ts` (`chooseSectorAction`) · `src/components/passagens/SectorPicker.tsx` · `src/components/solicitacoes/RequestsScreen.tsx`
+**Impacto:** o admin que troca de setor volta para `/solicitacoes?setor={id}`: a visão, o destino, o período, quem criou e a busca somem, porque o `chooseSectorAction` só leva `?setor=`.
+**Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
+**Registrado em:** 2026-11-24
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). O `SectorPicker` ganhou a prop `query` (o query canônico dos filtros da tela, sem o setor) e o `chooseSectorSchema` a aceita (texto de até 2.000 caracteres). O servidor nunca usa a URL do cliente: `sectorRedirectHref` (`src/features/handovers/sectorRedirect.ts`) reinterpreta o query pelo mesmo parse da tela, que nunca lança, e remonta o href com o setor novo. Em `/passagens` seguem o período e a situação e caem o turno e a página; em `/solicitacoes` seguem a visão, o destino, o período e a busca e caem o criador e a paginação (o item de cada tela, que é do setor antigo, entra nessa lista nas Tarefas 5 e 6); `/` e `/passagens/nova` ignoram o query. Sem `query` o destino é o de sempre.

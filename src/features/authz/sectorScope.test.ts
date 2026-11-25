@@ -6,7 +6,7 @@ import { sector } from "@/db/schema";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import { insertSector } from "../../../test/fixtures";
 import type { Authz } from "./authz";
-import { scopeToSector } from "./sectorScope";
+import { scopeToSector, sectorScopeOf } from "./sectorScope";
 
 let client: PGlite;
 let db: TestDb;
@@ -91,5 +91,57 @@ describe("scopeToSector (PGlite, query real em sector)", () => {
 
   it("sem nenhum setor cadastrado, ninguém vê nada", async () => {
     expect(await visibleSectorNames(authzOf("admin", null))).toEqual([]);
+  });
+});
+
+describe("sectorScopeOf", () => {
+  const SECTOR_A = "00000000-0000-4000-8000-0000000000a1";
+  const SECTOR_B = "00000000-0000-4000-8000-0000000000b2";
+
+  it.each([
+    [
+      "admin sem setor pedido vê todos",
+      authzOf("admin", null),
+      null,
+      { kind: "all" },
+    ],
+    [
+      "admin com setor pedido vê só ele",
+      authzOf("admin", null),
+      SECTOR_A,
+      { kind: "sector", sectorId: SECTOR_A },
+    ],
+    [
+      "operador sem setor pedido vê o próprio",
+      authzOf("operator", SECTOR_A),
+      null,
+      { kind: "sector", sectorId: SECTOR_A },
+    ],
+    [
+      "operador com o próprio setor pedido vê o próprio",
+      authzOf("operator", SECTOR_A),
+      SECTOR_A,
+      { kind: "sector", sectorId: SECTOR_A },
+    ],
+    [
+      "operador pedindo outro setor continua no próprio (o pedido é ignorado)",
+      authzOf("operator", SECTOR_A),
+      SECTOR_B,
+      { kind: "sector", sectorId: SECTOR_A },
+    ],
+    [
+      "operador sem setor não vê nada",
+      authzOf("operator", null),
+      null,
+      { kind: "nothing" },
+    ],
+    [
+      "operador sem setor não vê nada nem pedindo um setor",
+      authzOf("operator", null),
+      SECTOR_B,
+      { kind: "nothing" },
+    ],
+  ] as const)("%s", (_label, actor, requested, expected) => {
+    expect(sectorScopeOf(actor, requested)).toEqual(expected);
   });
 });

@@ -4,10 +4,9 @@ import { desc, eq } from "drizzle-orm";
 
 import { user } from "@/db/schema/auth";
 import { request, requestStatusEvent } from "@/db/schema/requests";
-import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
 import { type Authz, canAccessSector } from "@/features/authz/authz";
-import type { SectorRow } from "@/features/handovers/loaders";
+import { loadSector, type SectorRow } from "@/features/handovers/loaders";
 import type { RequestStatus } from "@/lib/requestStatuses";
 
 export type RequestRow = typeof request.$inferSelect;
@@ -65,11 +64,5 @@ export async function lockSectorShare(
   actor: Authz,
   sectorId: string,
 ): Promise<SectorRow | null> {
-  const [row] = await tx
-    .select({ id: sector.id, name: sector.name, active: sector.active })
-    .from(sector)
-    .where(eq(sector.id, sectorId))
-    .for("share");
-  if (!row || !canAccessSector(actor, row.id)) return null;
-  return row;
+  return loadSector(tx, actor, sectorId, { lock: "share" });
 }

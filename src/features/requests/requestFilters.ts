@@ -19,6 +19,41 @@ export const VIEW_PARAM: Readonly<Record<RequestView, string>> = {
 
 export type RequestPeriod = "all" | "7" | "30" | "range";
 
+// "open" = solicitada + em trânsito; "not_cancelled" = tudo menos cancelada
+// (o link da quantidade pedida precisa contar o mesmo que a soma).
+export type RequestStatusFilter =
+  | "all"
+  | "open"
+  | "not_cancelled"
+  | RequestStatus;
+
+// Valor de ?status= na URL (pt-BR). Os quatro status reusam o sufixo de ?mais_<status>=.
+export const STATUS_FILTER_PARAM: Readonly<
+  Record<Exclude<RequestStatusFilter, "all">, string>
+> = {
+  open: "abertas",
+  not_cancelled: "nao-canceladas",
+  requested: STATUS_PARAM.requested,
+  in_transit: STATUS_PARAM.in_transit,
+  delivered: STATUS_PARAM.delivered,
+  cancelled: STATUS_PARAM.cancelled,
+};
+
+export type RequestDateRange = {
+  period: RequestPeriod;
+  from: string | null;
+  to: string | null;
+};
+
+// Os três parâmetros do período; o da entrega é o mesmo período com outras chaves.
+type PeriodKeys = { period: string; from: string; to: string };
+const CREATED_PARAMS: PeriodKeys = { period: "periodo", from: "de", to: "ate" };
+export const DELIVERY_PARAMS = {
+  period: "entrega",
+  from: "entrega_de",
+  to: "entrega_ate",
+} as const satisfies PeriodKeys;
+
 export type RequestFilters = {
   view: RequestView | null; // null = padrão responsivo (Lista abaixo de md, Quadro em md+)
   destination: string | null; // uuid | DESTINATION_OTHER | null (todos)
@@ -29,6 +64,10 @@ export type RequestFilters = {
   search: string; // normalizeSearch; "" = sem busca
   limits: Record<RequestStatus, number>; // múltiplo de BOARD_PAGE_SIZE entre 20 e 200
   page: number; // Tabela
+  status: RequestStatusFilter;
+  stale: boolean; // só as paradas agora (> 72 h no mesmo status)
+  delivery: RequestDateRange; // período pela PRIMEIRA entrega (o `period` é pela criação)
+  itemId: string | null; // item pedido (request_item)
 };
 
 type Params = Record<string, string | string[] | undefined>;
@@ -66,6 +105,10 @@ export function defaultRequestFilters(): RequestFilters {
     search: "",
     limits: defaultLimits(),
     page: 1,
+    status: "all",
+    stale: false,
+    delivery: { period: "all", from: null, to: null },
+    itemId: null,
   };
 }
 
@@ -84,8 +127,7 @@ function limitFromParam(raw: string | string[] | undefined): number {
   return Math.min(Math.max(rounded, BOARD_PAGE_SIZE), BOARD_MAX_LIMIT);
 }
 
-type Range = { period: RequestPeriod; from: string | null; to: string | null };
-const ALL_PERIOD: Range = { period: "all", from: null, to: null };
+const ALL_PERIOD: RequestDateRange = { period: "all", from: null, to: null };
 
 // Intervalo: invertido é trocado, `ate` futuro é cortado em hoje; tudo no
 // futuro ou data inválida cai em "Todo o período". Sem teto de extensão.
@@ -93,7 +135,7 @@ function rangeFrom(
   de: string | undefined,
   ate: string | undefined,
   today: string,
-): Range {
+): RequestDateRange {
   if (de === undefined || ate === undefined) return ALL_PERIOD;
   if (!isIsoDate(de) || !isIsoDate(ate)) return ALL_PERIOD;
   const [first, last] = de <= ate ? [de, ate] : [ate, de];
@@ -102,21 +144,49 @@ function rangeFrom(
   return { period: "range", from: first, to };
 }
 
-function periodFrom(params: Params, today: string): Range {
-  switch (firstValue(params.periodo)) {
+function periodFrom(
+  params: Params,
+  keys: PeriodKeys,
+  today: string,
+): RequestDateRange {
+  switch (firstValue(params[keys.period])) {
     case "7":
       return { period: "7", from: addDays(today, -6), to: today };
     case "30":
       return { period: "30", from: addDays(today, -29), to: today };
     case "intervalo":
-      return rangeFrom(firstValue(params.de), firstValue(params.ate), today);
+      return rangeFrom(
+        firstValue(params[keys.from]),
+        firstValue(params[keys.to]),
+        today,
+      );
     default:
       return ALL_PERIOD;
   }
 }
 
+const STATUS_FILTERS = [
+  "open",
+  "not_cancelled",
+  "requested",
+  "in_transit",
+  "delivered",
+  "cancelled",
+] as const;
+
+function statusFromParam(param: string | undefined): RequestStatusFilter {
+  for (const status of STATUS_FILTERS) {
+    if (STATUS_FILTER_PARAM[status] === param) return status;
+  }
+  return "all";
+}
+
 function destinationFrom(param: string | undefined): string | null {
   if (param === DESTINATION_OTHER) return DESTINATION_OTHER;
+  return param !== undefined && UUID.test(param) ? param : null;
+}
+
+function itemFrom(param: string | undefined): string | null {
   return param !== undefined && UUID.test(param) ? param : null;
 }
 
@@ -128,7 +198,11 @@ export function parseRequestFilters(
   return {
     view: viewFromParam(firstValue(params.visao)),
     destination: destinationFrom(firstValue(params.destino)),
-    ...periodFrom(params, today),
+    ...periodFrom(params, CREATED_PARAMS, today),
+    status: statusFromParam(firstValue(params.status)),
+    stale: firstValue(params.parada) === "1",
+    delivery: periodFrom(params, DELIVERY_PARAMS, today),
+    itemId: itemFrom(firstValue(params.item)),
     creatorId: creator !== undefined && USER_ID.test(creator) ? creator : null,
     search: normalizeSearch(firstValue(params.busca) ?? ""),
     limits: {
@@ -157,6 +231,20 @@ export function buildRequestsHref(
     search.set("de", filters.from);
     search.set("ate", filters.to);
   }
+  if (filters.status !== "all") {
+    search.set("status", STATUS_FILTER_PARAM[filters.status]);
+  }
+  if (filters.stale) search.set("parada", "1");
+  const { delivery } = filters;
+  if (delivery.period === "7" || delivery.period === "30") {
+    search.set(DELIVERY_PARAMS.period, delivery.period);
+  }
+  if (delivery.period === "range" && delivery.from && delivery.to) {
+    search.set(DELIVERY_PARAMS.period, "intervalo");
+    search.set(DELIVERY_PARAMS.from, delivery.from);
+    search.set(DELIVERY_PARAMS.to, delivery.to);
+  }
+  if (filters.itemId !== null) search.set("item", filters.itemId);
   if (filters.creatorId !== null) search.set("criador", filters.creatorId);
   if (filters.search !== "") search.set("busca", filters.search);
   if (extras.sector) search.set("setor", extras.sector);
@@ -181,8 +269,21 @@ export function filtersActive(filters: RequestFilters): boolean {
     filters.destination !== null ||
     filters.period !== "all" ||
     filters.creatorId !== null ||
-    filters.search !== ""
+    filters.search !== "" ||
+    filters.status !== "all" ||
+    filters.stale ||
+    filters.delivery.period !== "all" ||
+    filters.itemId !== null
   );
+}
+
+/**
+ * A janela de 30 dias das fechadas (Quadro e Lista) só vale sem nenhum filtro
+ * de tempo: com período de criação ou de entrega a contagem tem de bater com
+ * o intervalo escolhido.
+ */
+export function closedWindowApplies(filters: RequestFilters): boolean {
+  return filters.period === "all" && filters.delivery.period === "all";
 }
 
 /** "Limpar filtros" mantém a visão e o setor. */

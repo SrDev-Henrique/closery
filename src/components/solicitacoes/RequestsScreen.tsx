@@ -3,16 +3,14 @@ import type { ReactNode } from "react";
 import { EmptyState } from "@/components/admin/EmptyState";
 import { SectorPicker } from "@/components/passagens/SectorPicker";
 import { db } from "@/db";
-import { listActiveSectors, type SectorChoice } from "@/features/admin/sectors";
 import { isAdmin } from "@/features/authz/authz";
-import { ALL_SECTORS } from "@/features/handovers/limits";
-import { loadSector } from "@/features/handovers/loaders";
 import { addDays, todayInSaoPaulo } from "@/features/handovers/saoPaulo";
+import { resolveScreenSector } from "@/features/handovers/screenSector";
 import { resolveHandoverSector } from "@/features/handovers/sectorChoice";
-import { readRememberedSector } from "@/features/handovers/sectorCookie";
 import {
   getRequestFormChoices,
   listFilterDestinations,
+  listFilterItems,
   listRequestCreators,
 } from "@/features/requests/choices";
 import { BOARD_MAX_LIMIT, DESTINATION_OTHER } from "@/features/requests/limits";
@@ -20,6 +18,7 @@ import { getRequestGroups, listRequestTable } from "@/features/requests/lists";
 import {
   buildRequestsHref,
   clearFiltersHref,
+  closedWindowApplies,
   filtersActive,
   moreHref,
   parseRequestFilters,
@@ -30,6 +29,11 @@ import { boardSummary, tableSummary } from "@/features/requests/text";
 import type { RequestGroups, RequestStatus } from "@/features/requests/types";
 import { requireUser } from "@/lib/auth/session";
 import { REQUEST_STATUSES } from "@/lib/requestStatuses";
+import {
+  hrefQuery,
+  paginationParams,
+  type SearchParams,
+} from "@/lib/searchParams";
 
 import { NewRequestDialog } from "./NewRequestDialog";
 import { RequestBoard } from "./RequestBoard";
@@ -39,7 +43,7 @@ import { RequestTable } from "./RequestTable";
 import { RequestViewSwitcher } from "./RequestViewSwitcher";
 
 type RequestsScreenProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Promise<SearchParams>;
 };
 
 const TITLE = "Solicitações";
@@ -60,11 +64,6 @@ function Header({
       {action}
     </header>
   );
-}
-
-// Os filtros que a Pagination preserva: a mesma URL que buildRequestsHref monta.
-function paginationParams(href: string): Record<string, string> {
-  return Object.fromEntries(new URL(href, "http://closery.local").searchParams);
 }
 
 function moreHrefs(
@@ -98,68 +97,45 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
 
   // Admin escolhe o setor (ou "Todos os setores", sem cookie); operador usa o
   // próprio setor e nunca vê o seletor.
-  let sectorId: string | null = null;
-  let sectorParam: string | null = null;
-  let picker: ReactNode = null;
-  let sectors: SectorChoice[] = [];
-  let cookie: string | undefined;
-
-  if (admin) {
-    sectors = await listActiveSectors(db);
-    cookie = await readRememberedSector();
-    const selection = resolveHandoverSector(
-      sectors,
-      { url: params.setor, cookie },
-      { allowAll: true },
+  const screen = await resolveScreenSector(db, actor, {
+    url: params.setor,
+    allowAll: true,
+  });
+  if (screen.kind === "none") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Header />
+        <EmptyState
+          title="Nenhum setor ativo."
+          description="Cadastre ou reative um setor para usar as solicitações."
+          action={{ label: "Ir para Setores", href: "/admin/setores" }}
+        />
+      </div>
     );
-    if (selection.kind === "none") {
-      return (
-        <div className="flex flex-col gap-6">
-          <Header />
-          <EmptyState
-            title="Nenhum setor ativo."
-            description="Cadastre ou reative um setor para usar as solicitações."
-            action={{ label: "Ir para Setores", href: "/admin/setores" }}
-          />
-        </div>
-      );
-    }
-    sectorId = selection.kind === "sector" ? selection.sector.id : null;
-    sectorParam =
-      selection.kind === "sector" ? selection.sector.id : ALL_SECTORS;
-    picker = (
-      <SectorPicker
-        sectors={sectors}
-        selectedId={sectorParam}
-        path="/solicitacoes"
-        allowAll
-      />
+  }
+  if (screen.kind === "missing" || screen.kind === "inactive") {
+    return (
+      <div className="flex flex-col gap-6">
+        <Header />
+        <EmptyState
+          title="Seu setor está inativo."
+          description="Peça a um administrador para reativá-lo."
+        />
+      </div>
     );
-  } else {
-    const own = actor.sectorId
-      ? await loadSector(db, actor, actor.sectorId)
-      : null;
-    if (!own?.active) {
-      return (
-        <div className="flex flex-col gap-6">
-          <Header />
-          <EmptyState
-            title="Seu setor está inativo."
-            description="Peça a um administrador para reativá-lo."
-          />
-        </div>
-      );
-    }
-    sectorId = own.id;
   }
 
-  const [creators, destinations] = await Promise.all([
+  const { sectorId, sectorParam, sectors, cookie } = screen;
+
+  const [creators, destinations, items] = await Promise.all([
     listRequestCreators(db, actor, sectorId),
     listFilterDestinations(db),
+    listFilterItems(db, actor, sectorId, parsed.itemId),
   ]);
 
-  // Quem criou e destino que o seletor não sabe mostrar viram "todos" antes da
-  // consulta ("outro" é uma opção fixa, sempre vale).
+  // Quem criou, destino e item que o seletor não sabe mostrar viram "todos"
+  // antes da consulta ("outro" é uma opção fixa, sempre vale; o item vale se
+  // existe no escopo, mesmo além do teto de escolhas).
   const filters: RequestFilters = {
     ...parsed,
     creatorId: creators.some((person) => person.id === parsed.creatorId)
@@ -170,8 +146,23 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
       destinations.some((entry) => entry.id === parsed.destination)
         ? parsed.destination
         : null,
+    itemId: items.some((entry) => entry.id === parsed.itemId)
+      ? parsed.itemId
+      : null,
   };
   const extras = sectorParam === null ? {} : { sector: sectorParam };
+  // O seletor leva o query dos filtros já validados (sem o setor): o servidor
+  // o reinterpreta ao trocar de setor (P45).
+  const picker: ReactNode =
+    sectorParam === null ? null : (
+      <SectorPicker
+        sectors={sectors}
+        selectedId={sectorParam}
+        path="/solicitacoes"
+        allowAll
+        query={hrefQuery(buildRequestsHref(filters))}
+      />
+    );
   const showSector = admin && sectorId === null;
 
   const formSectors = showSector ? sectors : null;
@@ -194,7 +185,11 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
   const groups =
     table === null ? await getRequestGroups(db, actor, input, now) : null;
 
-  const closedWindow = filters.period === "all";
+  const closedWindow = closedWindowApplies(filters);
+  // A visão que aparece: o Quadro não tem coluna de Canceladas, então com
+  // Status = Cancelada a Lista ocupa o lugar dele (corpo e seletor concordam).
+  const shownView =
+    table === null && filters.status === "cancelled" ? "list" : filters.view;
   const subtitle =
     table !== null
       ? tableSummary(table.total)
@@ -220,6 +215,11 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
     ...filters,
     from: filters.from ?? addDays(today, -6),
     to: filters.to ?? today,
+    delivery: {
+      ...filters.delivery,
+      from: filters.delivery.from ?? addDays(today, -6),
+      to: filters.delivery.to ?? today,
+    },
   };
   const hrefs = viewHrefs(filters, extras);
 
@@ -273,9 +273,9 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
     // Sem `visao` o servidor não sabe a largura: as duas visões vão no DOM e o
     // CSS mostra a Lista abaixo de md e o Quadro de md em diante.
     body =
-      filters.view === "board" ? (
+      shownView === "board" ? (
         board
-      ) : filters.view === "list" ? (
+      ) : shownView === "list" ? (
         list
       ) : (
         <>
@@ -304,9 +304,10 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
         filters={formFilters}
         destinations={destinations}
         creators={creators}
+        items={items}
         sectorParam={sectorParam}
       />
-      {filters.view === null ? (
+      {shownView === null ? (
         <>
           <RequestViewSwitcher
             current="list"
@@ -320,7 +321,7 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
           />
         </>
       ) : (
-        <RequestViewSwitcher current={filters.view} hrefs={hrefs} />
+        <RequestViewSwitcher current={shownView} hrefs={hrefs} />
       )}
       {body}
     </div>

@@ -4,7 +4,7 @@ import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
 
 import { user } from "@/db/schema/auth";
 import { destination, item } from "@/db/schema/catalog";
-import { request } from "@/db/schema/requests";
+import { request, requestItem } from "@/db/schema/requests";
 import type { Db } from "@/db/types";
 import { CHOICE_LIST_LIMIT } from "@/features/admin/pagination";
 import type { Authz } from "@/features/authz/authz";
@@ -13,6 +13,7 @@ import { requestScopeSql } from "./sql";
 import type {
   DestinationChoice,
   FilterDestination,
+  FilterItem,
   PersonChoice,
   RequestFormChoices,
   StockItemChoice,
@@ -185,4 +186,49 @@ export async function listRequestCreators(
     .groupBy(user.id, user.name)
     .orderBy(sql`lower(${user.name})`, asc(user.id))
     .limit(CHOICE_LIST_LIMIT);
+}
+
+// Itens para FILTRAR: os que aparecem em solicitações do escopo (setor
+// escolhido ou todos; só setores ativos), com o nome e a unidade do snapshot da
+// solicitação mais recente. O item escolhido na URL entra no fim quando existe
+// no mesmo escopo e ficou além do teto: o teto vale só para as opções, nunca
+// para validar o filtro aplicado.
+export async function listFilterItems(
+  db: Db,
+  actor: Authz,
+  sectorId: string | null,
+  selectedItemId: string | null,
+): Promise<FilterItem[]> {
+  // O DISTINCT ON fica numa subconsulta: ordenar por nome fora dela não pode
+  // mudar qual linha de cada item é a "mais recente".
+  const latest = db
+    .selectDistinctOn([requestItem.itemId], {
+      id: requestItem.itemId,
+      name: requestItem.itemNameSnapshot,
+      unit: requestItem.itemUnitSnapshot,
+    })
+    .from(requestItem)
+    .innerJoin(request, eq(request.id, requestItem.requestId))
+    .where(requestScopeSql(actor, sectorId))
+    .orderBy(asc(requestItem.itemId), desc(request.createdAt), desc(request.id))
+    .as("latest_items");
+
+  const rows = await db
+    .select({ id: latest.id, name: latest.name, unit: latest.unit })
+    .from(latest)
+    .orderBy(sql`lower(${latest.name})`, asc(latest.id))
+    .limit(CHOICE_LIST_LIMIT);
+  if (
+    selectedItemId === null ||
+    rows.some((row) => row.id === selectedItemId)
+  ) {
+    return rows;
+  }
+
+  const [selected] = await db
+    .select({ id: latest.id, name: latest.name, unit: latest.unit })
+    .from(latest)
+    .where(eq(latest.id, selectedItemId))
+    .limit(1);
+  return selected ? [...rows, selected] : rows;
 }
