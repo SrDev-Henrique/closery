@@ -15,6 +15,7 @@ import { authzOf } from "../../../test/authz";
 import {
   type DashboardWorld,
   oracleControls,
+  oracleCsv,
   oraclePassages,
   oracleRequests,
   oracleSlotOf,
@@ -27,11 +28,14 @@ import {
 } from "../../../test/dashboardWorld";
 import { createTestDb, type TestDb } from "../../../test/db";
 import { getControlsData } from "./controls";
+import { CSV_BOM } from "./csv";
+import { buildPassagesCsv } from "./exportCsv";
 import { lastCountHref, linkExtras, passagesListHref } from "./links";
 import { getPassagesData } from "./passages";
+import { periodDays, previousPeriod } from "./period";
 import { getRequestsData } from "./requests";
 import { getStockData } from "./stock";
-import type { DashboardQuery, PassagesData } from "./types";
+import type { DashboardQuery, DashboardScope, PassagesData } from "./types";
 
 // O teste do critério de pronto (spec §12): num setor com turnos, passagens
 // confirmadas, aguardando, não confirmadas, sem passagem e uma correção feita
@@ -593,5 +597,196 @@ describe("Solicitações", () => {
       deliveredCount: 4,
       averageSeconds: 50_025,
     });
+  });
+});
+
+describe("CSV", () => {
+  let csvClient: PGlite;
+  let csvDb: TestDb;
+  let csvWorld: DashboardWorld;
+
+  beforeAll(async () => {
+    ({ client: csvClient, db: csvDb } = await createTestDb());
+    csvWorld = await seedDashboardWorld(csvDb);
+  });
+  afterAll(async () => {
+    await csvClient.close();
+  });
+
+  function scopeOf(
+    sector: { id: string; name: string } | null,
+  ): DashboardScope {
+    return {
+      sectorId: sector?.id ?? null,
+      sectorName: sector?.name ?? null,
+      sectorParam: sector?.id ?? "todos",
+      showSector: sector === null,
+      period: csvWorld.period,
+      previous: previousPeriod(csvWorld.period),
+      days: periodDays(csvWorld.period),
+      today: csvWorld.today,
+    };
+  }
+
+  // O mundo não tem aspas nem quebra de linha: dividir por ";" e CRLF basta.
+  async function exported(sector: { id: string; name: string } | null) {
+    const csv = await buildPassagesCsv(
+      csvDb,
+      csvWorld.people.admin,
+      scopeOf(sector),
+      csvWorld.now,
+    );
+    if (!csv.ok) throw new Error("o CSV devia ter sido gerado");
+    const [header = [], ...rows] = csv.body
+      .slice(CSV_BOM.length, -2)
+      .split("\r\n")
+      .map((line) => line.split(";"));
+    const itemColumns = header.slice(7, header.length - 3);
+    return { csv, header, rows, itemColumns };
+  }
+
+  // O oráculo independente (leitores crus + JS), nunca as funções do dashboard.
+  async function oracleOf(sectorIds: readonly string[]) {
+    const passages = oraclePassages({
+      shifts: await rawShifts(csvDb, sectorIds),
+      handovers: await rawHandovers(csvDb, sectorIds),
+      sectorIds,
+      period: csvWorld.period,
+      now: csvWorld.now,
+    });
+    const csv = oracleCsv({
+      passages,
+      controlLines: await rawDeliveredItems(csvDb, {
+        sectorIds,
+        range: csvWorld.period,
+        kind: "control",
+      }),
+      stockLines: await rawDeliveredItems(csvDb, {
+        sectorIds,
+        range: csvWorld.period,
+        kind: "stock",
+      }),
+    });
+    return { passages, csv };
+  }
+
+  // Rótulo da coluna ("Rede de proteção (rede)", com ou sem "Setor · ") → id.
+  function itemIdOf(label: string): string {
+    const ids: Record<string, string> = {
+      "Rede de proteção (rede)": csvWorld.items.net,
+      "Cinta (peça)": csvWorld.items.strap,
+      "Cinta antiga (peça)": csvWorld.items.oldStrap,
+      "Stretch (rolo)": csvWorld.items.stretch,
+      "Lacre (unidade)": csvWorld.items.seal,
+    };
+    const id = ids[label.split(" · ").pop() ?? label];
+    if (id === undefined) throw new Error(`coluna desconhecida: ${label}`);
+    return id;
+  }
+
+  function columnSum(rows: string[][], column: number): number {
+    return rows.reduce((sum, row) => sum + Number(row[column] || 0), 0);
+  }
+
+  function countOf(rows: string[][], label: string): number {
+    return rows.filter((row) => row[5] === label).length;
+  }
+
+  // As colunas de item são as do oráculo (uma por item com linha entregue no
+  // período) e a soma de cada controle é a do oráculo, nunca a de getControlsData.
+  function expectColumnsOfOracle(
+    itemColumns: string[],
+    rows: string[][],
+    oracle: Awaited<ReturnType<typeof oracleOf>>["csv"],
+  ) {
+    const ids = itemColumns.map(itemIdOf);
+    expect([...ids].sort()).toEqual(
+      [...oracle.controlItemIds, ...oracle.stockItemIds].sort(),
+    );
+    for (const [index, id] of ids.entries()) {
+      const expected = oracle.controlSums[id];
+      if (expected !== undefined) {
+        expect(columnSum(rows, 7 + index), itemColumns[index]).toBe(expected);
+      }
+    }
+  }
+
+  it("ULD: 21 linhas, as colunas e as somas dos controles iguais às do oráculo e aos literais", async () => {
+    const { csv, rows, itemColumns } = await exported(csvWorld.uld);
+    const { csv: oracle } = await oracleOf([csvWorld.uld.id]);
+    expect(rows).toHaveLength(21);
+    expect(csv.rows).toBe(21);
+    expect(rows).toHaveLength(oracle.rows);
+    expect(itemColumns).toEqual([
+      "Rede de proteção (rede)",
+      "Cinta (peça)",
+      "Cinta antiga (peça)",
+      "Stretch (rolo)",
+    ]);
+    expectColumnsOfOracle(itemColumns, rows, oracle);
+    // Rede 35 (já com a correção 5 → 8), Cinta 36, Cinta antiga 3.
+    expect([0, 1, 2].map((index) => columnSum(rows, 7 + index))).toEqual([
+      35, 36, 3,
+    ]);
+  });
+
+  it("ULD: a contagem de cada situação do CSV é a do oráculo e a dos literais", async () => {
+    const { rows } = await exported(csvWorld.uld);
+    const { passages } = await oracleOf([csvWorld.uld.id]);
+    expect(countOf(rows, "Confirmada")).toBe(passages.confirmed);
+    expect(countOf(rows, "Aguardando recebimento")).toBe(passages.awaiting);
+    expect(countOf(rows, "Não confirmada")).toBe(passages.unconfirmed);
+    expect(countOf(rows, "Sem passagem")).toBe(passages.missing);
+    expect(rows).toHaveLength(passages.listed);
+    expect([
+      countOf(rows, "Confirmada"),
+      countOf(rows, "Aguardando recebimento"),
+      countOf(rows, "Não confirmada"),
+      countOf(rows, "Sem passagem"),
+    ]).toEqual([7, 1, 2, 11]);
+    // Uma correção (Rede 5 → 8): uma linha "Sim".
+    expect(rows.filter((row) => row[6] === "Sim")).toHaveLength(1);
+  });
+
+  it("Câmara: 6 linhas e a coluna do Lacre soma 6", async () => {
+    const { rows, itemColumns } = await exported(csvWorld.camara);
+    const { csv: oracle } = await oracleOf([csvWorld.camara.id]);
+    expect(rows).toHaveLength(6);
+    expect(rows).toHaveLength(oracle.rows);
+    expect(itemColumns).toEqual(["Lacre (unidade)"]);
+    expectColumnsOfOracle(itemColumns, rows, oracle);
+    expect(columnSum(rows, 7)).toBe(6);
+    expect(countOf(rows, "Sem passagem")).toBe(4);
+  });
+
+  it("Todos os setores: 27 linhas, colunas com o setor e as situações do oráculo", async () => {
+    const { rows, itemColumns } = await exported(null);
+    const { passages, csv: oracle } = await oracleOf([
+      csvWorld.uld.id,
+      csvWorld.camara.id,
+    ]);
+    expect(rows).toHaveLength(27);
+    expect(rows).toHaveLength(oracle.rows);
+    expect(itemColumns).toEqual([
+      "Câmara Teste · Lacre (unidade)",
+      "ULD Teste · Rede de proteção (rede)",
+      "ULD Teste · Cinta (peça)",
+      "ULD Teste · Cinta antiga (peça)",
+      "ULD Teste · Stretch (rolo)",
+    ]);
+    expectColumnsOfOracle(itemColumns, rows, oracle);
+    expect(countOf(rows, "Confirmada")).toBe(passages.confirmed);
+    expect(countOf(rows, "Aguardando recebimento")).toBe(passages.awaiting);
+    expect(countOf(rows, "Não confirmada")).toBe(passages.unconfirmed);
+    expect(countOf(rows, "Sem passagem")).toBe(passages.missing);
+    expect([
+      countOf(rows, "Confirmada"),
+      countOf(rows, "Aguardando recebimento"),
+      countOf(rows, "Não confirmada"),
+      countOf(rows, "Sem passagem"),
+    ]).toEqual([8, 2, 2, 15]);
+    expect([0, 1, 2, 3].map((index) => columnSum(rows, 7 + index))).toEqual([
+      6, 35, 36, 3,
+    ]);
   });
 });
