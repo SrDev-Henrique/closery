@@ -18,6 +18,7 @@ describe("limites da passagem", () => {
       SECTOR_COOKIE_MAX_AGE_SECONDS: 31_536_000,
       ALL_SECTORS: "todos",
       NEXT_SHIFT_PREVIEW_LENGTH: 200,
+      CHOOSE_SECTOR_QUERY_MAX: 2000,
     });
   });
 

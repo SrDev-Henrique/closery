@@ -145,18 +145,20 @@ describe(".context/pendencias.md", () => {
     }
   });
 
-  it("Fase 5: P48 resolvida", () => {
-    const entry = entries.get("P48");
-    expect(entry?.state).toBe("Resolvido");
-    expect(entry?.section).toBe("5");
-    expect(
-      entry?.updates.some((date) => date >= "2026-11-24"),
-      "P48",
-    ).toBe(true);
+  it("Fase 5: P13, P19, P45 e P48 resolvidas", () => {
+    for (const id of ["P13", "P19", "P45", "P48"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Resolvido");
+      expect(entry?.section, id).toBe("5");
+      expect(
+        entry?.updates.some((date) => date >= "2026-11-24"),
+        id,
+      ).toBe(true);
+    }
   });
 
-  it("Fase 4: P44 a P47 entraram como Aberto, não triado", () => {
-    for (const id of ["P44", "P45", "P46", "P47"]) {
+  it("Fase 4: P44, P46 e P47 entraram como Aberto, não triado", () => {
+    for (const id of ["P44", "P46", "P47"]) {
       const entry = entries.get(id);
       expect(entry?.state, id).toBe("Aberto, não triado");
       expect(entry?.section, id).toBe("1");

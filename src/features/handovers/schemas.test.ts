@@ -320,6 +320,41 @@ describe("chooseSectorSchema", () => {
     ).toBe(true);
   });
 
+  it("aceita o caminho de solicitações e o query opcional", () => {
+    expect(
+      chooseSectorSchema.safeParse({ sectorId: SECTOR, path: "/solicitacoes" })
+        .success,
+    ).toBe(true);
+    expect(
+      chooseSectorSchema.safeParse({
+        sectorId: SECTOR,
+        path: "/passagens",
+        query: "periodo=30&situacao=aguardando",
+      }).success,
+    ).toBe(true);
+    expect(
+      chooseSectorSchema.safeParse({
+        sectorId: SECTOR,
+        path: "/passagens",
+        query: "",
+      }).success,
+    ).toBe(true);
+  });
+
+  it("query: 2.000 caracteres passam; 2.001, número e objeto são entrada inválida", () => {
+    const parse = (query: unknown) =>
+      chooseSectorSchema.safeParse({ sectorId: SECTOR, path: "/", query });
+
+    expect(parse("a".repeat(2000)).success).toBe(true);
+    for (const bad of ["a".repeat(2001), 123, { periodo: "30" }, null]) {
+      const result = parse(bad);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues.map((issue) => issue.message)).toEqual([
+        INVALID_INPUT_MESSAGE,
+      ]);
+    }
+  });
+
   it("recusa caminho fora da lista e setor malformado", () => {
     expect(
       chooseSectorSchema.safeParse({ sectorId: SECTOR, path: "//evil.test" })

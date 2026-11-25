@@ -44,7 +44,7 @@ Semânticos do shadcn, definidos em `:root` (claro) e `.dark` (escuro) no `globa
 | `info` / `info-foreground` | informação neutra (solicitação aberta) — sempre com ícone + texto |
 | `border` / `input` / `ring` | bordas, campos, foco |
 | `chart-1..4` | séries de gráfico — **vêm do klauve** (D16); a ordem é a ordem de uso. Máx. 4 séries |
-| `chart-5` | cinza do shadcn — só para "Outros", nunca série com identidade |
+| `chart-5` | neutro de "Outros" e do 5º turno em diante: **o mesmo valor de `foreground`** (P13); nunca série com identidade |
 | `sidebar-*` | navegação lateral |
 
 **Existem desde 2026-11-20 (D16, valores do klauve; P4 resolvida):** `chart-1..4`, `success`,
@@ -73,13 +73,19 @@ cards do shadcn neutral (`oklch(1 0 0)` claro, `oklch(0.205 0 0)` escuro):
 | contraste `chart-1..4` sobre o card | 7,42 · 3,71 · 7,57 · 3,74 | 3,95 · 8,07 · 3,90 · 7,61 |
 | ΔE2000 mínimo (normal / deuter. / protan. / tritan.) | 34,5 / 17,6 / 23,2 / 17,7 | 35,6 / 17,5 / 22,4 / 17,6 |
 | `success` / `warning` / `info` (`-foreground` sobre o fundo) | 7,48 · 6,56 · 7,02 | 7,51 · 7,47 · 6,41 |
+| contraste de `chart-5` (= `foreground`) sobre o card | 19,79 | 17,16 |
+| ΔE2000 mínimo de `chart-5` contra `chart-1..4` (normal / deuter. / protan. / tritan.) | 33,6 / 33,8 / 27,4 / 24,4 | 27,0 / 26,2 / 22,5 / 20,6 |
 
 Mudou um valor de cor? Rode `bun run test -- src/app/chartPalette.test.ts`; piso que reprova se
 corrige no token, nunca no teste. `VITEST_PRINT_PALETTE=1` imprime a matriz.
 
-**Fora da série:** `chart-5` (cinza do shadcn, "Outros") **não** é medido pelo guarda. No tema
-escuro ele tem 1,19:1 sobre o card — some. Antes de qualquer gráfico usar uma fatia "Outros",
-escolher e medir um neutro que passe 3:1 sobre o card e ΔE ≥ 15 da série.
+**Neutro de "Outros" (P13, resolvida):** `chart-5` tem o valor de `foreground` em cada tema
+(`oklch(0.145 0 0)` no claro, `oklch(0.985 0 0)` no escuro) e o guarda mede o que está no CSS:
+contraste ≥ 3:1 sobre o card e ΔE2000 ≥ 15 de `chart-1..4` nas quatro visões, nos dois temas
+(números na tabela acima). O `chart-5` antigo, `oklch(0.269 0 0)`, tinha 1,19:1 sobre o card no
+escuro e sumia. `muted-foreground` passa o contraste (4,73 e 6,91), mas reprova a separação em
+tritanopia contra `chart-4` (ΔE 8,6 no claro e 6,8 no escuro), por isso o neutro é o `foreground`.
+Nenhum gráfico usa `chart-5` como série: quem precisa do neutro usa `foreground` direto.
 
 ## 3. Raio
 

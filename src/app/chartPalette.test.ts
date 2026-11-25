@@ -19,7 +19,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
-/** Nº de cores da série. `chart-5` é o cinza de "Outros" e NÃO é série. */
+/** Nº de cores da série. `chart-5` é o neutro de "Outros" (o `foreground`, P13) e NÃO é série. */
 const SERIES = 4;
 /** Pisos: banda de lightness OKLCH, croma mínimo, contraste WCAG (não-texto) e ΔE2000. */
 const L_BAND = [0.43, 0.77] as const;
@@ -352,6 +352,46 @@ for (const [theme, selector] of THEMES) {
   });
 }
 
+// ---------------------------------------------------------------- neutro de "Outros" (P13)
+/**
+ * O neutro de "Outros" (e do 5º turno em diante nos gráficos) é o `foreground` do tema:
+ * `muted-foreground` passa o contraste, mas reprova a separação em tritanopia contra `chart-4`
+ * (ver o caso negativo abaixo). `--chart-5` tem o mesmo valor, para o token deixar de ser a
+ * armadilha de um cinza que some no tema escuro.
+ */
+for (const [theme, selector] of THEMES) {
+  describe(`neutro de Outros (P13) — tema ${theme}`, () => {
+    const card = readToken(css, selector, "card");
+    const foreground = readToken(css, selector, "foreground");
+    const others = readToken(css, selector, "chart-5");
+    const series = Array.from({ length: SERIES }, (_, i) =>
+      readToken(css, selector, `chart-${i + 1}`),
+    );
+
+    it("chart-5 tem o mesmo valor de foreground", () => {
+      expect(others).toEqual(foreground);
+    });
+
+    it("tem contraste ≥3:1 sobre o card do tema", () => {
+      const ratio = contrast(others, card);
+      expect(
+        ratio,
+        `chart-5 sobre card: ${ratio.toFixed(2)}:1`,
+      ).toBeGreaterThanOrEqual(CONTRAST_MIN);
+    });
+
+    it.each(VISIONS)("separa de chart-1..4 em %s (ΔE2000 ≥ 15)", (vision) => {
+      series.forEach((rgb, i) => {
+        const de = pairDeltaE(others, rgb, vision);
+        expect(
+          de,
+          `chart-5 × chart-${i + 1} em ${vision}: ΔE ${de.toFixed(1)}`,
+        ).toBeGreaterThanOrEqual(DELTA_E_MIN);
+      });
+    });
+  });
+}
+
 // ---------------------------------------------------------------- pares de status
 const STATUS_TOKENS = ["success", "warning", "info"] as const;
 
@@ -445,6 +485,21 @@ describe("o validador reprova o que deve reprovar", () => {
       "oklch(0.371 0 0)",
     ]) {
       expect(oklchOf(parseColor(old)).C).toBeLessThan(C_MIN);
+    }
+  });
+
+  it("o chart-5 antigo (oklch(0.269 0 0)) reprova o contraste no tema escuro: P13 detectado", () => {
+    const card = readToken(css, ".dark", "card");
+    expect(contrast(parseColor("oklch(0.269 0 0)"), card)).toBeLessThan(
+      CONTRAST_MIN,
+    );
+  });
+
+  it("muted-foreground reprova a separação de chart-4 em tritanopia, nos dois temas: por isso Outros é foreground", () => {
+    for (const [, selector] of THEMES) {
+      const muted = readToken(css, selector, "muted-foreground");
+      const chart4 = readToken(css, selector, "chart-4");
+      expect(pairDeltaE(muted, chart4, "tritanopia")).toBeLessThan(DELTA_E_MIN);
     }
   });
 });

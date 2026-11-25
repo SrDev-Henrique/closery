@@ -13,17 +13,21 @@ import { ALL_SECTORS } from "@/features/handovers/limits";
 import type { SectorPickerPath } from "@/features/handovers/urls";
 
 // Escolha de setor do admin: grava o cookie e navega pela Server Action
-// (F3-15). Clicar no setor já selecionado não faz nada.
+// (F3-15). Clicar no setor já selecionado não faz nada. `query` é o query
+// canônico dos filtros da tela (sem o setor): o servidor o reinterpreta e o
+// leva ao setor novo (P45); sem ele, vai só o setor.
 export function SectorPicker({
   sectors,
   selectedId,
   path,
   allowAll = false,
+  query,
 }: {
   sectors: readonly SectorChoice[];
   selectedId: string | typeof ALL_SECTORS;
   path: SectorPickerPath;
   allowAll?: boolean;
+  query?: string;
 }) {
   const [pending, startTransition] = useTransition();
   const options: readonly SectorChoice[] = allowAll
@@ -34,7 +38,9 @@ export function SectorPicker({
     if (sectorId === selectedId) return;
     startTransition(async () => {
       try {
-        const result = await chooseSectorAction({ sectorId, path });
+        const result = await chooseSectorAction(
+          query === undefined ? { sectorId, path } : { sectorId, path, query },
+        );
         if (!result.ok) toast.error(result.message);
       } catch (error) {
         // O sucesso da action é um redirect, que chega aqui como exceção.

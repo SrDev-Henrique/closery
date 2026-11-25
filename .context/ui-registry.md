@@ -280,6 +280,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `requireUser`, `greetingTitle`.
 - **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão.
 
+### AppError e AppNotFound
+- **Status:** ✅ pronto (2026-11-25)
+- **Local:** `src/app/(app)/error.tsx` (`"use client"`) e `src/app/(app)/not-found.tsx` (arquivos de convenção do Next, não componentes de `src/components`)
+- **Propósito:** o erro e o 404 de uma página de `(app)` aparecem dentro do shell: a barra lateral continua na tela (P19).
+- **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para o `console.error` e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
+- **Usa:** `Button`, `buttonVariants`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19).
+
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)
 - **Local:** `src/components/app-shell/AdminOverview.tsx`
@@ -671,9 +679,9 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/SectorPicker.tsx`
 - **Propósito:** o admin escolher o setor no Início, na Nova passagem e no Histórico (D-F3-3).
-- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
+- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; com a prop `query` (o query canônico dos filtros da tela, sem o setor) o payload é `{ sectorId, path, query }` e o servidor o reinterpreta pelo parse da tela, mantendo os filtros que valem para qualquer setor e soltando os do setor antigo (P45); o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
 - **Usa:** `Button`, `FieldSet`, `FieldLegend`, `chooseSectorAction`, `sonner`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 3, P45): prop opcional `query`; sem ela o payload continua exatamente `{ sectorId, path }`.
 
 ### HandoverStatusBadge
 - **Status:** ✅ pronto (2026-11-21)
@@ -817,7 +825,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Propósito:** conteúdo de `/passagens`: o histórico de passagens, do dia mais recente ao mais antigo.
 - **Como funciona:** chama `requireUser()`, interpreta os filtros da URL (`parseHistoryFilters`, dia de hoje em São Paulo) e lê `listHandoverHistory` (50 por página, `?pagina=` clampada). Operador usa o próprio setor e nunca vê o seletor; admin vê o `SectorPicker` com "Todos os setores" (que não grava cookie) e o setor vem de `?setor=`, do cookie ou do primeiro ativo. Ordem na tela: título, seletor (admin), `HistoryFilters`, "Período: dd/mm/aaaa a dd/mm/aaaa", lista de `HistoryRowItem` (ou o estado vazio "Nenhuma passagem neste período.") e `Pagination` com os filtros e o setor preservados. Setor inativo (operador) ou nenhum setor ativo (admin) mostram `EmptyState`.
 - **Usa:** `HistoryFilters`, `HistoryRowItem`, `SectorPicker`, `EmptyState`, `Pagination`, `listHandoverHistory`, `resolveScreenSector`, `paginationParams`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams` (`src/lib/searchParams.ts`); sem mudança de comportamento.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 10). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams` (`src/lib/searchParams.ts`); sem mudança de comportamento. 2026-11-25 — Fase 5 (Tarefa 3, P45): o `SectorPicker` recebe `query={hrefQuery(buildHistoryHref(filters))}`: trocar de setor mantém o período e a situação e solta o turno e a página.
 
 ### HistoryFilters
 - **Status:** ✅ pronto (2026-11-21)
@@ -893,7 +901,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** a tela `/solicitacoes`: cabeçalho, filtros, seletor de visão e a visão escolhida (Quadro, Lista ou Tabela).
 - **Como funciona:** server component async (dentro do `<Suspense>` da página). Lê a sessão, os filtros da URL (`parseRequestFilters`) e o setor (admin: `SectorPicker` com "Todos os setores"; operador: o próprio, nunca o seletor). `?criador=` e `?destino=` (uuid) fora das escolhas viram "todos" antes da consulta. Sem `visao` renderiza o Quadro (`hidden md:block`) e a Lista (`md:hidden`) com os mesmos dados e dois `RequestViewSwitcher` (um por largura, para o `aria-current` dizer a verdade). O subtítulo vem do servidor (`boardSummary`/`tableSummary`). Vazio novo × vazio filtrado; operador de setor inativo e admin sem setor ativo têm estado vazio próprio.
 - **Usa:** `RequestFiltersForm`, `RequestViewSwitcher`, `RequestBoard`, `RequestList`, `RequestTable`, `NewRequestDialog`, `SectorPicker`, `EmptyState`, `resolveScreenSector`, `paginationParams`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams`; sem mudança de comportamento.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 11). 2026-11-25 — Fase 5 (Tarefa 1, P48): o setor vem de `resolveScreenSector` e os parâmetros da `Pagination` de `paginationParams`; sem mudança de comportamento. 2026-11-25 — Fase 5 (Tarefa 3, P45): o `SectorPicker` recebe `query={hrefQuery(buildRequestsHref(filters))}` (os filtros já validados, depois das escolhas de criador e destino): trocar de setor mantém a visão, o destino, o período e a busca e solta o criador e a paginação.
 
 ### RequestViewSwitcher
 - **Status:** ✅ pronto (2026-11-24)

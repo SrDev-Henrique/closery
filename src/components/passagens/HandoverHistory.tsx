@@ -20,7 +20,11 @@ import {
 import { resolveScreenSector } from "@/features/handovers/screenSector";
 import { listActiveShifts } from "@/features/handovers/targets";
 import { requireUser } from "@/lib/auth/session";
-import { paginationParams, type SearchParams } from "@/lib/searchParams";
+import {
+  hrefQuery,
+  paginationParams,
+  type SearchParams,
+} from "@/lib/searchParams";
 
 type HandoverHistoryProps = {
   searchParams: Promise<SearchParams>;
@@ -84,6 +88,7 @@ export async function HandoverHistory({ searchParams }: HandoverHistoryProps) {
         selectedId={sectorParam}
         path="/passagens"
         allowAll
+        query={hrefQuery(buildHistoryHref(filters))}
       />
     );
 

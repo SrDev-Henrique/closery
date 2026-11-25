@@ -12,18 +12,20 @@ import {
 import { ALL_SECTORS } from "@/features/handovers/limits";
 import { loadSector } from "@/features/handovers/loaders";
 import { SECTOR_INACTIVE_HANDOVER_MESSAGE } from "@/features/handovers/messages";
+import { todayInSaoPaulo } from "@/features/handovers/saoPaulo";
 import { chooseSectorSchema } from "@/features/handovers/schemas";
 import { rememberSector } from "@/features/handovers/sectorCookie";
-import { chooseSectorPath } from "@/features/handovers/urls";
+import { sectorRedirectHref } from "@/features/handovers/sectorRedirect";
 import { requireAdmin } from "@/lib/auth/session";
 
 // Escolha de setor do admin (D-F3-3, F3-15): grava o cookie e navega para o
-// mesmo caminho com ?setor=. Só devolve falha; o sucesso é o redirect.
+// mesmo caminho com ?setor= e os filtros da tela, reinterpretados no servidor
+// (P45). Só devolve falha; o sucesso é o redirect.
 export async function chooseSectorAction(input: unknown): Promise<AdminResult> {
   const actor = await requireAdmin();
   const parsed = chooseSectorSchema.safeParse(input);
   if (!parsed.success) return fail("INVALID_INPUT", INVALID_INPUT_MESSAGE);
-  const { sectorId, path } = parsed.data;
+  const { sectorId, path, query } = parsed.data;
 
   if (sectorId !== ALL_SECTORS) {
     const found = await loadSector(db, actor, sectorId);
@@ -35,5 +37,12 @@ export async function chooseSectorAction(input: unknown): Promise<AdminResult> {
   }
 
   // Fora de try/catch: redirect() lança de propósito.
-  redirect(chooseSectorPath(path, sectorId));
+  redirect(
+    sectorRedirectHref(
+      path,
+      sectorId,
+      query ?? "",
+      todayInSaoPaulo(new Date()),
+    ),
+  );
 }

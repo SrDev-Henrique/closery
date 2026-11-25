@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { chooseSectorAction } from "@/app/(app)/actions";
 import { db } from "@/db";
 import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
@@ -283,6 +284,53 @@ describe("HandoverHistory", () => {
     );
     expect(mocks.push).toHaveBeenCalledTimes(1);
     expect(String(mocks.push.mock.calls[0][0])).not.toContain("turno=");
+  });
+
+  it("admin: o seletor leva o query canônico dos filtros, sem o setor, sem a paginação e sem o que é lixo (P45)", async () => {
+    const { sector, other } = await seed();
+    vi.mocked(chooseSectorAction).mockReset();
+    vi.mocked(chooseSectorAction).mockResolvedValue({ ok: true });
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({
+      setor: sector.id,
+      periodo: "30",
+      situacao: "aguardando",
+      pagina: "2",
+      foo: "bar",
+    });
+    await userEvent.click(
+      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
+        name: other.name,
+      }),
+    );
+
+    expect(chooseSectorAction).toHaveBeenCalledTimes(1);
+    expect(chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: other.id,
+      path: "/passagens",
+      query: "periodo=30&situacao=aguardando",
+    });
+  });
+
+  it("admin sem filtros: o seletor leva o query vazio", async () => {
+    const { sector, other } = await seed();
+    vi.mocked(chooseSectorAction).mockReset();
+    vi.mocked(chooseSectorAction).mockResolvedValue({ ok: true });
+    mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+    await renderHistory({ setor: sector.id });
+    await userEvent.click(
+      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
+        name: other.name,
+      }),
+    );
+
+    expect(chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: other.id,
+      path: "/passagens",
+      query: "",
+    });
   });
 
   it("sem nenhuma passagem no período: estado vazio com a dica", async () => {

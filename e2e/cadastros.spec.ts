@@ -296,6 +296,10 @@ test("(d) operador em /admin/setores, /admin/equipe e nas outras rotas vê Pági
     await expect(
       page.getByRole("heading", { name: "Página não encontrada" }),
     ).toBeVisible();
+    // P19: o 404 da raiz vinha dentro do <main> do SidebarInset (dois <main>
+    // aninhados); o (app)/not-found.tsx deixa um só e a barra lateral ao lado.
+    await expect(page.getByRole("main")).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "Passagens" })).toBeVisible();
     await expect(page.getByLabel("Nome do setor")).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "Gerar convite" }),

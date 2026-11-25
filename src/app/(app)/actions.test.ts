@@ -1,6 +1,7 @@
 import type { PGlite } from "@electric-sql/pglite";
 import {
   afterAll,
+  afterEach,
   beforeAll,
   beforeEach,
   describe,
@@ -10,6 +11,7 @@ import {
 } from "vitest";
 
 import { authzOf } from "../../../test/authz";
+import { spDate } from "../../../test/clock";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import { insertSector } from "../../../test/fixtures";
 
@@ -168,6 +170,163 @@ describe("chooseSectorAction", () => {
       message:
         "Este setor está inativo. Peça a um administrador para reativá-lo.",
     });
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
+  });
+});
+
+describe("chooseSectorAction com o query dos filtros (P45)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(spDate("2026-11-21", "12:00"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("/passagens: período e situação seguem, o turno e a página caem, o setor novo entra", async () => {
+    const created = await insertSector(db, "ULD");
+
+    const digest = await redirectDigest(
+      chooseSectorAction({
+        sectorId: created.id,
+        path: "/passagens",
+        query: "periodo=30&situacao=aguardando&pagina=3&turno=x",
+      }),
+    );
+
+    expect(digest).toContain(
+      `/passagens?periodo=30&situacao=aguardando&setor=${created.id}`,
+    );
+    expect(mocks.cookieSet).toHaveBeenCalledTimes(1);
+  });
+
+  it("/solicitacoes: visão e busca seguem, o criador e a paginação caem", async () => {
+    const created = await insertSector(db, "ULD");
+
+    const digest = await redirectDigest(
+      chooseSectorAction({
+        sectorId: created.id,
+        path: "/solicitacoes",
+        query: "visao=tabela&busca=rede&criador=user-1&pagina=2",
+      }),
+    );
+
+    expect(digest).toContain(
+      `/solicitacoes?visao=tabela&busca=rede&setor=${created.id}`,
+    );
+  });
+
+  it("'todos' leva o query junto e continua sem gravar cookie", async () => {
+    const digest = await redirectDigest(
+      chooseSectorAction({
+        sectorId: "todos",
+        path: "/passagens",
+        query: "periodo=30",
+      }),
+    );
+
+    expect(digest).toContain("/passagens?periodo=30&setor=todos");
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
+  });
+
+  it("o setor de dentro do query é ignorado: o escolhido vence", async () => {
+    const created = await insertSector(db, "ULD");
+
+    const digest = await redirectDigest(
+      chooseSectorAction({
+        sectorId: created.id,
+        path: "/passagens",
+        query: "setor=todos&periodo=30",
+      }),
+    );
+
+    expect(digest).toContain(`/passagens?periodo=30&setor=${created.id}`);
+    expect(digest).not.toContain("setor=todos");
+  });
+
+  it("a URL do cliente nunca vira destino: o servidor remonta o href pelo parse", async () => {
+    const created = await insertSector(db, "ULD");
+
+    const digest = await redirectDigest(
+      chooseSectorAction({
+        sectorId: created.id,
+        path: "/passagens",
+        query: "//evil.test/x?y=1&periodo=intervalo&de=abc&ate=2026-11-20",
+      }),
+    );
+
+    expect(digest).toContain(`;/passagens?setor=${created.id};`);
+    expect(digest).not.toContain("evil");
+  });
+
+  it("query vazio ou ausente: o destino de sempre", async () => {
+    const created = await insertSector(db, "ULD");
+
+    const withEmpty = await redirectDigest(
+      chooseSectorAction({
+        sectorId: created.id,
+        path: "/solicitacoes",
+        query: "",
+      }),
+    );
+    const without = await redirectDigest(
+      chooseSectorAction({ sectorId: created.id, path: "/solicitacoes" }),
+    );
+
+    expect(withEmpty).toContain(`/solicitacoes?setor=${created.id}`);
+    expect(without).toContain(`/solicitacoes?setor=${created.id}`);
+  });
+
+  it("'/' e '/passagens/nova' ignoram o query", async () => {
+    const created = await insertSector(db, "ULD");
+
+    for (const path of ["/", "/passagens/nova"] as const) {
+      const digest = await redirectDigest(
+        chooseSectorAction({
+          sectorId: created.id,
+          path,
+          query: "periodo=30&turno=x",
+        }),
+      );
+      expect(digest).toContain(`;${path}?setor=${created.id};`);
+    }
+  });
+
+  it("query com mais de 2.000 caracteres é entrada inválida: sem cookie, sem redirect", async () => {
+    const created = await insertSector(db, "ULD");
+
+    const result = await chooseSectorAction({
+      sectorId: created.id,
+      path: "/passagens",
+      query: "a".repeat(2001),
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "INVALID_INPUT" });
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
+  });
+
+  it("setor inativo com query: SECTOR_INACTIVE, sem cookie", async () => {
+    const parado = await insertSector(db, "Parado", { active: false });
+
+    const result = await chooseSectorAction({
+      sectorId: parado.id,
+      path: "/passagens",
+      query: "periodo=30",
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "SECTOR_INACTIVE" });
+    expect(mocks.cookieSet).not.toHaveBeenCalled();
+  });
+
+  it("operador (requireAdmin recusa) com query: nada é tocado", async () => {
+    mocks.requireAdmin.mockRejectedValue(NOT_FOUND);
+
+    await expect(
+      chooseSectorAction({ sectorId: "x", path: "/passagens", query: "a=b" }),
+    ).rejects.toBe(NOT_FOUND);
+
+    expect(mocks.touched).not.toHaveBeenCalled();
     expect(mocks.cookieSet).not.toHaveBeenCalled();
   });
 });

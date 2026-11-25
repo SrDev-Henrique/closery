@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { chooseSectorAction } from "@/app/(app)/actions";
 import { db } from "@/db";
 import { authzOf } from "../../../test/authz";
 import { spDate } from "../../../test/clock";
@@ -173,6 +174,34 @@ describe("RequestsScreen", () => {
     expect(within(requested).getByText("Do setor outro")).toBeInTheDocument();
     expect(within(requested).getByText("Setor Teste")).toBeInTheDocument();
     expect(within(requested).getByText("Setor Outro")).toBeInTheDocument();
+  });
+
+  it("admin: o seletor leva o query canônico dos filtros, sem o setor e sem o que é lixo (P45)", async () => {
+    const { sector, other } = await seed();
+    vi.mocked(chooseSectorAction).mockReset();
+    vi.mocked(chooseSectorAction).mockResolvedValue({ ok: true });
+    admin();
+
+    await renderScreen({
+      setor: sector.id,
+      visao: "quadro",
+      periodo: "30",
+      busca: "rede",
+      mais_solicitada: "40",
+      foo: "bar",
+    });
+    await userEvent.click(
+      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
+        name: other.name,
+      }),
+    );
+
+    expect(chooseSectorAction).toHaveBeenCalledTimes(1);
+    expect(chooseSectorAction).toHaveBeenCalledWith({
+      sectorId: other.id,
+      path: "/solicitacoes",
+      query: "visao=quadro&periodo=30&busca=rede&mais_solicitada=40",
+    });
   });
 
   it("admin com um setor escolhido vê só ele, sem o nome do setor na linha", async () => {

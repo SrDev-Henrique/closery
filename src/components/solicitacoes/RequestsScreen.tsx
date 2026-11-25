@@ -27,7 +27,11 @@ import { boardSummary, tableSummary } from "@/features/requests/text";
 import type { RequestGroups, RequestStatus } from "@/features/requests/types";
 import { requireUser } from "@/lib/auth/session";
 import { REQUEST_STATUSES } from "@/lib/requestStatuses";
-import { paginationParams, type SearchParams } from "@/lib/searchParams";
+import {
+  hrefQuery,
+  paginationParams,
+  type SearchParams,
+} from "@/lib/searchParams";
 
 import { NewRequestDialog } from "./NewRequestDialog";
 import { RequestBoard } from "./RequestBoard";
@@ -120,15 +124,6 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
   }
 
   const { sectorId, sectorParam, sectors, cookie } = screen;
-  const picker: ReactNode =
-    sectorParam === null ? null : (
-      <SectorPicker
-        sectors={sectors}
-        selectedId={sectorParam}
-        path="/solicitacoes"
-        allowAll
-      />
-    );
 
   const [creators, destinations] = await Promise.all([
     listRequestCreators(db, actor, sectorId),
@@ -149,6 +144,18 @@ export async function RequestsScreen({ searchParams }: RequestsScreenProps) {
         : null,
   };
   const extras = sectorParam === null ? {} : { sector: sectorParam };
+  // O seletor leva o query dos filtros já validados (sem o setor): o servidor
+  // o reinterpreta ao trocar de setor (P45).
+  const picker: ReactNode =
+    sectorParam === null ? null : (
+      <SectorPicker
+        sectors={sectors}
+        selectedId={sectorParam}
+        path="/solicitacoes"
+        allowAll
+        query={hrefQuery(buildRequestsHref(filters))}
+      />
+    );
   const showSector = admin && sectorId === null;
 
   const formSectors = showSector ? sectors : null;

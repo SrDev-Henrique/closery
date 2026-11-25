@@ -77,7 +77,8 @@
   --chart-2: #2c8faf;
   --chart-3: #7235a6;
   --chart-4: #738c57;
-  --chart-5: oklch(0.269 0 0);
+  /* "Outros": o mesmo valor de --foreground (P13); nenhum gráfico usa chart-5 como série. */
+  --chart-5: oklch(0.145 0 0);
   --success: #d3eedd;
   --success-foreground: #1f5131;
   --warning: #f5e0bc;
@@ -118,7 +119,7 @@
   --chart-2: #56badd;
   --chart-3: #836b9f;
   --chart-4: #95b278;
-  --chart-5: oklch(0.269 0 0);
+  --chart-5: oklch(0.985 0 0);
   --success: #1d3526;
   --success-foreground: #75d799;
   --warning: #372d1b;

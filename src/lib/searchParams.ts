@@ -14,3 +14,21 @@ export function firstValue(
 export function paginationParams(href: string): Record<string, string> {
   return Object.fromEntries(new URL(href, "http://closery.local").searchParams);
 }
+
+// O query de uma URL (com ou sem o "?" inicial) como objeto: parâmetro repetido
+// vale o primeiro, como em `firstValue`. É o formato que os `parseXxx` dos
+// filtros leem.
+export function queryRecord(query: string): Record<string, string> {
+  const text = query.startsWith("?") ? query.slice(1) : query;
+  const first = new Map<string, string>();
+  for (const [key, value] of new URLSearchParams(text)) {
+    if (!first.has(key)) first.set(key, value);
+  }
+  return Object.fromEntries(first);
+}
+
+// O que vem depois do "?" de um href ("" quando não há query).
+export function hrefQuery(href: string): string {
+  const mark = href.indexOf("?");
+  return mark < 0 ? "" : href.slice(mark + 1);
+}

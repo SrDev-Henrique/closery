@@ -49,13 +49,13 @@
 | P10 | Credenciais OAuth do Google não criadas | 🟡 | Bloqueado no dono |
 | P11 | Sessões abertas de usuário desativado continuam aceitas por /api/auth/* | 🟠 | Resolvido |
 | P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Aberto, não triado |
-| P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Aberto, não triado |
+| P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Resolvido |
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
 | P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Aberto, não triado |
 | P17 | Tema escuro nunca é ativado | 🟡 | Aberto, não triado |
 | P18 | user.role e invite.role sem CHECK no banco | 🟡 | Resolvido |
-| P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Aberto, não triado |
+| P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Resolvido |
 | P20 | Login social: ajustes antes de ligar | 🟡 | Aberto, não triado |
 | P21 | Lacunas do E2E de acesso | 🟡 | Aberto, não triado |
 | P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Aberto, não triado |
@@ -81,7 +81,7 @@
 | P42 | Guardas de Server Action: varredura de exports por lista negra e exceção do convite no arquivo inteiro | 🟡 | Aberto, não triado |
 | P43 | Limites conhecidos do rascunho: item inativo e preenchimento de zeros | ⚪ | Aberto, não triado |
 | P44 | Detalhe rápido das solicitações depende do cabeçalho next-url | ⚪ | Aberto, não triado |
-| P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Aberto, não triado |
+| P45 | Trocar de setor em /solicitacoes perde os filtros da URL | 🟡 | Resolvido |
 | P46 | Cartão movido para uma coluna aberta e truncada some até a revalidação | ⚪ | Aberto, não triado |
 | P47 | X só com ícone do EditDialog continua sem tooltip | ⚪ | Aberto, não triado |
 | P48 | Refatorações da Fase 4 para o início da Fase 5 | 🟡 | Resolvido |
@@ -99,13 +99,6 @@
 **Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
 **Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
 **Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
-**Registrado em:** 2026-11-20
-
-#### P13 — chart-5 ("Outros") quase invisível no tema escuro 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/globals.css` (`--chart-5`) · `src/app/chartPalette.test.ts`
-**Impacto:** `chart-5` tem 1,19:1 de contraste sobre o card no tema escuro; uma fatia "Outros" some.
-**Correção:** — (opção: resolver antes de qualquer gráfico com fatia "Outros" (Fase 5): escolher valor com contraste ≥ 3:1 e medir no guarda)
 **Registrado em:** 2026-11-20
 
 #### P14 — Destino perdido no login: depois de entrar a pessoa cai em / 🟡
@@ -134,13 +127,6 @@
 **Arquivos:** `src/app/globals.css` · `src/app/layout.tsx` · `src/components/ui/sonner.tsx`
 **Impacto:** `globals.css` usa a classe `.dark`, mas nada a aplica (sem ThemeProvider) e o Sonner chama `useTheme` sem provider; o tema escuro dos tokens nunca aparece.
 **Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
-**Registrado em:** 2026-11-20
-
-#### P19 — Erro e 404 dentro do app derrubam o shell inteiro 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/error.tsx` · `src/app/not-found.tsx`
-**Impacto:** os boundaries só existem na raiz: um erro ou 404 numa página do grupo `(app)` troca o shell (barra lateral) pela página de erro.
-**Correção:** — (opção: considerar `(app)/error.tsx` e `(app)/not-found.tsx` sem `<main>` próprio)
 **Registrado em:** 2026-11-20
 
 #### P20 — Login social: ajustes antes de ligar 🟡
@@ -275,13 +261,6 @@
 **Arquivos:** `src/app/(app)/@detalhe/(.)solicitacoes/[id]/page.tsx` · `src/app/(app)/layout.tsx`
 **Impacto:** a rota interceptada só abre o Sheet quando a requisição chega com o cabeçalho `next-url`; um CDN ou proxy que o descarte (ou que cacheie a resposta sem `Vary`) faz o clique abrir a página completa. Sem perda de dados: a página completa tem tudo, só perde o "sem sair da tela".
 **Correção:** — (opção: conferir na Vercel, na Fase 6, que o `Vary: next-url` passa; se não passar, aceitar a página completa como fallback)
-**Registrado em:** 2026-11-24
-
-#### P45 — Trocar de setor em /solicitacoes perde os filtros da URL 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/(app)/actions.ts` (`chooseSectorAction`) · `src/components/passagens/SectorPicker.tsx` · `src/components/solicitacoes/RequestsScreen.tsx`
-**Impacto:** o admin que troca de setor volta para `/solicitacoes?setor={id}`: a visão, o destino, o período, quem criou e a busca somem, porque o `chooseSectorAction` só leva `?setor=`.
-**Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
 **Registrado em:** 2026-11-24
 
 #### P46 — Cartão movido para uma coluna aberta e truncada some até a revalidação ⚪
@@ -535,3 +514,27 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Registrado em:** 2026-11-24
 **Atualização (2026-11-25):** itens 1, 3 e 7 feitos na Fase 5 (Tarefa 1), em commit só de refatoração: `resolveScreenSector` (`src/features/handovers/screenSector.ts`) e `paginationParams` (`src/lib/searchParams.ts`) nas quatro telas (`HandoverHistory`, `RequestsScreen`, `HomeHandovers`, `NewHandover`); `RequestGroupSection` compartilhada por `RequestColumn` e `RequestList`; `formatDateAtTimeBR` (`saoPaulo.ts`) no lugar das três cópias de `dateAndTime`. Os testes existentes passaram sem nenhuma edição. Faltam os itens 2, 4, 5 e 6 (Tarefa 2); a pendência continua aberta.
 **Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 2), em commit só de refatoração. `destinationNameSql` (`src/features/requests/sql.ts`) e `toOpenSummaries` (`src/features/requests/open.ts`) substituem as 4 cópias do `coalesce` do destino e as 3 do filtro de status aberto (item 2); `lockSectorShare` é `loadSector(…, { lock: "share" })` (item 4); o fixture `deactivateSector` (`test/fixtures.ts`) substitui o SQL cru dos 4 arquivos de teste que o repetiam (item 5); `getRequestGroups` nomeia as quatro leituras do `Promise.all` (item 6). Os itens 1, 3 e 7 estão na Atualização anterior (Tarefa 1). Junto, o que o dashboard reaproveita: `sectorScopeOf`, a fonte do histórico exportada (`historySource`, `historyPairsSql`, `endsLocalSql`, `nowLocalSql`) e `parseHistoryPeriod`/`appendPeriodParams`. Os testes existentes passaram sem mudar nenhuma asserção (só o helper que cada um usa).
+
+#### P13 — chart-5 ("Outros") quase invisível no tema escuro 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/globals.css` (`--chart-5`) · `src/app/chartPalette.test.ts`
+**Impacto:** `chart-5` tem 1,19:1 de contraste sobre o card no tema escuro; uma fatia "Outros" some.
+**Correção:** — (opção: resolver antes de qualquer gráfico com fatia "Outros" (Fase 5): escolher valor com contraste ≥ 3:1 e medir no guarda)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). `--chart-5` passou a ter o valor de `--foreground` em cada tema (`oklch(0.145 0 0)` no claro, `oklch(0.985 0 0)` no escuro) e `src/app/chartPalette.test.ts` o mede: contraste 19,79 (claro) e 17,16 (escuro) sobre o card e ΔE2000 mínimo de 20,6 contra `chart-1..4` nas quatro visões. O valor antigo e o `muted-foreground` ficam como casos negativos do guarda (1,19:1 no escuro; ΔE 8,6 e 6,8 em tritanopia contra `chart-4`). `ui-tokens.md §2` descreve o neutro. Nenhum componente usa `chart-5`: o gráfico que precisar de "Outros" usa `foreground` direto.
+
+#### P19 — Erro e 404 dentro do app derrubam o shell inteiro 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/error.tsx` · `src/app/not-found.tsx`
+**Impacto:** os boundaries só existem na raiz: um erro ou 404 numa página do grupo `(app)` troca o shell (barra lateral) pela página de erro.
+**Correção:** — (opção: considerar `(app)/error.tsx` e `(app)/not-found.tsx` sem `<main>` próprio)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). `src/app/(app)/error.tsx` e `src/app/(app)/not-found.tsx` (`<div>`, sem `<main>`) mantêm o shell no erro e no 404 de uma página de `(app)`. O erro era o que trocava a barra lateral pela página de erro da raiz (o `error.tsx` da raiz envolve o layout de `(app)`; o de `(app)` envolve só a página). No 404 a barra lateral já ficava (o Next renderiza o `not-found` da raiz dentro do layout mais próximo), mas com um `<main>` dentro do `<main>` do `SidebarInset`; agora há um só, e a URL sem rota continua com o 404 de verdade da raiz. Efeito aceito: o `error.tsx` de `(app)` também envolve o slot `@detalhe`, então um erro dentro do Sheet do detalhe rápido aparece fora do Sheet; vira pendência nova no fim da Fase 5.
+
+#### P45 — Trocar de setor em /solicitacoes perde os filtros da URL 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/(app)/actions.ts` (`chooseSectorAction`) · `src/components/passagens/SectorPicker.tsx` · `src/components/solicitacoes/RequestsScreen.tsx`
+**Impacto:** o admin que troca de setor volta para `/solicitacoes?setor={id}`: a visão, o destino, o período, quem criou e a busca somem, porque o `chooseSectorAction` só leva `?setor=`.
+**Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
+**Registrado em:** 2026-11-24
+**Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). O `SectorPicker` ganhou a prop `query` (o query canônico dos filtros da tela, sem o setor) e o `chooseSectorSchema` a aceita (texto de até 2.000 caracteres). O servidor nunca usa a URL do cliente: `sectorRedirectHref` (`src/features/handovers/sectorRedirect.ts`) reinterpreta o query pelo mesmo parse da tela, que nunca lança, e remonta o href com o setor novo. Em `/passagens` seguem o período e a situação e caem o turno e a página; em `/solicitacoes` seguem a visão, o destino, o período e a busca e caem o criador e a paginação (o item de cada tela, que é do setor antigo, entra nessa lista nas Tarefas 5 e 6); `/` e `/passagens/nova` ignoram o query. Sem `query` o destino é o de sempre.
