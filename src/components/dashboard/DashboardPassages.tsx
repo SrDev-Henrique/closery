@@ -88,6 +88,7 @@ export async function DashboardPassages({
             title="Situação das passagens"
             legendLabel="Legenda da situação das passagens"
             total={data.listed}
+            totalHref={passagesListHref(period, "all", extras)}
             emptyText="Nenhuma passagem entregue nem turno encerrado no período."
             slices={SITUATIONS.map(({ situation, label }) => {
               const Icon = SITUATION_STYLE[situation].icon;

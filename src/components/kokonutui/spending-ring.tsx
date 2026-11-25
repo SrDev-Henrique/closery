@@ -43,12 +43,17 @@ export type SpendingRingProps = {
   title: string;
   legendLabel: string;
   total: number;
+  /** A lista que o total conta: o total também é um link. */
+  totalHref: string;
   slices: readonly RingSlice[];
   emptyText: string;
   className?: string;
 };
 
 type RingSpan = { index: number; from: number; to: number };
+
+const TOTAL_LINK =
+  "rounded-sm font-medium text-sm tabular-nums outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring max-md:inline-flex max-md:min-h-11 max-md:items-center";
 
 const SIZE = 240;
 const C = SIZE / 2;
@@ -208,13 +213,20 @@ function RingLegend({
 
 /** Sem total (ou sem nenhuma fatia com valor) não há arco para desenhar. */
 export function SpendingRing(props: SpendingRingProps) {
-  const { title, legendLabel, total, slices, emptyText, className } = props;
+  const { title, legendLabel, total, totalHref, slices, emptyText, className } =
+    props;
   if (total <= 0 || slices.every((slice) => slice.value <= 0)) {
     return (
       <div className={cn(CARD, className)}>
         <div className="flex items-baseline justify-between gap-4">
           <p className="text-muted-foreground text-sm">{title}</p>
-          <p className="font-medium text-sm tabular-nums">0</p>
+          <Link
+            aria-label="0 passagens: ver a lista"
+            className={TOTAL_LINK}
+            href={totalHref}
+          >
+            0
+          </Link>
         </div>
         <p className="mt-3 text-muted-foreground text-sm">{emptyText}</p>
         <RingLegend
@@ -233,6 +245,7 @@ function SpendingRingBody({
   title,
   legendLabel,
   total,
+  totalHref,
   slices,
   className,
 }: SpendingRingProps) {
@@ -492,9 +505,13 @@ function SpendingRingBody({
     <div className={cn(CARD, className)}>
       <div className="flex items-baseline justify-between gap-4">
         <p className="text-muted-foreground text-sm">{title}</p>
-        <p className="font-medium text-sm tabular-nums">
+        <Link
+          aria-label={`${formatInteger(total)} passagens: ver a lista`}
+          className={TOTAL_LINK}
+          href={totalHref}
+        >
           {formatInteger(total)}
-        </p>
+        </Link>
       </div>
 
       <div

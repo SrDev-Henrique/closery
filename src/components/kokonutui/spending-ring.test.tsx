@@ -51,6 +51,7 @@ function ring(overrides: Partial<SpendingRingProps> = {}): SpendingRingProps {
     title: "Situação das passagens",
     legendLabel: LEGEND,
     total: 1540,
+    totalHref: "/passagens",
     slices: SLICES,
     emptyText: "Nenhum turno encerrado no período.",
     ...overrides,
@@ -212,6 +213,29 @@ describe("SpendingRing", () => {
       "aria-valuetext",
       "Aguardando recebimento: 300 (19%)",
     );
+  });
+
+  it("o total do cabeçalho é um link para a lista, com nome acessível", () => {
+    render(<SpendingRing {...ring({ totalHref: "/passagens?periodo=7" })} />);
+    const link = screen.getByRole("link", {
+      name: "1.540 passagens: ver a lista",
+    });
+    expect(link).toHaveAttribute("href", "/passagens?periodo=7");
+    expect(link).toHaveTextContent("1.540");
+  });
+
+  it("total 0: o 0 também é um link para a lista", () => {
+    render(
+      <SpendingRing
+        {...ring({
+          total: 0,
+          totalHref: "/passagens?periodo=7",
+          slices: SLICES.map((slice) => ({ ...slice, value: 0 })),
+        })}
+      />,
+    );
+    const link = screen.getByRole("link", { name: "0 passagens: ver a lista" });
+    expect(link).toHaveAttribute("href", "/passagens?periodo=7");
   });
 
   it("total 0: mostra o texto de vazio no lugar do anel, mas a legenda segue com os links", () => {

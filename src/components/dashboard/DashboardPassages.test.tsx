@@ -123,6 +123,31 @@ describe("DashboardPassages", () => {
     expect(links[3]).toHaveTextContent("Sem passagem");
   });
 
+  it("o total do anel é um link para a lista do período, com o setor do admin", async () => {
+    const { unmount } = render(
+      await DashboardPassages({
+        actor: world.people.ana,
+        scope: worldScope(world, "operator"),
+        now: world.now,
+      }),
+    );
+    expect(
+      screen.getByRole("link", { name: "21 passagens: ver a lista" }),
+    ).toHaveAttribute("href", "/passagens");
+    unmount();
+
+    render(
+      await DashboardPassages({
+        actor: world.people.admin,
+        scope: worldScope(world, "all"),
+        now: world.now,
+      }),
+    );
+    expect(
+      screen.getByRole("link", { name: /passagens: ver a lista$/ }),
+    ).toHaveAttribute("href", "/passagens?setor=todos");
+  });
+
   it("Câmara e Todos os setores trazem os números da tabela do mundo (o Setor Parado nunca entra)", async () => {
     const { unmount } = render(
       await DashboardPassages({
