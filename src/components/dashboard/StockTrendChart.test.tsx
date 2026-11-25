@@ -73,11 +73,9 @@ describe("StockTrendChart", () => {
       <StockTrendChart label="Stretch" points={POINTS} unit="rolos" />,
     );
     // Só a linha animada ganha o stroke-dasharray da animação de desenho.
-    expect(
-      normal.container
-        .querySelector("path.recharts-line-curve")
-        ?.getAttribute("stroke-dasharray"),
-    ).not.toBeNull();
+    const animated = normal.container.querySelector("path.recharts-line-curve");
+    expect(animated).not.toBeNull();
+    expect(animated?.getAttribute("stroke-dasharray")).toBeTruthy();
     normal.unmount();
     mockReducedMotion(true);
     const reduced = render(
