@@ -47,7 +47,7 @@ Detalhe completo na spec: `docs/superpowers/specs/2026-11-20-closery-passagem-de
 | **2 — Cadastros** | setores, turnos, itens, destinos, equipe | ✅ |
 | **3 — Passagem** | rascunho, entregar, receber, corrigir, histórico | ✅ |
 | **4 — Solicitações** | quadro · lista · tabela, detalhe, comentários, ligação com a passagem | ✅ |
-| **5 — Dashboard** | consultas, `metric-card` e `spending-ring` adaptados, CSV | ⬜ |
+| **5 — Dashboard** | consultas, `metric-card` e `spending-ring` adaptados, CSV | ✅ |
 | **6 — Produção** | Vercel, domínio, e-mail (P8), piloto de uma semana com a equipe | ⬜ |
 
 **Metodologia por fase:** schema/servidor → tela → teste. Ao fim de cada fase: atualizar o

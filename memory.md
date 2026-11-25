@@ -1,6 +1,6 @@
-# Memory — Fases 0 a 4 concluídas; o próximo passo é o plano da Fase 5
+# Memory — Fases 0 a 5 concluídas; o próximo passo é o plano da Fase 6
 
-Last updated: 2026-11-24 (UTC-3)
+Last updated: 2026-11-25 (UTC-3)
 
 ---
 
@@ -37,15 +37,23 @@ página completa. A passagem mostra "Solicitações abertas": no formulário, as
 ganhou o cartão "Solicitações". Solicitação não se edita (D-F4-1). Plano executado em
 `docs/superpowers/plans/2026-11-23-fase-4-solicitacoes.md`.
 
+**Dashboard pronto (Fase 5).** `/dashboard` (todos os papéis; o operador vê o próprio setor, o admin escolhe o setor ou
+"Todos os setores") mostra o período no topo (últimos 7 dias, últimos 30 dias ou intervalo de até 93 dias) e quatro blocos:
+Passagens (esperadas, entregues, confirmadas, aguardando recebimento, não confirmadas e sem passagem, com o anel de 4 fatias),
+Controles (um `metric-card` por item: total, média por turno, variação contra o período anterior, um segmento por turno), Estoque
+(última contagem e a linha do período) e Solicitações (abertas e paradas agora, entregues no período, tempo até a entrega por destino,
+quantidade pedida por item). **Todo número é um link** para a lista filtrada que conta exatamente aquilo (`/passagens` e
+`/solicitacoes` ganharam os filtros que faltavam). "Exportar CSV" baixa as passagens do período e do escopo da tela
+(`GET /api/dashboard/export`). Só leitura, sem migração. Plano executado em `docs/superpowers/plans/2026-11-24-fase-5-dashboard.md`.
+
 O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
 18 decisões em `.context/build-plan.md §5`) e o plano executado em
 `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 
 ## O que está esperando
 
-- **Plano da Fase 5 (skill `writing-plans`):** Dashboard — consultas de quantidades e de solicitações
-  (abertas, paradas, tempo até a entrega), `metric-card` e `spending-ring` adaptados e exportação CSV (spec §13).
-  A Fase 5 só lê: o histórico de status (`request_status_event`) e a passagem já guardam o que ela conta.
+- **Plano da Fase 6 (skill `writing-plans`):** Produção — Vercel, domínio, e-mail transacional (P8) e o piloto de uma
+  semana com a equipe (spec §13). O deploy ainda não foi feito: `next build` e o E2E já rodam no CI.
 - **P34–P36 (Fase 3):** "sem passagem" usa os horários atuais do turno (P34); o cartão "Passagem para
   confirmar" não tem teto de idade (P35); dois operadores no mesmo rascunho: o último a salvar vence (P36).
 - **P44–P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); trocar de setor em
@@ -54,7 +62,10 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **P48–P52 (revisão final da Fase 4):** refatorações para o início da Fase 5, a de maior prioridade é extrair
   `resolveScreenSector`/`paginationParams` antes do painel (P48); higiene de testes e o erro `portal "" does not exist`
   do `pglite-socket` no log do E2E (P49); UX (P50); FK composta do comentário (P51); CTE `last` das abertas (P52).
-  Próximo id livre: P53.
+- **P53–P59 (Fase 5):** item que muda de unidade ou de tipo no período não é tratado (P53); o erro do detalhe rápido aparece
+  fora do Sheet (P54); helpers do E2E repetidos (P55); destino além do teto de 200 escolhas cai do filtro (P56); índices do
+  dashboard só sob medição no Neon (P57); a cor das situações do anel não separa em daltonismo (P58); o CSV se monta em memória (P59).
+  Próximo id livre: P60.
 - **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
 - **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
@@ -128,3 +139,16 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **E2E das solicitações:** abra `?visao=quadro` ou `?visao=lista` (sem `visao` as duas visões estão no DOM); com o Sheet
   aberto só `page.getByRole("dialog")` enxerga dentro e o resto da página vira `aria-hidden` (use `page.locator` por baixo);
   fixture sempre com datas relativas a `Date.now()`.
+- **Dashboard (Fase 5):** todo número é um `<Link>` gerado por `src/features/dashboard/links.ts` para a lista que conta
+  exatamente aquilo, e o teste prova `número = total da lista`; o escopo (setor e período) é `resolveDashboardScope`, o mesmo da
+  página e do CSV; o operador que monta `?setor=` de outro setor vê o próprio. "Sem passagem", "esperadas" e as situações saem da
+  mesma `historySource` da lista `/passagens` (herda P34). O critério de pronto usa um mundo só (`test/dashboardWorld.ts`) e
+  oráculos em JS sobre leitores crus, nunca a SQL do painel.
+- **Route Handler (`/api/dashboard/export`):** `requireUser()` na primeira instrução (guarda `routeHandlersAuth.test.ts`: todo
+  `route.ts` fora da lista fechada exporta só `GET`); o BOM se prova em bytes (`arrayBuffer`), nunca por `res.text()`; o gatilho é
+  `<a href download>`, nunca `next/link`.
+- **`chart` do shadcn:** `echo n | bunx shadcn@latest add chart --yes` (o `--yes` sozinho aborta no prompt de sobrescrever
+  `card.tsx`) e `react-is` 19.3.0 exato no mesmo commit do recharts. O React Compiler desiste em silêncio do `spending-ring` cru:
+  confira com `bun scripts/rc-check.mjs <arquivos>`. "Outros" e o 5º turno em diante são `foreground` (`chart-5` = `foreground`, nunca usado).
+- **Blocos do dashboard:** cada um num `catchError` com `key` do período e do setor **no limite**, e a `<Suspense>` com esqueleto
+  dentro dele; o `catchError` só limpa o erro quando muda o pathname.

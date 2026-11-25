@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P53.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P60.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -89,6 +89,13 @@
 | P50 | UX das solicitações: intervalo vazio, "Carregar mais" como link e contrato das escolhas | ⚪ | Aberto, não triado |
 | P51 | Defesa em profundidade no banco das solicitações | ⚪ | Aberto, não triado |
 | P52 | Desempenho: a CTE `last` das abertas na entrega varre todo o histórico do setor | ⚪ | Aberto, não triado |
+| P53 | Item que muda de unidade ou de tipo no período não é tratado pelo dashboard | 🟡 | Aberto, não triado |
+| P54 | Erro do detalhe rápido aparece fora do Sheet | ⚪ | Aberto, não triado |
+| P55 | Helpers do E2E repetidos nos quatro specs antigos e em helpers.ts | ⚪ | Aberto, não triado |
+| P56 | Destino além do teto de 200 escolhas cai do filtro de /solicitacoes | ⚪ | Aberto, não triado |
+| P57 | Índices do dashboard só sob medição no Neon | ⚪ | Aberto, não triado |
+| P58 | A cor das situações do anel não separa em daltonismo | ⚪ | Aberto, não triado |
+| P59 | O CSV se monta inteiro em memória | ⚪ | Aberto, não triado |
 
 ---
 
@@ -164,6 +171,7 @@
 **Correção:** — (opção: `ORDER BY name COLLATE "pt-BR-x-icu"` se o Neon tiver ICU, ou coluna normalizada sem acento)
 **Registrado em:** 2026-11-21
 **Atualização (2026-11-24):** a Fase 4 repete o padrão nas escolhas de /solicitacoes (`listActiveDestinations`, `listFilterDestinations` e `listRequestCreators` em `src/features/requests/choices.ts` ordenam por `lower(name)` na collation C.UTF-8: "Área 1" sai depois de "Doca 3"); a correção, quando vier, vale para as duas.
+**Atualização (2026-11-25):** a Fase 5 repete o padrão nas listas do dashboard (Controles e Estoque ordenam por `lower(sector.name)`, o filtro de itens de /passagens e de /solicitacoes e as colunas do CSV também); a correção, quando vier, vale para todas.
 
 #### P25 — Corrida entre cadastro por convite e desativação do setor 🟡
 **Estado:** Aberto, não triado
@@ -206,6 +214,7 @@
 **Impacto:** o par (turno × dia) "sem passagem" é calculado com os horários e o estado atuais do turno e só existe a partir do dia em que o turno foi criado: mudar o horário de um turno reescreve o passado e desativar um turno some com os "sem passagem" dele (nada guarda quando ele esteve ativo). O dashboard da Fase 5 herda a mesma definição.
 **Correção:** — (opção: aceitar no MVP; se o piloto ou o dashboard exigirem, guardar o histórico de horários e de atividade do turno)
 **Registrado em:** 2026-11-21
+**Atualização (2026-11-25):** o dashboard da Fase 5 herdou a definição de propósito: "Esperadas" e "Sem passagem" saem da mesma `historySource` da lista (`/passagens`) e do CSV, então os três concordam, mas todos usam os horários e o estado atuais do turno. Quando a P34 for corrigida, a correção vale para os três de uma vez.
 
 #### P35 — Cartão "Passagem para confirmar" não tem teto de idade 🟡
 **Estado:** Aberto, não triado
@@ -305,6 +314,55 @@
 **Impacto:** a CTE `last` faz `DISTINCT ON` sobre todos os eventos do setor até o instante T da entrega, então cresce com todo o histórico e roda em cada abertura de um resumo de passagem, inclusive os antigos. Sem defeito de resultado.
 **Correção:** — (limite seguro sugerido pela revisão final: acrescentar à CTE `request.created_at <= T and (request.status in ('requested','in_transit') or request.status_changed_at > T)`; vale porque `status_changed_at` sempre é o instante do último evento: uma solicitação hoje fechada com `status_changed_at <= T` estava fechada em T)
 **Registrado em:** 2026-11-24
+
+#### P53 — Item que muda de unidade ou de tipo no período não é tratado pelo dashboard 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/dashboard/controls.ts` · `src/features/dashboard/stock.ts` · `src/features/dashboard/requests.ts` · `src/features/dashboard/exportCsv.ts`
+**Impacto:** o dashboard agrupa por `item_id` e mostra o nome e a unidade do snapshot mais recente do período. Um item cuja unidade mudou no meio do período soma "12 rolos" e "30 peças" no mesmo cartão (o número perde o sentido); um item que passou de controle para estoque entra pelo tipo do snapshot nas linhas e pelo tipo do cadastro na lista de itens ativos. A quantidade pedida das solicitações (`request_item.item_unit_snapshot`) e a coluna do CSV têm a mesma lacuna.
+**Correção:** — (opção: agrupar por `(item_id, unidade)` e mostrar uma linha por unidade, ou impedir a troca de unidade e de tipo de um item que já tem histórico)
+**Registrado em:** 2026-11-25
+
+#### P54 — Erro do detalhe rápido aparece fora do Sheet ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/error.tsx` · `src/app/(app)/@detalhe/`
+**Impacto:** o `(app)/error.tsx` (P19) também envolve o slot `@detalhe` (o `not-found.tsx` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra "Algo deu errado" no lugar do slot, fora do Sheet, e "Tentar de novo" re-renderiza o slot. Sem perda de dados; a página completa continua certa.
+**Correção:** — (opção: um `error.tsx` próprio em `@detalhe`, com o fallback dentro do Sheet)
+**Registrado em:** 2026-11-25
+
+#### P55 — Helpers do E2E repetidos nos quatro specs antigos e em helpers.ts ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `e2e/helpers.ts` · `e2e/auth.spec.ts` · `e2e/cadastros.spec.ts` · `e2e/passagem.spec.ts` · `e2e/solicitacoes.spec.ts`
+**Impacto:** `ipPrefix`/`clientIp`, `text`, `unique`, `uniqueEmail`, `ago`, `signUp*` e `seedSector` existem em cinco arquivos; `e2e/helpers.ts` nasceu só para `dashboard.spec.ts` porque migrar os specs antigos seria refatoração no commit de feature. Uma correção de helper precisa ser feita em cinco lugares.
+**Correção:** — (um commit só de refatoração: os quatro specs passam a importar de `e2e/helpers.ts`, sem mudar asserção)
+**Registrado em:** 2026-11-25
+
+#### P56 — Destino além do teto de 200 escolhas cai do filtro de /solicitacoes ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/requests/choices.ts` (`listFilterDestinations`) · `src/components/solicitacoes/RequestsScreen.tsx`
+**Impacto:** o filtro `destino=` só aceita um destino que esteja entre as 200 escolhas do `listFilterDestinations` (ordenadas por `lower(name)`). A barra de destino do dashboard leva a `/solicitacoes?visao=tabela&entrega=…&destino=<uuid>`; com mais de 200 destinos, o destino além do teto é descartado pela tela e a lista deixa de bater com o número do dashboard. Hoje há poucos destinos.
+**Correção:** — (opção: validar `?destino=` por existência, como o `?item=` já faz com `listFilterItems(db, actor, sectorId, selectedItemId)`)
+**Registrado em:** 2026-11-25
+
+#### P57 — Índices do dashboard só sob medição no Neon ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/handovers.ts` · `src/db/schema/requests.ts` · `drizzle/`
+**Impacto:** o dashboard só lê, e nenhum índice entrou na Fase 5 (regra: índice só sob medição). Dois candidatos: `handover(operational_date)` para "Todos os setores" (o índice de hoje é `(sector_id, operational_date)`) e `request_status_event(request_id, changed_at) where to_status = 'delivered'` para a primeira entrega (`deliveredBetweenSql` e `firstDeliveredAtSql`). Sem medição não se sabe se importam.
+**Correção:** — (medir com `EXPLAIN (ANALYZE)` no Neon com o volume do piloto; criar por migração aditiva só o que medir)
+**Registrado em:** 2026-11-25
+
+#### P58 — A cor das situações do anel não separa em daltonismo ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/dashboard/chartColors.ts` · `src/app/chartPalette.test.ts`
+**Impacto:** as fatias do anel usam o `-foreground` do token do selo de cada situação (o fundo pastel do selo não passa 3:1 sobre o card): o ΔE mínimo entre elas é 19,5 em visão normal, e em daltonismo as cores se aproximam. A identidade de cada fatia fica no ícone e no texto da legenda (sempre presentes), nunca só na cor.
+**Correção:** — (aceitar enquanto ícone e texto estiverem na legenda; opção: padrões de preenchimento nas fatias)
+**Registrado em:** 2026-11-25
+
+#### P59 — O CSV se monta inteiro em memória ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/dashboard/exportCsv.ts` · `src/app/api/dashboard/export/route.ts`
+**Impacto:** `buildPassagesCsv` lê até 10.000 linhas (`CSV_MAX_ROWS`) e devolve o texto inteiro; acima disso a rota responde 413 e a pessoa precisa escolher um período menor. Sem problema no piloto; um setor com muitas passagens por dia e período de 93 dias pode bater no teto.
+**Correção:** — (opção: `ReadableStream` com cursor, ou subir o teto sob medição)
+**Registrado em:** 2026-11-25
 
 ## 2. Triado, plano pronto
 
