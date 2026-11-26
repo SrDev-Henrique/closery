@@ -48,7 +48,7 @@
 | P9 | Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn | ⚪ | Resolvido |
 | P10 | Credenciais OAuth do Google não criadas | 🟡 | Bloqueado no dono |
 | P11 | Sessões abertas de usuário desativado continuam aceitas por /api/auth/* | 🟠 | Resolvido |
-| P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Aberto, não triado |
+| P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Resolvido |
 | P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Resolvido |
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
@@ -102,13 +102,6 @@
 ---
 
 ## 1. Aberto, não triado
-
-#### P12 — Tamanhos gerados pelo shadcn abaixo do mínimo de toque 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
-**Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
-**Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
-**Registrado em:** 2026-11-20
 
 #### P14 — Destino perdido no login: depois de entrar a pessoa cai em / 🟡
 **Estado:** Aberto, não triado
@@ -617,3 +610,11 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-26):** resolvida no código na Fase 6: `advanced.ipAddress.ipAddressHeaders: ["x-forwarded-for"]`, só ele (a Vercel o sobrescreve com o IP do cliente; `x-real-ip` e `x-vercel-forwarded-for` seriam forjáveis fora dela). Sem IP resolvível o limite cai num balde global por rota, nunca num balde por valor forjado, e o aviso do Better Auth sai pelo `logServerError` como `better-auth:ip-desconhecido`. Os números ficam (30 por minuto no login, 10 no cadastro por IP): vários operadores atrás do mesmo IP do galpão dividem o balde, e se isso atrapalhar no piloto basta subir o número. Testes: `hardening.test.ts` e `ipUnknown.test.ts`. A conferência no primeiro deploy (nenhuma linha `better-auth:ip-desconhecido` no log da Vercel depois de uma tentativa de login) é o passo B7 da Parte B.
+
+#### P12 — Tamanhos gerados pelo shadcn abaixo do mínimo de toque 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
+**Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
+**Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** resolvida na Fase 6 (Tarefa 7). A pendência estava desatualizada: `Input`, `NativeSelect`, `Button` e o `SidebarMenuButton` padrão já têm `max-md:h-11` (P3), e os primitivos que ela cita (`SidebarMenuButton` `sm` e ícone, `InputGroup`, `InputGroupButton` `icon-sm`, `SidebarInput`) não aparecem em nenhuma tela. Os achados reais eram links soltos de componentes nossos, medidos a 390x844: `Greeting` ("Ver o dashboard", 120x21), `RequestDetail` ("Ver todas as solicitações", 159x20), `DashboardStock` (link da última contagem, 80x32) e o total do `SpendingRing` (9x44); os quatro ganharam o padrão do link solto (`ui-rules.md §1.4`). O guarda permanente `e2e/touch-targets.spec.ts` mede as telas do operador e do admin (e os diálogos) e reprova qualquer controle abaixo de 44 px, inclusive um primitivo da lista acima se um dia aparecer numa tela. Exceções medidas e justificadas: o link `inline` dentro de uma frase e o link esticado do `RequestCard` (`after:inset-0`, cuja área é o cartão inteiro). Não medido: iOS e Android reais, tema escuro e o contêiner do link esticado na Lista (ver P70).

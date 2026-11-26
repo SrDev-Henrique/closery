@@ -53,7 +53,7 @@ export type SpendingRingProps = {
 type RingSpan = { index: number; from: number; to: number };
 
 const TOTAL_LINK =
-  "rounded-sm font-medium text-sm tabular-nums outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring max-md:inline-flex max-md:min-h-11 max-md:items-center";
+  "rounded-sm font-medium text-sm tabular-nums outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring max-md:inline-flex max-md:min-h-11 max-md:items-center max-md:min-w-11 max-md:justify-end";
 
 const SIZE = 240;
 const C = SIZE / 2;

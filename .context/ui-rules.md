@@ -16,6 +16,13 @@
    link). Nenhum número opaco.
 4. **Confortável de ler e tocar.** Corpo `text-sm`+, botões `h-9`+; abaixo de `md`, alvo de toque
    ≥ 44px.
+   - **Link solto** (sozinho numa linha ou célula, não dentro de uma frase): mantém a classe do desktop
+     e ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center`; `max-md:min-w-11` quando o
+     conteúdo é curto (um número) e `max-md:justify-end` quando ele se alinha à direita.
+   - **Isentos:** o link `inline` no meio de uma frase (dentro de `p`, `li` ou `label` com mais texto
+     que ele) e o link esticado do cartão (`after:inset-0`), cuja área de toque é o cartão inteiro.
+   - **Guarda:** `e2e/touch-targets.spec.ts` mede as telas a 390x844 e reprova controle visível abaixo
+     de 44px; tela nova entra na lista dele. Os testes de classe de `ui/` só cobrem primitivos.
 5. **Código limpo.** Componentes pequenos, tipados, compostos a partir dos primitivos existentes.
 
 ## 2. Formulários e dados

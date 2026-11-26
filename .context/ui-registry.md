@@ -286,7 +286,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda).
 
 ### AppError e AppNotFound
 - **Status:** ✅ pronto (2026-11-25)
@@ -1036,7 +1036,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** o detalhe da solicitação: a página completa `/solicitacoes/[id]` e o conteúdo do Sheet do detalhe rápido.
 - **Como funciona:** server component async, `variant="page" | "sheet"`. `page`: título `<h1>` "Solicitação para {destino}", seções `h2`, link "Ver todas as solicitações", `notFound()` para id malformado, inexistente ou de outro setor. `sheet`: título pelo `SheetTitle`, seções `h3`, link `<a href>` "Abrir página completa" (navegação de documento: uma navegação no cliente para a mesma URL seria interceptada de novo), e o estado "Solicitação não encontrada." dentro do Sheet (um `notFound()` no slot derrubaria a tela). Mostra o aviso `ReadOnlySectorNotice` em setor inativo, propriedades (`<dl>`: status e selo de parada, setor só para o admin, destino, quem criou, origem com link para a passagem), itens com quantidade e unidade, "Mudar status" (só com `canMove`), linha do tempo e comentários; "Ver comentários anteriores" é sempre `<a href>` e some no teto de 500.
 - **Usa:** `getRequestDetail`, `RequestStatusBadge`, `StaleBadge`, `RequestStatusActions`, `RequestTimeline`, `RequestComments`, `ReadOnlySectorNotice`, `formatDateAtTimeBR`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-25 — Fase 5 (Tarefa 1, P48): "Criada por {nome} em {data} às {hora}" vem de `formatDateAtTimeBR` (a cópia local `dateAndTime` saiu; o texto é o mesmo).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-25 — Fase 5 (Tarefa 1, P48): "Criada por {nome} em {data} às {hora}" vem de `formatDateAtTimeBR` (a cópia local `dateAndTime` saiu; o texto é o mesmo). 2026-11-26 — Fase 6 (Tarefa 7, P12): "Ver todas as solicitações" ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (era 159x20 no celular).
 
 ### RequestSheet
 - **Status:** ✅ pronto (2026-11-24)
@@ -1161,7 +1161,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Como funciona:** props `title`, `legendLabel`, `total` (do SQL; o anel não soma as fatias), `totalHref` (obrigatório: o total do cabeçalho, e o `0` do vazio, são um `Link` com nome `{n} passagens: ver a lista`), `slices` (`key`, `label`, `value`, `href`, `strokeClass`, `dotClass`, `icon?`), `emptyText`. `ringSpans` (pura) desenha só as fatias com valor, com sweep mínimo de 3° e soma de 360° menos os vãos. O anel é um `slider` (setas, Home, End, arrastar, tocar na fatia; `aria-valuetext` `{rótulo}: {n} ({p}%)`) e o centro mostra o valor, o rótulo e `{p}% do total` da fatia selecionada. A legenda é uma `<ul aria-label={legendLabel}>` com um `Link` por fatia (todas, inclusive as zeradas): ponto, ícone, rótulo, valor e porcentagem; foco ou passagem do mouse numa linha seleciona a fatia. `total` 0 mostra `emptyText` no lugar do anel e mantém a legenda.
 - **Adaptações do original:** só tokens; pt-BR, sem moeda; export nomeado; `legendLabel` e links; vazio e fatia minúscula (sem arco invertido); `motion-reduce:transition-none`; linhas da legenda `max-md:min-h-11`; `touch-none` só no anel. **React Compiler:** o original o fazia desistir em silêncio; corrigido com `turnTo(restAt?)` (padrão resolvido no corpo), `tickRef` (o `tick` se reagenda por ref), `ringSpans` com `reduce` (sem `let` reatribuído) e `transform` inicial calculado dos `spans`; `bun scripts/rc-check.mjs` com `compiled: 3`.
 - **Usa:** `Link`, `sharePercent`, `formatInteger`, `cn`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-26 — Fase 6 (Tarefa 7, P12): o total do cabeçalho (`TOTAL_LINK`) ganha `max-md:min-w-11 max-md:justify-end` (um número curto como `1` ou `0` media 9x44 no celular).
 
 ### chartColors
 - **Status:** ✅ pronto (2026-11-25)
@@ -1241,7 +1241,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Propósito:** o bloco Estoque: a última contagem de cada item e a evolução no período.
 - **Como funciona:** `getStockData`. Um `Card` por item: nome, unidade (e setor em "Todos os setores"), a última contagem como link para a passagem (`/passagens/<id>`, "{n} {unidade}") com "Contado em {dd/mm/aaaa}, {turno}" (+ " · antes do período") ou "Sem contagem"; a evolução é sempre o `StockTrendChart`, que mostra "Sem contagem no período." quando nenhum dia tem contagem (o bloco não repete o texto). Sem item mostra o `EmptyState`; acima de 30 mostra "Mostrando 30 de {total} itens.".
 - **Usa:** `Card`, `StockTrendChart`, `lastCountHref`, `EmptyState`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11). 2026-11-26 — Fase 6 (Tarefa 7, P12): o link da última contagem ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (era 80x32 no celular).
 
 ### DashboardRequests
 - **Status:** ✅ pronto (2026-11-25)

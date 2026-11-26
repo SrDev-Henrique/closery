@@ -96,7 +96,7 @@ export async function RequestDetail({
         ) : (
           <Link
             href={requestsHref(admin ? detail.sectorId : null)}
-            className="w-fit text-sm underline underline-offset-4"
+            className="w-fit text-sm underline underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:items-center"
           >
             Ver todas as solicitações
           </Link>

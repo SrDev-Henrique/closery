@@ -334,6 +334,12 @@
   para não casar com a barra lateral; o link do convite sai do campo `Link do convite`;
   `countSessionsByEmail` (`e2e/db.ts`) prova que desativar apaga as sessões (P11). Setor, turno, item
   e destino de cada teste têm nome único (sufixo aleatório): o banco só é limpo entre execuções.
+- **`e2e/touch-targets.spec.ts` (Fase 6, P12).** Viewport 390x844 com `hasTouch`; `smallTargets(page)` espera 500 ms (diálogo e menu em
+  animação medem 43 px) e lista todo controle visível com menos de 44 px. Isenta só o link `inline` dentro de `p`/`li`/`label` com mais texto
+  que ele (sem esse ancestral não há isenção: um `<a>` em `div`, `td` ou `span` é medido) e o link esticado (`after:inset-0`). `expect.soft` por
+  tela: o relatório lista todos os achados de uma vez. O operador precisa de uma passagem entregue **ontem** com contagem (sem ela o
+  `/dashboard` mostra o estado vazio e nem o link da última contagem nem o total do anel aparecem) e de uma solicitação; o admin abre o
+  diálogo `Link de nova senha`. Tela nova entra na lista do spec.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
 ## 11. GitHub Actions (CI)

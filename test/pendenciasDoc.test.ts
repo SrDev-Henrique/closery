@@ -157,6 +157,16 @@ describe(".context/pendencias.md", () => {
     }
   });
 
+  it("Fase 6: P12 resolvida pelo guarda de alvos de toque", () => {
+    const entry = entries.get("P12");
+    expect(entry?.state, "P12").toBe("Resolvido");
+    expect(entry?.section, "P12").toBe("5");
+    expect(
+      entry?.updates.some((date) => date >= "2026-11-25"),
+      "P12",
+    ).toBe(true);
+  });
+
   it("Fase 4: P44, P46 e P47 entraram como Aberto, não triado", () => {
     for (const id of ["P44", "P46", "P47"]) {
       const entry = entries.get(id);

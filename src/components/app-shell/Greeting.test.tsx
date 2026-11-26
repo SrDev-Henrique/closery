@@ -40,6 +40,24 @@ describe("Greeting", () => {
     expect(screen.queryByText(/passagem de turno/)).not.toBeInTheDocument();
   });
 
+  it("o link do dashboard tem alvo de toque de 44px no celular e a classe do desktop continua (P12)", async () => {
+    mocks.requireUser.mockResolvedValue(authz());
+
+    render(await Greeting());
+
+    const link = screen.getByRole("link", { name: "Ver o dashboard" });
+    expect(link).toHaveClass(
+      "max-md:inline-flex",
+      "max-md:min-h-11",
+      "max-md:items-center",
+    );
+    expect(link).toHaveClass(
+      "underline",
+      "underline-offset-4",
+      "hover:text-foreground",
+    );
+  });
+
   it("nome vazio não deixa vírgula solta", async () => {
     mocks.requireUser.mockResolvedValue(authz({ name: "  " }));
 
