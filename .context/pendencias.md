@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P77.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P81.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -113,6 +113,10 @@
 | P74 | admin:invite não mostra quantos administradores ativos existem | ⚪ | Aberto, não triado |
 | P75 | Next imprime o erro não tratado inteiro no log da Vercel | 🟡 | Aberto, não triado |
 | P76 | Gerar link de nova senha não deixa registro de quem gerou | 🟡 | Aberto, não triado |
+| P77 | Redefinição e desativação não apagam passkeys | 🟡 | Aberto, não triado |
+| P78 | createPasswordResetLink não é atômico | ⚪ | Aberto, não triado |
+| P79 | React Compiler desiste do SignInPanel inteiro | ⚪ | Aberto, não triado |
+| P80 | Nenhum guarda impede script de importar logServerError ou Sentry | ⚪ | Aberto, não triado |
 
 ---
 
@@ -388,6 +392,7 @@
 **Impacto:** a Fase 6 não fez deploy, então ficou sem prova: `gru1` e o formato do `x-vercel-id`, o HSTS da Vercel, o `deploymentEnabled` ignorando as branches, o `bunx bun@1.3.3` na imagem de build, o `engines` sobre a configuração do painel, o IP do rate limit sem o aviso do Better Auth, o envio real e o flush do Sentry, a passkey com a `Permissions-Policy` em navegador real e o detalhe rápido com `next-url` (P44).
 **Correção:** — (opção: conferir no primeiro deploy, passos B7 e B9 do runbook, e registrar o resultado aqui)
 **Registrado em:** 2026-11-26
+**Atualização (2026-11-26):** a sobrescrita do `x-forwarded-for` pela Vercel se apoia na documentação dela, não num teste: o B7 só prova que chega um IP válido. O `x-vercel-id` cru anotado no B7 confirma o formato `<borda>::<região>::<id>`.
 
 #### P64 — Aprovação da empresa (LGPD) pendente e /privacidade em rascunho 🟠
 **Estado:** Aberto, não triado
@@ -395,6 +400,7 @@
 **Impacto:** sem a autorização do controlador dos dados (a empresa) ninguém é convidado; a retenção é "enquanto o uso durar", sem prazo; não existe ação de anonimizar uma pessoa desligada (a conta só se desativa).
 **Correção:** — (opção: passo B12 do runbook, com o texto aprovado por escrito e o PR curto de `PRIVACY_DRAFT = false`; depois, uma ação de anonimizar que mantenha o id)
 **Registrado em:** 2026-11-26
+**Atualização (2026-11-26):** o PR de `PRIVACY_DRAFT = false` leva o que só a empresa pode dizer (B12): quem é a controladora, o contato do encarregado (LGPD art. 41), a base legal (art. 7º) e por quanto tempo ficam as cópias diárias do CSV e os relatórios do Sentry.
 
 #### P65 — Riscos aceitos do Hobby e do Neon Free no piloto 🟠
 **Estado:** Aberto, não triado
@@ -468,9 +474,9 @@
 
 #### P75 — Next imprime o erro não tratado inteiro no log da Vercel 🟡
 **Estado:** Aberto, não triado
-**Arquivos:** `src/instrumentation.ts` · `src/lib/auth/createAuth.ts`
-**Impacto:** um erro não tratado de Server Component ou de rota sai no log do próprio Next como `⨯ Error: Failed query: … params: …`, com e-mail, hash ou texto da passagem; o log da Vercel guarda 1 hora no Hobby. `logServerError` só cobre o erro tratado e o que o `logger` do Better Auth emite. O mesmo vale para o roteador do `better-call` (Better Auth): quando a exceção não é `APIError` ele imprime `# SERVER_ERROR: <erro>` com `console.error` por conta própria, fora do `logger`, e o erro do Drizzle sai com o SQL e os parâmetros.
-**Correção:** — (opções: aceitar no piloto e rever o log; ou limites de erro por rota que tratam o erro antes de o Next o ver)
+**Arquivos:** `src/instrumentation.ts` · `src/app/(app)/error.tsx`
+**Impacto:** um erro não tratado de Server Component ou de rota sai no log do próprio Next como `⨯ Error: Failed query: … params: …`, com o SQL e os parâmetros (e-mail, hash ou texto da passagem); o log da Vercel guarda 1 hora no Hobby. `logServerError` só cobre o erro tratado e o que o `logger` do Better Auth emite. A parte do roteador do `better-call` (o `# SERVER_ERROR: <erro>`) foi fechada na rodada da revisão final (`onAPIError: { throw: true }` e o embrulho do `route.ts`); sobra só o log do próprio Next.
+**Correção:** — (opções: (1) aceitar no piloto e rever o log em B7 e B15 sem copiar linhas; (2) capturar nos loaders das páginas, chamar `logServerError` e relançar um `Error` neutro, sem a mensagem do Drizzle)
 **Registrado em:** 2026-11-26
 
 #### P76 — Gerar link de nova senha não deixa registro de quem gerou 🟡
@@ -478,6 +484,34 @@
 **Arquivos:** `src/features/admin/passwordReset.ts`
 **Impacto:** um administrador pode gerar o link de outro administrador (e assumir a conta) sem rastro de quem gerou, para quem e quando, contra a regra de rastro do projeto.
 **Correção:** — (opção: tabela de auditoria dos links gerados; exige migração, fora da Fase 6)
+**Registrado em:** 2026-11-26
+
+#### P77 — Redefinição e desativação não apagam passkeys 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/passwordReset.ts` · `src/features/admin/people.ts` · `src/lib/auth/createAuth.ts`
+**Impacto:** a redefinição pelo administrador e a desativação não apagam passkeys; o administrador não vê nem remove as passkeys de outra pessoa; `/conta` não encerra as outras sessões. Quem usar um link vazado pode criar uma passkey que sobrevive à troca de senha. Hoje: o procedimento de conta tomada do runbook.
+**Correção:** — (opção: apagar as passkeys na redefinição gerada pelo administrador ou na desativação, e oferecer "sair dos outros aparelhos" em `/conta`)
+**Registrado em:** 2026-11-26
+
+#### P78 — createPasswordResetLink não é atômico ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/passwordReset.ts`
+**Impacto:** dois administradores ao mesmo tempo podem deixar dois links válidos, e uma desativação concorrente pode deixar um link para a pessoa desativada (volta a valer se ela for reativada em 24 h). Precisa de dois administradores agindo no mesmo instante: no piloto há um.
+**Correção:** — (opção: depois de criar, apagar as outras linhas da pessoa e reler `deactivatedAt`, falhando fechado)
+**Registrado em:** 2026-11-26
+
+#### P79 — React Compiler desiste do SignInPanel inteiro ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/auth/SignInPanel.tsx`
+**Impacto:** o React Compiler desiste do componente inteiro (`SignInPanel.tsx:52-62`: optional chaining dentro de `try`); anterior à Fase 6.
+**Correção:** — (opção: ler `PublicKeyCredential?.isConditionalMediationAvailable` antes do `try` e conferir com `bun scripts/rc-check.mjs`)
+**Registrado em:** 2026-11-26
+
+#### P80 — Nenhum guarda impede script de importar logServerError ou Sentry ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `test/logGuard.test.ts` · `scripts/`
+**Impacto:** nada impede que um script de `scripts/*.ts` (rodado pelo Bun) passe a importar `logServerError` ou `@sentry/*`, o que quebraria o `admin:invite` só na hora do go-live (o Bun resolve `@sentry/bun`, que não está instalado). Hoje os dois scripts não chegam lá (conferido com `bun build --target bun`).
+**Correção:** — (opção: um caso em `test/logGuard.test.ts` que segue os imports estáticos de `scripts/*.ts`)
 **Registrado em:** 2026-11-26
 
 ## 2. Triado, plano pronto
@@ -525,7 +559,6 @@ e-mail — o cadastro precisa tratar e-mail ausente.
 tratar `email` nulo no cadastro.
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-20):** o botão "Continuar com Facebook" já existe e só aparece com `FACEBOOK_CLIENT_ID` e `FACEBOOK_CLIENT_SECRET`; e-mail ausente volta como `email_not_found` ("Essa conta não informou um e-mail. Use outro jeito de entrar."). Falta o app da Meta publicado (privacidade e exclusão de dados); continua bloqueada.
-
 **Atualização (2026-11-26):** a Fase 6 criou a página pública `/privacidade` (a URL de política de privacidade que a Meta pede), ainda em rascunho até o dono e a empresa aprovarem (`PRIVACY_DRAFT`). Continua bloqueada: faltam a página de instrução de exclusão de dados, o app da Meta publicado e, para ele, um domínio próprio (o piloto roda em `*.vercel.app`, D-F6-1).
 
 #### P8 — Sem provedor de e-mail, "esqueci a senha" não funciona 🟠

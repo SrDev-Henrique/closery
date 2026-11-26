@@ -63,11 +63,11 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **Go-live da Fase 6 (Parte B):** seguir `.context/runbook-producao.md` com o dono (B0 a B18). O deploy ainda não foi feito;
   nada é publicado sem o "sim" explícito do dono naquele momento. Sem a aprovação da empresa para `/privacidade` (P64)
   ninguém é convidado.
-- **P62–P76 (Fase 6):** `main` sem proteção (P62); o que só o primeiro deploy confirma (P63); LGPD (P64); riscos do Hobby e do Neon
+- **P62–P80 (Fase 6):** `main` sem proteção (P62); o que só o primeiro deploy confirma (P63); LGPD (P64); riscos do Hobby e do Neon
   Free (P65); passkeys presas ao `*.vercel.app` (P66); aba fechada com salvamento na fila (P67); Sentry sem source maps (P68);
   `scrubEvent` só limpa padrões conhecidos (P69); toque só medido no Chromium (P70); sem manifest (P71); tempo de preenchimento
   sem medição (P72); suíte lenta (P73); `admin:invite` sem contagem de administradores (P74); o Next imprime o erro não tratado
-  inteiro (P75); o link de nova senha não deixa registro de quem gerou (P76). Próximo id livre: P77.
+  inteiro (P75); o link de nova senha não deixa registro de quem gerou (P76); a redefinição e a desativação não apagam passkeys (P77); `createPasswordResetLink` não é atômico (P78); o React Compiler desiste do `SignInPanel` (P79); nenhum guarda impede um script de importar `logServerError` ou `@sentry/*` (P80). Próximo id livre: P81.
 - **P34–P36 (Fase 3):** "sem passagem" usa os horários atuais do turno (P34); o cartão "Passagem para
   confirmar" não tem teto de idade (P35); dois operadores no mesmo rascunho: o último a salvar vence (P36).
 - **P44, P46, P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); um cartão movido para uma coluna
@@ -79,12 +79,12 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **P53–P61 (Fase 5):** item que muda de unidade ou de tipo no período não é tratado (P53); o erro do detalhe rápido aparece
   fora do Sheet (P54); helpers do E2E repetidos (P55); destino além do teto de 200 escolhas cai do filtro (P56); índices do
   dashboard só sob medição no Neon (P57); a cor das situações do anel não separa em daltonismo (P58); o CSV se monta em
-  memória (P59); duplicações para um commit só de refatoração (P60); ajustes de UX (P61). Próximo id livre: P62.
+  memória (P59); duplicações para um commit só de refatoração (P60); ajustes de UX (P61).
 - **P23:** editar o nome de uma pessoa (o admin em `/admin/equipe`, a própria pessoa em `/conta`).
 - **P24:** a ordem alfabética das listas do admin ignora acento (`C.UTF-8` ordena por ponto de código).
   (P24 e P34 ganharam uma `Atualização` datada de 2026-11-25 na Fase 5; seguem abertas.)
 - **P10:** credenciais OAuth do Google não criadas (login social sem teste ao vivo).
-  **P6/P7/P8:** Apple Developer, app da Meta, provedor de e-mail — só travam Apple, Facebook e "esqueci a senha".
+  **P6/P7/P8:** Apple Developer, app da Meta, provedor de e-mail — só travam Apple, Facebook e "esqueci a senha" **por e-mail** (a recuperação é o link do administrador).
 - **Suposições a validar com o usuário final:** spec §15 (glossário, horários dos turnos, o que é
   solicitação, passagem feita no fim do turno, quem recebe).
 - **Remoto:** `origin` = GitHub (`main`, repositório **público**). Commit e push só com pedido do dono;
@@ -108,11 +108,11 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
 - **jsdom 28 + polyfill de `matchMedia`** (`test/setup-dom.ts`); `check-types` roda `next typegen` antes.
 - **Passkey cancelada** chega como `ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY`: traduza com `passkeyErrorCode`.
 - **Passkey:** `rpID` vem de `BETTER_AUTH_URL`; passkey de `localhost` não vale em produção.
-- **Primeiro administrador:** `bun run admin:invite` imprime o link do convite.
+- **Primeiro administrador:** `bun run admin:invite --confirmar-host=<host>` (sem a flag mostra o banco de destino e recusa; `bun run db:hosts` mostra os hosts antes do `db:migrate`) imprime o link do convite.
 - **Driver é `pg` + `attachDatabasePool`** (D18), não `neon-serverless`. Escrita multi-statement em
   `db.transaction()`; nada de `db.batch`.
-- **`.env.local` aponta para a branch de DESENVOLVIMENTO do Neon**; as URLs de
-  produção estão comentadas até irem para a Vercel. Usa `DATABASE_URL` (direta) + `DATABASE_URL_POOLED`
+- **`.env.local` aponta para a branch de DESENVOLVIMENTO do Neon**; as URLs comentadas no `.env.local` são de um projeto que **não** é o de produção e saem
+  no passo B2 (produção = projeto Neon novo, C6-4). Usa `DATABASE_URL` (direta) + `DATABASE_URL_POOLED`
   (o contrário da convenção do `neon env pull`); `src/db/databaseUrl.ts` aceita as duas. Sempre `sslmode=verify-full`.
 - **A CLI `neon` está com a sessão expirada** (`neon login` resolve).
 - **Componentes KokonutUI vêm com cor crua e em inglês** — adaptar na instalação (`library-docs.md §6`).

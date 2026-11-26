@@ -211,8 +211,8 @@ describe(".context/pendencias.md", () => {
     expect(entry?.section).toBe("3");
     expect(entry?.updates.some((date) => date >= "2026-11-25")).toBe(true);
   });
-  it("Fase 6: P62 a P76 entraram como Aberto, não triado", () => {
-    for (let number = 62; number <= 76; number++) {
+  it("Fase 6: P62 a P80 entraram como Aberto, não triado", () => {
+    for (let number = 62; number <= 80; number++) {
       const id = `P${number}`;
       const entry = entries.get(id);
       expect(entry?.state, id).toBe("Aberto, não triado");

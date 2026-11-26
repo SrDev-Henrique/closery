@@ -293,7 +293,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/app/(app)/error.tsx` (`"use client"`) e `src/app/(app)/not-found.tsx` (arquivos de convenção do Next, não componentes de `src/components`)
 - **Propósito:** o erro e o 404 de uma página de `(app)` aparecem dentro do shell: a barra lateral continua na tela (P19).
 - **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para `logServerError(error, "error-boundary")`, que escreve só o resumo, e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
-- **Usa:** `Button`, `buttonVariants`.
+- **Usa:** `Button`, `buttonVariants`, `logServerError`.
 - **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19). 2026-11-26 — Fase 6 (Tarefa 2): o `useEffect` deste arquivo e o do `error.tsx` da raiz chamam `logServerError(error, "error-boundary")` no lugar de `console.error(error)`; a tela não muda. 2026-11-26 — Fase 6 (Tarefa 6): a captura no Sentry mora dentro do `logServerError`; este arquivo não muda.
 
 ### GlobalError
@@ -369,7 +369,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   trava botões); botão "Entrar com passkey"; social com `requestSignUp: false`; erro inicial de
   `?error=`; erros por `authFormError(errorCodeOf(erro))`/`passkeyErrorCode`. O formulário vem primeiro porque o
   autofill de passkey vive no campo de e-mail. O rodapé tem dois parágrafos, nesta ordem: "O acesso é só por convite." e (Fase 6) "Esqueceu a senha? Peça ao administrador um link para criar outra." (nunca "Esqueci a senha": não há e-mail, o link vem do admin).
-- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
+- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`, `PrivacyLink`.
 - **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé. 2026-11-26 — Fase 6 (Tarefa 8): o rodapé termina com o `PrivacyLink` (`Privacidade e seus dados`), depois de `O acesso é só por convite.` e de `Esqueceu a senha? Peça ao administrador um link para criar outra.`.
 
 ### ResetPasswordForm
@@ -377,8 +377,8 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/auth/ResetPasswordForm.tsx` (página estática `src/app/(auth)/redefinir-senha/page.tsx`)
 - **Propósito:** a pessoa criar a senha nova com o link que o administrador mandou.
 - **Como funciona:** `"use client"`; `takeTokenFromLocation(location, history)` lê o token do **fragmento** (`#token=`, 16 a 256 caracteres `A-Za-z0-9_-`) e apaga o fragmento da barra com `history.replaceState`; o fragmento nunca chega ao servidor (fora do log e do `Referer`). Fases: lendo (cartão vazio com `aria-busy`), sem token ("Link incompleto" e o link-botão "Ir para a entrada"), formulário ("Criar uma senha nova", campo "Senha nova", `type="password"`, `autoComplete="new-password"`, 8 a 128, botão "Trocar a senha") e feito ("Senha alterada" e o link-botão "Entrar"; não entra sozinho, as sessões foram revogadas). Chama `authClient.resetPassword({ newPassword, token })`; o erro vira `authErrorMessage(errorCodeOf(error))` e a exceção de rede a mensagem genérica. Em StrictMode o segundo efeito não acha o fragmento e não zera o token.
-- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `buttonVariants`, `authClient`, `authErrorMessage`.
-- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 5).
+- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `buttonVariants`, `authClient`, `authErrorMessage`, `errorCodeOf`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 5). 2026-11-26 — revisão final da Fase 6: a lista de `Usa:` passa a citar `errorCodeOf` (o componente já o usava).
 
 ### PasskeyOffer
 - **Status:** ✅ pronto (2026-11-20)
@@ -394,9 +394,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-26)
 - **Local:** `src/components/privacy/PrivacyLink.tsx`
 - **Propósito:** o link `Privacidade e seus dados` para a página pública `/privacidade`.
-- **Como funciona:** Server Component (sem estado); `<Link href="/privacidade">` com `className` opcional (`cn`). Fica sozinho numa linha, então usa o padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:items-center`, ui-rules §1.4). Aparece em três lugares: o rodapé do `SignInPanel` (`/entrar`), o `CardFooter` do convite válido (`/convite/[token]`) e `/conta` (depois de "Sair"). Não aparece no convite inválido nem dentro do shell (`/privacidade` é pública e tem o próprio link de volta para `/entrar`).
+- **Como funciona:** Server Component (sem estado); `<Link href="/privacidade">` com `className` opcional (`cn`). Fica sozinho numa linha, então usa o padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:items-center`, ui-rules §1.4). Aparece em três lugares: o rodapé do `SignInPanel` (`/entrar`), o `CardFooter` do convite válido (`/convite/[token]`) e `/conta` (depois de "Sair"). Não aparece no convite inválido nem dentro do shell (`/privacidade` é pública e tem o próprio controle `Voltar`, o `BackLink`).
 - **Usa:** `next/link`, `cn`.
-- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 8).
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 8). 2026-11-26 — revisão final da Fase 6: o `Usa:` do `SignInPanel` passa a citá-lo; o controle de volta da página é o `BackLink`.
 
 ### BackLink
 - **Status:** ✅ pronto (2026-11-26)

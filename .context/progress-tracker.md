@@ -17,7 +17,7 @@
   `bun run smoke`, `admin:invite` em produção, aprovação da empresa para `/privacidade` (P64) e só então os
   convites reais e a semana de piloto.
 - **Neon ligado** (P1 resolvida, 2026-11-20). P6/P7/P8 só travam Apple, Facebook e "esqueci a
-  senha".
+  senha" **por e-mail** (a recuperação é o link do administrador).
 
 ---
 
@@ -111,6 +111,7 @@
 - ✅ `/privacidade` (rascunho até a empresa aprovar) e os textos do primeiro acesso (2026-11-26)
 - ✅ `scripts/smoke.mjs` (`bun run smoke`) e `.context/runbook-producao.md` (2026-11-26)
 - ✅ P16, P22 e P12 resolvidas; pendências novas P62–P76; P1, P6, P7, P8 e P10 ganharam `Atualização` (2026-11-26)
+- ✅ Revisão final (três lentes) e a rodada de correções: o erro inesperado do Better Auth sai só pelo `logServerError` (`onAPIError.throw` + embrulho do `route.ts`), o `logServerError` nunca lança, o Sentry sem `BrowserTracing` nem client reports, o smoke com timeout, `--local` só em localhost e robots por linha, o `Voltar` de `/privacidade` (`BackLink`) e três textos da página mais fiéis à configuração, o guarda de 44 px medindo o convite e o `/bem-vindo`; o runbook ganhou o procedimento de conta tomada (P77) e outros acertos; pendências novas P77 a P80 (2026-11-26)
 - ✅ Testes: Vitest 4464 testes em 322 arquivos; E2E com 43 cenários (os 35 de antes, 2 de alvos de toque, 3 da redefinição de senha e 3 das páginas públicas). Verificado: `check-types`, `lint`, `test`, `test:e2e` (43 passed) e `build` verdes (2026-11-26)
 - ⬜ Go-live (Parte B): proteção da `main`, Neon e Vercel de produção, migração, primeiro administrador, aprovação da empresa (P64), convites e a semana de piloto
 

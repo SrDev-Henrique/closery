@@ -2,8 +2,26 @@
 
 > **Passo a passo do go-live e da semana de piloto.** É a Parte B da Fase 6: o que acontece
 > **depois** que o código da Fase 6 está na `main`. Nada daqui roda em teste automatizado nem em
-> tarefa de subagente. Decisões que mandam aqui: D-F6-1 a D-F6-5 (dono) e C6-1 a C6-8
-> (controlador), em `docs/superpowers/plans/2026-11-25-fase-6-producao.md`.
+> tarefa de subagente. Decisões que mandam aqui (do dono, D-F6, e do controlador, C6):
+>
+> - **D-F6-1:** só `*.vercel.app` no piloto; o `rpID` das passkeys é esse host (trocar de domínio
+>   depois invalida as passkeys); sem domínio próprio não há e-mail transacional (P8 segue aberta).
+> - **D-F6-2:** a recuperação de senha é um link gerado pelo administrador em `/admin/equipe`,
+>   compartilhado como o convite; sem provedor de e-mail.
+> - **D-F6-3:** Vercel Hobby (riscos aceitos em P65: uso não comercial nos termos, logs de 1 hora,
+>   rollback só para o deploy anterior, uma região).
+> - **D-F6-4:** Neon Free (100 CU-h por mês, restore de 6 horas); mitigações: projeto de produção
+>   próprio, teto de 0,25 CU, scale-to-zero, nenhum monitor, CSV diário e planilha em paralelo.
+> - **D-F6-5:** Sentry grátis, ligado só com o DSN no ambiente; sem dado de pessoa no evento.
+> - **C6-1:** login no piloto por e-mail, senha e passkey; Google, Apple e Facebook desligados.
+> - **C6-2:** previews da Vercel desligados; a validação local usa a porta 3201.
+> - **C6-3:** migração de produção manual, com conferência do host e branch de segurança antes.
+> - **C6-4:** banco de produção num projeto Neon novo em `sa-east-1`.
+> - **C6-5:** página `/privacidade` com texto aprovado pelo dono; a empresa aprova antes dos convites.
+> - **C6-6:** tempo da passagem medido com cronômetro e observador.
+> - **C6-7:** toda ação voltada para fora só com o "sim" explícito do dono na hora.
+> - **C6-8:** itens antes do piloto (região `gru1`, Node 22, cabeçalhos, log sanitizado, P22, P16,
+>   trava de host, P12, proteção da `main`) e itens medidos durante o piloto (B15).
 >
 > **O repositório é público:** este arquivo nunca leva host de banco, connection string, DSN,
 > domínio real de produção nem link de convite. Onde falta um valor, aparece `<projeto>.vercel.app`
@@ -141,9 +159,12 @@ bun run db:migrate
 1. Plano Hobby (D-F6-3; riscos aceitos em P65). Importar o repositório; Framework Next.js. Os
    comandos de instalação e de build e a região (`gru1`) vêm do `vercel.json`. Conferir Node 22.x e
    Fluid compute ligado (padrão).
-2. Variáveis **só de Production**, as da tabela acima. Para o segredo, no próprio Git Bash do Dono,
-   fora da sessão do agente: `openssl rand -base64 32` e colar direto no campo da Vercel (marcar
-   Sensitive). O Controlador não vê o valor.
+2. **[confirma]** Variáveis **só de Production**, as da tabela acima. Para o segredo, no próprio
+   Git Bash do Dono, fora da sessão do agente: `openssl rand -base64 32` e colar direto no campo da
+   Vercel (marcar Sensitive). O Controlador não vê o valor. Se a tela de importação não deixar
+   escolher Production e Sensitive, importe sem variáveis (o build falha fechado: o env é
+   validado), depois adicione as quatro em Settings → Environment Variables (só Production,
+   Sensitive) e **[confirma]** o redeploy.
 3. Deployment Protection no padrão.
 4. **[confirma]** o primeiro deploy, com o Dono olhando o painel.
 
@@ -165,15 +186,21 @@ Use e divulgue só `https://<projeto>.vercel.app` (o mesmo do `BETTER_AUTH_URL`)
 bun run smoke https://<projeto>.vercel.app
 ```
 
-Esperado: `Resultado: 10 OK, 0 FALHOU, 0 PULADO.` Se `region` falhar, o script imprime o
-`x-vercel-id` cru: anote-o em P63 (o formato só se confirma no primeiro deploy).
+Esperado: `Resultado: 10 OK, 0 FALHOU, 0 PULADO.` O smoke não confere o schema: o B4.5 tem de
+ter dado **5**. Sempre (não só quando `region` falha), rode também
+`curl -sI https://<projeto>.vercel.app/api/health | grep -i x-vercel-id` e anote o valor cru em
+P63 (confirma o formato `<borda>::<região>::<id>`).
 
-Depois de uma tentativa de login (qualquer e-mail), nos logs da Vercel (guardam só 1 hora no
+Depois de uma tentativa de login feita pelo **Dono**, no navegador, com um e-mail fictício (ex.
+`smoke@exemplo.test`; o Controlador só faz `GET`), nos logs da Vercel (guardam só 1 hora no
 Hobby): **nenhuma** linha com `better-auth:ip-desconhecido` (P22; o aviso do Better Auth sobre IP
 foi trocado por esse contexto). Anotar o resultado em P63. Depois do primeiro PR pós-go-live,
 conferir que a branch dele **não** gerou deployment (previews desligados). Procure também no log
-da Vercel linhas com `SERVER_ERROR` ou `Failed query` (o `# SERVER_ERROR` do `better-call` e o
-`⨯ Error` do Next saem com o erro cru) e registre o que achar em P75.
+da Vercel linhas com `SERVER_ERROR` ou `Failed query`: depois da rodada de correções da revisão
+final o `# SERVER_ERROR` do `better-call` não sai mais; o que sobra é o `⨯ Error` do próprio Next
+(P75). Registre em P75 **só** a data e a hora, a rota, o nome ou código do erro e quantas linhas;
+**nunca** cole a linha do log (ela traz e-mail, IP e o texto da passagem, e `pendencias.md` é
+público). Se precisar de detalhe, use o canal privado da equipe (B15).
 
 ### B8. `admin:invite` em produção
 
@@ -186,9 +213,12 @@ export DATABASE_URL_POOLED BETTER_AUTH_URL=https://<projeto>.vercel.app
 bun run admin:invite
 ```
 
-2. Sem a flag, o script imprime `Banco de destino: <host>` e para com erro. O Dono repassa **só o
-   host**; o Dono compara o host impresso com o host do pooler no console do Neon (ou repassa os
-   dois ao Controlador). Diferente: **pare** e `exit`.
+2. Sem a flag, o script imprime `Banco de destino: <host>` e `BETTER_AUTH_URL: <url>` e para com
+   erro. O Dono repassa **só o host**; o Dono compara o host impresso com o host do pooler no
+   console do Neon (ou repassa os dois ao Controlador). Confira também que a linha
+   `BETTER_AUTH_URL:` é exatamente `https://<projeto>.vercel.app`. Host diferente, ou URL
+   diferente (ex.: sobrou o `http://localhost:3000` do `.env.local` por erro no `export`): **pare**
+   e `exit` (o link do convite apontaria para outra aplicação).
 3. **[confirma]**, depois:
 
 ```bash
@@ -208,7 +238,6 @@ bun run admin:invite --confirmar-host=<host impresso> --label "Administrador"
    janela anônima → troca a senha → `Senha alterada` → todas as sessões caem → entra de novo com a
    passkey e com a senha nova.
 3. Conferir no DevTools que o cookie de sessão é o `__Secure-…session_token`.
-4. Abrir o detalhe rápido de uma solicitação e conferir que abre no painel lateral (P44).
 
 ### B10. Cadastro inicial
 
@@ -220,15 +249,29 @@ produção.**
 
 **Controlador + Dono**, localmente (nunca a 3000), contra a branch de **dev** do Neon:
 
+Os comandos num shell só, com o `BETTER_AUTH_URL` da porta do ensaio (o `.env.local` aponta para
+a 3000, e o `trustedOrigins`, o `origin` das passkeys e os links usam o `BETTER_AUTH_URL`; um valor
+exportado vence o `.env.local`):
+
 ```bash
+export BETTER_AUTH_URL=http://localhost:3201 NEXT_PUBLIC_SENTRY_DSN=""
 bun run build && bun run start -p 3201
 ```
+
+O Controlador sobe o servidor em segundo plano (export, build e start na mesma chamada) e o
+derruba pelo PID de quem escuta a 3201, nunca a 3000. Convites e links de senha gerados no ensaio
+apontam para a 3201. Erro genérico de login no ensaio quase sempre é `BETTER_AUTH_URL` diferente da
+porta.
 
 Uma passagem completa (rascunho → entregar → outra conta confirma) e uma solicitação.
 
 ### B12. LGPD (P64)
 
-1. **Dono:** aprovação **por escrito** da empresa (controladora dos dados).
+1. **Dono:** aprovação **por escrito** da empresa (controladora dos dados). Antes dela, o Dono
+   leva à empresa o que a página ainda não diz e que só ela pode dizer: quem é a controladora, o
+   contato do encarregado (LGPD art. 41), a base legal (art. 7º) e por quanto tempo ficam as
+   cópias diárias do CSV e os relatórios do Sentry. Essas linhas entram no texto no mesmo PR do
+   `PRIVACY_DRAFT = false`.
 2. **Controlador:** PR curto com `PRIVACY_DRAFT = false` e `PRIVACY_UPDATED_AT` do dia em
    `src/features/privacy/privacyContent.ts`, CI verde. **[confirma]** o merge (vira deploy).
 
@@ -249,7 +292,7 @@ Uma passagem completa (rascunho → entregar → outra conta confirma) e uma sol
 **Dono** (administrador): um convite por operador em `/admin/equipe`, entregue em mãos ou por
 WhatsApp; cada pessoa cria a passkey no próprio celular. **[confirma]** antes do primeiro convite.
 
-Cartão de treinamento, 5 linhas: como entregar o turno; como receber; o dia operacional é o dia em
+Cartão de treinamento, 6 linhas: como entregar o turno; como receber; o dia operacional é o dia em
 que o turno **começou**; "Esqueceu a senha? Peça o link ao administrador"; onde ver a página
 `/privacidade`; o endereço do app é só `https://<projeto>.vercel.app` (nunca os aliases
 `-<escopo>` e `-git-main-`, onde o login e as passkeys não funcionam).
@@ -265,6 +308,8 @@ que o turno **começou**; "Esqueceu a senha? Peça o link ao administrador"; ond
 - Sentry: eventos novos; revisar se algum traz dado de pessoa (P69).
 - Neon: consumo de CU-h do mês (100 no Free); acima de 70% avisar o Controlador.
 - Problemas no canal privado da equipe, **nunca** em issue pública.
+- Na primeira solicitação real do piloto, abrir o detalhe rápido e conferir que abre no painel
+  lateral; anotar em P44/P63.
 
 **Durante o piloto (C6-8):** anotar cada ocorrência de P23, P34, P35, P36, P44 e P53 numa
 `Atualização`. P57: um `EXPLAIN ANALYZE` das consultas do dashboard no SQL Editor do Neon, uma vez,
@@ -273,10 +318,14 @@ fora do horário da passagem (gasta CU-h).
 ### B16. Rollback
 
 - **App:** Instant Rollback da Vercel (no Hobby, só para o deploy imediatamente anterior); depois
-  promover o deploy bom (a atribuição automática do domínio desliga até alguém promover; as
-  variáveis **não** voltam junto).
-- **Banco:** restaurar pela branch de segurança ou pelo restore de 6 horas do Free. Migração
-  futura sempre expand-then-contract, com branch de segurança antes.
+  promover o deploy bom (a atribuição automática do domínio desliga até alguém promover). O deploy
+  antigo roda com as variáveis **do build dele**: depois de qualquer mudança de variável seguida
+  de redeploy (B6, B17), não use rollback; corrija a variável e faça redeploy.
+- **Banco:** restaurar apaga **tudo** o que foi gravado depois do ponto escolhido. Use só para
+  desfazer uma migração que acabou de rodar, a partir da branch de segurança criada logo antes
+  dela (nunca a do B4.1 depois que o piloto começou). Erro só do app: basta o rollback da Vercel.
+  Antes de restaurar, baixe o CSV do dia. Migração futura sempre expand-then-contract, com branch
+  de segurança antes.
 - **[confirma]** em qualquer rollback.
 
 ### B17. Rotação de segredos
@@ -285,7 +334,8 @@ fora do horário da passagem (gasta CU-h).
 
 - `BETTER_AUTH_SECRET`: valor novo na Vercel + redeploy (desloga todos; senhas e passkeys não
   dependem dele).
-- Senha do Neon: reset no console, atualizar `DATABASE_URL_POOLED` na Vercel, redeploy.
+- Senha do Neon: reset no console, atualizar `DATABASE_URL_POOLED` na Vercel, redeploy. Conexões
+  novas ao banco falham até o redeploy terminar: faça fora do horário da passagem.
 - DSN do Sentry: trocar na Vercel e fazer redeploy (o DSN vai no build).
 
 ### B18. Revisão de saída (dia 7 ou 8)
@@ -302,6 +352,20 @@ go/no-go. **Controlador:** registra cada achado em `.context/pendencias.md` como
   `admin:invite` só rodam depois da conferência).
 - O smoke reprova: leia a linha `[FALHOU]`; o `x-vercel-id` cru entra em P63. Não convide ninguém
   antes de o smoke dar `10 OK`.
-- O link de nova senha de alguém vazou: gere outro (o anterior deixa de valer na hora). Desativar a
-  conta também derruba o link.
+- O link de nova senha de alguém vazou e **ainda não foi usado**: gere outro (o anterior deixa de
+  valer na hora). Desativar a conta também derruba o link.
+- A pessoa abre o link e vê `Este link de redefinição venceu ou já foi usado` sem ter usado: trate
+  como conta tomada (quem usou o link trocou a senha, entrou e pode ter criado uma passkey, que a
+  redefinição e a desativação não apagam; P77). **[confirma]** cada passo:
+  1. Desative a conta na hora em `/admin/equipe` (derruba sessões e o login por passkey).
+  2. Reative e entregue um link novo **em mãos**, nunca pelo mesmo chat.
+  3. A pessoa troca a senha, entra com ela e, em `/conta`, remove **todas** as passkeys (todas
+     aparecem como "Passkey"; não dá para saber qual é a do intruso).
+  4. Desative e reative de novo (derruba sessão aberta no intervalo); a pessoa entra com a senha e
+     cria uma passkey nova no próprio celular.
+  5. Revise as passagens e solicitações que a conta entregou ou confirmou no período: o que estiver
+     errado, o administrador corrige com motivo (D13).
+
+  Na conta do próprio administrador (não dá para se desativar): remova as passkeys em `/conta`
+  primeiro e depois use `Nova senha` na própria linha.
 - Suspeita de segredo exposto: B17 e, se for a URL do banco, resetar a senha no Neon primeiro.
