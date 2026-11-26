@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P62.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P77.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -98,6 +98,21 @@
 | P59 | O CSV se monta inteiro em memória | ⚪ | Aberto, não triado |
 | P60 | Duplicações da Fase 5 para um commit só de refatoração | ⚪ | Aberto, não triado |
 | P61 | Ajustes de UX da Fase 5 | ⚪ | Aberto, não triado |
+| P62 | A `main` não tem proteção: push direto vira deploy sem CI | 🟠 | Aberto, não triado |
+| P63 | Comportamento na Vercel só se confirma no primeiro deploy | 🟡 | Aberto, não triado |
+| P64 | Aprovação da empresa (LGPD) pendente e /privacidade em rascunho | 🟠 | Aberto, não triado |
+| P65 | Riscos aceitos do Hobby e do Neon Free no piloto | 🟠 | Aberto, não triado |
+| P66 | Passkeys presas ao host *.vercel.app | 🟡 | Aberto, não triado |
+| P67 | Fechar a aba com o salvamento automático na fila perde o que não foi salvo | 🟡 | Aberto, não triado |
+| P68 | Sentry sem source maps e com +67 KB gzip de JS no cliente | ⚪ | Aberto, não triado |
+| P69 | scrubEvent só limpa padrões conhecidos da mensagem de erro | 🟡 | Aberto, não triado |
+| P70 | Alvos de toque medidos só no Chromium emulado | ⚪ | Aberto, não triado |
+| P71 | Sem instalação como app (manifest e ícones) | ⚪ | Aberto, não triado |
+| P72 | Tempo de preenchimento da passagem sem medição automática | ⚪ | Aberto, não triado |
+| P73 | Suíte do Vitest lenta e teste de migração com timeout sob carga | ⚪ | Aberto, não triado |
+| P74 | admin:invite não mostra quantos administradores ativos existem | ⚪ | Aberto, não triado |
+| P75 | Next imprime o erro não tratado inteiro no log da Vercel | 🟡 | Aberto, não triado |
+| P76 | Gerar link de nova senha não deixa registro de quem gerou | 🟡 | Aberto, não triado |
 
 ---
 
@@ -360,6 +375,111 @@
 **Correção:** — (opções: rótulo com o setor nas opções repetidas; unidade no eixo; guardar a chave da fatia; o nome do total por prop, montado com plural pelo `DashboardPassages`)
 **Registrado em:** 2026-11-25
 
+#### P62 — A `main` não tem proteção: push direto vira deploy sem CI 🟠
+**Estado:** Aberto, não triado
+**Arquivos:** `.github/workflows/ci.yml`
+**Impacto:** com a integração Git da Vercel, todo push na `main` publica, inclusive sem o CI verde; "PR só entra com o CI verde" não é imposto pelo GitHub.
+**Correção:** — (opção: proteção da `main` com os checks `Tipos, lint e testes` e `E2E (Playwright)`, passo B1 do runbook, antes de ligar a Vercel)
+**Registrado em:** 2026-11-26
+
+#### P63 — Comportamento na Vercel só se confirma no primeiro deploy 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `vercel.json` · `next.config.ts` · `src/lib/auth/createAuth.ts` · `src/lib/sentry/options.ts`
+**Impacto:** a Fase 6 não fez deploy, então ficou sem prova: `gru1` e o formato do `x-vercel-id`, o HSTS da Vercel, o `deploymentEnabled` ignorando as branches, o `bunx bun@1.3.3` na imagem de build, o `engines` sobre a configuração do painel, o IP do rate limit sem o aviso do Better Auth, o envio real e o flush do Sentry, a passkey com a `Permissions-Policy` em navegador real e o detalhe rápido com `next-url` (P44).
+**Correção:** — (opção: conferir no primeiro deploy, passos B7 e B9 do runbook, e registrar o resultado aqui)
+**Registrado em:** 2026-11-26
+
+#### P64 — Aprovação da empresa (LGPD) pendente e /privacidade em rascunho 🟠
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/privacy/privacyContent.ts`
+**Impacto:** sem a autorização do controlador dos dados (a empresa) ninguém é convidado; a retenção é "enquanto o uso durar", sem prazo; não existe ação de anonimizar uma pessoa desligada (a conta só se desativa).
+**Correção:** — (opção: passo B12 do runbook, com o texto aprovado por escrito e o PR curto de `PRIVACY_DRAFT = false`; depois, uma ação de anonimizar que mantenha o id)
+**Registrado em:** 2026-11-26
+
+#### P65 — Riscos aceitos do Hobby e do Neon Free no piloto 🟠
+**Estado:** Aberto, não triado
+**Arquivos:** —
+**Impacto:** o plano Hobby da Vercel é "personal or non-commercial", guarda logs por 1 hora, só faz rollback para o deploy imediatamente anterior e tem uma região; o Neon Free dá 100 CU-h por mês por projeto, suspende o projeto quando acaba e restaura só até 6 horas atrás.
+**Correção:** — (opção: rever no go/no-go da semana de piloto e decidir entre Pro e Launch)
+**Registrado em:** 2026-11-26
+
+#### P66 — Passkeys presas ao host *.vercel.app 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/lib/auth/createAuth.ts` (`rpID`)
+**Impacto:** o `rpID` das passkeys é o host de `BETTER_AUTH_URL`; trocar para um domínio próprio invalida todas as passkeys (a senha e o link do administrador continuam). Sem domínio próprio também não há e-mail (P8) nem Apple (P6).
+**Correção:** — (opção: comprar o domínio antes de crescer além do piloto e pedir às pessoas que criem a passkey de novo)
+**Registrado em:** 2026-11-26
+
+#### P67 — Fechar a aba com o salvamento automático na fila perde o que não foi salvo 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/useHandoverAutosave.ts` · `src/components/passagens/HandoverForm.tsx`
+**Impacto:** não há guarda `beforeunload`: com sinal fraco no galpão (provável), fechar ou recarregar a aba com salvamentos na fila perde o que ainda não chegou ao servidor.
+**Correção:** — (opção: avisar ao sair com salvamento pendente e mostrar o estado "Salvando…" por mais tempo; observar no piloto)
+**Registrado em:** 2026-11-26
+
+#### P68 — Sentry sem source maps e com +67 KB gzip de JS no cliente ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `next.config.ts` · `src/instrumentation-client.ts`
+**Impacto:** sem `SENTRY_AUTH_TOKEN` não há source maps: a pilha dos erros do navegador chega minificada. O SDK pesa cerca de 67 KB gzip (+11%) no cliente mesmo desligado.
+**Correção:** — (opção: token de upload só na Vercel e `sourcemaps` ligado; avaliar o carregamento tardio do SDK)
+**Registrado em:** 2026-11-26
+
+#### P69 — scrubEvent só limpa padrões conhecidos da mensagem de erro 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/lib/sentry/scrubEvent.ts`
+**Impacto:** um valor de pessoa fora dos sete padrões (SQL do Drizzle, parâmetros, valor de tipo inválido, token de caminho, fragmento `#token=`, query string e e-mail) sairia para o Sentry, fora do país.
+**Correção:** — (opção: revisar os eventos do Sentry na rotina diária do primeiro mês e acrescentar o padrão que aparecer)
+**Registrado em:** 2026-11-26
+
+#### P70 — Alvos de toque medidos só no Chromium emulado ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `e2e/touch-targets.spec.ts`
+**Impacto:** o guarda mede em Chromium emulado a 390×844. iOS e Android reais, o tema escuro e a área do link esticado do cartão da Lista não foram medidos.
+**Correção:** — (opção: conferir no celular dos operadores no primeiro dia do piloto)
+**Registrado em:** 2026-11-26
+
+#### P71 — Sem instalação como app (manifest e ícones) ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/`
+**Impacto:** "Adicionar à tela inicial" cria um atalho sem ícone próprio e a barra do navegador não tem `themeColor`.
+**Correção:** — (opção: `manifest.ts` com ícones; testar a passkey no app instalado do iOS antes)
+**Registrado em:** 2026-11-26
+
+#### P72 — Tempo de preenchimento da passagem sem medição automática ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/deliver.ts`
+**Impacto:** o critério "mais rápida que a planilha" (spec §17) é medido no piloto com cronômetro e observador (C6-6); medir sozinho exigiria gravar o tempo de preenchimento (`fill_ms`), o que pede uma migração.
+**Correção:** — (opção: gravar o tempo na entrega, numa fase com migração)
+**Registrado em:** 2026-11-26
+
+#### P73 — Suíte do Vitest lenta e teste de migração com timeout sob carga ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/migration0002.test.ts` · `.github/workflows/ci.yml`
+**Impacto:** a suíte leva cerca de 760 s com a máquina carregada; o `migration0002.test.ts` já estourou o limite de 15 s e o job `checks` do CI tem 15 minutos de teto.
+**Correção:** — (opção: dividir a suíte em dois jobs ou subir o teste de migração para um limite maior)
+**Registrado em:** 2026-11-26
+
+#### P74 — admin:invite não mostra quantos administradores ativos existem ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/adminInvite.ts`
+**Impacto:** um convite de administrador a mais passa despercebido; a trava de host (`--confirmar-host`) cobre o banco errado, não a quantidade de administradores.
+**Correção:** — (opção: imprimir a contagem de administradores ativos junto do alvo, antes da confirmação)
+**Registrado em:** 2026-11-26
+
+#### P75 — Next imprime o erro não tratado inteiro no log da Vercel 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/instrumentation.ts` · `src/lib/auth/createAuth.ts`
+**Impacto:** um erro não tratado de Server Component ou de rota sai no log do próprio Next como `⨯ Error: Failed query: … params: …`, com e-mail, hash ou texto da passagem; o log da Vercel guarda 1 hora no Hobby. `logServerError` só cobre o erro tratado e o que o `logger` do Better Auth emite. O mesmo vale para o roteador do `better-call` (Better Auth): quando a exceção não é `APIError` ele imprime `# SERVER_ERROR: <erro>` com `console.error` por conta própria, fora do `logger`, e o erro do Drizzle sai com o SQL e os parâmetros.
+**Correção:** — (opções: aceitar no piloto e rever o log; ou limites de erro por rota que tratam o erro antes de o Next o ver)
+**Registrado em:** 2026-11-26
+
+#### P76 — Gerar link de nova senha não deixa registro de quem gerou 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/passwordReset.ts`
+**Impacto:** um administrador pode gerar o link de outro administrador (e assumir a conta) sem rastro de quem gerou, para quem e quando, contra a regra de rastro do projeto.
+**Correção:** — (opção: tabela de auditoria dos links gerados; exige migração, fora da Fase 6)
+**Registrado em:** 2026-11-26
+
 ## 2. Triado, plano pronto
 
 *(nenhuma)*
@@ -393,6 +513,7 @@ botão não pode ir ao ar.
 e adicionar depois (o resto não depende dela).
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-20):** o Better Auth já está instalado (Fase 1) e o fluxo de convite não depende de Apple. Apple ficou fora da Fase 1 e entra na Fase 6, junto do domínio HTTPS e da conta de desenvolvedor; continua bloqueada.
+**Atualização (2026-11-26):** D-F6-1: o piloto roda só em `*.vercel.app`, sem domínio próprio; "Entrar com Apple" segue bloqueado (precisa do Apple Developer Program e de um domínio verificado, e a troca de domínio invalida as passkeys, P66).
 
 #### P7 — Login com Facebook exige app da Meta publicado 🟡
 **Estado:** Bloqueado no dono
@@ -432,6 +553,7 @@ OAuth do tipo Web com os URIs de redirecionamento `http://localhost:3000/api/aut
 rodar o checklist manual de login social (spec §12), incluindo convite novo, usuário existente e
 usuário sem conta (deve voltar com "Conta não encontrada. Peça um convite.").
 **Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** C6-1: o Google fica desligado no piloto (sem `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` na Vercel o botão não aparece); entrar é por e-mail e senha ou passkey. A pendência continua bloqueada no dono.
 
 ## 4. Teto aceito
 
@@ -452,6 +574,7 @@ connection strings (com e sem pooler) para `.env.local`.
 também com `verify-full`.
 **Atualização (2026-11-20):** o local passou para a branch de **desenvolvimento** do Neon; as URLs de
 produção ficaram comentadas no `.env.local` — mover para a Vercel e apagar de lá.
+**Atualização (2026-11-26):** a produção usa um projeto Neon **novo** (C6-4, região `sa-east-1`, plano Free), não a branch de desenvolvimento deste `.env.local`. Na Vercel entra só `DATABASE_URL_POOLED`; a URL direta fica só no shell da migração (runbook, passo B4). As URLs de produção comentadas do `.env.local` saem por mão do dono (passo B2). O que falta é a Parte B (go-live), fora do código.
 
 #### P3 — Tamanhos do Button abaixo do alvo mínimo de toque 🟡
 **Estado:** Resolvido

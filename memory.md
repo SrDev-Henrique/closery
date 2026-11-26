@@ -1,6 +1,6 @@
-# Memory — Fases 0 a 5 concluídas; o próximo passo é o plano da Fase 6
+# Memory — Fases 0 a 5 concluídas e o código da Fase 6 pronto; o que falta é o go-live
 
-Last updated: 2026-11-25 (UTC-3)
+Last updated: 2026-11-26 (UTC-3)
 
 ---
 
@@ -46,14 +46,28 @@ quantidade pedida por item). **Todo número é um link** para a lista filtrada q
 `/solicitacoes` ganharam os filtros que faltavam). "Exportar CSV" baixa as passagens do período e do escopo da tela
 (`GET /api/dashboard/export`). Só leitura, sem migração. Plano executado em `docs/superpowers/plans/2026-11-24-fase-5-dashboard.md`.
 
+**Produção: código pronto (Fase 6).** O app tem `vercel.json` (`gru1`, previews desligados), cabeçalhos de segurança e
+noindex, log sem dado de pessoa (`logServerError`), `admin:invite --confirmar-host` e `bun run db:hosts`, Better Auth
+endurecido, **redefinição de senha pelo link que o administrador gera em `/admin/equipe`** (sem e-mail: P8 segue aberta),
+Sentry (só com `NEXT_PUBLIC_SENTRY_DSN`), alvos de toque de 44 px, a página pública `/privacidade` (rascunho até a empresa
+aprovar) e `bun run smoke <url>`. **Nada foi para produção:** o go-live (Neon e Vercel novos, migração, primeiro
+administrador, convites) é o passo a passo de `.context/runbook-producao.md`, conduzido com o dono, com confirmação dele
+em cada passo voltado para fora. Plano executado em `docs/superpowers/plans/2026-11-25-fase-6-producao.md`.
+
 O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
 18 decisões em `.context/build-plan.md §5`) e o plano executado em
 `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 
 ## O que está esperando
 
-- **Plano da Fase 6 (skill `writing-plans`):** Produção — Vercel, domínio, e-mail transacional (P8) e o piloto de uma
-  semana com a equipe (spec §13). O deploy ainda não foi feito: `next build` e o E2E já rodam no CI.
+- **Go-live da Fase 6 (Parte B):** seguir `.context/runbook-producao.md` com o dono (B0 a B18). O deploy ainda não foi feito;
+  nada é publicado sem o "sim" explícito do dono naquele momento. Sem a aprovação da empresa para `/privacidade` (P64)
+  ninguém é convidado.
+- **P62–P76 (Fase 6):** `main` sem proteção (P62); o que só o primeiro deploy confirma (P63); LGPD (P64); riscos do Hobby e do Neon
+  Free (P65); passkeys presas ao `*.vercel.app` (P66); aba fechada com salvamento na fila (P67); Sentry sem source maps (P68);
+  `scrubEvent` só limpa padrões conhecidos (P69); toque só medido no Chromium (P70); sem manifest (P71); tempo de preenchimento
+  sem medição (P72); suíte lenta (P73); `admin:invite` sem contagem de administradores (P74); o Next imprime o erro não tratado
+  inteiro (P75); o link de nova senha não deixa registro de quem gerou (P76). Próximo id livre: P77.
 - **P34–P36 (Fase 3):** "sem passagem" usa os horários atuais do turno (P34); o cartão "Passagem para
   confirmar" não tem teto de idade (P35); dois operadores no mesmo rascunho: o último a salvar vence (P36).
 - **P44, P46, P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); um cartão movido para uma coluna

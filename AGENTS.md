@@ -28,6 +28,7 @@ Leia nesta ordem antes de qualquer implementação:
 8. `.context/build-plan.md` — fases e sequência
 9. `.context/progress-tracker.md` — estado real da obra
 10. `.context/pendencias.md` — tudo que está devido e não feito
+11. `.context/runbook-producao.md` — o go-live e a semana de piloto (só quando for pôr em produção)
 
 `memory.md` (raiz) é o handoff entre sessões: leia quando retomar um trabalho de várias sessões.
 
@@ -39,6 +40,7 @@ Leia nesta ordem antes de qualquer implementação:
 | `bun run check-types` · `bun run lint` · `bun run format` | tipos · Biome (só verifica) · Biome (grava) |
 | `bun run test` · `bun run test:watch` | Vitest (PGlite + Testing Library). **Nunca `bun test`** |
 | `bun run test:e2e` | Playwright com banco efêmero (pglite-socket) e build de produção; cerca de 1 min |
+| `bun run smoke <https://<projeto>.vercel.app> [--local]` | confere uma produção (ou o `next start` local, com `--local`) só com `GET`: saúde do banco, região, cabeçalhos de segurança, noindex, redirecionamento e `/privacidade`; código de saída 1 se algo falhar |
 | `bun run build` | build de produção (exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET` no `.env.local`) |
 | `bun run db:generate` → revisar → `bun run db:migrate` | migração versionada do Drizzle |
 | `bun run admin:invite --confirmar-host=<host>` | gera o link de convite do primeiro administrador; sem a flag, mostra o banco de destino e recusa |

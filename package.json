@@ -18,7 +18,8 @@
     "db:hosts": "bun scripts/dbHosts.ts",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "smoke": "bun scripts/smoke.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

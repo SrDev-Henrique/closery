@@ -211,4 +211,25 @@ describe(".context/pendencias.md", () => {
     expect(entry?.section).toBe("3");
     expect(entry?.updates.some((date) => date >= "2026-11-25")).toBe(true);
   });
+  it("Fase 6: P62 a P76 entraram como Aberto, não triado", () => {
+    for (let number = 62; number <= 76; number++) {
+      const id = `P${number}`;
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Aberto, não triado");
+      expect(entry?.section, id).toBe("1");
+      expect(index.get(id), `${id}: índice`).toBe("Aberto, não triado");
+    }
+  });
+
+  it("Fase 6: P1, P6 e P10 ganharam a Atualização da produção", () => {
+    for (const id of ["P1", "P6", "P10"]) {
+      expect(
+        entries.get(id)?.updates.some((date) => date >= "2026-11-25"),
+        id,
+      ).toBe(true);
+    }
+    expect(entries.get("P6")?.state).toBe("Bloqueado no dono");
+    expect(entries.get("P10")?.state).toBe("Bloqueado no dono");
+    expect(entries.get("P1")?.state).toBe("Resolvido");
+  });
 });
