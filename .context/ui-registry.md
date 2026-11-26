@@ -398,6 +398,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `next/link`, `cn`.
 - **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 8).
 
+### BackLink
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/privacy/BackLink.tsx`
+- **Propósito:** o controle `Voltar` no fim da página pública `/privacidade`; leva a pessoa para onde ela estava (o convite, `/entrar`, `/conta`), sem perder o convite aberto.
+- **Como funciona:** `"use client"`; um `<Link href="/entrar">` sempre presente (funciona sem JavaScript e é o destino de quem abriu a página direto, sem histórico). No clique, se `window.history.length > 1`, cancela o link e chama `router.back()`. Padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:items-center`, ui-rules §1.4); só tokens, claro e escuro. A página continua estática (`○ /privacidade`).
+- **Usa:** `next/link`, `useRouter` (`next/navigation`).
+- **Histórico:** 2026-11-26 — criado na revisão final da Fase 6; substitui o link `Voltar para a entrada`, que levava quem veio do convite para `/entrar` (que não cria conta).
+
 ### PasskeyManager
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/auth/PasskeyManager.tsx`

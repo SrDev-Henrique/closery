@@ -40,7 +40,7 @@ test("(a) /privacidade abre sem sessão e é linkada de /entrar, do convite e de
   await page.goto("/entrar");
   await page.getByRole("link", { name: "Privacidade e seus dados" }).click();
   await expect(page).toHaveURL(/\/privacidade$/);
-  await page.getByRole("link", { name: "Voltar para a entrada" }).click();
+  await page.getByRole("link", { name: "Voltar" }).click();
   await expect(page).toHaveURL(/\/entrar$/);
 
   // Do convite válido (o convite não é usado: só se abre a página).
@@ -60,6 +60,23 @@ test("(a) /privacidade abre sem sessão e é linkada de /entrar, do convite e de
   await expect(page).toHaveURL(/\/privacidade$/);
   await expect(
     page.getByRole("heading", { level: 1, name: "Privacidade e seus dados" }),
+  ).toBeVisible();
+});
+
+test("(a2) o Voltar da privacidade leva de volta ao convite aberto", async ({
+  page,
+}) => {
+  const { token } = await insertInvite(db, { role: "admin" });
+  await page.goto(buildInviteUrl(E2E_BASE_URL, token));
+  await expect(
+    page.getByRole("heading", { name: "Você foi convidado" }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Privacidade e seus dados" }).click();
+  await expect(page).toHaveURL(/\/privacidade$/);
+  await page.getByRole("link", { name: "Voltar" }).click();
+  await expect(page).toHaveURL(/\/convite\//);
+  await expect(
+    page.getByRole("heading", { name: "Você foi convidado" }),
   ).toBeVisible();
 });
 

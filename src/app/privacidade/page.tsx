@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
+import { BackLink } from "@/components/privacy/BackLink";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   PRIVACY_DRAFT,
@@ -62,12 +62,7 @@ export default function Page() {
       <p className="text-sm text-muted-foreground">
         Última atualização: {PRIVACY_UPDATED_AT}.
       </p>
-      <Link
-        href="/entrar"
-        className="w-fit text-sm underline underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:items-center"
-      >
-        Voltar para a entrada
-      </Link>
+      <BackLink />
     </main>
   );
 }

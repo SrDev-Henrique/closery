@@ -25,7 +25,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
       "Como você entra: a senha (guardada de forma que ninguém consegue ler) e as passkeys que você cadastrar.",
       "As passagens de turno, as solicitações e os comentários que você escreve, cada um com o seu nome e o horário.",
       "O endereço de rede (IP) e o navegador de cada acesso, para manter a sessão segura e limitar tentativas em excesso.",
-      "Relatórios de erro do sistema, limpos antes do envio ao Sentry para não levar nome, e-mail nem o conteúdo das passagens.",
+      "Relatórios de erro do sistema, enviados ao Sentry sem e-mail, sem o conteúdo das consultas ao banco e sem links; o responsável pelo sistema os revê todo dia para conferir que nenhum traz dado de pessoa.",
     ],
   },
   {
@@ -51,7 +51,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
       "Aplicação: Vercel, com o processamento em São Paulo (Brasil); a Vercel guarda por 1 hora registros técnicos de acesso.",
       "Banco de dados: Neon, em São Paulo (Brasil).",
       "Relatórios de erro: Sentry, fora do Brasil, com o endereço de rede descartado.",
-      "Cópia de segurança: durante o piloto, o administrador baixa todo dia o resumo das passagens (com os nomes de quem entregou e recebeu) e o guarda numa pasta privada.",
+      "Cópia de segurança: durante o piloto, o administrador baixa todo dia o resumo das passagens (com os nomes de quem entregou e recebeu, as observações e as ocorrências do turno) e o guarda numa pasta privada.",
     ],
   },
   {
@@ -65,7 +65,7 @@ export const PRIVACY_SECTIONS: readonly PrivacySection[] = [
     id: "direitos",
     title: "Seus direitos e contato",
     paragraphs: [
-      "Você pode pedir para ver seus dados, corrigir um dado errado ou tirar uma dúvida sobre esta página. Fale com o administrador do seu setor: ele atende o pedido ou leva à empresa. Registros de passagens já confirmadas só mudam por correção do administrador, com motivo anotado.",
+      "Você pode pedir para ver seus dados, corrigir um dado errado ou tirar uma dúvida sobre esta página. Fale com o administrador do sistema: ele atende o pedido ou leva à empresa. Registros de passagens já confirmadas só mudam por correção do administrador, com motivo anotado.",
     ],
   },
 ];
