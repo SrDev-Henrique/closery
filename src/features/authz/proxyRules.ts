@@ -1,4 +1,8 @@
-export const PUBLIC_PATH_PREFIXES: readonly string[] = ["/entrar", "/convite"];
+export const PUBLIC_PATH_PREFIXES: readonly string[] = [
+  "/entrar",
+  "/convite",
+  "/redefinir-senha",
+];
 
 function isApiPath(pathname: string): boolean {
   return pathname === "/api" || pathname.startsWith("/api/");

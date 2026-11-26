@@ -194,4 +194,11 @@ describe(".context/pendencias.md", () => {
       ).toBe(true);
     }
   });
+
+  it("Fase 6: P8 continua bloqueada no dono e ganhou a Atualização do link do admin", () => {
+    const entry = entries.get("P8");
+    expect(entry?.state).toBe("Bloqueado no dono");
+    expect(entry?.section).toBe("3");
+    expect(entry?.updates.some((date) => date >= "2026-11-25")).toBe(true);
+  });
 });

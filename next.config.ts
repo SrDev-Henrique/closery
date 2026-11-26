@@ -42,6 +42,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       { source: "/convite/:path*", headers: noReferrer },
+      { source: "/redefinir-senha/:path*", headers: noReferrer },
     ];
   },
 };

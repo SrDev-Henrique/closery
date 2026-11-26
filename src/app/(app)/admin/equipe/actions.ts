@@ -1,11 +1,13 @@
 "use server";
 
+import { createPasswordResetLink } from "@/features/admin/passwordReset";
 import { setPersonActive, updatePerson } from "@/features/admin/people";
 import type { AdminResult } from "@/features/admin/result";
 import { runAdminAction } from "@/features/admin/runAdminAction";
 import {
   cancelInviteSchema,
   createInviteSchema,
+  createPasswordResetLinkSchema,
   setPersonActiveSchema,
   updatePersonSchema,
 } from "@/features/admin/schemas";
@@ -13,7 +15,7 @@ import {
   cancelPendingInvite,
   createTeamInvite,
 } from "@/features/admin/teamInvites";
-import { authEnv } from "@/lib/auth";
+import { auth, authEnv } from "@/lib/auth";
 import { requireAdmin } from "@/lib/auth/session";
 
 // `input: unknown` é o objeto do formulário (UpdatePersonInput); o schema Zod
@@ -71,5 +73,25 @@ export async function cancelInviteAction(input: unknown): Promise<AdminResult> {
     input,
     run: ({ db, now, input: data }) =>
       cancelPendingInvite(db, { id: data.id }, now),
+  });
+}
+
+// Como o convite: o link nasce aqui e volta uma vez só (o banco guarda só o hash
+// do token). Quem gera é sempre admin; o domínio confere de novo.
+export async function createPasswordResetLinkAction(
+  input: unknown,
+): Promise<AdminResult<{ url: string; expiresAt: Date }>> {
+  const actor = await requireAdmin();
+  return runAdminAction({
+    actor,
+    schema: createPasswordResetLinkSchema,
+    input,
+    run: ({ db, now, actor: current, input: data }) =>
+      createPasswordResetLink(
+        db,
+        auth,
+        { actor: current, userId: data.userId, baseURL: authEnv.baseURL },
+        now,
+      ),
   });
 }

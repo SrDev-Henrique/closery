@@ -78,6 +78,8 @@ describe("ui-registry.md cobre os componentes das Fases 2 a 5", () => {
     "chartColors",
     "usePrefersReducedMotion",
     "StockTrendChart",
+    "ResetPasswordForm",
+    "PasswordResetLinkButton",
   ])("%s tem cabeçalho próprio no catálogo (a menção solta não basta)", (name) => {
     expect(registry).toMatch(new RegExp(`^### ${name}(?![\\w])`, "m"));
   });

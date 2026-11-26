@@ -423,6 +423,7 @@ e um domínio remetente.
 **Atualização (2026-11-20):** o Better Auth está sem `sendResetPassword` e a tela `/entrar` não oferece "esqueci a senha" (a passkey cobre quem a criou). Continua bloqueada até haver provedor de e-mail.
 **Atualização (2026-11-20):** o hook de cadastro marca `emailVerified: true` sem verificação real do e-mail (o convite não é atrelado a e-mail); rever junto com "esqueci a senha".
 **Atualização (2026-11-20):** corrigido o item acima: o hook deixou de forçar `emailVerified` (`inviteSignupData` em `src/lib/auth/createAuth.ts`); cadastro por e-mail e senha fica `false` e o login social mantém o valor do provedor. Quando houver provedor de e-mail, a verificação de verdade (e o "esqueci a senha") entra por aqui; P8 continua bloqueada.
+**Atualização (2026-11-26):** Fase 6 (D-F6-2): sem provedor de e-mail, a recuperação passou a ser o **link de nova senha gerado pelo administrador** em `/admin/equipe` ("Nova senha", `createPasswordResetLink`, válido por 24 h, uso único, compartilhado como o convite) e a página pública `/redefinir-senha`; o `/entrar` diz "Esqueceu a senha? Peça ao administrador um link para criar outra.". O pedido por e-mail (`/request-password-reset`) continua respondendo `RESET_PASSWORD_DISABLED`. P8 continua **bloqueada no dono**: e-mail transacional exige domínio próprio (D-F6-1, só `*.vercel.app` no piloto), e a verificação de e-mail e o "esqueci a senha" por e-mail seguem para depois.
 
 #### P10 — Credenciais OAuth do Google não criadas 🟡
 **Estado:** Bloqueado no dono

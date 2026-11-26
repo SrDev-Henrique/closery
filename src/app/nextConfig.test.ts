@@ -17,16 +17,23 @@ async function globalHeaders() {
 }
 
 describe("next.config headers", () => {
-  it("/convite/* envia Referrer-Policy: no-referrer", async () => {
-    const rule = (await rules()).find(
-      (candidate) => candidate.source === "/convite/:path*",
-    );
-    expect(headerValue(rule?.headers, "Referrer-Policy")).toBe("no-referrer");
+  it("/convite/* e /redefinir-senha/* enviam Referrer-Policy: no-referrer", async () => {
+    const all = await rules();
+    for (const source of ["/convite/:path*", "/redefinir-senha/:path*"]) {
+      const rule = all.find((candidate) => candidate.source === source);
+      expect(headerValue(rule?.headers, "Referrer-Policy"), source).toBe(
+        "no-referrer",
+      );
+    }
   });
 
-  it("a regra de no-referrer vem depois da global (a posterior vence)", async () => {
+  it("as regras de no-referrer vêm depois da global (a posterior vence)", async () => {
     const sources = (await rules()).map((rule) => rule.source);
-    expect(sources).toEqual(["/:path*", "/convite/:path*"]);
+    expect(sources).toEqual([
+      "/:path*",
+      "/convite/:path*",
+      "/redefinir-senha/:path*",
+    ]);
   });
 
   it("todas as rotas recebem os cabeçalhos de segurança", async () => {

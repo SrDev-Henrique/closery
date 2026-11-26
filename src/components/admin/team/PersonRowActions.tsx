@@ -7,6 +7,7 @@ import { useAdminAction } from "@/components/admin/useAdminAction";
 import { Button } from "@/components/ui/button";
 import type { PersonRow } from "@/features/admin/people";
 import type { SectorChoice } from "@/features/admin/sectors";
+import { PasswordResetLinkButton } from "./PasswordResetLinkButton";
 import { PersonForm } from "./PersonForm";
 
 export function PersonRowActions({
@@ -25,6 +26,13 @@ export function PersonRowActions({
           <PersonForm person={person} sectors={sectors} onDone={close} />
         )}
       </EditDialog>
+
+      {person.active && (
+        <PasswordResetLinkButton
+          personId={person.id}
+          personName={person.name}
+        />
+      )}
 
       {person.active ? (
         <ConfirmDialog

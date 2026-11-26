@@ -209,9 +209,12 @@ export function SignInPanel({ providers, initialErrorCode }: SignInPanelProps) {
           disabled={pending}
         />
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col items-start gap-1">
         <p className="text-sm text-muted-foreground">
           O acesso é só por convite.
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Esqueceu a senha? Peça ao administrador um link para criar outra.
         </p>
       </CardFooter>
     </Card>

@@ -6,6 +6,7 @@ export type AdminErrorCode =
   | "SECTOR_INACTIVE"
   | "SECTOR_IN_USE"
   | "SELF_CHANGE"
+  | "PERSON_INACTIVE"
   | "LAST_ADMIN"
   | "INVITE_NOT_PENDING"
   | "SHIFT_INACTIVE"

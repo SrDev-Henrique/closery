@@ -311,7 +311,7 @@ test("(d) operador em /admin/setores, /admin/equipe e nas outras rotas vê Pági
   }
 });
 
-test("(e) a linha da própria conta do admin mostra Você, a ajuda e nenhum botão", async ({
+test("(e) a linha da própria conta do admin mostra Você, a ajuda e só o botão Nova senha", async ({
   page,
 }) => {
   const email = uniqueEmail();
@@ -323,7 +323,10 @@ test("(e) a linha da própria conta do admin mostra Você, a ajuda e nenhum bot�
   await expect(ownRow).toContainText(
     "Peça a outro administrador para mudar a sua conta.",
   );
-  await expect(ownRow.getByRole("button")).toHaveCount(0);
+  await expect(ownRow.getByRole("button")).toHaveCount(1);
+  await expect(
+    ownRow.getByRole("button", { name: /^Gerar link de nova senha para / }),
+  ).toBeVisible();
 });
 
 test("(f) setor com operador ativo não se desativa e mostra o motivo", async ({

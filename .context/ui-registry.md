@@ -360,9 +360,17 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** `"use client"`; autofill condicional de passkey no mount (silencioso, não
   trava botões); botão "Entrar com passkey"; social com `requestSignUp: false`; erro inicial de
   `?error=`; erros por `authFormError(errorCodeOf(erro))`/`passkeyErrorCode`. O formulário vem primeiro porque o
-  autofill de passkey vive no campo de e-mail.
+  autofill de passkey vive no campo de e-mail. O rodapé tem dois parágrafos, nesta ordem: "O acesso é só por convite." e (Fase 6) "Esqueceu a senha? Peça ao administrador um link para criar outra." (nunca "Esqueci a senha": não há e-mail, o link vem do admin).
 - **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé.
+
+### ResetPasswordForm
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/auth/ResetPasswordForm.tsx` (página estática `src/app/(auth)/redefinir-senha/page.tsx`)
+- **Propósito:** a pessoa criar a senha nova com o link que o administrador mandou.
+- **Como funciona:** `"use client"`; `takeTokenFromLocation(location, history)` lê o token do **fragmento** (`#token=`, 16 a 256 caracteres `A-Za-z0-9_-`) e apaga o fragmento da barra com `history.replaceState`; o fragmento nunca chega ao servidor (fora do log e do `Referer`). Fases: lendo (cartão vazio com `aria-busy`), sem token ("Link incompleto" e o link-botão "Ir para a entrada"), formulário ("Criar uma senha nova", campo "Senha nova", `type="password"`, `autoComplete="new-password"`, 8 a 128, botão "Trocar a senha") e feito ("Senha alterada" e o link-botão "Entrar"; não entra sozinho, as sessões foram revogadas). Chama `authClient.resetPassword({ newPassword, token })`; o erro vira `authErrorMessage(errorCodeOf(error))` e a exceção de rede a mensagem genérica. Em StrictMode o segundo efeito não acha o fragmento e não zera o token.
+- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `buttonVariants`, `authClient`, `authErrorMessage`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 5).
 
 ### PasskeyOffer
 - **Status:** ✅ pronto (2026-11-20)
@@ -633,9 +641,9 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/TeamAdmin.tsx` (+ `roleOptions.ts`: `ROLE_LABELS`, `ROLE_OPTIONS`)
 - **Propósito:** conteúdo de `/admin/equipe`: convidar, acompanhar convites pendentes e gerir as pessoas do sistema.
-- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`), `listPendingInvites` (`?convites=`) e `listActiveSectors`. Ordem na tela: `InviteForm`, "Convites pendentes" (só válidos, com `PendingInviteActions`) e "Pessoas". A própria conta mostra o selo "Você" e o texto de ajuda, **sem botões**; pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; duas `Pagination` independentes (cada uma preserva o parâmetro da outra); estados vazios.
-- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `InviteForm`, `PendingInviteActions`, `PersonRowActions`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9, só Pessoas); Tarefa 10 acrescenta convites.
+- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`), `listPendingInvites` (`?convites=`) e `listActiveSectors`. Ordem na tela: `InviteForm`, "Convites pendentes" (só válidos, com `PendingInviteActions`) e "Pessoas". A própria conta mostra o selo "Você", o texto de ajuda e **só** o `PasswordResetLinkButton` ("Nova senha": é a única ação que vale para si mesmo e dá ao admin sem e-mail um caminho de recuperação); pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; duas `Pagination` independentes (cada uma preserva o parâmetro da outra); estados vazios.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `InviteForm`, `PendingInviteActions`, `PersonRowActions`, `PasswordResetLinkButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9, só Pessoas); Tarefa 10 acrescenta convites. 2026-11-26 — Fase 6 (Tarefa 5): a linha da própria conta ganha o botão "Nova senha" (antes ficava sem botões).
 
 ### PersonForm
 - **Status:** ✅ pronto (2026-11-21)
@@ -648,10 +656,18 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 ### PersonRowActions
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/PersonRowActions.tsx`
-- **Propósito:** ações de uma linha de pessoa: editar, desativar (com confirmação) e reativar.
-- **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões.
-- **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `useAdminAction`, `Button`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+- **Propósito:** ações de uma linha de pessoa: editar, gerar link de nova senha, desativar (com confirmação) e reativar.
+- **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões. Fase 6: pessoa **ativa** ganha o `PasswordResetLinkButton` entre "Editar" e "Desativar" (a inativa não: o domínio recusaria).
+- **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `PasswordResetLinkButton`, `useAdminAction`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9). 2026-11-26 — Fase 6 (Tarefa 5): botão "Nova senha".
+
+### PasswordResetLinkButton
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/admin/team/PasswordResetLinkButton.tsx`
+- **Propósito:** o admin gerar o link de nova senha de uma pessoa (sem e-mail, D-F6-2) e mandá-lo como o convite, por cópia ou WhatsApp.
+- **Como funciona:** `"use client"`; botão "Nova senha" (`variant="outline"`, `size="sm"`, `aria-label` `Gerar link de nova senha para {nome}`, desabilitado enquanto a action roda). Um clique chama `createPasswordResetLinkAction({ userId })` por `useAdminAction` (o erro vira toast, nenhum diálogo abre). No sucesso abre um `Dialog` "Link de nova senha" (descrição = o nome) com o campo somente leitura `Link para copiar` (seleciona ao focar), o texto "Válido até {data e hora}, uma vez só…", "Copiar link" e "Compartilhar" (só com `navigator.share`, pelo `useShareLink`). Fechar o diálogo descarta o link: ele aparece uma vez só e gerar outro derruba o anterior.
+- **Usa:** `useAdminAction`, `useShareLink`, `Dialog*`, `Input`, `Button`, `formatDateTimeBR`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 5).
 
 ### InviteForm
 - **Status:** ✅ pronto (2026-11-21)

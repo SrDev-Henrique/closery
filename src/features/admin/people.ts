@@ -2,7 +2,7 @@ import "server-only";
 
 import { and, asc, count, eq, isNull, sql } from "drizzle-orm";
 
-import { session, user } from "@/db/schema/auth";
+import { session, user, verification } from "@/db/schema/auth";
 import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
 import type { Role } from "@/lib/roles";
@@ -189,6 +189,10 @@ export async function setPersonActive(
       // P11: sem isto a pessoa desativada seguiria logada até a sessão vencer.
       // Apaga mesmo se ela já estava desativada (sobra de antes da P11).
       await tx.delete(session).where(eq(session.userId, input.userId));
+      // Link de nova senha que ainda circula (WhatsApp) morre junto: reativar
+      // dentro das 24 h não pode ressuscitá-lo. Só a redefinição guarda o userId
+      // cru em `value` (as outras verificações guardam JSON).
+      await tx.delete(verification).where(eq(verification.value, input.userId));
       return ok();
     }
 

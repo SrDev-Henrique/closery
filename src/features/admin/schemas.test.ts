@@ -8,6 +8,7 @@ import {
   createDestinationSchema,
   createInviteSchema,
   createItemSchema,
+  createPasswordResetLinkSchema,
   createSectorSchema,
   createShiftSchema,
   firstFieldErrors,
@@ -325,6 +326,22 @@ describe("pessoas", () => {
   });
 });
 
+describe("createPasswordResetLinkSchema", () => {
+  it("aceita um userId de texto livre", () => {
+    expect(
+      createPasswordResetLinkSchema.safeParse({ userId: "abc123" }).success,
+    ).toBe(true);
+  });
+
+  it("userId vazio, ausente ou de outro tipo é recusado em português", () => {
+    for (const input of [{ userId: "" }, {}, { userId: 1 }]) {
+      expect(errorsOf(createPasswordResetLinkSchema, input)).toEqual({
+        userId: "Confira os campos e tente de novo.",
+      });
+    }
+  });
+});
+
 describe("convites", () => {
   const valid = {
     inviteeLabel: "Turno da noite",
@@ -386,6 +403,7 @@ describe("nenhuma mensagem sai em inglês", () => {
     updateItemSchema,
     updatePersonSchema,
     setPersonActiveSchema,
+    createPasswordResetLinkSchema,
     createInviteSchema,
     cancelInviteSchema,
   };
