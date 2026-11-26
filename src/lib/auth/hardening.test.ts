@@ -304,35 +304,21 @@ describe("logger do Better Auth passa por logServerError", () => {
     });
   }
 
-  // Só as linhas do logServerError (JSON). O roteador do better-call ainda
-  // imprime "# SERVER_ERROR: <erro>" por conta própria para exceção que não é
-  // APIError, fora do alcance do logger do Better Auth: resíduo da P75.
-  function loggedLines(spy: { mock: { calls: unknown[][] } }): string[] {
-    return spy.mock.calls
-      .map((call) => call.map(String).join(" "))
-      .filter((line) => line.startsWith("{"));
-  }
-
-  it("erro de banco: uma linha JSON com contexto, nome e código, sem SQL nem e-mail", async () => {
+  it("erro de banco: o handler relança (onAPIError.throw) e nada é impresso aqui", async () => {
+    // O registro (uma linha JSON, sem SQL nem e-mail) é do embrulho do route
+    // handler e fica provado em app/api/auth/[...all]/route.test.ts. Aqui só
+    // vale que o better-call não imprime o erro cru (`# SERVER_ERROR`).
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     const auth = createTestAuth(failingDb());
 
-    const res = await post(auth, "/sign-in/email", {
-      email: SECRET_EMAIL,
-      password: "senha-qualquer-1",
-    });
+    await expect(
+      post(auth, "/sign-in/email", {
+        email: SECRET_EMAIL,
+        password: "senha-qualquer-1",
+      }),
+    ).rejects.toBeInstanceOf(DrizzleQueryError);
 
-    expect(res.status).toBe(500);
-    const lines = loggedLines(spy);
-    expect(lines).toHaveLength(1);
-    expect(JSON.parse(lines[0] ?? "")).toMatchObject({
-      level: "error",
-      context: "better-auth",
-      code: "23505",
-    });
-    expect(lines[0]).not.toContain(SECRET_EMAIL);
-    expect(lines[0]).not.toContain("Failed query");
-    expect(lines[0]).not.toContain("select");
+    expect(spy).not.toHaveBeenCalled();
   });
 
   it("um aviso qualquer do Better Auth não escreve nada", async () => {

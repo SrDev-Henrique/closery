@@ -100,6 +100,13 @@ export function createAuth(db: Db, env: AuthEnv) {
     // rate limit nunca cair no balde global por rota (P22).
     advanced: { ipAddress: { ipAddressHeaders: ["x-forwarded-for"] } },
 
+    // Erro que não é APIError sobe até o route handler (o embrulho de
+    // app/api/auth/[...all]/route.ts registra por logServerError). Sem isto o
+    // roteador do better-call imprimiria o erro cru com `console.error`, e o
+    // do Drizzle carrega o SQL e os parâmetros. O APIError dos endpoints segue
+    // virando a resposta normal.
+    onAPIError: { throw: true },
+
     // O logger padrão imprime o erro cru, e o erro do Drizzle carrega o SQL e os
     // parâmetros (token de sessão, IP, e-mail ou hash). Só o nível `error` e o
     // aviso de IP desconhecido passam, e passam por logServerError.
