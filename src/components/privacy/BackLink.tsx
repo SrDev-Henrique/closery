@@ -19,7 +19,7 @@ export function BackLink() {
           router.back();
         }
       }}
-      className="w-fit text-sm underline underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:items-center"
+      className="w-fit text-sm underline underline-offset-4 max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center"
     >
       Voltar
     </Link>

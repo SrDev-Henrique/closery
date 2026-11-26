@@ -56,5 +56,7 @@ describe("BackLink", () => {
     expect(classes).toContain("max-md:min-h-11");
     expect(classes).toContain("max-md:inline-flex");
     expect(classes).toContain("max-md:items-center");
+    // "Voltar" é curto: sem largura mínima mede 38px (guarda de toque do E2E).
+    expect(classes).toContain("max-md:min-w-11");
   });
 });

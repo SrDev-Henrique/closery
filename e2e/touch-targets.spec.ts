@@ -5,8 +5,11 @@ import type { Db } from "@/db/types";
 import { addDays } from "@/features/handovers/saoPaulo";
 
 import {
+  buildInviteUrl,
+  E2E_BASE_URL,
   insertHandover,
   insertHandoverItem,
+  insertInvite,
   insertRequest,
   insertRequestItem,
   insertUser,
@@ -158,9 +161,16 @@ test("operador: telas públicas e do operador, menu e diálogo têm alvos de toq
   await expectTouchSized(page, "/entrar");
   await expectTouchSized(page, "/privacidade");
   await expectTouchSized(page, `/redefinir-senha#token=${FORMAT_ONLY_TOKEN}`);
+  // O convite válido (só se abre a página, o formulário não é enviado).
+  const { token } = await insertInvite(db, {
+    role: "operator",
+    sectorId: world.sector.id,
+  });
+  await expectTouchSized(page, buildInviteUrl(E2E_BASE_URL, token));
   await signUpOperator(page, db, world.sector.id, "Ana Teste");
 
   for (const path of [
+    "/bem-vindo",
     "/",
     "/passagens",
     `/passagens/nova?turno=${world.shift.id}&data=${world.today}`,
