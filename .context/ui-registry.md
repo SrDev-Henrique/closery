@@ -294,7 +294,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Propósito:** o erro e o 404 de uma página de `(app)` aparecem dentro do shell: a barra lateral continua na tela (P19).
 - **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para `logServerError(error, "error-boundary")`, que escreve só o resumo, e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
 - **Usa:** `Button`, `buttonVariants`, `logServerError`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19). 2026-11-26 — Fase 6 (Tarefa 2): o `useEffect` deste arquivo e o do `error.tsx` da raiz chamam `logServerError(error, "error-boundary")` no lugar de `console.error(error)`; a tela não muda. 2026-11-26 — Fase 6 (Tarefa 6): a captura no Sentry mora dentro do `logServerError`; este arquivo não muda.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19). 2026-11-26 — Fase 6 (Tarefa 2): o `useEffect` deste arquivo e o do `error.tsx` da raiz chamam `logServerError(error, "error-boundary")` no lugar de `console.error(error)`; a tela não muda. 2026-11-26 — Fase 6 (Tarefa 6): a captura no Sentry mora dentro do `logServerError`; este arquivo não muda. 2026-11-26 — revisão final da Fase 6: o `Usa:` passa a citar `logServerError` (o componente já o usava).
 
 ### GlobalError
 - **Status:** ✅ pronto (2026-11-26)
@@ -370,7 +370,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `?error=`; erros por `authFormError(errorCodeOf(erro))`/`passkeyErrorCode`. O formulário vem primeiro porque o
   autofill de passkey vive no campo de e-mail. O rodapé tem dois parágrafos, nesta ordem: "O acesso é só por convite." e (Fase 6) "Esqueceu a senha? Peça ao administrador um link para criar outra." (nunca "Esqueci a senha": não há e-mail, o link vem do admin).
 - **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`, `PrivacyLink`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé. 2026-11-26 — Fase 6 (Tarefa 8): o rodapé termina com o `PrivacyLink` (`Privacidade e seus dados`), depois de `O acesso é só por convite.` e de `Esqueceu a senha? Peça ao administrador um link para criar outra.`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé. 2026-11-26 — Fase 6 (Tarefa 8): o rodapé termina com o `PrivacyLink` (`Privacidade e seus dados`), depois de `O acesso é só por convite.` e de `Esqueceu a senha? Peça ao administrador um link para criar outra.`. 2026-11-26 — revisão final da Fase 6: o `Usa:` passa a citar o `PrivacyLink`.
 
 ### ResetPasswordForm
 - **Status:** ✅ pronto (2026-11-26)
@@ -402,9 +402,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-26)
 - **Local:** `src/components/privacy/BackLink.tsx`
 - **Propósito:** o controle `Voltar` no fim da página pública `/privacidade`; leva a pessoa para onde ela estava (o convite, `/entrar`, `/conta`), sem perder o convite aberto.
-- **Como funciona:** `"use client"`; um `<Link href="/entrar">` sempre presente (funciona sem JavaScript e é o destino de quem abriu a página direto, sem histórico). No clique, se `window.history.length > 1`, cancela o link e chama `router.back()`. Padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center`, ui-rules §1.4; o texto é curto, então também tem largura mínima); só tokens, claro e escuro. A página continua estática (`○ /privacidade`).
+- **Como funciona:** `"use client"`; um `<Link href="/entrar">` sempre presente (funciona sem JavaScript e é o destino de quem abriu a página direto, sem histórico). No clique simples, se `window.history.length > 1`, cancela o link e chama `router.back()`; clique com Ctrl/Cmd/Shift/Alt ou outro botão segue o link (abrir em outra aba), como no `next/link`. Padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center`, ui-rules §1.4; o texto é curto, então também tem largura mínima); só tokens, claro e escuro. A página continua estática (`○ /privacidade`).
 - **Usa:** `next/link`, `useRouter` (`next/navigation`).
-- **Histórico:** 2026-11-26 — criado na revisão final da Fase 6; substitui o link `Voltar para a entrada`, que levava quem veio do convite para `/entrar` (que não cria conta).
+- **Histórico:** 2026-11-26 — criado na revisão final da Fase 6; substitui o link `Voltar para a entrada`, que levava quem veio do convite para `/entrar` (que não cria conta). 2026-11-26 — re-revisão da Fase 6: o clique com modificador não é mais interceptado.
 
 ### PasskeyManager
 - **Status:** ✅ pronto (2026-11-20)

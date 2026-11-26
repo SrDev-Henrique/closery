@@ -158,15 +158,16 @@ bun run db:migrate
 
 1. Plano Hobby (D-F6-3; riscos aceitos em P65). Importar o repositório; Framework Next.js. Os
    comandos de instalação e de build e a região (`gru1`) vêm do `vercel.json`. Conferir Node 22.x e
-   Fluid compute ligado (padrão).
+   Fluid compute ligado (padrão). **[confirma]** o botão Deploy da importação: ele já é o primeiro
+   deploy.
 2. **[confirma]** Variáveis **só de Production**, as da tabela acima. Para o segredo, no próprio
    Git Bash do Dono, fora da sessão do agente: `openssl rand -base64 32` e colar direto no campo da
    Vercel (marcar Sensitive). O Controlador não vê o valor. Se a tela de importação não deixar
    escolher Production e Sensitive, importe sem variáveis (o build falha fechado: o env é
-   validado), depois adicione as quatro em Settings → Environment Variables (só Production,
-   Sensitive) e **[confirma]** o redeploy.
+   validado), depois adicione as quatro em Settings → Environment Variables (só Production;
+   Sensitive como na tabela) e **[confirma]** o redeploy.
 3. Deployment Protection no padrão.
-4. **[confirma]** o primeiro deploy, com o Dono olhando o painel.
+4. **[confirma]** o deploy com as quatro variáveis, com o Dono olhando o painel.
 
 ### B6. O domínio de produção é o `BETTER_AUTH_URL`
 
@@ -362,10 +363,12 @@ go/no-go. **Controlador:** registra cada achado em `.context/pendencias.md` como
   3. A pessoa troca a senha, entra com ela e, em `/conta`, remove **todas** as passkeys (todas
      aparecem como "Passkey"; não dá para saber qual é a do intruso).
   4. Desative e reative de novo (derruba sessão aberta no intervalo); a pessoa entra com a senha e
-     cria uma passkey nova no próprio celular.
+     cria uma passkey nova no próprio celular. Confira em `/conta` que aparece **só** a passkey que
+     ela acabou de criar; se houver outra, repita do passo 1.
   5. Revise as passagens e solicitações que a conta entregou ou confirmou no período: o que estiver
      errado, o administrador corrige com motivo (D13).
 
-  Na conta do próprio administrador (não dá para se desativar): remova as passkeys em `/conta`
-  primeiro e depois use `Nova senha` na própria linha.
+  Na conta do próprio administrador (não dá para se desativar): remova as passkeys em `/conta`, use
+  `Nova senha` na própria linha, entre com a senha nova, remova de novo **todas** as passkeys, crie
+  a sua e confira que aparece só uma.
 - Suspeita de segredo exposto: B17 e, se for a URL do banco, resetar a senha no Neon primeiro.

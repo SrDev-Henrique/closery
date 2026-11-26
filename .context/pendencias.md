@@ -474,8 +474,8 @@
 
 #### P75 — Next imprime o erro não tratado inteiro no log da Vercel 🟡
 **Estado:** Aberto, não triado
-**Arquivos:** `src/instrumentation.ts` · `src/app/(app)/error.tsx`
-**Impacto:** um erro não tratado de Server Component ou de rota sai no log do próprio Next como `⨯ Error: Failed query: … params: …`, com o SQL e os parâmetros (e-mail, hash ou texto da passagem); o log da Vercel guarda 1 hora no Hobby. `logServerError` só cobre o erro tratado e o que o `logger` do Better Auth emite. A parte do roteador do `better-call` (o `# SERVER_ERROR: <erro>`) foi fechada na rodada da revisão final (`onAPIError: { throw: true }` e o embrulho do `route.ts`); sobra só o log do próprio Next.
+**Arquivos:** `src/instrumentation.ts` · os loaders das páginas (`src/features/**/loaders.ts`, `src/app/(app)/**/page.tsx`)
+**Impacto:** um erro não tratado de Server Component ou de rota sai no log do próprio Next como `⨯ Error: Failed query: … params: …`, com o SQL e os parâmetros (e-mail, hash ou texto da passagem); o log da Vercel guarda 1 hora no Hobby. `logServerError` só cobre o erro tratado, o que o `logger` do Better Auth emite e o erro inesperado do `/api/auth` (o embrulho do `route.ts`). A parte do roteador do `better-call` (o `# SERVER_ERROR: <erro>`) foi fechada na rodada da revisão final (`onAPIError: { throw: true }` e o embrulho do `route.ts`); sobra só o log do próprio Next.
 **Correção:** — (opções: (1) aceitar no piloto e rever o log em B7 e B15 sem copiar linhas; (2) capturar nos loaders das páginas, chamar `logServerError` e relançar um `Error` neutro, sem a mensagem do Drizzle)
 **Registrado em:** 2026-11-26
 
