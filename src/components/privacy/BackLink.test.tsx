@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -35,6 +35,21 @@ describe("BackLink", () => {
     const link = screen.getByRole("link", { name: "Voltar" });
     expect(link).toHaveAttribute("href", "/entrar");
     await userEvent.click(link);
+    expect(mocks.router.back).not.toHaveBeenCalled();
+  });
+
+  it("clique com Ctrl ou Shift (abrir em outra aba) segue o link e não chama back()", () => {
+    setHistoryLength(3);
+    render(<BackLink />);
+    const link = screen.getByRole("link", { name: "Voltar" });
+    for (const modifier of [
+      { ctrlKey: true },
+      { metaKey: true },
+      { shiftKey: true },
+      { altKey: true },
+    ]) {
+      expect(fireEvent.click(link, modifier)).toBe(true);
+    }
     expect(mocks.router.back).not.toHaveBeenCalled();
   });
 

@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 // "Voltar" da página de privacidade: leva para onde a pessoa estava (o convite,
 // a entrada, /conta). Quem abriu a página direto, sem histórico, cai em /entrar.
 // O href existe sempre (funciona sem JavaScript); com histórico, o clique
-// volta uma página em vez de seguir o link. Sozinho numa linha, então ganha o
+// volta uma página em vez de seguir o link (o clique com modificador segue o
+// link, como no next/link). Sozinho numa linha, então ganha o
 // alvo de toque de 44px abaixo de md (ui-rules §1.4).
 export function BackLink() {
   const router = useRouter();
@@ -14,7 +15,10 @@ export function BackLink() {
     <Link
       href="/entrar"
       onClick={(event) => {
-        if (window.history.length > 1) {
+        // Ctrl/Cmd/Shift/Alt-clique é "abrir em outra aba": segue o link.
+        const modified =
+          event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+        if (!modified && event.button === 0 && window.history.length > 1) {
           event.preventDefault();
           router.back();
         }
