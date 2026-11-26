@@ -666,8 +666,16 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Local:** `src/components/admin/team/InviteLinkCard.tsx`
 - **Propósito:** mostrar o link do convite **uma vez** (só o hash fica no banco) para copiar ou compartilhar.
 - **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`; ao montar, o foco vai ao título "Convite gerado" (`h3`, `tabIndex={-1}`).
-- **Usa:** `Button`, `Input`, `sonner`, `formatDateTimeBR`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): foco no título ao montar.
+- **Usa:** `Button`, `Input`, `useShareLink`, `formatDateTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): foco no título ao montar. 2026-11-26 — Fase 6 (Tarefa 5): copiar e compartilhar passaram para o `useShareLink` (refatoração, o comportamento e o teste não mudaram).
+
+### useShareLink
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/admin/team/useShareLink.ts`
+- **Propósito:** copiar e compartilhar um link que aparece uma vez só (convite e, a partir da Tarefa 5 da Fase 6, nova senha), sem repetir a lógica em cada cartão.
+- **Como funciona:** `"use client"`; `useShareLink({ url, shareTitle, shareText })` devolve `{ canShare, copy, share }`. `canShare` é falso no servidor e antes de montar e só vira `true` num `useEffect` quando `navigator.share` existe (o HTML do servidor não diverge do cliente). `copy` usa `navigator.clipboard.writeText` e avisa por toast (`Link copiado.`; falha ou contexto sem clipboard = `Não foi possível copiar. Selecione o link e copie.`). `share` chama `navigator.share({ title, text, url })`; `AbortError` (fechar a folha) é silencioso e qualquer outra falha cai em `copy`.
+- **Usa:** `sonner`.
+- **Histórico:** 2026-11-26 — extraído do `InviteLinkCard` na Fase 6 (Tarefa 5, commit de refatoração).
 
 ### PendingInviteActions
 - **Status:** ✅ pronto (2026-11-21)
