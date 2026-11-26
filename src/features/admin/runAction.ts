@@ -7,6 +7,7 @@ import type { z } from "zod";
 import { db } from "@/db";
 import type { Db } from "@/db/types";
 import type { Authz } from "@/features/authz/authz";
+import { logServerError } from "@/lib/logServerError";
 import {
   type AdminResult,
   fail,
@@ -64,7 +65,7 @@ export async function runAction<
   } catch (error) {
     // redirect() e notFound() são exceções do Next: têm de seguir adiante.
     unstable_rethrow(error);
-    console.error("runAction: falha inesperada", error);
+    logServerError(error, "runAction");
     // Nunca devolve o texto do erro (pode ser do banco).
     return fail("INTERNAL", INTERNAL_ERROR_MESSAGE);
   }

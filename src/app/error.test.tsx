@@ -33,7 +33,7 @@ describe("error.tsx", () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it("não vaza a mensagem do erro na tela, mas registra no console", () => {
+  it("não vaza a mensagem do erro na tela, mas registra só o resumo no console", () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
@@ -41,7 +41,10 @@ describe("error.tsx", () => {
     render(<ErrorPage error={error} retry={vi.fn()} />);
 
     expect(screen.queryByText(/hunter2/)).not.toBeInTheDocument();
-    expect(consoleError).toHaveBeenCalledWith(error);
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    const logged = String(consoleError.mock.calls[0]?.[0]);
+    expect(logged).toContain("error-boundary");
+    expect(logged).not.toContain("hunter2");
   });
 
   it("aceita erro que não é Error (o tipo da prop é unknown)", () => {

@@ -189,6 +189,10 @@ describe("runAction", () => {
     });
     expect(JSON.stringify(result)).not.toContain("hunter2");
     expect(consoleError).toHaveBeenCalledTimes(1);
+    const logged = consoleError.mock.calls[0] ?? [];
+    expect(logged).toHaveLength(1);
+    expect(String(logged[0])).not.toContain("hunter2");
+    expect(JSON.parse(String(logged[0])).context).toBe("runAction");
     expect(mocks.revalidatePath).not.toHaveBeenCalled();
   });
 

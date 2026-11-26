@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { connection } from "next/server";
 
 import { db } from "@/db";
+import { logServerError } from "@/lib/logServerError";
 
 export async function GET() {
   // Health check nunca é pré-renderizado nem cacheado.
@@ -23,7 +24,7 @@ export async function GET() {
     });
   } catch (error) {
     // O detalhe vai para o log do servidor, nunca para a resposta.
-    console.error("[health] falha ao consultar o banco", error);
+    logServerError(error, "health");
     return Response.json(
       { status: "error", database: "unreachable" },
       { status: 503 },

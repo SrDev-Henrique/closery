@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { logServerError } from "@/lib/logServerError";
 
 type AppErrorProps = {
   error: unknown;
@@ -14,7 +15,7 @@ type AppErrorProps = {
 // (src/app/error.tsx) fica para quem está fora do shell.
 export default function AppError({ error, retry }: AppErrorProps) {
   useEffect(() => {
-    console.error(error);
+    logServerError(error, "error-boundary");
   }, [error]);
 
   return (

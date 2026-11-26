@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
+import { logServerError } from "@/lib/logServerError";
 
 type ErrorPageProps = {
   error: unknown;
@@ -11,7 +12,7 @@ type ErrorPageProps = {
 
 export default function ErrorPage({ error, retry }: ErrorPageProps) {
   useEffect(() => {
-    console.error(error);
+    logServerError(error, "error-boundary");
   }, [error]);
 
   return (
