@@ -30,7 +30,7 @@ describe("PasskeyOffer", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Quer entrar mais rápido da próxima vez? Crie uma passkey: você entra com a digital, o rosto ou o PIN do aparelho.",
+        "A passkey é a forma mais rápida de entrar: você usa a digital, o rosto ou o PIN do aparelho, sem digitar senha. Se esquecer a senha, peça ao administrador um link para criar outra.",
       ),
     ).toBeInTheDocument();
     expect(

@@ -233,6 +233,15 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 - **Nenhum dado real** da planilha original (nomes) entra em commit, seed, teste ou
   fixture — só dados fictícios.
 - **Sem upload de arquivos** no MVP (D10) — nenhum armazenamento de mídia.
+- **Página de privacidade pública** (`/privacidade`, Fase 6): diz o que fica guardado (nome, e-mail,
+  senha e passkeys, passagens e comentários com autoria, o IP e o navegador de cada acesso, relatórios
+  de erro limpos), para quê, quem vê, onde fica (Vercel e Neon com o processamento em São Paulo, Sentry
+  fora do Brasil), por quanto tempo (conta desativada, nunca apagada) e como pedir ajuda (o
+  administrador do setor). O texto mora em `src/features/privacy/privacyContent.ts` e é **rascunho**
+  (`PRIVACY_DRAFT = true`, com alerta visível) até o dono e a empresa aprovarem (C6-5); a troca para
+  `false` é um PR curto depois da aprovação (runbook, passo B12). Cada frase só afirma o que a
+  configuração garante: as afirmações de região dependem de `gru1` e do projeto Neon em `sa-east-1`.
+  O link `Privacidade e seus dados` aparece em `/entrar`, no convite válido e em `/conta`.
 
 ## 9. Rotas · 🟢 rotas das Fases 1 a 5 prontas (as seguintes entram a cada marco)
 
@@ -256,12 +265,13 @@ As tabelas do Better Auth usam `timestamp` sem fuso (é o que a CLI gera); as do
 | `/solicitacoes` | solicitações do setor em três visões: Quadro (3 colunas com contagem do servidor e "Carregar mais"), Lista (4 grupos; padrão no celular) e Tabela (paginada); `?visao=quadro\|lista\|tabela`, filtros na URL (`destino`, `periodo`, `de`, `ate`, `criador`, `busca`, `status`, `parada`, `entrega`, `entrega_de`, `entrega_ate`, `item`, `setor`, `pagina`, `mais_<status>`). "Nova solicitação" abre um diálogo; "Mover para …" muda o status com o cartão trocando de coluna antes da resposta. Admin escolhe o setor ou "Todos os setores" | ✅ Fase 4 |
 | `/solicitacoes/[id]` | página completa da solicitação (propriedades, itens, ações de status, "Cancelar solicitação" com motivo, linha do tempo e comentários; `?comentarios=50..500`). Outro setor ou id inexistente: "Página não encontrada" | ✅ Fase 4 |
 | slot `@detalhe` (não é URL) | o detalhe rápido: clicar numa solicitação a partir de qualquer tela (Quadro, Lista, Tabela, formulário e resumo da passagem, Início) abre `/solicitacoes/[id]` num Sheet sobre a tela de baixo (rota interceptada `@detalhe/(.)solicitacoes/[id]`); recarregar ou abrir o link direto mostra a página completa | ✅ Fase 4 |
+| `/privacidade` | privacidade e seus dados: o que fica guardado, para quê, quem vê, onde fica, por quanto tempo e a quem pedir ajuda; alerta de rascunho enquanto `PRIVACY_DRAFT`. Estática (○ no build), fora de `(app)` e de `(auth)`. Pública | ✅ Fase 6 |
 | `/api/auth/[...all]` | handler do Better Auth. Pública | ✅ Fase 1 |
 | `/api/health` | `GET` — `select 1` dentro de transação; `200 {status:"ok"}` ou `503 {status:"error"}` sem detalhe (o erro vai só para o log). Pública | ✅ 2026-11-20 |
 | `/dashboard` | dashboard de todos os papéis: período (`periodo`, `de`, `ate`) no topo, quatro blocos (Passagens com o anel de 4 fatias, Controles com um `metric-card` por item, Estoque com a última contagem e a linha do período, Solicitações com abertas, paradas, entregues e tempo até a entrega por destino) e "Exportar CSV"; todo número é um link para a lista filtrada. Operador vê o próprio setor; admin escolhe o setor ou "Todos os setores" (`setor`) | ✅ Fase 5 |
 | `/api/dashboard/export` | `GET` autenticado (`requireUser` na primeira instrução): CSV das passagens do período e do escopo da tela (`periodo`, `de`, `ate`, `setor`); UTF-8 com BOM, `;`, CRLF, sem injeção de fórmula; `404` sem setor e `413` acima de 10.000 linhas; sem sessão redireciona para `/entrar` (307) | ✅ Fase 5 |
 
-Rotas públicas: `/entrar`, `/convite/[token]`, `/redefinir-senha`, `/api/auth/*` e `/api/health`. Todo o resto exige sessão (`src/proxy.ts` + `requireUser()`).
+Rotas públicas: `/entrar`, `/convite/[token]`, `/redefinir-senha`, `/privacidade`, `/api/auth/*` e `/api/health`. Todo o resto exige sessão (`src/proxy.ts` + `requireUser()`).
 
 ## 10. Log de evolução (ADR leve)
 

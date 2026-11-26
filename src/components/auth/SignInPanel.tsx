@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useId, useState } from "react";
+import { PrivacyLink } from "@/components/privacy/PrivacyLink";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -216,6 +217,7 @@ export function SignInPanel({ providers, initialErrorCode }: SignInPanelProps) {
         <p className="text-sm text-muted-foreground">
           Esqueceu a senha? Peça ao administrador um link para criar outra.
         </p>
+        <PrivacyLink />
       </CardFooter>
     </Card>
   );

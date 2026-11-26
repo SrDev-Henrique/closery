@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PasskeyManager } from "@/components/auth/PasskeyManager";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { PrivacyLink } from "@/components/privacy/PrivacyLink";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth/session";
 
@@ -29,6 +30,7 @@ async function AccountContent() {
       </div>
       <PasskeyManager />
       <SignOutButton />
+      <PrivacyLink />
     </>
   );
 }

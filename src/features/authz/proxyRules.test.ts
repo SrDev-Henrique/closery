@@ -7,11 +7,12 @@ import {
 } from "./proxyRules";
 
 describe("isPublicPath", () => {
-  it("os prefixos públicos são /entrar, /convite e /redefinir-senha", () => {
+  it("os prefixos públicos são /entrar, /convite, /redefinir-senha e /privacidade", () => {
     expect(PUBLIC_PATH_PREFIXES).toEqual([
       "/entrar",
       "/convite",
       "/redefinir-senha",
+      "/privacidade",
     ]);
   });
 
@@ -23,6 +24,8 @@ describe("isPublicPath", () => {
     "/convite/abc123/",
     "/redefinir-senha",
     "/redefinir-senha/",
+    "/privacidade",
+    "/privacidade/",
   ])("%s é pública", (pathname) => {
     expect(isPublicPath(pathname)).toBe(true);
   });
@@ -38,6 +41,8 @@ describe("isPublicPath", () => {
     "/convitex/abc",
     "/redefinir-senhas",
     "/redefinir-senha-x",
+    "/privacidades",
+    "/privacidade-x",
     "/admin/entrar",
     "//entrar",
     "/Entrar",
@@ -71,6 +76,7 @@ describe("shouldRedirectToSignIn", () => {
     "/entrar",
     "/convite/abc123",
     "/redefinir-senha",
+    "/privacidade",
   ])("rota pública %s não redireciona, com ou sem cookie", (pathname) => {
     expect(shouldRedirectToSignIn(pathname, false)).toBe(false);
     expect(shouldRedirectToSignIn(pathname, true)).toBe(false);

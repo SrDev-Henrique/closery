@@ -359,7 +359,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `message` do `armInvite`; `aria-invalid`/`aria-describedby` no campo; trava duplo clique. Com
   `USER_ALREADY_EXISTS*` mostra o link `Entrar` (para `/entrar`) abaixo da mensagem.
 - **Usa:** `Field*`, `Input`, `Button`, `buttonVariants`, `SocialButtons`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 8): o componente não muda; a página do convite válido (`/convite/[token]`) ganha um `CardFooter` com o `PrivacyLink`.
 
 ### SignInPanel
 - **Status:** ✅ pronto (2026-11-20)
@@ -370,7 +370,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `?error=`; erros por `authFormError(errorCodeOf(erro))`/`passkeyErrorCode`. O formulário vem primeiro porque o
   autofill de passkey vive no campo de e-mail. O rodapé tem dois parágrafos, nesta ordem: "O acesso é só por convite." e (Fase 6) "Esqueceu a senha? Peça ao administrador um link para criar outra." (nunca "Esqueci a senha": não há e-mail, o link vem do admin).
 - **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé. 2026-11-26 — Fase 6 (Tarefa 8): o rodapé termina com o `PrivacyLink` (`Privacidade e seus dados`), depois de `O acesso é só por convite.` e de `Esqueceu a senha? Peça ao administrador um link para criar outra.`.
 
 ### ResetPasswordForm
 - **Status:** ✅ pronto (2026-11-26)
@@ -388,7 +388,15 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   "Agora não" é `<Link className={buttonVariants()}>` (role link); erros por
   `passkeyErrorCode(…, "register")` + `authFormError`.
 - **Usa:** `Card*`, `Button`, `buttonVariants`, `FieldError`, `sonner`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 8): a descrição diz que a passkey é a forma mais rápida de entrar e que a recuperação é pelo administrador (`A passkey é a forma mais rápida de entrar: você usa a digital, o rosto ou o PIN do aparelho, sem digitar senha. Se esquecer a senha, peça ao administrador um link para criar outra.`); botões e comportamento iguais.
+
+### PrivacyLink
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/privacy/PrivacyLink.tsx`
+- **Propósito:** o link `Privacidade e seus dados` para a página pública `/privacidade`.
+- **Como funciona:** Server Component (sem estado); `<Link href="/privacidade">` com `className` opcional (`cn`). Fica sozinho numa linha, então usa o padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:items-center`, ui-rules §1.4). Aparece em três lugares: o rodapé do `SignInPanel` (`/entrar`), o `CardFooter` do convite válido (`/convite/[token]`) e `/conta` (depois de "Sair"). Não aparece no convite inválido nem dentro do shell (`/privacidade` é pública e tem o próprio link de volta para `/entrar`).
+- **Usa:** `next/link`, `cn`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 8).
 
 ### PasskeyManager
 - **Status:** ✅ pronto (2026-11-20)

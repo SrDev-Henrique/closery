@@ -405,6 +405,8 @@ tratar `email` nulo no cadastro.
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-20):** o botão "Continuar com Facebook" já existe e só aparece com `FACEBOOK_CLIENT_ID` e `FACEBOOK_CLIENT_SECRET`; e-mail ausente volta como `email_not_found` ("Essa conta não informou um e-mail. Use outro jeito de entrar."). Falta o app da Meta publicado (privacidade e exclusão de dados); continua bloqueada.
 
+**Atualização (2026-11-26):** a Fase 6 criou a página pública `/privacidade` (a URL de política de privacidade que a Meta pede), ainda em rascunho até o dono e a empresa aprovarem (`PRIVACY_DRAFT`). Continua bloqueada: faltam a página de instrução de exclusão de dados, o app da Meta publicado e, para ele, um domínio próprio (o piloto roda em `*.vercel.app`, D-F6-1).
+
 #### P8 — Sem provedor de e-mail, "esqueci a senha" não funciona 🟠
 **Estado:** Bloqueado no dono
 **Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/env.ts`

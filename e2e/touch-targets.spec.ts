@@ -156,6 +156,7 @@ test("operador: telas públicas e do operador, menu e diálogo têm alvos de toq
   // A página anterior é sempre outra, senão a troca de fragmento não recarrega.
   await expectTouchSized(page, "/redefinir-senha");
   await expectTouchSized(page, "/entrar");
+  await expectTouchSized(page, "/privacidade");
   await expectTouchSized(page, `/redefinir-senha#token=${FORMAT_ONLY_TOKEN}`);
   await signUpOperator(page, db, world.sector.id, "Ana Teste");
 

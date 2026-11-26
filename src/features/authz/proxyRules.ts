@@ -2,6 +2,7 @@ export const PUBLIC_PATH_PREFIXES: readonly string[] = [
   "/entrar",
   "/convite",
   "/redefinir-senha",
+  "/privacidade",
 ];
 
 function isApiPath(pathname: string): boolean {
