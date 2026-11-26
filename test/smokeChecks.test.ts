@@ -14,6 +14,7 @@ import {
   functionRegionOf,
   parseSmokeArgs,
   SMOKE_LABELS,
+  SMOKE_TIMEOUT_MS,
   SMOKE_USAGE,
 } from "../scripts/smokeChecks.mjs";
 
@@ -74,6 +75,16 @@ describe("parseSmokeArgs", () => {
   it("lê --local antes ou depois da URL", () => {
     expect(parseSmokeArgs(["--local", "http://localhost:3201"]).local).toBe(
       true,
+    );
+  });
+
+  it("recusa --local fora do localhost", () => {
+    const message = `--local só vale para localhost. ${SMOKE_USAGE}`;
+    expect(() => parseSmokeArgs(["https://x.vercel.app", "--local"])).toThrow(
+      message,
+    );
+    expect(() => parseSmokeArgs(["--local", "https://x.vercel.app"])).toThrow(
+      message,
     );
   });
 
@@ -143,7 +154,9 @@ describe("functionRegionOf", () => {
   it.each([
     ["gru1::gru1::abc-1700000000000-def", "gru1"],
     ["gru1::iad1::abc-1700000000000-def", "iad1"],
-    ["gru1::iad1", "gru1"],
+    ["gru1::iad1", null],
+    ["gru1::", null],
+    ["gru1::abc-123", null],
     ["gru1", null],
     ["", null],
     [null, null],
@@ -296,6 +309,21 @@ describe("checkRobots", () => {
       detail: "o robots.txt não bloqueia tudo",
     });
   });
+
+  it("falha quando o Disallow é de um caminho e não da raiz", () => {
+    expect(
+      checkRobots(200, "User-Agent: *\nDisallow: /admin\nAllow: /\n"),
+    ).toMatchObject({
+      status: "falhou",
+      detail: "o robots.txt não bloqueia tudo",
+    });
+  });
+
+  it("aceita User-agent em outra caixa e espaços no fim da linha", () => {
+    expect(
+      checkRobots(200, "user-agent: *  \r\ndisallow: /  \r\n"),
+    ).toMatchObject({ status: "ok" });
+  });
 });
 
 describe("checkNoReferrer", () => {
@@ -404,5 +432,11 @@ describe("formatSmokeReport", () => {
       text: "Resultado: 0 OK, 0 FALHOU, 0 PULADO.",
       exitCode: 0,
     });
+  });
+});
+
+describe("SMOKE_TIMEOUT_MS", () => {
+  it("cada GET tem um prazo finito, para o smoke sempre terminar com veredito", () => {
+    expect(SMOKE_TIMEOUT_MS).toBe(15_000);
   });
 });

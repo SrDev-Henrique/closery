@@ -7,6 +7,10 @@
 /** @typedef {{ id: SmokeId, label: string, status: "ok" | "falhou" | "pulado", detail: string | null }} SmokeResult */
 /** @typedef {{ get(name: string): string | null }} HeaderBag */
 
+// Cada GET espera no máximo isto: o smoke sempre termina com um veredito, e a
+// página que não responde nesse prazo vira "sem resposta".
+export const SMOKE_TIMEOUT_MS = 15_000;
+
 export const SMOKE_USAGE =
   "Uso: bun run smoke <https://<projeto>.vercel.app> [--local]";
 
@@ -93,6 +97,9 @@ export function parseSmokeArgs(argv) {
   if (!allowed) {
     throw new Error(`Use https:// (http só para localhost). ${SMOKE_USAGE}`);
   }
+  if (local && !isLocalHost) {
+    throw new Error(`--local só vale para localhost. ${SMOKE_USAGE}`);
+  }
   return { origin: url.origin, local };
 }
 
@@ -112,8 +119,9 @@ export function checkHealth(status, bodyText) {
   return failed("health", "resposta inesperada");
 }
 
-// O x-vercel-id é "<borda>::<função>::<id>": a região da função é o penúltimo
-// segmento (formato confirmado só no primeiro deploy, P63).
+// O x-vercel-id é "<borda>::<região da função>::<id>": a região é o penúltimo
+// segmento e o valor precisa ter 3 segmentos ou mais (formato confirmado só no
+// primeiro deploy, P63); com menos, a região é desconhecida.
 /**
  * @param {string | null | undefined} xVercelId
  * @returns {string | null}
@@ -121,7 +129,7 @@ export function checkHealth(status, bodyText) {
 export function functionRegionOf(xVercelId) {
   if (!xVercelId) return null;
   const segments = xVercelId.split("::");
-  if (segments.length < 2) return null;
+  if (segments.length < 3) return null;
   return segments[segments.length - 2] || null;
 }
 
@@ -198,7 +206,11 @@ export function checkNoindex(headers, html) {
  */
 export function checkRobots(status, text) {
   if (status !== 200) return failed("robots", `status ${status}`);
-  if (!text.includes("User-Agent: *") || !text.includes("Disallow: /")) {
+  // Por linha: "Disallow: /admin" não bloqueia o site todo.
+  if (
+    !/^User-Agent:\s*\*\s*$/im.test(text) ||
+    !/^Disallow:\s*\/\s*$/im.test(text)
+  ) {
     return failed("robots", "o robots.txt não bloqueia tudo");
   }
   return ok("robots");

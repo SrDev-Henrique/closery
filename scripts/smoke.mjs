@@ -1,7 +1,8 @@
 // Smoke test de produção: `bun run smoke https://<projeto>.vercel.app`.
 // Só GET, sem credencial e sem seguir redirecionamento. As regras vivem em
 // scripts/smokeChecks.mjs (testadas); aqui só se busca cada página uma vez e se
-// repassa o resultado. Use --local para o `next start` do próprio computador
+// repassa o resultado. Cada GET espera no máximo 15 s (sem resposta reprova a
+// verificação, o smoke sempre termina). Use --local para o `next start` do próprio computador
 // (as verificações que só a Vercel responde ficam PULADO).
 import {
   checkHealth,
@@ -16,6 +17,7 @@ import {
   formatSmokeReport,
   parseSmokeArgs,
   SMOKE_LABELS,
+  SMOKE_TIMEOUT_MS,
 } from "./smokeChecks.mjs";
 
 /**
@@ -29,6 +31,7 @@ async function fetchPage(origin, path) {
       redirect: "manual",
       cache: "no-store",
       headers: { "user-agent": "closery-smoke" },
+      signal: AbortSignal.timeout(SMOKE_TIMEOUT_MS),
     });
     return {
       status: response.status,
