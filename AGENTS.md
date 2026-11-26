@@ -41,7 +41,8 @@ Leia nesta ordem antes de qualquer implementação:
 | `bun run test:e2e` | Playwright com banco efêmero (pglite-socket) e build de produção; cerca de 1 min |
 | `bun run build` | build de produção (exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET` no `.env.local`) |
 | `bun run db:generate` → revisar → `bun run db:migrate` | migração versionada do Drizzle |
-| `bun run admin:invite` | gera o link de convite do primeiro administrador |
+| `bun run admin:invite --confirmar-host=<host>` | gera o link de convite do primeiro administrador; sem a flag, mostra o banco de destino e recusa |
+| `bun run db:hosts` | mostra só o host do banco da aplicação e o das migrações (conferir antes do `db:migrate`) |
 
 O CI (`.github/workflows/ci.yml`) roda `check-types`, `lint`, `test` e `test:e2e` em todo PR e
 push na `main`; PR só entra com o CI verde (`library-docs.md §11`).

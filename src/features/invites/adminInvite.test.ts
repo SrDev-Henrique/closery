@@ -1,13 +1,17 @@
 import type { PGlite } from "@electric-sql/pglite";
 import { eq } from "drizzle-orm";
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { invite } from "@/db/schema/invites";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import {
   ADMIN_INVITE_LABEL_MAX_LENGTH,
+  assertHostConfirmed,
   createAdminInvite,
+  formatAdminInviteError,
   formatAdminInviteOutput,
+  formatAdminInviteTarget,
   parseAdminInviteArgs,
 } from "./adminInvite";
 import { consumeInvite, findInviteByToken } from "./inviteQueries";
@@ -16,38 +20,127 @@ import { hashInviteToken } from "./token";
 
 const NOW = new Date("2026-11-20T12:00:00.000Z");
 
+describe("parseAdminInviteArgs: --confirmar-host", () => {
+  it("aceita as duas formas e convive com --label", () => {
+    expect(parseAdminInviteArgs(["--confirmar-host=db.example.com"])).toEqual({
+      label: null,
+      confirmHost: "db.example.com",
+    });
+    expect(
+      parseAdminInviteArgs(["--confirmar-host", "db.example.com", "--label=A"]),
+    ).toEqual({ label: "A", confirmHost: "db.example.com" });
+  });
+
+  it("vazio vira nulo; sem valor e repetido lançam", () => {
+    expect(
+      parseAdminInviteArgs(["--confirmar-host=  "]).confirmHost,
+    ).toBeNull();
+    expect(() => parseAdminInviteArgs(["--confirmar-host"])).toThrow(
+      "Falta o valor de --confirmar-host.",
+    );
+    expect(() =>
+      parseAdminInviteArgs(["--confirmar-host=a", "--confirmar-host=b"]),
+    ).toThrow("--confirmar-host foi informado mais de uma vez.");
+  });
+
+  it("as mensagens trazem o uso novo, com a flag obrigatória", () => {
+    expect(() => parseAdminInviteArgs(["--confirmar-host"])).toThrow(
+      'Falta o valor de --confirmar-host. Uso: bun run admin:invite --confirmar-host=<host do banco> [--label "Nome de referência"]',
+    );
+  });
+
+  it("flag com o nome parecido não vale como --confirmar-host", () => {
+    expect(() => parseAdminInviteArgs(["--confirmar-hostx=a"])).toThrow(
+      "Argumento desconhecido: --confirmar-hostx=a.",
+    );
+  });
+});
+
+describe("assertHostConfirmed", () => {
+  it("passa quando confere, ignorando maiúsculas", () => {
+    expect(() =>
+      assertHostConfirmed("db.example.com", "DB.example.com"),
+    ).not.toThrow();
+  });
+
+  it("sem confirmação recusa e diz como confirmar", () => {
+    expect(() => assertHostConfirmed("db.example.com", null)).toThrow(
+      "--confirmar-host=db.example.com",
+    );
+  });
+
+  it("host diferente recusa (inclusive prefixo e sufixo)", () => {
+    expect(() =>
+      assertHostConfirmed("db.example.com", "outro.example.com"),
+    ).toThrow("não confere");
+    expect(() =>
+      assertHostConfirmed("db.example.com", "db.example.com.evil"),
+    ).toThrow("não confere");
+    expect(() => assertHostConfirmed("db.example.com", "db.example")).toThrow(
+      "não confere",
+    );
+  });
+});
+
+describe("formatAdminInviteTarget", () => {
+  it("mostra só o host do banco e a BETTER_AUTH_URL", () => {
+    const text = formatAdminInviteTarget({
+      databaseHost: "db.example.com",
+      baseURL: "https://app.vercel.app",
+    });
+    expect(text).toContain("Banco de destino: db.example.com");
+    expect(text).toContain("BETTER_AUTH_URL:  https://app.vercel.app");
+  });
+});
+
 describe("parseAdminInviteArgs", () => {
   it("sem argumentos: label nulo", () => {
-    expect(parseAdminInviteArgs([])).toEqual({ label: null });
+    expect(parseAdminInviteArgs([])).toEqual({
+      label: null,
+      confirmHost: null,
+    });
   });
 
   it("aceita --label Nome e --label=Nome", () => {
     expect(parseAdminInviteArgs(["--label", "Dono do sistema"])).toEqual({
       label: "Dono do sistema",
+      confirmHost: null,
     });
     expect(parseAdminInviteArgs(["--label=Dono do sistema"])).toEqual({
       label: "Dono do sistema",
+      confirmHost: null,
     });
   });
 
   it("apara espaços e trata vazio como nulo", () => {
     expect(parseAdminInviteArgs(["--label", "  Nome  "])).toEqual({
       label: "Nome",
+      confirmHost: null,
     });
-    expect(parseAdminInviteArgs(["--label="])).toEqual({ label: null });
-    expect(parseAdminInviteArgs(["--label", "   "])).toEqual({ label: null });
+    expect(parseAdminInviteArgs(["--label="])).toEqual({
+      label: null,
+      confirmHost: null,
+    });
+    expect(parseAdminInviteArgs(["--label", "   "])).toEqual({
+      label: null,
+      confirmHost: null,
+    });
   });
 
   it("preserva '=' e unicode dentro do valor", () => {
     expect(parseAdminInviteArgs(["--label=a=b ção"])).toEqual({
       label: "a=b ção",
+      confirmHost: null,
     });
   });
 
   it("aceita exatamente o tamanho máximo e rejeita um a mais", () => {
     const max = "x".repeat(ADMIN_INVITE_LABEL_MAX_LENGTH);
 
-    expect(parseAdminInviteArgs([`--label=${max}`])).toEqual({ label: max });
+    expect(parseAdminInviteArgs([`--label=${max}`])).toEqual({
+      label: max,
+      confirmHost: null,
+    });
     expect(() => parseAdminInviteArgs([`--label=${max}x`])).toThrow(
       `--label aceita no máximo ${ADMIN_INVITE_LABEL_MAX_LENGTH} caracteres.`,
     );
@@ -181,5 +274,32 @@ describe("createAdminInvite", () => {
     expect(
       await db.select().from(invite).where(eq(invite.role, "admin")),
     ).toHaveLength(0);
+  });
+});
+
+describe("formatAdminInviteError", () => {
+  it("mantém a mensagem dos erros do próprio script", () => {
+    expect(
+      formatAdminInviteError(new Error("--confirmar-host não confere.")),
+    ).toBe("Erro: --confirmar-host não confere.");
+  });
+
+  it("erro do banco vira uma linha sem SQL, parâmetros nem e-mail, com o código", () => {
+    const cause = Object.assign(new Error("duplicate key value"), {
+      code: "23505",
+    });
+    const error = new DrizzleQueryError(
+      'insert into "invite" ("token_hash") values ($1)',
+      ["ana@exemplo.test"],
+      cause,
+    );
+
+    const text = formatAdminInviteError(error);
+
+    expect(text).toBe(
+      "Erro: falha inesperada ao gravar o convite (DrizzleQueryError, código 23505). Confira no banco se o convite foi criado antes de rodar de novo.",
+    );
+    expect(text).not.toContain("ana@exemplo.test");
+    expect(text).not.toContain("insert");
   });
 });

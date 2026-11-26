@@ -1,10 +1,14 @@
 import { loadEnvConfig } from "@next/env";
 
 import { createDb, createPool } from "@/db/client";
+import { databaseHostOf } from "@/db/databaseHost";
 import { resolveDatabaseUrls } from "@/db/databaseUrl";
 import {
+  assertHostConfirmed,
   createAdminInvite,
+  formatAdminInviteError,
   formatAdminInviteOutput,
+  formatAdminInviteTarget,
   parseAdminInviteArgs,
 } from "@/features/invites/adminInvite";
 
@@ -13,7 +17,7 @@ import {
 async function main(): Promise<void> {
   loadEnvConfig(process.cwd());
 
-  const { label } = parseAdminInviteArgs(process.argv.slice(2));
+  const { label, confirmHost } = parseAdminInviteArgs(process.argv.slice(2));
 
   const baseURL = process.env.BETTER_AUTH_URL;
   if (!baseURL) {
@@ -29,6 +33,11 @@ async function main(): Promise<void> {
     );
   }
 
+  // Antes de qualquer escrita: mostra o alvo e exige a confirmação do host.
+  const databaseHost = databaseHostOf(connectionString);
+  console.log(formatAdminInviteTarget({ databaseHost, baseURL }));
+  assertHostConfirmed(databaseHost, confirmHost);
+
   const pool = createPool(connectionString);
   try {
     const result = await createAdminInvite(createDb(pool), {
@@ -43,7 +52,8 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  console.error(`Erro: ${message}`);
+  // Só a mensagem dos erros do próprio script; o erro do banco (Drizzle) traz
+  // o SQL e os parâmetros, com o hash do token, e nunca vai para o terminal.
+  console.error(formatAdminInviteError(error));
   process.exitCode = 1;
 });

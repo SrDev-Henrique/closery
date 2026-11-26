@@ -15,6 +15,7 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "admin:invite": "bun scripts/adminInvite.ts",
+    "db:hosts": "bun scripts/dbHosts.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
