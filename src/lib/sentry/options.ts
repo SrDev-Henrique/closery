@@ -19,6 +19,8 @@ export function sentryOptions(
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
     tracesSampleRate: 0,
     maxBreadcrumbs: 0,
+    // Só erros saem: nem o relatório de eventos descartados (client_report).
+    sendClientReports: false,
     dataCollection: {
       userInfo: false,
       cookies: false,

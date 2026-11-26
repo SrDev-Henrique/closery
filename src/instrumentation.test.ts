@@ -90,6 +90,34 @@ describe("instrumentation-client.ts (navegador)", () => {
     expect(names).toEqual(["GlobalHandlers", "LinkedErrors"]);
   });
 
+  it("a lista real de integrações padrão do SDK sai sem BrowserTracing e sem BrowserSession", async () => {
+    // O @sentry/nextjs acrescenta a BrowserTracing às padrão do navegador; ela
+    // manda um client_report ao fechar a página, mesmo sem erro.
+    const { browserTracingIntegration, getDefaultIntegrations } =
+      await vi.importActual<typeof import("@sentry/browser")>(
+        "@sentry/browser",
+      );
+    const defaults = [
+      ...getDefaultIntegrations({}),
+      browserTracingIntegration(),
+    ];
+    expect(defaults.map((integration) => integration.name)).toEqual(
+      expect.arrayContaining(["BrowserTracing", "BrowserSession"]),
+    );
+    await loadClient();
+
+    const integrations = sentry.init.mock.calls[0]?.[0].integrations;
+    if (typeof integrations !== "function") {
+      throw new Error("integrations deveria ser uma função");
+    }
+    const names = integrations(defaults).map((integration) => integration.name);
+
+    expect(names).not.toContain("BrowserTracing");
+    expect(names).not.toContain("BrowserSession");
+    expect(names).toContain("GlobalHandlers");
+    expect(names).toContain("LinkedErrors");
+  });
+
   it("exporta o gancho de navegação do SDK", async () => {
     const { client } = await loadClient();
 

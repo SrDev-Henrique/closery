@@ -77,6 +77,28 @@ describe("sentryOptions", () => {
     expect(sent).toEqual([]);
   });
 
+  it("sem NEXT_PUBLIC_SENTRY_DSN o Sentry fica desligado (derivado do ambiente)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", "");
+    vi.resetModules();
+    const { sentryOptions: fromEmptyEnv } = await import("./options");
+
+    expect(fromEmptyEnv().enabled).toBe(false);
+    expect(fromEmptyEnv().dsn).toBeFalsy();
+  });
+
+  it("com NEXT_PUBLIC_SENTRY_DSN o Sentry liga com esse DSN (derivado do ambiente)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SENTRY_DSN", FAKE_DSN);
+    vi.resetModules();
+    const { sentryOptions: fromEnv } = await import("./options");
+
+    expect(fromEnv().enabled).toBe(true);
+    expect(fromEnv().dsn).toBe(FAKE_DSN);
+  });
+
+  it("não envia client reports (só erros saem)", () => {
+    expect(sentryOptions().sendClientReports).toBe(false);
+  });
+
   it("não liga performance, replay nem breadcrumbs", () => {
     const options = sentryOptions();
 
