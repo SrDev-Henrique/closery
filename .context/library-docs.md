@@ -32,6 +32,20 @@
   - Guias: `01-app/01-getting-started/08-caching.md`, `09-revalidating.md`,
     `02-guides/authentication-with-cache-components.md`.
 - `LayoutProps<"/">` / `PageProps<"/rota">` são tipos globais gerados pelo Next (typed routes).
+- **Cabeçalhos e robots (Fase 6).** `next.config.ts` envia os seis cabeçalhos de segurança em `/:path*`
+  (`nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`,
+  `X-Frame-Options: DENY`, `Permissions-Policy` sem câmera, microfone e geolocalização, e
+  `X-Robots-Tag: noindex, nofollow`) e `Referrer-Policy: no-referrer` em `/convite/:path*`; a regra
+  posterior vence a global, então a ordem importa (`nextConfig.test.ts`). **Sem CSP de scripts** (nonce
+  obriga renderização dinâmica e derruba o shell estático do `cacheComponents`) e **sem HSTS** (a
+  Vercel já envia em `*.vercel.app`). `publickey-credentials-*` ficam fora da `Permissions-Policy` de
+  propósito: o padrão `self` mantém as passkeys. Noindex em três camadas: `src/app/robots.ts`
+  (`Disallow: /`), `metadata.robots` no layout raiz e o `X-Robots-Tag`.
+- **`vercel.json` (Fase 6).** `regions: ["gru1"]`, `installCommand` com `bunx bun@<packageManager>`,
+  `buildCommand: "bun run build"` e `git.deploymentEnabled: { "**": false, "main": true }` (previews
+  desligados; `"**"` e não `"*"`, que não casa `/`). Sem `bunVersion` (é o runtime das funções, que
+  rodam em Node). `engines.node` é `"22.x"`: `>=22.12` faria a Vercel subir para a major mais recente.
+  `test/vercelConfig.test.ts` amarra `vercel.json`, `engines` e o Node do CI.
 
 ## 2. shadcn/ui (`base-nova`) + Base UI
 

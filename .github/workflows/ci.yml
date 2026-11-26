@@ -30,7 +30,7 @@ jobs:
         with:
           bun-version: 1.3.3
 
-      # Vitest 5 exige Node >= 22.12 (engines do package.json).
+      # A major do Node é a do engines.node ("22.x"); o Vitest 5 exige >= 22.12 (test/vercelConfig.test.ts amarra os dois).
       - uses: actions/setup-node@v7
         with:
           node-version: 22
