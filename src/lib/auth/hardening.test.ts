@@ -321,6 +321,31 @@ describe("logger do Better Auth passa por logServerError", () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it("logger.error com o Error nos argumentos: uma linha JSON com o SQLSTATE, sem SQL nem e-mail", async () => {
+    // O Better Auth ainda chama ctx.logger.error(mensagem, erro) por dentro
+    // (fora do roteador); o SQLSTATE do erro tem de chegar à linha.
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { logger } = await createTestAuth(db).$context;
+    const failure = new DrizzleQueryError(
+      'select "id" from "user" where "email" = $1',
+      [SECRET_EMAIL],
+      Object.assign(new Error(SECRET_EMAIL), { code: "23505" }),
+    );
+
+    logger.error("Failed query", failure);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const line = spy.mock.calls[0]?.map(String).join(" ") ?? "";
+    expect(JSON.parse(line)).toMatchObject({
+      level: "error",
+      context: "better-auth",
+      code: "23505",
+    });
+    expect(line).not.toContain(SECRET_EMAIL);
+    expect(line).not.toContain("select");
+    expect(line).not.toContain("Failed query");
+  });
+
   it("um aviso qualquer do Better Auth não escreve nada", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});

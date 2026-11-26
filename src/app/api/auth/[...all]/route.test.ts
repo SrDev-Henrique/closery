@@ -119,6 +119,7 @@ describe("/api/auth/[...all]", () => {
       expect(line).not.toContain("SERVER_ERROR");
       expect(line).not.toContain(SECRET_EMAIL);
       expect(line).not.toContain("Failed query");
+      expect(line).not.toContain("select");
       expect(line).not.toContain("params");
     }
   });
