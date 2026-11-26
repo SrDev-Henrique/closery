@@ -48,15 +48,21 @@ function findCode(error: unknown): string | null {
 }
 
 export function summarizeError(error: unknown): ErrorSummary {
-  const name =
-    error instanceof Error
-      ? (safeString(error.name, SAFE_NAME) ?? "Error")
-      : "NonError";
-  return {
-    name,
-    code: findCode(error),
-    digest: safeString(pick(error, "digest"), SAFE_DIGEST),
-  };
+  // Um getter que lança ou um Proxy revogado não pode derrubar o registrador
+  // (ele roda dentro do INTERNAL garantido do runAction e dos error boundaries).
+  try {
+    const name =
+      error instanceof Error
+        ? (safeString(error.name, SAFE_NAME) ?? "Error")
+        : "NonError";
+    return {
+      name,
+      code: findCode(error),
+      digest: safeString(pick(error, "digest"), SAFE_DIGEST),
+    };
+  } catch {
+    return { name: "Error", code: null, digest: null };
+  }
 }
 
 // Uma linha de JSON: a Vercel indexa os campos e o Sentry (depois) lê igual.

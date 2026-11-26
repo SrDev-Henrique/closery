@@ -119,6 +119,37 @@ describe("logServerError", () => {
     const line = JSON.parse(String(spy.mock.calls[0]?.[0]));
     expect(line.context).toHaveLength(80);
   });
+
+  it("nunca lança: getter que lança na causa ainda escreve uma linha só, sem o texto do getter", () => {
+    const error = new Error("x", {
+      cause: {
+        get code(): string {
+          throw new Error("hunter2");
+        },
+      },
+    });
+
+    expect(() => logServerError(error, "runAction")).not.toThrow();
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const line = String(spy.mock.calls[0]?.[0]);
+    expect(JSON.parse(line)).toMatchObject({
+      level: "error",
+      context: "runAction",
+      name: "Error",
+      code: null,
+      digest: null,
+    });
+    expect(line).not.toContain("hunter2");
+  });
+
+  it("nunca lança: Proxy revogado escreve a linha e não lança", () => {
+    const { proxy, revoke } = Proxy.revocable({}, {});
+    revoke();
+
+    expect(() => logServerError(proxy, "x")).not.toThrow();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("logServerError: captura no Sentry (Fase 6)", () => {
