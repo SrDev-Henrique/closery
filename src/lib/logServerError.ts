@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 // Log de erro sem vazamento. Um erro do Drizzle carrega no `message` o SQL e os
 // parâmetros ("Failed query: ... params: ..."), e esses parâmetros podem ser
 // e-mail, hash de token, texto da passagem. Por isso o log nunca recebe o erro
@@ -5,6 +7,11 @@
 // ex.: 23505, ou código de rede, ex.: ECONNREFUSED), o digest do Next e o
 // contexto que quem chama escreve. Sem `server-only`: os error boundaries do
 // client também usam (lá só o digest existe).
+//
+// É também o ÚNICO ponto que manda erro TRATADO ao Sentry (o erro lançado no
+// servidor chega pelo onRequestError do instrumentation.ts): o que não passa
+// por aqui não vai, e o que vai passa pelo scrubEvent. Sem DSN o Sentry nem é
+// iniciado e a captura não faz nada.
 
 export type ErrorSummary = {
   name: string;
@@ -53,12 +60,20 @@ export function summarizeError(error: unknown): ErrorSummary {
 }
 
 // Uma linha de JSON: a Vercel indexa os campos e o Sentry (depois) lê igual.
+// Captura só erro de verdade (null e undefined, como o aviso de IP do Better
+// Auth, só escrevem a linha) e só quando não há digest: um erro com digest
+// veio da renderização do servidor, que já o reportou pelo onRequestError, e
+// a cópia que chega ao navegador só tem a mensagem genérica.
 export function logServerError(error: unknown, context: string): void {
+  const safeContext = context.slice(0, CONTEXT_MAX_LENGTH);
+  const summary = summarizeError(error);
   console.error(
-    JSON.stringify({
-      level: "error",
-      context: context.slice(0, CONTEXT_MAX_LENGTH),
-      ...summarizeError(error),
-    }),
+    JSON.stringify({ level: "error", context: safeContext, ...summary }),
   );
+  if (error === null || error === undefined || summary.digest !== null) return;
+  try {
+    Sentry.captureException(error, { tags: { context: safeContext } });
+  } catch {
+    // O log nunca pode lançar: a linha acima já foi escrita.
+  }
 }

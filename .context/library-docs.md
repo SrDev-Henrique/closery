@@ -426,6 +426,41 @@
 - **Teto em toda lista:** 30 cartões por bloco, 8 barras de destino, 12 itens pedidos, 10.000 linhas no CSV, período de até 93 dias; o que passa do teto mostra "Mostrando {n} de {total} …" com o total do SQL.
 - **CSV:** BOM, `;`, CRLF em toda linha (inclusive a última), aspas RFC 4180, neutralização de fórmula (`'` antes de `= + - @`, TAB ou CR) só em texto de pessoa, datas `dd/mm/aaaa`, item que a passagem não tem = célula vazia (não `0`); `Content-Disposition` com `filename` ASCII e `filename*` UTF-8.
 
+## 16. Sentry (`@sentry/nextjs`) · Fase 6
+
+- **Versão exata `11.18.0`** (`bun add --exact`). Antes de mexer, a skill instalada do Sentry (se
+  houver) e a doc atual (context7): a v11 mudou o que a doc antiga ensina. `withSentryConfig`
+  saiu do pacote raiz (`import { withSentryConfig } from "@sentry/nextjs/config"`); `sendDefaultPii`
+  **não existe mais** e o padrão de `dataCollection` coleta **tudo** (cookies, cabeçalhos, corpos,
+  query, variáveis de pilha, usuário); `tunnelRoute` está obsoleto (e criaria um `route.ts`).
+- **Desligado por padrão.** Uma variável só, `NEXT_PUBLIC_SENTRY_DSN` (público por natureza; gravada
+  no build: trocar o DSN exige novo deploy). Sem ela `enabled: false` e nada é iniciado nem enviado
+  (dev, CI e E2E rodam assim; `playwright.config.ts` fixa DSN e `SENTRY_AUTH_TOKEN` vazios).
+- **Opções num lugar só:** `sentryOptions()` em `src/lib/sentry/options.ts` (servidor e navegador):
+  `tracesSampleRate: 0`, `maxBreadcrumbs: 0`, sem Replay, `dataCollection` todo desligado,
+  `beforeSend: scrubEvent`. No navegador, `instrumentation-client.ts` tira a integração
+  `BrowserSession` (manda um envelope de sessão a cada página, com IP e navegador, mesmo sem erro).
+  `register()` só inicia com `NEXT_RUNTIME === "nodejs"` (o `proxy.ts` do Next 16 roda em Node).
+- **Um ponto de captura para erro tratado:** `logServerError` (escreve a linha de log e chama
+  `Sentry.captureException(error, { tags: { context } })`; pula `null`/`undefined` e erro com
+  `digest`). Erro **lançado** no servidor chega pelo `onRequestError` do `instrumentation.ts`.
+  Ninguém mais importa `@sentry/nextjs` (guarda `test/logGuard.test.ts`: só `src/lib/sentry/*`,
+  `src/instrumentation.ts`, `src/instrumentation-client.ts` e `src/lib/logServerError.ts`).
+- **`scrubEvent` é a última barreira, não a primeira:** apaga usuário, `request`, servidor,
+  breadcrumbs, extras, `logentry`, dados do mecanismo, variáveis de pilha, contextos (menos `trace`)
+  e tags com `url` (o valor das demais tags e o `filename`, `abs_path` e `module` de cada frame passam pelo `scrubText`); força `sdk.settings.infer_ip = "never"` (o core mescla a metadata do cliente depois
+  do `beforeSend`: apagar a chave não adianta e o Relay inferiria o IP); higieniza `message`, `transaction` e o valor de **toda** exceção (inclusive as
+  causas do `linkedErrors`): o SQL e os `params` do Drizzle (`Failed query:` / `params:`), o valor que o
+  Postgres repete, token de caminho e de fragmento, query string e e-mail. O que escapar desses
+  padrões sai (P69).
+- **Build:** sem `SENTRY_AUTH_TOKEN` não há upload nem arquivo `.map` (`sourcemaps.disable`);
+  `telemetry: false`; o plugin liga `experimental.clientTraceMetadata` sozinho (aparece em
+  "Experiments" no build). `SENTRY_AUTH_TOKEN` nunca entra no CI nem no `.env.local`. Custo medido:
+  +67 KB gzip de JS no cliente mesmo desligado (P68).
+- **Teste:** nunca fale com o Sentry de verdade. A captura se prova com DSN falso e transporte falso
+  (`options.test.ts`: o envelope vira texto e o teste afirma sobre ele); o resto troca o SDK por espião
+  (`vi.mock("@sentry/nextjs")`). Se um dia houver CSP, liberar `connect-src https://*.ingest.sentry.io`.
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.

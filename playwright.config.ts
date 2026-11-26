@@ -49,6 +49,10 @@ export default defineConfig({
         GOOGLE_CLIENT_SECRET: "",
         FACEBOOK_CLIENT_ID: "",
         FACEBOOK_CLIENT_SECRET: "",
+        // Sentry desligado no E2E (sem DSN nada é iniciado nem enviado) e sem
+        // token de upload de source maps, mesmo que o shell do dev tenha um.
+        NEXT_PUBLIC_SENTRY_DSN: "",
+        SENTRY_AUTH_TOKEN: "",
       },
     },
   ],

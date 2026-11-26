@@ -5,9 +5,18 @@ import { listSourceFiles, stripComments } from "./actionGuards";
 
 // Guarda do log: um erro do Drizzle carrega SQL e parâmetros na mensagem, então
 // nada em src/ escreve no console por conta própria. Todo erro inesperado passa
-// por src/lib/logServerError.ts (resumo sem mensagem, pilha nem objeto).
+// por src/lib/logServerError.ts (resumo sem mensagem, pilha nem objeto). O
+// mesmo vale para o Sentry: nenhum outro arquivo o importa, então nada sai sem
+// passar pelo scrubEvent (beforeSend) nem pelo resumo do log.
 
 const LOGGER = "src/lib/logServerError.ts";
+const SENTRY_IMPORTERS = [
+  "src/instrumentation-client.ts",
+  "src/instrumentation.ts",
+  "src/lib/logServerError.ts",
+  "src/lib/sentry/options.ts",
+  "src/lib/sentry/scrubEvent.ts",
+];
 
 function productionFiles(): string[] {
   return listSourceFiles(
@@ -36,5 +45,20 @@ describe("log de erro", () => {
     const files = productionFiles();
     expect(files.length).toBeGreaterThan(100);
     expect(files).toContain(LOGGER);
+  });
+
+  it("@sentry/nextjs só entra pelos 5 arquivos da integração", () => {
+    const importers = productionFiles().filter((file) =>
+      code(file).includes("@sentry/"),
+    );
+    expect(importers.sort()).toEqual(SENTRY_IMPORTERS);
+  });
+
+  it("o scrubEvent só importa tipo do Sentry (sem código de runtime)", () => {
+    const source = code("src/lib/sentry/scrubEvent.ts");
+    expect(source).toContain(
+      'import type { ErrorEvent } from "@sentry/nextjs";',
+    );
+    expect(source.split("@sentry/")).toHaveLength(2);
   });
 });

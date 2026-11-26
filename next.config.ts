@@ -1,3 +1,4 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 // Cabeçalhos de segurança de todas as rotas. Sem CSP de scripts: um CSP com
@@ -47,4 +48,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sem SENTRY_AUTH_TOKEN (CI e máquina local) nada é enviado no build: sem upload
+// de source maps, sem telemetria do plugin e sem logs. Sem tunnelRoute: o
+// navegador fala direto com o Sentry (não cria route.ts nem passa pelo proxy).
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});

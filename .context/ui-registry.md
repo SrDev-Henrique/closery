@@ -294,7 +294,15 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Propósito:** o erro e o 404 de uma página de `(app)` aparecem dentro do shell: a barra lateral continua na tela (P19).
 - **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para `logServerError(error, "error-boundary")`, que escreve só o resumo, e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
 - **Usa:** `Button`, `buttonVariants`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19). 2026-11-26 — Fase 6 (Tarefa 2): o `useEffect` deste arquivo e o do `error.tsx` da raiz chamam `logServerError(error, "error-boundary")` no lugar de `console.error(error)`; a tela não muda.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19). 2026-11-26 — Fase 6 (Tarefa 2): o `useEffect` deste arquivo e o do `error.tsx` da raiz chamam `logServerError(error, "error-boundary")` no lugar de `console.error(error)`; a tela não muda. 2026-11-26 — Fase 6 (Tarefa 6): a captura no Sentry mora dentro do `logServerError`; este arquivo não muda.
+
+### GlobalError
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/app/global-error.tsx` (`"use client"`; arquivo de convenção do Next, não componente de `src/components`)
+- **Propósito:** o último limite de erro: aparece quando o próprio layout raiz quebra (a barra lateral, o tema e o CSS do layout não existem mais).
+- **Como funciona:** substitui o layout raiz, então traz o próprio `<html lang="pt-BR">` e `<body className="flex min-h-full flex-col">` e importa `./globals.css`. O `<title>Algo deu errado</title>` é o do React 19 (limite de erro não aceita `metadata`). `<main>` com o título `Algo deu errado` e o `Button` `Tentar de novo` (`retry()`, o nome da prop no Next 16.4). O `useEffect` chama `logServerError(error, "global-error")` (a linha de log e o Sentry; erro com `digest` não vai de novo ao Sentry); a mensagem do erro nunca aparece. Testado no jsdom: o React 19 renderiza `<html>`/`<body>` nos singletons do `document`, e o único `console.error` aceito é o aviso `In HTML, %s cannot be a child of <%s>`. `bun scripts/rc-check.mjs src/app/global-error.tsx` confere que o React Compiler o compila.
+- **Usa:** `Button`, `logServerError`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 6).
 
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)

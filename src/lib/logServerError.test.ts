@@ -3,6 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { logServerError, summarizeError } from "./logServerError";
 
+// O SDK é trocado por um espião: aqui só se prova QUANDO o log captura no
+// Sentry; o que sai no evento está provado em src/lib/sentry/options.test.ts.
+const sentry = vi.hoisted(() => ({ captureException: vi.fn() }));
+vi.mock("@sentry/nextjs", () => sentry);
+
 const SECRET = "ana@exemplo.test";
 
 function pgError(code: string): Error {
@@ -79,6 +84,7 @@ describe("logServerError", () => {
   let spy: ReturnType<typeof vi.spyOn>;
   beforeEach(() => {
     spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sentry.captureException.mockReset();
   });
   afterEach(() => spy.mockRestore());
 
@@ -112,5 +118,74 @@ describe("logServerError", () => {
     logServerError(new Error("x"), "c".repeat(500));
     const line = JSON.parse(String(spy.mock.calls[0]?.[0]));
     expect(line.context).toHaveLength(80);
+  });
+});
+
+describe("logServerError: captura no Sentry (Fase 6)", () => {
+  let spy: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sentry.captureException.mockReset();
+  });
+  afterEach(() => spy.mockRestore());
+
+  it("captura uma vez, com o erro e o contexto como tag", () => {
+    const error = new Error("falha");
+
+    logServerError(error, "runAction");
+
+    expect(sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(sentry.captureException).toHaveBeenCalledWith(error, {
+      tags: { context: "runAction" },
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("a tag leva o contexto já cortado em 80 caracteres", () => {
+    logServerError(new Error("x"), "c".repeat(500));
+
+    expect(sentry.captureException).toHaveBeenCalledWith(expect.any(Error), {
+      tags: { context: "c".repeat(80) },
+    });
+  });
+
+  it("erro com digest não é capturado de novo (o servidor já o reportou), mas a linha sai", () => {
+    const error = Object.assign(new Error("render"), { digest: "123456" });
+
+    logServerError(error, "error-boundary");
+
+    expect(sentry.captureException).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it("sem erro (null ou undefined) escreve a linha e não captura", () => {
+    logServerError(null, "better-auth:ip-desconhecido");
+    logServerError(undefined, "x");
+
+    expect(sentry.captureException).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(spy.mock.calls[0]?.[0]))).toEqual({
+      level: "error",
+      context: "better-auth:ip-desconhecido",
+      name: "NonError",
+      code: null,
+      digest: null,
+    });
+  });
+
+  it("valor que não é Error também é capturado (só o erro null e undefined não)", () => {
+    logServerError("texto solto", "x");
+    logServerError(0, "x");
+
+    expect(sentry.captureException).toHaveBeenCalledTimes(2);
+  });
+
+  it("captureException que lança não quebra o log nem lança", () => {
+    sentry.captureException.mockImplementation(() => {
+      throw new Error("sentry fora do ar");
+    });
+
+    expect(() => logServerError(new Error("falha"), "runAction")).not.toThrow();
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });

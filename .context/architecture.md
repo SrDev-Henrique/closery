@@ -39,6 +39,7 @@ Princípios estruturais:
 | Testes E2E | **Playwright** (Chromium) + PGlite servido por **pglite-socket** | Playwright 1.65.1 · pglite-socket 0.2.20 |
 | CI | **GitHub Actions** (`.github/workflows/ci.yml`): tipos, lint, Vitest e E2E em todo PR e push na `main` | Ubuntu · Bun 1.3.3 · Node 22 |
 | Auth | **Better Auth** (adapter Drizzle) + plugin **passkey** | better-auth 1.7.27 · @better-auth/passkey 1.7.27 |
+| Monitoramento de erros | **Sentry** (`@sentry/nextjs`), desligado sem `NEXT_PUBLIC_SENTRY_DSN`; um ponto de captura (`logServerError`) + `onRequestError`; `scrubEvent` antes do envio (Fase 6) | 11.18.0 (exata) |
 | Hospedagem | *🟡 provável Vercel (par natural de Next + Neon) — confirmar* | — |
 
 ## 3. Princípios de domínio · 🟢 definido
