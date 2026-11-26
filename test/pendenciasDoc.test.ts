@@ -182,4 +182,16 @@ describe(".context/pendencias.md", () => {
       expect(entry?.section, id).toBe("1");
     }
   });
+
+  it("Fase 6: P16 e P22 resolvidas", () => {
+    for (const id of ["P16", "P22"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Resolvido");
+      expect(entry?.section, id).toBe("5");
+      expect(
+        entry?.updates.some((date) => date >= "2026-11-25"),
+        id,
+      ).toBe(true);
+    }
+  });
 });

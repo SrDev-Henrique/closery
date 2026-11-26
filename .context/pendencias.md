@@ -52,13 +52,13 @@
 | P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Resolvido |
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
-| P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Aberto, não triado |
+| P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Resolvido |
 | P17 | Tema escuro nunca é ativado | 🟡 | Aberto, não triado |
 | P18 | user.role e invite.role sem CHECK no banco | 🟡 | Resolvido |
 | P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Resolvido |
 | P20 | Login social: ajustes antes de ligar | 🟡 | Aberto, não triado |
 | P21 | Lacunas do E2E de acesso | 🟡 | Aberto, não triado |
-| P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Aberto, não triado |
+| P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Resolvido |
 | P23 | Editar o nome de uma pessoa: falta em /admin/equipe e em /conta | 🟡 | Aberto, não triado |
 | P24 | Ordem alfabética das listas do admin ignora acento | 🟡 | Aberto, não triado |
 | P25 | Corrida entre cadastro por convite e desativação do setor | 🟡 | Aberto, não triado |
@@ -124,13 +124,6 @@
 **Correção:** — (opção: rota de erro sem token ou `account.storeStateStrategy: "cookie"`)
 **Registrado em:** 2026-11-20
 
-#### P16 — Cookie closery_invite não é limpo depois do cadastro 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/inviteCookie.ts`
-**Impacto:** o cookie com o token do convite fica 1 h no navegador depois do cadastro (aparelho compartilhado).
-**Correção:** — (opção: expirar em `user.create.after` com `ctx.setCookie(INVITE_COOKIE, "", { maxAge: 0, path: "/" })`)
-**Registrado em:** 2026-11-20
-
 #### P17 — Tema escuro nunca é ativado 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/app/globals.css` · `src/app/layout.tsx` · `src/components/ui/sonner.tsx`
@@ -150,13 +143,6 @@
 **Arquivos:** `e2e/auth.spec.ts`
 **Impacto:** o cenário "desativado" não afirma a ausência de cookie de sessão; login por passkey depois da desativação não é testado; o caminho do autofill de passkey não tem E2E.
 **Correção:** — (opção: acrescentar as três verificações ao E2E)
-**Registrado em:** 2026-11-20
-
-#### P22 — Limite de tentativas no piloto: confirmar IP e números 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/lib/auth/createAuth.ts` (`rateLimit`)
-**Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
-**Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
 **Registrado em:** 2026-11-20
 
 #### P23 — Editar o nome de uma pessoa: falta em /admin/equipe e em /conta 🟡
@@ -614,3 +600,19 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
 **Registrado em:** 2026-11-24
 **Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). O `SectorPicker` ganhou a prop `query` (o query canônico dos filtros da tela, sem o setor) e o `chooseSectorSchema` a aceita (texto de até 2.000 caracteres). O servidor nunca usa a URL do cliente: `sectorRedirectHref` (`src/features/handovers/sectorRedirect.ts`) reinterpreta o query pelo mesmo parse da tela, que nunca lança, e remonta o href com o setor novo. Em `/passagens` seguem o período e a situação e caem o turno e a página; em `/solicitacoes` seguem a visão, o destino, o período e a busca e caem o criador e a paginação (o item de cada tela, que é do setor antigo, entra nessa lista nas Tarefas 5 e 6); `/` e `/passagens/nova` ignoram o query. Sem `query` o destino é o de sempre.
+
+#### P16 — Cookie closery_invite não é limpo depois do cadastro 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/inviteCookie.ts`
+**Impacto:** o cookie com o token do convite fica 1 h no navegador depois do cadastro (aparelho compartilhado).
+**Correção:** — (opção: expirar em `user.create.after` com `ctx.setCookie(INVITE_COOKIE, "", { maxAge: 0, path: "/" })`)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** resolvida na Fase 6: o hook `user.create.after` apaga o cookie `closery_invite` (`setCookie` com `maxAge: 0` e os mesmos atributos do cookie original, com `Secure` em produção) logo depois de gastar o convite; o cadastro recusado não mexe nele. Teste: `src/lib/auth/hardening.test.ts`.
+
+#### P22 — Limite de tentativas no piloto: confirmar IP e números 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/lib/auth/createAuth.ts` (`rateLimit`)
+**Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
+**Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** resolvida no código na Fase 6: `advanced.ipAddress.ipAddressHeaders: ["x-forwarded-for"]`, só ele (a Vercel o sobrescreve com o IP do cliente; `x-real-ip` e `x-vercel-forwarded-for` seriam forjáveis fora dela). Sem IP resolvível o limite cai num balde global por rota, nunca num balde por valor forjado, e o aviso do Better Auth sai pelo `logServerError` como `better-auth:ip-desconhecido`. Os números ficam (30 por minuto no login, 10 no cadastro por IP): vários operadores atrás do mesmo IP do galpão dividem o balde, e se isso atrapalhar no piloto basta subir o número. Testes: `hardening.test.ts` e `ipUnknown.test.ts`. A conferência no primeiro deploy (nenhuma linha `better-auth:ip-desconhecido` no log da Vercel depois de uma tentativa de login) é o passo B7 da Parte B.
