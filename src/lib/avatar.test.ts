@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
 
 import { AVATAR_BACKGROUNDS, avatarDataUri } from "./avatar";
@@ -21,6 +23,13 @@ describe("avatarDataUri", () => {
     vi.resetModules();
     const outroModulo = await import("./avatar");
     expect(outroModulo.avatarDataUri("usuario-fixo")).toBe(primeiro);
+  });
+
+  it("trava a saída: o SHA-256 do data URI de uma semente fixa não muda (troca de versão do DiceBear que mude a arte falha aqui)", () => {
+    const uri = avatarDataUri("00000000-0000-4000-8000-000000000001");
+    expect(createHash("sha256").update(uri).digest("hex")).toBe(
+      "0c4c7daa68bf5cca1ddc3ec5ac577e3eefd4725f93351b7110f2216f5bc4ad57",
+    );
   });
 
   it("sementes diferentes dão avatares diferentes", () => {
