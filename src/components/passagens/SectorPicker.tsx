@@ -30,7 +30,7 @@ export function SectorPicker({
   query?: string;
 }) {
   const [pending, startTransition] = useTransition();
-  const options: readonly SectorChoice[] = allowAll
+  const options: readonly Pick<SectorChoice, "id" | "name">[] = allowAll
     ? [...sectors, { id: ALL_SECTORS, name: "Todos os setores" }]
     : sectors;
 

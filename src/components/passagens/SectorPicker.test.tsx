@@ -16,8 +16,16 @@ vi.mock("@/app/(app)/actions", () => ({
 }));
 vi.mock("sonner", () => ({ toast: { error: mocks.toastError } }));
 
-const ULD = { id: "11111111-1111-4111-8111-111111111111", name: "ULD" };
-const CARGA = { id: "22222222-2222-4222-8222-222222222222", name: "Carga" };
+const ULD = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "ULD",
+  color: "lilac",
+} as const;
+const CARGA = {
+  id: "22222222-2222-4222-8222-222222222222",
+  name: "Carga",
+  color: "peach",
+} as const;
 
 class Catcher extends Component<{ children: ReactNode }, { error: unknown }> {
   state: { error: unknown } = { error: null };

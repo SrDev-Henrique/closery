@@ -101,7 +101,7 @@ beforeEach(() => {
   mocks.listPeople.mockResolvedValue(page([person()]));
   mocks.listPendingInvites.mockResolvedValue(page([pendingInvite()]));
   mocks.listActiveSectors.mockResolvedValue([
-    { id: SECTOR_ID, name: "Almoxarifado" },
+    { id: SECTOR_ID, name: "Almoxarifado", color: "lilac" },
   ]);
 });
 

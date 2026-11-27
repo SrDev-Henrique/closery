@@ -3,11 +3,16 @@ import { describe, expect, it } from "vitest";
 
 import { SectorSwitcher } from "./SectorSwitcher";
 
-const uld = { id: "11111111-1111-4111-8111-111111111111", name: "ULD" };
+const uld = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "ULD",
+  color: "lilac",
+} as const;
 const gelo = {
   id: "22222222-2222-4222-8222-222222222222",
   name: "Água & Gelo",
-};
+  color: "peach",
+} as const;
 const sectors = [uld, gelo];
 
 describe("SectorSwitcher", () => {

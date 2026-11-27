@@ -56,6 +56,7 @@ export const SELF_ROLE_MESSAGE =
 export const LAST_ADMIN_MESSAGE =
   "Este é o último administrador ativo. Nomeie outro antes.";
 export const SECTOR_REQUIRED_MESSAGE = "Escolha o setor do operador.";
+export const SECTOR_COLOR_INVALID_MESSAGE = "Escolha uma das cores da lista.";
 export const SECTOR_INACTIVE_MESSAGE =
   "Este setor está inativo. Escolha outro.";
 export const INVITE_NOT_PENDING_MESSAGE =

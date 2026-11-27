@@ -73,7 +73,9 @@ describe("actions de setor: operador", () => {
   });
 
   it("createSectorAction recebe notFound e não toca o banco", async () => {
-    await expect(createSectorAction({ name: "Novo" })).rejects.toBe(NOT_FOUND);
+    await expect(
+      createSectorAction({ name: "Novo", color: "lilac" }),
+    ).rejects.toBe(NOT_FOUND);
 
     expect(mocks.touched).not.toHaveBeenCalled();
     expect(await db.select().from(sector)).toEqual([]);
@@ -84,7 +86,7 @@ describe("actions de setor: operador", () => {
     const created = await insertSector(db, "Original");
 
     await expect(
-      renameSectorAction({ id: created.id, name: "Trocado" }),
+      renameSectorAction({ id: created.id, name: "Trocado", color: "lilac" }),
     ).rejects.toBe(NOT_FOUND);
 
     expect(mocks.touched).not.toHaveBeenCalled();
@@ -113,7 +115,10 @@ describe("actions de setor: operador", () => {
 
 describe("createSectorAction", () => {
   it("cria o setor e revalida o /admin", async () => {
-    const result = await createSectorAction({ name: "  Almoxarifado " });
+    const result = await createSectorAction({
+      name: "  Almoxarifado ",
+      color: "lilac",
+    });
 
     expect(result.ok).toBe(true);
     expect(mocks.revalidatePath).toHaveBeenCalledWith("/(app)/admin", "layout");
@@ -122,7 +127,7 @@ describe("createSectorAction", () => {
   });
 
   it("entrada inválida volta com a mensagem no campo e sem gravar", async () => {
-    expect(await createSectorAction({ name: "   " })).toEqual({
+    expect(await createSectorAction({ name: "   ", color: "lilac" })).toEqual({
       ok: false,
       code: "INVALID_INPUT",
       message: "Informe o nome.",
@@ -143,7 +148,9 @@ describe("createSectorAction", () => {
   it("nome repetido volta NAME_TAKEN e não revalida", async () => {
     await insertSector(db, "ULD");
 
-    expect(await createSectorAction({ name: "uld" })).toMatchObject({
+    expect(
+      await createSectorAction({ name: "uld", color: "lilac" }),
+    ).toMatchObject({
       ok: false,
       code: "NAME_TAKEN",
     });
@@ -155,7 +162,13 @@ describe("renameSectorAction", () => {
   it("renomeia o setor", async () => {
     const created = await insertSector(db, "Velho");
 
-    expect(await renameSectorAction({ id: created.id, name: "Novo" })).toEqual({
+    expect(
+      await renameSectorAction({
+        id: created.id,
+        name: "Novo",
+        color: "lilac",
+      }),
+    ).toEqual({
       ok: true,
     });
     const [row] = await db
@@ -166,13 +179,13 @@ describe("renameSectorAction", () => {
   });
 
   it("id malformado é recusado antes do banco", async () => {
-    expect(await renameSectorAction({ id: "abc", name: "Novo" })).toMatchObject(
-      {
-        ok: false,
-        code: "INVALID_INPUT",
-        message: "Registro inválido. Atualize a página.",
-      },
-    );
+    expect(
+      await renameSectorAction({ id: "abc", name: "Novo", color: "lilac" }),
+    ).toMatchObject({
+      ok: false,
+      code: "INVALID_INPUT",
+      message: "Registro inválido. Atualize a página.",
+    });
   });
 });
 

@@ -42,7 +42,10 @@ async function readSector(id: string) {
 
 describe("createSector", () => {
   it("cria o setor ativo e devolve o id", async () => {
-    const result = await createSector(db, { name: "Almoxarifado" });
+    const result = await createSector(db, {
+      name: "Almoxarifado",
+      color: "lilac",
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -51,7 +54,10 @@ describe("createSector", () => {
   });
 
   it("normaliza o nome antes de gravar", async () => {
-    const result = await createSector(db, { name: "  Carga   Aérea  " });
+    const result = await createSector(db, {
+      name: "  Carga   Aérea  ",
+      color: "lilac",
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -60,7 +66,7 @@ describe("createSector", () => {
 
   it("recusa nome vazio ou só com espaços, com o erro no campo name", async () => {
     for (const name of ["", "   "]) {
-      expect(await createSector(db, { name })).toEqual({
+      expect(await createSector(db, { name, color: "lilac" })).toEqual({
         ok: false,
         code: "INVALID_INPUT",
         message: "Informe o nome.",
@@ -71,9 +77,14 @@ describe("createSector", () => {
   });
 
   it("aceita 60 caracteres e recusa 61", async () => {
-    expect((await createSector(db, { name: "a".repeat(60) })).ok).toBe(true);
+    expect(
+      (await createSector(db, { name: "a".repeat(60), color: "lilac" })).ok,
+    ).toBe(true);
 
-    const tooLong = await createSector(db, { name: "b".repeat(61) });
+    const tooLong = await createSector(db, {
+      name: "b".repeat(61),
+      color: "lilac",
+    });
     expect(tooLong).toMatchObject({
       ok: false,
       code: "INVALID_INPUT",
@@ -82,9 +93,9 @@ describe("createSector", () => {
   });
 
   it("recusa nome repetido sem diferença de caixa", async () => {
-    await createSector(db, { name: "ULD" });
+    await createSector(db, { name: "ULD", color: "lilac" });
 
-    expect(await createSector(db, { name: "uld" })).toEqual({
+    expect(await createSector(db, { name: "uld", color: "lilac" })).toEqual({
       ok: false,
       code: "NAME_TAKEN",
       message: "Já existe um setor com este nome.",
@@ -93,9 +104,9 @@ describe("createSector", () => {
   });
 
   it("recusa nome repetido com acento em caixa diferente", async () => {
-    await createSector(db, { name: "Água" });
+    await createSector(db, { name: "Água", color: "lilac" });
 
-    const result = await createSector(db, { name: "ÁGUA" });
+    const result = await createSector(db, { name: "ÁGUA", color: "lilac" });
 
     expect(result).toMatchObject({ ok: false, code: "NAME_TAKEN" });
   });
@@ -103,7 +114,7 @@ describe("createSector", () => {
   it("avisa que o setor de mesmo nome está inativo", async () => {
     await insertSector(db, "Antigo", { active: false });
 
-    const result = await createSector(db, { name: "antigo" });
+    const result = await createSector(db, { name: "antigo", color: "lilac" });
 
     expect(result).toMatchObject({
       ok: false,
@@ -121,6 +132,7 @@ describe("renameSector", () => {
     const result = await renameSector(db, {
       id: created.id,
       name: "  Novo   nome ",
+      color: "lilac",
     });
 
     expect(result).toEqual({ ok: true });
@@ -130,7 +142,9 @@ describe("renameSector", () => {
   it("deixa trocar só a caixa do próprio nome", async () => {
     const created = await insertSector(db, "uld");
 
-    expect(await renameSector(db, { id: created.id, name: "ULD" })).toEqual({
+    expect(
+      await renameSector(db, { id: created.id, name: "ULD", color: "lilac" }),
+    ).toEqual({
       ok: true,
     });
     expect((await readSector(created.id)).name).toBe("ULD");
@@ -140,7 +154,11 @@ describe("renameSector", () => {
     await insertSector(db, "ULD");
     const other = await insertSector(db, "Pátio");
 
-    const result = await renameSector(db, { id: other.id, name: "uld" });
+    const result = await renameSector(db, {
+      id: other.id,
+      name: "uld",
+      color: "lilac",
+    });
 
     expect(result).toMatchObject({ ok: false, code: "NAME_TAKEN" });
     expect((await readSector(other.id)).name).toBe("Pátio");
@@ -149,7 +167,11 @@ describe("renameSector", () => {
   it("recusa nome vazio sem tocar no registro", async () => {
     const created = await insertSector(db, "Pátio");
 
-    const result = await renameSector(db, { id: created.id, name: " " });
+    const result = await renameSector(db, {
+      id: created.id,
+      name: " ",
+      color: "lilac",
+    });
 
     expect(result).toMatchObject({
       ok: false,
@@ -160,7 +182,9 @@ describe("renameSector", () => {
   });
 
   it("id inexistente é NOT_FOUND", async () => {
-    expect(await renameSector(db, { id: MISSING_ID, name: "X" })).toEqual({
+    expect(
+      await renameSector(db, { id: MISSING_ID, name: "X", color: "lilac" }),
+    ).toEqual({
       ok: false,
       code: "NOT_FOUND",
       message: "Setor não encontrado. Atualize a página.",
@@ -373,6 +397,7 @@ describe("listSectors", () => {
     expect(page.rows).toEqual([
       {
         id: alfa.id,
+        color: "lilac",
         name: "Alfa",
         active: true,
         activePeople: 2,
@@ -380,6 +405,7 @@ describe("listSectors", () => {
       },
       {
         id: bravo.id,
+        color: "lilac",
         name: "Bravo",
         active: true,
         activePeople: 0,
@@ -418,11 +444,11 @@ describe("listActiveSectors", () => {
     ]);
   });
 
-  it("devolve só id e name", async () => {
+  it("devolve só id, name e color", async () => {
     const created = await insertSector(db, "Alfa");
 
     expect(await listActiveSectors(db)).toEqual([
-      { id: created.id, name: "Alfa" },
+      { id: created.id, name: "Alfa", color: "lilac" },
     ]);
   });
 
@@ -432,8 +458,8 @@ describe("listActiveSectors", () => {
 });
 
 describe("resolveSectorFilter", () => {
-  const alfa = { id: "a", name: "Alfa" };
-  const bravo = { id: "b", name: "Bravo" };
+  const alfa = { id: "a", name: "Alfa", color: "lilac" } as const;
+  const bravo = { id: "b", name: "Bravo", color: "peach" } as const;
 
   it("usa o id da URL quando ele está na lista", () => {
     expect(resolveSectorFilter([alfa, bravo], "b")).toBe(bravo);

@@ -100,22 +100,46 @@ describe("timeSchema", () => {
 });
 
 describe("setores e destinos", () => {
-  it("criar: nome normalizado; sobra de chave é descartada", () => {
-    expect(createSectorSchema.parse({ name: " ULD ", admin: true })).toEqual({
-      name: "ULD",
-    });
+  it("criar: nome normalizado e cor; sobra de chave é descartada", () => {
+    expect(
+      createSectorSchema.parse({ name: " ULD ", color: "sky", admin: true }),
+    ).toEqual({ name: "ULD", color: "sky" });
     expect(createDestinationSchema.parse({ name: "Almoxarifado" })).toEqual({
       name: "Almoxarifado",
     });
   });
 
-  it("renomear exige id e nome", () => {
-    expect(renameSectorSchema.safeParse({ id: ID, name: "ULD" }).success).toBe(
-      true,
-    );
-    expect(errorsOf(renameSectorSchema, { id: "x", name: "" })).toEqual({
+  it("criar: aceita as cinco cores e recusa o resto, com mensagem em português", () => {
+    for (const color of ["lilac", "peach", "sky", "green", "pink"]) {
+      expect(
+        createSectorSchema.safeParse({ name: "ULD", color }).success,
+        color,
+      ).toBe(true);
+    }
+    for (const color of ["red", "", "Lilac", " lilac", 1, null, undefined]) {
+      expect(
+        errorsOf(createSectorSchema, { name: "ULD", color }),
+        String(color),
+      ).toEqual({
+        color: "Escolha uma das cores da lista.",
+      });
+    }
+  });
+
+  it("renomear exige id, nome e cor", () => {
+    expect(
+      renameSectorSchema.safeParse({ id: ID, name: "ULD", color: "pink" })
+        .success,
+    ).toBe(true);
+    expect(errorsOf(renameSectorSchema, { id: ID, name: "ULD" })).toEqual({
+      color: "Escolha uma das cores da lista.",
+    });
+    expect(
+      errorsOf(renameSectorSchema, { id: "x", name: "", color: "red" }),
+    ).toEqual({
       id: "Registro inválido. Atualize a página.",
       name: "Informe o nome.",
+      color: "Escolha uma das cores da lista.",
     });
     expect(errorsOf(renameDestinationSchema, { id: ID, name: "" })).toEqual({
       name: "Informe o nome.",
@@ -422,6 +446,7 @@ describe("nenhuma mensagem sai em inglês", () => {
       unitChoice: 1,
       unitOther: 1,
       kind: 1,
+      color: 1,
       role: 1,
       direction: 1,
       active: 1,
@@ -445,7 +470,10 @@ describe("firstFieldErrors", () => {
   });
 
   it("devolve só a primeira mensagem de cada campo", () => {
-    const parsed = createSectorSchema.safeParse({ name: "a".repeat(100) });
+    const parsed = createSectorSchema.safeParse({
+      name: "a".repeat(100),
+      color: "sky",
+    });
     expect(parsed.success).toBe(false);
     if (!parsed.success) {
       expect(firstFieldErrors(parsed.error)).toEqual({

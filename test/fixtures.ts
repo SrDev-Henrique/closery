@@ -24,16 +24,21 @@ import type { Db } from "@/db/types";
 import type { CreateInviteInput } from "@/features/invites/inviteQueries";
 import { INVITE_TTL_MS } from "@/features/invites/inviteState";
 import { generateInviteToken } from "@/features/invites/token";
+import type { SectorColor } from "@/features/sectors/colors";
 import type { Role } from "@/lib/roles";
 
 export async function insertSector(
   db: Db,
   name = `Setor ${randomUUID().slice(0, 8)}`,
-  options: { active?: boolean } = {},
+  options: { active?: boolean; color?: SectorColor } = {},
 ): Promise<{ id: string; name: string }> {
   const [created] = await db
     .insert(sector)
-    .values({ name, active: options.active ?? true })
+    .values({
+      name,
+      active: options.active ?? true,
+      color: options.color ?? "lilac",
+    })
     .returning({ id: sector.id, name: sector.name });
   if (!created) throw new Error("fixture: setor não criado");
   return created;

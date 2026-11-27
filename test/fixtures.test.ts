@@ -56,3 +56,31 @@ describe("deactivateSector", () => {
     );
   });
 });
+describe("insertSector", () => {
+  async function colorOf(sectorId: string): Promise<string | undefined> {
+    const [row] = await db
+      .select({ color: sector.color })
+      .from(sector)
+      .where(eq(sector.id, sectorId));
+    return row?.color;
+  }
+
+  it("sem opção, o setor sai lilac e ativo", async () => {
+    const created = await insertSector(db, "ULD Teste");
+
+    expect(await colorOf(created.id)).toBe("lilac");
+    expect(await activeOf(created.id)).toBe(true);
+  });
+
+  it("aceita a cor e o estado pelas opções", async () => {
+    const pink = await insertSector(db, "Setor Rosa", { color: "pink" });
+    const idle = await insertSector(db, "Setor Parado", {
+      active: false,
+      color: "green",
+    });
+
+    expect(await colorOf(pink.id)).toBe("pink");
+    expect(await colorOf(idle.id)).toBe("green");
+    expect(await activeOf(idle.id)).toBe(false);
+  });
+});

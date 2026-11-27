@@ -79,8 +79,8 @@ describe("resolveScreenSector — admin", () => {
       sectorName: "Câmara Teste",
       sectorParam: camara.id,
       sectors: [
-        { id: camara.id, name: "Câmara Teste" },
-        { id: uld.id, name: "ULD Teste" },
+        { id: camara.id, name: "Câmara Teste", color: "lilac" },
+        { id: uld.id, name: "ULD Teste", color: "lilac" },
       ],
       cookie: uld.id,
     });
@@ -96,7 +96,7 @@ describe("resolveScreenSector — admin", () => {
       sectorId: null,
       sectorName: null,
       sectorParam: "todos",
-      sectors: [{ id: uld.id, name: "ULD Teste" }],
+      sectors: [{ id: uld.id, name: "ULD Teste", color: "lilac" }],
       cookie: undefined,
     });
   });
