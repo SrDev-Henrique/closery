@@ -1240,7 +1240,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** cartão "Solicitações" do Início, depois de "Passagem do meu turno".
 - **Como funciona:** `Card variant="feature"` com `<h2>` "Solicitações" (Satoshi 700/18 px). Com abertas: o contador `{openCount}` (Satoshi 900, `tabular-nums`, 76 px; 60 px em 2 colunas com área útil < 1240 px; 52 px no celular), ao lado "aberta"/"abertas" e o `Badge warning` com `TriangleAlert` "{n} paradas" (some sem paradas); com paradas, o `<h3>` "Paradas há mais tempo" (mono, caixa alta) e até 5 `OpenRequestItem`. Vazio: `UserAvatar` de 84 px (`avatarSrc`, quem está logado) e "Nenhuma solicitação aberta."; com `firstAccess`, a linha "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.". Rodapé: link `default` `pill` "Ver solicitações" com `ArrowRight` e 20px de padding (`cn(..., "px-5")`, como no protótipo) (`allHref`; o admin leva `?setor=`).
 - **Usa:** `Card`, `Badge`, `UserAvatar`, `OpenRequestItem`, `staleCountLabel`, `buttonVariants`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): contador grande + selo de paradas no lugar da linha "{n abertas} · {m paradas}"; props novas `avatarSrc` e `firstAccess`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): contador grande + selo de paradas no lugar da linha "{n abertas} · {m paradas}"; props novas `avatarSrc` e `firstAccess`. 2026-11-27 — Task 16 (pixel): título "Solicitações" com `leading-[normal]` (a linha de 28px empurrava o contador e a lista 4px para baixo); selo "{n} paradas" com `leading-[normal]` depois do `text-[12.5px]`.
 
 ### RequestGroupSection
 - **Status:** ✅ pronto (2026-11-25)

@@ -29,7 +29,9 @@ export function RequestsHomeCard({
 }) {
   return (
     <Card variant="feature" className="gap-5">
-      <h2 className="font-heading text-lg font-bold">Solicitações</h2>
+      <h2 className="font-heading text-lg leading-[normal] font-bold">
+        Solicitações
+      </h2>
 
       {home.openCount === 0 ? (
         <div className="flex flex-1 flex-col items-start justify-center gap-4 py-3">
@@ -58,7 +60,7 @@ export function RequestsHomeCard({
               <Badge
                 variant="warning"
                 size="md"
-                className="gap-[5px] text-[12.5px]"
+                className="gap-[5px] text-[12.5px] leading-[normal]"
               >
                 <TriangleAlert aria-hidden="true" strokeWidth={2.4} />
                 {staleCountLabel(home.staleCount)}
