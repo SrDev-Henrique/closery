@@ -192,6 +192,8 @@ describe("carregadores das solicitações", () => {
         id: parado.id,
         name: "Setor parado",
         active: false,
+        // O loadSector devolve a cor desde o visual novo (cor padrão do fixture).
+        color: "lilac",
       });
     });
 
