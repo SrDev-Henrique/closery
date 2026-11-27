@@ -41,10 +41,14 @@ const buttonVariants = cva(
         "icon-sm": "size-9 text-sm font-medium max-md:size-11",
         "icon-lg": "size-11 text-sm font-medium",
         // 48px, Satoshi 16px/700 (Início e shell). Já acima do alvo de toque.
-        pill: "h-12 gap-2.5 px-[22px] font-heading text-base font-bold [&_svg:not([class*='size-'])]:size-[18px]",
-        // Controle redondo de 44px (botão do menu, etc.).
+        // `border-0`: a borda transparente de 1px da base, com o
+        // `bg-clip-padding`, deixava o fundo visível com 46px de altura e 2px
+        // a mais de largura (protótipo: sem borda). O `.border-0` vem depois do
+        // `.border` no CSS, então vence também sem twMerge (Link com a string crua).
+        pill: "h-12 gap-2.5 border-0 px-[22px] font-heading text-base font-bold [&_svg:not([class*='size-'])]:size-[18px]",
+        // Controle redondo de 44px (botão do menu, etc.), também sem a borda.
         "icon-pill":
-          "size-11 text-sm font-medium [&_svg:not([class*='size-'])]:size-[18px]",
+          "size-11 border-0 text-sm font-medium [&_svg:not([class*='size-'])]:size-[18px]",
       },
     },
     defaultVariants: {

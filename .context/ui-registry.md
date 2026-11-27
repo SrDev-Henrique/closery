@@ -43,7 +43,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   colorido) e `on-pastel-secondary` (`bg-on-pastel-secondary`, hover `-hover`: secundário dentro de
   card colorido). Tamanhos `default`, `xs`, `sm`, `lg` (h-11), `icon`, `icon-xs`, `icon-sm`,
   `icon-lg`, `pill` (48px, `font-heading` 16px/700, `px-[22px]`, `gap-2.5`, ícone 18px) e
-  `icon-pill` (44px redondo). Composição com `render`, não `asChild`. O tamanho do texto fica em
+  `icon-pill` (44px redondo); os dois sem a borda transparente de 1px da base (`border-0`: com o `bg-clip-padding` ela deixava o fundo visível com 46/42px e 2px mais largo). Composição com `render`, não `asChild`. O tamanho do texto fica em
   cada `size` (não na base) para `buttonVariants` usado cru em `<Link>` não ter dois `font-size`.
   Padding do `pill` (protótipo): 22px nos primários `on-pastel`; 20px no `surface` ("Ver o
   dashboard"), no `default` ("Ver solicitações") e nos secundários `on-pastel-secondary`, sempre por
@@ -55,7 +55,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
 - **Usa:** tokens `primary`, `border`, `muted`, `ring`, `destructive`.
 - **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
-  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24). 2026-11-27 — Visual do Início (Task 4): `rounded-full` em tudo (sai o `rounded-lg` e os `rounded-[min(...)]`, e o `in-data-[slot=button-group]:rounded-lg`); variantes `surface`, `on-pastel`, `on-pastel-secondary`; tamanhos `pill` e `icon-pill`; `text-sm font-medium` saiu da base para cada `size`.
+  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24). 2026-11-27 — Visual do Início (Task 4): `rounded-full` em tudo (sai o `rounded-lg` e os `rounded-[min(...)]`, e o `in-data-[slot=button-group]:rounded-lg`); variantes `surface`, `on-pastel`, `on-pastel-secondary`; tamanhos `pill` e `icon-pill`; `text-sm font-medium` saiu da base para cada `size`. 2026-11-27 — Task 16 (pixel): `pill` e `icon-pill` com `border-0` (o fundo visível era 46×(largura+2) e 42px; agora 48 e 44px, iguais ao protótipo).
 
 ### Input
 - **Status:** ✏️ estendido

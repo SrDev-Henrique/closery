@@ -132,6 +132,12 @@ describe("buttonVariants — tamanhos novos", () => {
     );
   });
 
+  it("pill e icon-pill não têm a borda de 1px da base (com o bg-clip-padding, ela encolhia o fundo visível para 46 e 42px)", () => {
+    for (const size of ["pill", "icon-pill"] as const) {
+      expect(classesOf({ size }), `size=${size}`).toContain("border-0");
+    }
+  });
+
   it("a base não traz mais tamanho de texto: cada size declara o seu (sem font-size duplicado)", () => {
     for (const size of SIZES) {
       const fontSizes = classesOf({ size }).filter((name) =>
