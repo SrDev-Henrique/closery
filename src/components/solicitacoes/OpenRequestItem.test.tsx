@@ -1,8 +1,27 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import type { ReactNode } from "react";
+import { describe, expect, it, vi } from "vitest";
 
 import { openRequest } from "../../../test/openRequests";
 import { OpenRequestItem } from "./OpenRequestItem";
+
+// O next/link não deixa o `scroll` no DOM: o mock o expõe em data-scroll.
+vi.mock("next/link", () => ({
+  default: ({
+    href,
+    scroll,
+    children,
+    ...rest
+  }: {
+    href: string;
+    scroll?: boolean;
+    children: ReactNode;
+  }) => (
+    <a href={href} data-scroll={String(scroll)} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 
 function renderItem(props: Parameters<typeof OpenRequestItem>[0]) {
   render(
@@ -104,6 +123,7 @@ describe("OpenRequestItem", () => {
       "href",
       "/solicitacoes/22222222-2222-4222-8222-222222222222",
     );
+    expect(screen.getByRole("link")).toHaveAttribute("data-scroll", "false");
   });
 
   it("fecha com o chevron decorativo", () => {

@@ -314,6 +314,19 @@ describe("setSectorActive", () => {
     expect((await readSector(off.id)).active).toBe(true);
   });
 
+  it("desativar e reativar não troca a cor do setor (spec §8)", async () => {
+    const created = await insertSector(db, "Colorido");
+    await db
+      .update(sector)
+      .set({ color: "green" })
+      .where(eq(sector.id, created.id));
+
+    await setSectorActive(db, { id: created.id, active: false }, NOW);
+    expect((await readSector(created.id)).color).toBe("green");
+    await setSectorActive(db, { id: created.id, active: true }, NOW);
+    expect((await readSector(created.id)).color).toBe("green");
+  });
+
   it("repetir o mesmo estado é sucesso sem mudança (idempotente)", async () => {
     const on = await insertSector(db, "Ligado");
     const off = await insertSector(db, "Desligado", { active: false });
