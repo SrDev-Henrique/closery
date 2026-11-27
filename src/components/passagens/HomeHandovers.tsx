@@ -150,8 +150,15 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
         <MyShiftCard
           state={home.mine}
           sectorId={home.sector.id}
+          sectorName={home.sector.name}
+          sectorColor={home.sector.color}
           canManageCatalog={actor.role === "admin"}
           sectorParam={sectorParam}
+          avatarSrc={
+            home.mine.kind === "continue" && home.mine.saved
+              ? avatarDataUri(home.mine.saved.byId)
+              : null
+          }
         />
         <RequestsHomeCard home={requests} allHref={requestsHref(sectorParam)} />
       </div>

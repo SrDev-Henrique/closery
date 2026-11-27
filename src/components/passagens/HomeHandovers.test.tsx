@@ -38,6 +38,9 @@ vi.mock("next/headers", () => ({
   }),
 }));
 vi.mock("@/app/(app)/actions", () => ({ chooseSectorAction: vi.fn() }));
+vi.mock("@/lib/avatar", () => ({
+  avatarDataUri: (seed: string) => `data:image/svg+xml,${seed}`,
+}));
 vi.mock("@/db", async () => {
   const { createTestDb } = await import("../../../test/db");
   const { client, db } = await createTestDb();
@@ -434,6 +437,47 @@ describe("HomeHandovers", () => {
         screen.getByRole("link", { name: "Ver solicitações" }),
       ).toHaveAttribute("href", `/solicitacoes?setor=${world.uld.id}`);
     });
+  });
+
+  it("o cartão do turno leva o nome e a cor do setor", async () => {
+    const carga = await insertSector(db, "Carga", { color: "peach" });
+    await insertShift(db, { sectorId: carga.id });
+    const ana = await insertUser(db, { role: "operator", sectorId: carga.id });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: carga.id }),
+    );
+
+    await renderHome();
+
+    const card = screen
+      .getByRole("heading", { name: "Passagem do meu turno" })
+      .closest('[data-slot="card"]');
+    expect(card).toHaveClass("bg-sector-peach");
+    expect(within(card as HTMLElement).getByText("Carga")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+  });
+
+  it("rascunho: o avatar de quem salvou usa o id dessa pessoa como semente", async () => {
+    const { uld, shiftRow, ana } = await setup();
+    await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: shiftRow.id,
+      operationalDate: TODAY,
+      updatedBy: ana.id,
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+    );
+
+    await renderHome();
+
+    const card = screen
+      .getByRole("heading", { name: "Passagem do meu turno" })
+      .closest('[data-slot="card"]');
+    expect(card?.querySelector("img")).toHaveAttribute(
+      "src",
+      `data:image/svg+xml,${ana.id}`,
+    );
   });
 
   it("rascunho existente vira 'Continuar passagem'", async () => {
