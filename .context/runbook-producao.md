@@ -402,3 +402,7 @@ go/no-go. **Controlador:** registra cada achado em `.context/pendencias.md` como
     `.context/library-docs.md §17` (conferir a licença da versão nova e atualizar `SATOSHI_SHA256`
     num commit só dele, com PR e CI verde). Até lá, não há deploy novo; a saída definitiva é o
     espelho privado da P102.
+  - **Formato** (`… respondeu 404`, `a Fontshare não devolveu o peso …`, `nenhum @font-face na
+    resposta da Fontshare`, `sem woff2 no peso …` ou `URL de fonte inesperada: …`): o Fontshare
+    mudou o endereço ou o formato da resposta, e esperar não resolve. Como no SHA-256, não há
+    deploy novo até o `scripts/fontsCheck.mjs` ser ajustado num PR com CI verde (P102).

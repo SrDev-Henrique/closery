@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P107.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P109.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -143,6 +143,8 @@
 | P104 | suggestColorForNewSector conta as cores em JS, contra a regra de agregação no SQL | ⚪ | Aberto, não triado |
 | P105 | Higiene de testes do visual novo | ⚪ | Aberto, não triado |
 | P106 | Sobras de código do visual novo: "use client" sem hook, valores repetidos e mensagens | ⚪ | Aberto, não triado |
+| P107 | Mapas do roteiro citam o --destructive de antes do ajuste AA | ⚪ | Aberto, não triado |
+| P108 | Setor rosa tem a mesma cor do cartão "Convide sua equipe" | ⚪ | Aberto, não triado |
 
 ---
 
@@ -463,6 +465,7 @@
 **Impacto:** o guarda mede em Chromium emulado a 390×844. iOS e Android reais, o tema escuro e a área do link esticado do cartão da Lista não foram medidos.
 **Correção:** — (opção: conferir no celular dos operadores no primeiro dia do piloto)
 **Registrado em:** 2026-11-26
+**Atualização (2026-11-27):** o "tema escuro não medido" do Impacto está vencido. Com o visual novo, o escuro virou o padrão, e o `e2e/touch-targets.spec.ts`, que não escolhe tema, passou a medir no escuro; o que fica sem medida é o claro. O tema não muda o tamanho dos controles, então o risco é baixo. iOS e Android reais e a área do link esticado da Lista continuam sem medida.
 
 #### P71 — Sem instalação como app (manifest e ícones) ⚪
 **Estado:** Aberto, não triado
@@ -544,7 +547,7 @@
 #### P82 — Telas sem desenho novo ficam no layout antigo sem prazo: Conta, Administração, entrada, privacidade, erro e 404 🟡
 **Estado:** Aberto, não triado
 **Arquivos:** `src/app/(auth)/` (entrar, convite, redefinir-senha) · `src/app/(app)/bem-vindo` · `src/app/(app)/conta` · `src/app/(app)/admin/` (visão geral e os 5 cadastros) · `src/app/privacidade` · `src/app/error.tsx` · `src/app/not-found.tsx` · `src/app/global-error.tsx` · `src/app/(app)/error.tsx` · `src/app/(app)/not-found.tsx`
-**Impacto:** o visual novo trouxe a paleta, as fontes e o tema escuro para todas as telas (D-V1), mas só o Início e o shell mudaram de layout. Estas telas continuam no layout antigo: cartão pequeno centrado, títulos em Geist, sem a tipografia display nem os raios grandes, botões de 36px no desktop. Nenhum handoff do designer as cobre, então o piloto conviveria com dois estilos sem prazo para acabar. As telas que têm handoff (Passagens, Passagem de turno, Solicitações e Dashboard) não entram aqui: a fila do roteiro já as planeja (PRs C a G), inclusive o item 5 do pack de correção (`HandoverDetail`), que é a primeira tarefa da branch D.
+**Impacto:** o visual novo trouxe a paleta, as fontes e o tema escuro para todas as telas (D-V1), mas só o Início e o shell mudaram de layout. Estas telas continuam no layout antigo: cartão pequeno centrado, títulos em Geist, sem a tipografia display nem os raios grandes, botões de 36px no desktop. Os selos `outline` dessas telas (os papéis da Equipe, "Atravessa a meia-noite" nos Turnos e o tipo do item) têm a borda `--border`, de 9% de tinta, tênue nos dois temas; o texto deles é legível. Nenhum handoff do designer as cobre, então o piloto conviveria com dois estilos sem prazo para acabar. As telas que têm handoff (Passagens, Passagem de turno, Solicitações e Dashboard) não entram aqui: a fila do roteiro já as planeja (PRs C a G), inclusive o item 5 do pack de correção (`HandoverDetail`), que é a primeira tarefa da branch D.
 **Correção:** — (opção: pedir já ao designer os desenhos dessas telas, para entrarem na fila depois do Dashboard; é a decisão T20 do lote 0 do roteiro, `.git/sdd/roadmap/roteiro.md` §4.1)
 **Registrado em:** 2026-11-27
 
@@ -704,16 +707,30 @@
 
 #### P105 — Higiene de testes do visual novo ⚪
 **Estado:** Aberto, não triado
-**Arquivos:** `src/app/themeContrast.test.ts` e `src/app/chartPalette.test.ts` · `test/fontsConfig.test.ts` · `src/components/app-shell/ThemeSwitch.test.tsx` · `src/components/ui/button.test.ts` e `src/components/ui/button.variants.test.ts` · `src/components/admin/sectors/SectorsAdmin.test.tsx` · `src/lib/avatar.test.ts` · `src/components/passagens/SectorPicker.test.tsx` · `src/components/solicitacoes/OpenRequestItem.test.tsx` e `RequestsHomeCard.test.tsx`
-**Impacto:** sem defeito conhecido: são testes que provam menos do que o nome diz, ou que vazam estado depois de uma falha. A revisão final listou: a matemática de cor duplicada entre os dois guardas; a ordem do cache do CI conferida por `indexOf`; o `afterEach` do `ThemeSwitch` que afirma antes de restaurar o espião, e a hidratação sem `finally`; `SIZES` e `VARIANTS` escritos em dois testes do `Button`; um teste duplicado e um token conferido por substring no `SectorsAdmin`; o cache do avatar não afirmado; o teste do redirecionamento do seletor que não afirma o thumb; os testes de destino longo e de zero abertas, fracos; e testes por classe em px onde o jsdom não mede layout.
+**Arquivos:** `src/app/themeContrast.test.ts` e `src/app/chartPalette.test.ts` · `test/fontsConfig.test.ts` · `src/components/app-shell/ThemeSwitch.test.tsx` · `src/components/ui/button.test.ts` e `src/components/ui/button.variants.test.ts` · `src/components/admin/sectors/SectorsAdmin.test.tsx` · `src/lib/avatar.test.ts` · `src/components/passagens/SectorPicker.test.tsx` · `src/components/solicitacoes/OpenRequestItem.test.tsx` e `RequestsHomeCard.test.tsx` · `src/components/admin/sectors/SectorColorChoice.test.tsx`
+**Impacto:** sem defeito conhecido: são testes que provam menos do que o nome diz, ou que vazam estado depois de uma falha. A revisão final listou: a matemática de cor duplicada entre os dois guardas; a ordem do cache do CI conferida por `indexOf`; o `afterEach` do `ThemeSwitch` que afirma antes de restaurar o espião, e a hidratação sem `finally`; `SIZES` e `VARIANTS` escritos em dois testes do `Button`; um teste duplicado e um token conferido por substring no `SectorsAdmin`; o cache do avatar não afirmado; o teste do redirecionamento do seletor que não afirma o thumb; os testes de destino longo e de zero abertas, fracos; o `SectorColorChoice` sem teste das setas do teclado; e testes por classe em px onde o jsdom não mede layout.
 **Correção:** — (um commit só de testes; extrair a matemática de cor para `test/colorMath.ts` num commit de refatoração próprio)
 **Registrado em:** 2026-11-27
 
 #### P106 — Sobras de código do visual novo: "use client" sem hook, valores repetidos e mensagens ⚪
 **Estado:** Aberto, não triado
-**Arquivos:** `src/components/app-shell/AppHeader.tsx` · `src/components/app-shell/SidebarSkeleton.tsx` · `src/components/app-shell/InviteTeamCard.tsx` · `src/components/passagens/SectorPicker.tsx` · `src/components/passagens/MyShiftCard.tsx` · `src/components/admin/sectors/SectorColorChoice.tsx` · `src/components/admin/NameForm.tsx` · `scripts/fetchFonts.mjs`
-**Impacto:** sem perda de dados; cada item é pequeno. O `AppHeader` tem `"use client"` sem hook (veio do plano). O `SidebarSkeleton` reserva 264px fixos, e no admin, que tem dois grupos, a sidebar salta ao carregar. O `mt-auto` do `InviteTeamCard` não tem efeito. O `6.5rem` do `SectorPicker` está escrito 4 vezes. No estado `delivered` do `MyShiftCard`, o leitor de tela ouve "Aguardando recebimento" duas vezes (no bloco e na frase). O `SectorColorChoice` tem a prop `disabled` sem uso. No `NameForm`, um erro de `color` vindo do servidor cairia no campo nome (não se alcança pela tela). A mensagem de erro do `fetchFonts` pode sair com "..", e o script rodado por um caminho com link simbólico sai com código 0 sem baixar nada (o caminho documentado é `bun run fonts`).
+**Arquivos:** `src/components/app-shell/AppHeader.tsx` · `src/components/app-shell/SidebarSkeleton.tsx` · `src/components/app-shell/InviteTeamCard.tsx` · `src/components/app-shell/MenuToggle.tsx` · `src/components/passagens/SectorPicker.tsx` · `src/components/passagens/MyShiftCard.tsx` · `src/components/admin/sectors/SectorColorChoice.tsx` · `src/components/admin/NameForm.tsx` · `scripts/fetchFonts.mjs`
+**Impacto:** sem perda de dados; cada item é pequeno. O `AppHeader` tem `"use client"` sem hook (veio do plano). O `SidebarSkeleton` reserva 264px fixos, e no admin, que tem dois grupos, a sidebar salta ao carregar. O `mt-auto` do `InviteTeamCard` não tem efeito. O `MenuToggle` repete "Alternar menu" num `sr-only` que o `aria-label` já dá. O `6.5rem` do `SectorPicker` está escrito 3 vezes nas classes (e uma no comentário). No estado `delivered` do `MyShiftCard`, o leitor de tela ouve "Aguardando recebimento" duas vezes (no bloco e na frase). O `SectorColorChoice` tem a prop `disabled` sem uso e nomeia o grupo duas vezes: a `legend` do `fieldset` e o `aria-labelledby` do `radiogroup` apontam para o mesmo "Cor", e o leitor de tela pode ler "Cor" duas vezes. No `NameForm`, um erro de `color` vindo do servidor cairia no campo nome (não se alcança pela tela). A mensagem de erro do `fetchFonts` pode sair com "..", e o script rodado por um caminho com link simbólico sai com código 0 sem baixar nada (o caminho documentado é `bun run fonts`).
 **Correção:** — (opção: um commit de limpeza para cada arquivo, com os testes verdes antes e depois)
+**Registrado em:** 2026-11-27
+
+#### P107 — Mapas do roteiro citam o --destructive de antes do ajuste AA ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `.git/sdd/roadmap/map-passagem-de-turno.md` · `.git/sdd/roadmap/map-solicitacao-completa.md` · `.git/sdd/roadmap/map-solicitacoes.md` (fora do git)
+**Impacto:** os três mapas dos handoffs das branches D, E e F dizem que o `--destructive` é `#d60000` no claro e `#ff8a8a` no escuro. O valor atual é `#b80000` e `#ff9393`, com o fundo do botão em `/10` e hover `/15` no claro e em `/15` e hover `/20` no escuro (`architecture.md §10`, 2026-11-27, desvio f). Quem planejar essas branches pelos mapas compara os tons de erro dos handoffs (`--err`, `--dang`) com um valor que não existe mais. A revisão do delta apontou; o `memory.md` também avisa.
+**Correção:** — (opção: trocar os valores nos três mapas antes de planejar a branch D)
+**Registrado em:** 2026-11-27
+
+#### P108 — Setor rosa tem a mesma cor do cartão "Convide sua equipe" ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/globals.css` (`--invite` e `--sector-pink`, os dois `#f2a7c6`) · `src/components/passagens/HomeCards.tsx` · `src/components/app-shell/InviteTeamCard.tsx`
+**Impacto:** a spec deu o mesmo valor aos dois tokens. No primeiro acesso do admin, com o setor escolhido em rosa, o "Convide sua equipe" fica logo acima do "Passagem do meu turno", e os dois têm o mesmo rosa. Sem borda nem sombra, os cartões coloridos se separam pela cor (`ui-rules.md §6`), e a regra "rosa só para o convite" não vale nesse caso. O rosa é a última cor da sugestão: só aparece a partir do 5º setor ativo ou por escolha do admin.
+**Correção:** — (decisão do dono. Opções: outro tom para o `--invite`, outro rosa na paleta do setor, ou aceitar)
 **Registrado em:** 2026-11-27
 
 ## 2. Triado, plano pronto

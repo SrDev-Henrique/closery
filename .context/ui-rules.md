@@ -90,20 +90,24 @@ Valores em `ui-tokens.md`; a decisão e os desvios no `architecture.md §10` (20
   não segue o sistema e a escolha fica no navegador. Todo componente funciona nos dois temas. O visual
   que depende do tema usa tokens ou as variantes `dark:`; o valor em JS (rótulo, `aria-checked`) vem
   só do `useTheme()` (`library-docs.md §18`).
-- **Pílula.** Botões e selos são `rounded-full` no app inteiro, sem borda transparente (a borda de
-  1px muda o tamanho medido). Os tamanhos grandes (`pill`, 48px), os cards de raio 32 e a tipografia
-  display (Satoshi, `font-heading`) ficam no Início e no shell até cada tela receber o handoff dela.
+- **Pílula.** Botões e selos são `rounded-full` no app inteiro. Os tamanhos do Início e do shell
+  (`pill`, 48px, e `icon-pill`, 44px, no `Button`; `md` no `Badge`) não têm a borda transparente de
+  1px da base, que muda o tamanho medido; os outros tamanhos ainda a têm. Os tamanhos grandes, os
+  cards de raio 32 e a tipografia display (Satoshi, `font-heading`) ficam no Início e no shell até
+  cada tela receber o handoff dela.
 - **"Celular" é abaixo de 860px** no app inteiro: o `md` do Tailwind (`53.75rem`) e o
   `MOBILE_BREAKPOINT` da sidebar. A faixa de 768 a 859px é celular. Dentro do conteúdo do Início, os
-  cortes de layout são container queries da área útil (`@container/main`, `library-docs.md §20`),
-  nunca da janela.
+  cortes acima do celular são container queries da área útil (`@container/main`,
+  `library-docs.md §20`), nunca da janela; o celular continua no `max-md:`.
 - **Cartão de destaque (`Card variant="feature"`):** raio 32, padding 32 (22 no celular), sem borda,
   sem ring e sem sombra; os cartões se separam pela cor. As cores dele são **fixas**, iguais nos dois
   temas, e a tinta é sempre `--on-pastel` (e as `on-pastel-*`), com os botões `on-pastel` e
   `on-pastel-secondary`.
   - **Amarelo (`--highlight`) só para "precisa de atenção"**: hoje, só o "Passagem para confirmar".
-    Nenhum outro cartão, selo ou destaque usa o amarelo.
-  - Rosa (`--invite`) só para o "Convide sua equipe"; o cartão do turno usa a cor do setor.
+    Nenhum outro cartão, selo ou destaque usa o `--highlight` (o selo `warning`, de "Parada há N
+    dias", é âmbar e tem token próprio).
+  - Rosa (`--invite`) só para o "Convide sua equipe"; o cartão do turno usa a cor do setor. O
+    `--sector-pink` tem o mesmo valor do `--invite` (P108).
 - **A cor do setor vem de `sector.color`**, numa paleta fechada de 5 cores (lilás, pêssego, azul,
   verde e rosa), escolhida na criação e editável na tela Setores. O mapa chave → token mora só em
   `src/features/sectors/colors.ts`. Nunca derive a cor da ordem da lista nem a cicle (§4), e mostre
