@@ -77,7 +77,12 @@ export function RequestsHomeCard({
           </h3>
           <ul className="flex flex-col">
             {home.stale.map((request) => (
-              <OpenRequestItem key={request.id} request={request} />
+              // Selos só com texto, como no protótipo (decisão do dono, D1).
+              <OpenRequestItem
+                key={request.id}
+                request={request}
+                badgeIcons={false}
+              />
             ))}
           </ul>
         </div>

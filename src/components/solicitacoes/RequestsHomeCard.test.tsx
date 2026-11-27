@@ -110,6 +110,33 @@ describe("RequestsHomeCard", () => {
     ).toHaveAttribute("href", expect.stringMatching(/^\/solicitacoes\/.+/));
   });
 
+  it("nas linhas das paradas, os selos de status e de dias vêm sem ícone (protótipo); o selo de paradas do contador mantém o dele", () => {
+    renderCard({
+      home: home({
+        openCount: 2,
+        staleCount: 1,
+        stale: [
+          openRequest({
+            description: "Parada sem ícone",
+            status: "in_transit",
+            stale: true,
+            daysInStatus: 4,
+          }),
+        ],
+      }),
+    });
+
+    const item = within(screen.getByRole("list")).getByRole("listitem");
+    expect(
+      within(item).getByText("Em separação / Trânsito"),
+    ).toBeInTheDocument();
+    expect(within(item).getByText("Parada há 4 dias")).toBeInTheDocument();
+    for (const badge of item.querySelectorAll("[data-slot=badge]")) {
+      expect(badge.querySelector("svg")).toBeNull();
+    }
+    expect(screen.getByText("1 parada").querySelector("svg")).not.toBeNull();
+  });
+
   it("uma parada: '3' 'abertas' e selo '1 parada'", () => {
     renderCard({
       home: home({

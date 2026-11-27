@@ -14,13 +14,17 @@ import { StaleBadge } from "./StaleBadge";
 // inteira é clicável (link esticado: o `after:inset-0` do link cobre a linha,
 // então o nome acessível continua sendo só a prévia). O link abre o detalhe
 // rápido (Sheet interceptado, scroll={false}); `statusNow` só vem no resumo da
-// entrega e diz onde a solicitação está hoje.
+// entrega e diz onde a solicitação está hoje. `badgeIcons={false}` tira o
+// ícone dos dois selos (status e parada): só o cartão do Início usa, como no
+// protótipo; as seções da passagem mantêm os ícones.
 export function OpenRequestItem({
   request,
   statusNow,
+  badgeIcons = true,
 }: {
   request: OpenRequestSummary;
   statusNow?: RequestStatus;
+  badgeIcons?: boolean;
 }) {
   return (
     <li className="border-t border-border">
@@ -40,8 +44,10 @@ export function OpenRequestItem({
             Para {request.destinationName}
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
-            <RequestStatusBadge status={request.status} />
-            {request.stale && <StaleBadge days={request.daysInStatus} />}
+            <RequestStatusBadge status={request.status} showIcon={badgeIcons} />
+            {request.stale && (
+              <StaleBadge days={request.daysInStatus} showIcon={badgeIcons} />
+            )}
             {statusNow !== undefined && statusNow !== request.status && (
               <span className="text-[13px] text-muted-foreground">
                 Agora: {REQUEST_STATUS_LABEL[statusNow]}

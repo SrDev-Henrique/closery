@@ -28,6 +28,18 @@ describe("RequestStatusBadge", () => {
     expect(icon).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("showIcon={false} mostra só o texto (linhas do Início), com a mesma cor", () => {
+    const { container } = render(
+      <RequestStatusBadge status="in_transit" showIcon={false} />,
+    );
+
+    expect(screen.getByText("Em separação / Trânsito")).toHaveClass(
+      "bg-info",
+      "text-info-foreground",
+    );
+    expect(container.querySelector("svg")).toBeNull();
+  });
+
   it("é pílula de 24px e nunca quebra linha, mesmo com o rótulo mais longo", () => {
     render(<RequestStatusBadge status="in_transit" />);
 

@@ -135,6 +135,48 @@ describe("OpenRequestItem", () => {
     expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
   });
 
+  it("badgeIcons={false} tira o ícone dos dois selos (status e parada); o chevron continua", () => {
+    const { container } = render(
+      <ul>
+        <OpenRequestItem
+          request={openRequest({
+            status: "requested",
+            stale: true,
+            daysInStatus: 4,
+          })}
+          badgeIcons={false}
+        />
+      </ul>,
+    );
+
+    expect(screen.getByText("Solicitada")).toHaveClass("bg-accent");
+    expect(screen.getByText("Parada há 4 dias")).toHaveClass("bg-warning");
+    for (const badge of container.querySelectorAll("[data-slot=badge]")) {
+      expect(badge.querySelector("svg")).toBeNull();
+    }
+    expect(container.querySelector("svg.lucide-chevron-right")).not.toBeNull();
+  });
+
+  it("sem badgeIcons (seções da passagem), os dois selos levam o ícone", () => {
+    const { container } = render(
+      <ul>
+        <OpenRequestItem
+          request={openRequest({
+            status: "requested",
+            stale: true,
+            daysInStatus: 4,
+          })}
+        />
+      </ul>,
+    );
+
+    const badges = container.querySelectorAll("[data-slot=badge]");
+    expect(badges).toHaveLength(2);
+    for (const badge of badges) {
+      expect(badge.querySelector("svg")).not.toBeNull();
+    }
+  });
+
   it("nome de destino longo não estoura a linha (min-w-0 e quebra)", () => {
     const { container } = render(
       <ul>
