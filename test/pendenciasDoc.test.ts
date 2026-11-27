@@ -233,9 +233,11 @@ describe(".context/pendencias.md", () => {
     expect(entries.get("P1")?.state).toBe("Resolvido");
   });
 
-  it("Visual: P81 a P108 entraram como Aberto, não triado", () => {
+  it("Visual: P81 a P108 entraram como Aberto, não triado (menos as que o PR B fechou)", () => {
+    const closedByPrB = new Set(["P81"]);
     for (let number = 81; number <= 108; number++) {
       const id = `P${number}`;
+      if (closedByPrB.has(id)) continue;
       const entry = entries.get(id);
       expect(entry?.state, id).toBe("Aberto, não triado");
       expect(entry?.section, id).toBe("1");
@@ -253,5 +255,16 @@ describe(".context/pendencias.md", () => {
       expect(entry?.state, id).toBe("Aberto, não triado");
       expect(entry?.updates, id).toContain("2026-11-27");
     }
+  });
+
+  it("PR B: P81 resolvida pelo espelho do @detalhe; P44 continua aberta, com Atualização", () => {
+    const p81 = entries.get("P81");
+    expect(p81?.state, "P81").toBe("Resolvido");
+    expect(p81?.section, "P81").toBe("5");
+    expect(p81?.updates, "P81").toContain("2026-11-27");
+    const p44 = entries.get("P44");
+    expect(p44?.state, "P44").toBe("Aberto, não triado");
+    expect(p44?.section, "P44").toBe("1");
+    expect(p44?.updates, "P44").toContain("2026-11-27");
   });
 });

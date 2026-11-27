@@ -46,6 +46,18 @@
   desligados; `"**"` e não `"*"`, que não casa `/`). Sem `bunVersion` (é o runtime das funções, que
   rodam em Node). `engines.node` é `"22.x"`: `>=22.12` faria a Vercel subir para a major mais recente.
   `test/vercelConfig.test.ts` amarra `vercel.json`, `engines` e o Node do CI.
+- **Rotas paralelas sob validação estrita (PR B, P81).** O 16.4 liga `experimental.strictRouteMatching` por padrão: o
+  `next dev` monta as rotas a partir de `normalizeCatchAllRoutes` e apaga a rota **inteira** quando um slot irmão não tem
+  página que case nem `default`. Um catch-all na raiz de um slot (`@detalhe/[...catchAll]`, que normaliza para
+  `/[...catchAll]`) é pendurado em **toda** rota, inclusive nas de fora do grupo: derrubava `/entrar`, `/convite/[token]`,
+  `/redefinir-senha` e `/privacidade` no dev (o build de produção servia as quatro). Por isso o slot `@detalhe` é um
+  **espelho por segmento** de `(app)` (§14): **segmento novo de primeiro nível em `(app)` ganha
+  `@detalhe/<segmento>/page.tsx` nula e, se tiver subrotas, `@detalhe/<segmento>/[...rest]/page.tsx`**, no mesmo commit.
+  Proibidos: `(app)/default.tsx` (cria a rota `/[...catchAll]`: toda URL desconhecida renderiza o shell em vez do 404) e
+  `deprecated.looseRouteMatching` (esconde o defeito). O guarda `src/app/routeStructure.test.ts` roda o validador interno
+  sobre a árvore real; os caminhos são fixos da 16.4.6 (`next/dist/server/lib/router-utils/normalize-catchall-routes` e
+  `next/dist/shared/lib/router/utils/app-paths`): se uma atualização do Next os mover, o import quebra com mensagem clara e
+  a correção é atualizar o caminho.
 
 ## 2. shadcn/ui (`base-nova`) + Base UI
 
@@ -292,7 +304,7 @@
   lançar `notFound`, não toca o banco. **Guardas estáticos** que leem arquivos: `appPagesAuth.test.ts`
   (páginas), `actionsAuth.test.ts`, `actionsInventory.test.ts` e `actionsGuards.test.ts` (actions e
   qualquer `"use server"`), `pendenciasDoc.test.ts` (índice, seções e próximo id de `pendencias.md`) e
-  `uiRegistryDoc.test.ts` (todo componente de `/admin`, `/passagens` e `/solicitacoes` e cada primitivo novo aparece em `ui-registry.md`). Na Fase 4 o `appPagesAuth.test.ts` ganhou a lista fechada `NULL_SLOT_PAGES` (páginas do slot `@detalhe` que só devolvem `null`) e o harness dos testes de migração é `test/migrations.ts`.
+  `uiRegistryDoc.test.ts` (todo componente de `/admin`, `/passagens` e `/solicitacoes` e cada primitivo novo aparece em `ui-registry.md`). Na Fase 4 o `appPagesAuth.test.ts` ganhou a lista fechada `NULL_SLOT_PAGES` (páginas do slot `@detalhe` que só devolvem `null`: desde o PR B, `@detalhe/page.tsx` e as nove do espelho por segmento, §14) e o harness dos testes de migração é `test/migrations.ts`. No PR B entrou `src/app/routeStructure.test.ts`, que roda o validador de rotas do próprio Next sobre a árvore real de `src/app` (§1).
 - **Route Handler (Fase 5).** Testa-se chamando `GET(new Request("http://closery.local/api/dashboard/export?periodo=7"))` com
   `@/lib/auth/session` (`requireUser`), `@/db` (getter que registra o toque no banco) e `next/headers` (`cookies`) mockados e o
   relógio falso. **O BOM se prova em bytes:** `new Uint8Array(await res.arrayBuffer())` e os 3 primeiros bytes `239, 187, 191`;
@@ -330,7 +342,8 @@
   do cartão e o ↗ têm nomes que se contêm: `getByRole("link", { name, exact: true })`. Toda `insertRequest` do E2E passa
   `createdAt` e `statusChangedAt` relativos a `Date.now()` (o padrão fixo da fixture é para o Vitest e sairia da janela de 30
   dias). Fechar o Sheet é o botão "Fechar"; depois `getByRole("dialog")` conta 0 e a URL volta à do Quadro. `/nao-existe`
-  logado responde 404 com "Página não encontrada": o `[...catchAll]` do slot não engole URL desconhecida.
+  logado responde 404 com "Página não encontrada": o espelho do slot (§14) não cria rota para URL desconhecida (nenhuma
+  rota começa com `/[...`; `routeStructure.test.ts`).
 - **`e2e/dashboard.spec.ts` (Fase 5).** Os helpers (`PASSWORD`, `test` com `clientIp`, `text`, `unique`, `uniqueEmail`, `ago`,
   `signUpOperator(page, db, sectorId, name)`, `signUpAdmin`, `seedSector(db, { shiftCreatedAt })`) estão em `e2e/helpers.ts`; os quatro specs
   antigos continuam com as cópias deles (P55). `seedSector({ shiftCreatedAt: ago(10 * DAY_MS) })` cria o turno 00:00–23:59 no passado, para os
@@ -424,7 +437,7 @@
 ## 14. Solicitações (Fase 4)
 
 - **Onde:** domínio em `src/features/requests/*` (recebe `db: Db` e, quando o tempo importa, `now: Date`; devolve `AdminResult` com mensagem pt-BR pronta). A lógica pura (status, "parada", permissões, filtros da URL, busca, textos, linha do tempo, `applyMove`, mensagens, links, schemas) não faz I/O e o cliente a importa; leituras e escritas são `server-only`. Server Actions em `src/app/(app)/solicitacoes/actions.ts`: `requireUser()` na primeira instrução e `runAction({ …, revalidate: "/(app)" })`, que só revalida em `ok`. Telas em `src/components/solicitacoes/*`. O arquivo `actions.ts` só exporta funções `async`.
-- **Detalhe rápido = rota interceptada.** O slot `@detalhe` do layout de `(app)` tem `@detalhe/(.)solicitacoes/[id]/page.tsx` (um `Sheet` com o `RequestDetail`) e três arquivos que só devolvem `null`: `default.tsx`, `page.tsx` (rota `/`) e `[...catchAll]/page.tsx`. As duas páginas nulas são **obrigatórias**: numa navegação no cliente o slot mantém a última página ativa e o Sheet ficaria aberto sobre a próxima tela. **Não** existe `(app)/default.tsx` (com ele uma URL desconhecida viraria página em branco em vez do 404). `(.)` conta segmentos de rota, não `@slot` nem grupo. O layout usa `LayoutProps<"/">`, que já tipa `detalhe`. Páginas do slot não exportam `metadata`; as de `/solicitacoes` exportam `metadata` estático.
+- **Detalhe rápido = rota interceptada.** O slot `@detalhe` do layout de `(app)` tem `@detalhe/(.)solicitacoes/[id]/page.tsx` (um `Sheet` com o `RequestDetail`), `default.tsx` e `page.tsx` (rota `/`) e, desde o PR B, o **espelho por segmento**: uma página nula por segmento de primeiro nível de `(app)` (`admin`, `bem-vindo`, `conta`, `dashboard`, `passagens`, `solicitacoes`) e um `[...rest]/page.tsx` nulo em cada segmento com subrotas (`admin`, `passagens`, `solicitacoes`). Tudo que não é a interceptada só devolve `null`. As páginas nulas são **obrigatórias**: numa navegação no cliente o slot mantém a última página ativa e o Sheet ficaria aberto sobre a próxima tela. **Segmento novo em `(app)` ganha o espelho no mesmo commit** (o `routeStructure.test.ts` reprova o esquecimento; a página nula entra no `NULL_SLOT_PAGES`). Nada de catch-all na raiz do slot: a validação estrita o pendurava nas rotas de fora de `(app)` e o `next dev` dava 404 nelas (§1, P81). **Não** existe `(app)/default.tsx` (com ele uma URL desconhecida viraria página em branco em vez do 404). `(.)` conta segmentos de rota, não `@slot` nem grupo. O layout usa `LayoutProps<"/">`, que já tipa `detalhe`. Páginas do slot não exportam `metadata`; as de `/solicitacoes` exportam `metadata` estático.
 - **Links do detalhe.** `<Link href={requestHref(id)} scroll={false}>` abre o Sheet. A página completa (↗, "Abrir página completa", "Ver comentários anteriores") é `<a href>` comum, navegação de documento: um `<Link>` para a mesma URL seria interceptado de novo. A interceptação depende do cabeçalho `next-url` (P44). O `RequestSheet` mantém `open` constante e fecha com `router.back()` com trava contra fechar duas vezes (estado local de `open` não reabriria sob a `Activity`).
 - **`useOptimistic` (`useRequestMove`, Quadro e Lista).** O `setOptimistic` roda **dentro** de `startTransition(async () => …)`, de forma síncrona, **antes** do primeiro `await` (fora disso o React loga "An optimistic state update occurred outside a transition"). O estado otimista volta sozinho quando a transição termina; `revalidatePath` só em `ok` (o RSC novo chega antes do fim da transição e o cartão não pisca). O reducer `applyMove` é puro: o cartão muda de coluna e as duas contagens mudam juntas. Falha: `toast.error` e, em `STATUS_CONFLICT`, `NO_CHANGES` ou `NOT_FOUND`, `router.refresh()` (o runner não revalida em falha). Exceção: `unstable_rethrow` e `INTERNAL`. jsdom não tem RSC: o sucesso se prova com `rerender` com as props novas e `console.error` sem chamadas.
 - **Transição de status.** `UPDATE request … WHERE id AND status = <o que a pessoa viu>` e `INSERT request_status_event` na mesma transação; 0 linhas → `lockRequest` (`FOR UPDATE`) + `lastChange` devolvem quem e quando venceu (`STATUS_CONFLICT`, ou `NO_CHANGES` quando o vencedor foi para o mesmo alvo). Cancelar também grava o motivo como comentário ligado ao evento. Solicitação não se edita (D-F4-1).

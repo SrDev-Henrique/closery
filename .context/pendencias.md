@@ -117,7 +117,7 @@
 | P78 | createPasswordResetLink não é atômico | ⚪ | Aberto, não triado |
 | P79 | React Compiler desiste do SignInPanel inteiro | ⚪ | Aberto, não triado |
 | P80 | Nenhum guarda impede script de importar logServerError ou Sentry | ⚪ | Aberto, não triado |
-| P81 | `next dev` dá 404 nas páginas fora do grupo (app) por causa do slot @detalhe | 🟡 | Aberto, não triado |
+| P81 | `next dev` dá 404 nas páginas fora do grupo (app) por causa do slot @detalhe | 🟡 | Resolvido |
 | P82 | Telas sem desenho novo ficam no layout antigo sem prazo: Conta, Administração, entrada, privacidade, erro e 404 | 🟡 | Aberto, não triado |
 | P83 | Hover e estado aberto com bg-muted somem dentro de card, Dialog e Sheet | 🟡 | Aberto, não triado |
 | P84 | Borda dos campos no tema claro tem 1,36:1, abaixo de 3:1 | 🟡 | Aberto, não triado |
@@ -292,6 +292,7 @@
 **Impacto:** a rota interceptada só abre o Sheet quando a requisição chega com o cabeçalho `next-url`; um CDN ou proxy que o descarte (ou que cacheie a resposta sem `Vary`) faz o clique abrir a página completa. Sem perda de dados: a página completa tem tudo, só perde o "sem sair da tela".
 **Correção:** — (opção: conferir na Vercel, na Fase 6, que o `Vary: next-url` passa; se não passar, aceitar a página completa como fallback)
 **Registrado em:** 2026-11-24
+**Atualização (2026-11-27):** o PR B trocou o `@detalhe/[...catchAll]` pelo espelho por segmento (P81, `library-docs.md §14`). A interceptação `(.)solicitacoes/[id]` não mudou e continua dependendo do cabeçalho `next-url`: a pendência segue aberta.
 
 #### P46 — Cartão movido para uma coluna aberta e truncada some até a revalidação ⚪
 **Estado:** Aberto, não triado
@@ -536,13 +537,6 @@
 **Impacto:** nada impede que um script de `scripts/*.ts` (rodado pelo Bun) passe a importar `logServerError` ou `@sentry/*`, o que quebraria o `admin:invite` só na hora do go-live (o Bun resolve `@sentry/bun`, que não está instalado). Hoje os dois scripts não chegam lá (conferido com `bun build --target bun`).
 **Correção:** — (opção: um caso em `test/logGuard.test.ts` que segue os imports estáticos de `scripts/*.ts`)
 **Registrado em:** 2026-11-26
-
-#### P81 — `next dev` dá 404 nas páginas fora do grupo (app) por causa do slot @detalhe 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/(app)/@detalhe/` · `src/app/(auth)/entrar` · `src/app/(auth)/convite` · `src/app/(auth)/redefinir-senha` · `src/app/privacidade`
-**Impacto:** no `bun run dev` (Next 16.4.6, com strict route matching ligado por padrão), `/entrar`, `/convite/<token>`, `/redefinir-senha` e `/privacidade` dão 404 ou 500, com o aviso "page files do not match any complete route". São as páginas fora do grupo `(app)`, que tem o slot `@detalhe`. Quem usa o `dev` não consegue entrar no app. O defeito já existe na `main` (conferido numa worktree). O build de produção não tem o problema, e o E2E roda em `next start`, por isso nenhum teste pega.
-**Correção:** — (o roteiro planeja a correção no PR B, de processo, antes da tela de Passagens: `.git/sdd/roadmap/roteiro.md` §2.1, fora do git; é a decisão T3 do lote 0. Se o dono recusar o PR B, fica aqui)
-**Registrado em:** 2026-11-27
 
 #### P82 — Telas sem desenho novo ficam no layout antigo sem prazo: Conta, Administração, entrada, privacidade, erro e 404 🟡
 **Estado:** Aberto, não triado
@@ -1003,3 +997,11 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-27):** resolvida no visual novo do Início e do shell (branch `feat/visual-inicio`). O tema escuro passou a ser o padrão, e o claro sai por um switch no cabeçalho (`ThemeSwitch`). O tema não segue o sistema, e a escolha fica no navegador. Não foi com `next-themes`: o script dele, dentro de um componente client, fazia o React 19 com Cache Components duplicar o conteúdo dinâmico da página. O tema é próprio: `src/lib/theme.ts` (com o script anti-flash no `<head>` do layout raiz) e o hook `src/lib/useTheme.ts`, que o Sonner também lê (`library-docs.md §18`). Testes: `src/lib/theme.test.ts`, `src/components/app-shell/ThemeSwitch.test.tsx` e o cenário do tema em `e2e/inicio.spec.ts` (escuro por padrão, a troca e a escolha depois de recarregar).
+
+#### P81 — `next dev` dá 404 nas páginas fora do grupo (app) por causa do slot @detalhe 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/(app)/@detalhe/` · `src/app/(auth)/entrar` · `src/app/(auth)/convite` · `src/app/(auth)/redefinir-senha` · `src/app/privacidade`
+**Impacto:** no `bun run dev` (Next 16.4.6, com strict route matching ligado por padrão), `/entrar`, `/convite/<token>`, `/redefinir-senha` e `/privacidade` dão 404 ou 500, com o aviso "page files do not match any complete route". São as páginas fora do grupo `(app)`, que tem o slot `@detalhe`. Quem usa o `dev` não consegue entrar no app. O defeito já existe na `main` (conferido numa worktree). O build de produção não tem o problema, e o E2E roda em `next start`, por isso nenhum teste pega.
+**Correção:** — (o roteiro planeja a correção no PR B, de processo, antes da tela de Passagens: `.git/sdd/roadmap/roteiro.md` §2.1, fora do git; é a decisão T3 do lote 0. Se o dono recusar o PR B, fica aqui)
+**Registrado em:** 2026-11-27
+**Atualização (2026-11-27):** resolvida no PR B (`chore/processo-visual`, spec `docs/superpowers/specs/2026-11-27-processo-visual-design.md` §4). Causa: a validação estrita do 16.4 (`normalizeCatchAllRoutes`, que o `next dev` chama) pendurava o `@detalhe/[...catchAll]` (normalizado para `/[...catchAll]`) em toda rota, inclusive nas de fora de `(app)`, e apagava a rota inteira, porque o `children` de `(app)` não tinha página nem `default` nelas. Correção: o catch-all saiu e o slot virou um espelho por segmento de `(app)`, com nove páginas nulas (`admin`, `admin/[...rest]`, `bem-vindo`, `conta`, `dashboard`, `passagens`, `passagens/[...rest]`, `solicitacoes`, `solicitacoes/[...rest]`); `(app)/default.tsx` e `deprecated.looseRouteMatching` foram recusados (`library-docs.md §1` e `§14`). Guarda: `src/app/routeStructure.test.ts` roda o validador do próprio Next sobre a árvore real (vermelho com a árvore antiga: as quatro páginas sem rota) e documenta a causa numa árvore sintética. Na produção nada muda: o Sheet do detalhe continua fechando ao navegar, agora pelo espelho do segmento.
