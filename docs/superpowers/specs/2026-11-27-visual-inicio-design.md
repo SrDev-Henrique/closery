@@ -31,6 +31,9 @@ O tema escuro passa a ser o padrão, com um switch para o claro. A regra de ouro
 - **D-V3, cor numa coluna do setor.**
   - O setor ganha a coluna `color`, com uma paleta fechada de 5 cores, escolhida na criação e editável na tela Setores.
   - A alternativa de derivar a cor da ordem foi descartada: a cor mudaria com a lista e ficaria ciclada, contrariando `ui-rules.md §4`.
+- **D-V4, "Todos" no seletor de setor (2026-11-27).** O rótulo visível da última opção do admin é "Todos" (com 5 opções cada segmento tem 104px e "Todos os setores" truncava); o `aria-label` segue "Todos os setores" (contém o texto visível, WCAG 2.5.3).
+- **D-V5, ícones dos selos só no Início (2026-11-27).** Os selos de status e de parada do cartão de Solicitações do Início saem sem ícone (`showIcon={false}` / `badgeIcons={false}`, como no protótipo); as outras telas e as seções da passagem mantêm o ícone. O status continua sempre com texto.
+- **D-V6, hover da linha como no protótipo (2026-11-27).** No hover da linha de solicitação o selo neutro ("Solicitada") se funde ao fundo da linha; é o comportamento do protótipo e fica assim.
 
 **Do controlador (aceitas no desenho):**
 

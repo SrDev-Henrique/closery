@@ -1016,9 +1016,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestStatusBadge.tsx` (server-safe)
 - **Propósito:** selo do status da solicitação (cartão, linha, tabela, detalhe, passagem).
-- **Como funciona:** `<Badge variant="secondary" size="md" className="…">` (pílula de 24 px, `whitespace-nowrap`, vindo do `Badge`) com o ícone (`aria-hidden`) e o rótulo do `REQUEST_STATUS_STYLE`. Nunca só cor: o texto vem sempre. `showIcon={false}` (padrão `true`) tira o ícone; só as linhas do cartão do Início usam (D1 do dono, como no protótipo).
+- **Como funciona:** `<Badge variant="secondary" size="md" className="…">` (pílula de 24 px, `whitespace-nowrap`, vindo do `Badge`) com o ícone (`aria-hidden`) e o rótulo do `REQUEST_STATUS_STYLE`. Nunca só cor: o texto vem sempre. `showIcon={false}` (padrão `true`) tira o ícone; só as linhas do cartão do Início usam (decisão do dono de 2026-11-27, como no protótipo).
 - **Usa:** `Badge`, `statusStyle`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): pílula `size="md"`; as cores de Solicitada, Em separação / Trânsito e Cancelada mudam (ver `statusStyle`). 2026-11-27 — Task 16 (D1): prop `showIcon` (padrão `true`); `false` só nas linhas do `RequestsHomeCard`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): pílula `size="md"`; as cores de Solicitada, Em separação / Trânsito e Cancelada mudam (ver `statusStyle`). 2026-11-27 — Task 16 (decisão do dono de 2026-11-27): prop `showIcon` (padrão `true`); `false` só nas linhas do `RequestsHomeCard`.
 
 ### StaleBadge
 - **Status:** ✅ pronto (2026-11-24)
@@ -1026,7 +1026,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** selo "Parada há N dias" das solicitações abertas há mais de 72 h no mesmo status.
 - **Como funciona:** `<Badge variant="warning" size="md">` com `ClockAlert` (`aria-hidden`; `showIcon={false}` o tira, só nas linhas do cartão do Início) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
 - **Usa:** `Badge`, `staleLabel`, token `warning`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): usa a variante `warning` e `size="md"` do `Badge` (mesma cor de antes, agora em pílula). 2026-11-27 — Task 16 (D1): prop `showIcon` (padrão `true`); `false` só nas linhas do `RequestsHomeCard`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): usa a variante `warning` e `size="md"` do `Badge` (mesma cor de antes, agora em pílula). 2026-11-27 — Task 16 (decisão do dono de 2026-11-27): prop `showIcon` (padrão `true`); `false` só nas linhas do `RequestsHomeCard`.
 
 ### RequestForm
 - **Status:** ✅ pronto (2026-11-24)
@@ -1216,7 +1216,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** uma solicitação aberta nas seções da passagem e no cartão do Início.
 - **Como funciona:** `<li class="border-t">` com uma linha (`data-slot="open-request-row"`, raio 18, margem lateral −10 px, `hover:bg-accent` em 150 ms) inteira clicável: o `<Link href={requestHref(id)} scroll={false}>` com a prévia (`requestPreview`, Geist 600/15 px) é esticado por `after:inset-0` (o nome acessível continua sendo a prévia; o foco desenha o anel no `::after`). Abaixo, "Para {destino}" (13 px), `RequestStatusBadge`, `StaleBadge` e, com `statusNow` diferente, "Agora: {status}". Fecha com o `ChevronRight` de 18 px. A divisória é o `border-t` da `<li>` (as seções não usam mais `divide-y`).
 - **Usa:** `RequestStatusBadge`, `StaleBadge`, `requestPreview`, `requestHref`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): linha inteira clicável com chevron; vale também para as seções da passagem. 2026-11-27 — Task 16 (pixel): "Para {destino}" com `leading-[normal]` (a linha de 18,6px deixava cada linha 1,6px mais alta que a do protótipo). 2026-11-27 — Task 16 (D1): prop `badgeIcons` (padrão `true`); `false` tira o ícone dos selos de status e de parada (o chevron fica). Só o `RequestsHomeCard` usa; as seções da passagem mantêm os ícones.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): linha inteira clicável com chevron; vale também para as seções da passagem. 2026-11-27 — Task 16 (pixel): "Para {destino}" com `leading-[normal]` (a linha de 18,6px deixava cada linha 1,6px mais alta que a do protótipo). 2026-11-27 — Task 16 (decisão do dono de 2026-11-27): prop `badgeIcons` (padrão `true`); `false` tira o ícone dos selos de status e de parada (o chevron fica). Só o `RequestsHomeCard` usa; as seções da passagem mantêm os ícones.
 
 ### OpenRequestsNowSection
 - **Status:** ✅ pronto (2026-11-24)
@@ -1240,7 +1240,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** cartão "Solicitações" do Início, depois de "Passagem do meu turno".
 - **Como funciona:** `Card variant="feature"` com `<h2>` "Solicitações" (Satoshi 700/18 px). Com abertas: o contador `{openCount}` (Satoshi 900, `tabular-nums`, 76 px; 60 px em 2 colunas com área útil < 1240 px; 52 px no celular), ao lado "aberta"/"abertas" e o `Badge warning` com `TriangleAlert` "{n} paradas" (some sem paradas); com paradas, o `<h3>` "Paradas há mais tempo" (mono, caixa alta) e até 5 `OpenRequestItem`. Vazio: `UserAvatar` de 84 px (`avatarSrc`, quem está logado) e "Nenhuma solicitação aberta."; com `firstAccess`, a linha "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.". Rodapé: link `default` `pill` "Ver solicitações" com `ArrowRight` e 20px de padding (`cn(..., "px-5")`, como no protótipo) (`allHref`; o admin leva `?setor=`).
 - **Usa:** `Card`, `Badge`, `UserAvatar`, `OpenRequestItem`, `staleCountLabel`, `buttonVariants`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): contador grande + selo de paradas no lugar da linha "{n abertas} · {m paradas}"; props novas `avatarSrc` e `firstAccess`. 2026-11-27 — Task 16 (pixel): título "Solicitações" com `leading-[normal]` (a linha de 28px empurrava o contador e a lista 4px para baixo); selo "{n} paradas" com `leading-[normal]` depois do `text-[12.5px]`. 2026-11-27 — Task 16 (D1): as linhas das paradas usam `OpenRequestItem badgeIcons={false}` (selos só com texto, como no protótipo); o selo "{n} paradas" do contador mantém o `TriangleAlert`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): contador grande + selo de paradas no lugar da linha "{n abertas} · {m paradas}"; props novas `avatarSrc` e `firstAccess`. 2026-11-27 — Task 16 (pixel): título "Solicitações" com `leading-[normal]` (a linha de 28px empurrava o contador e a lista 4px para baixo); selo "{n} paradas" com `leading-[normal]` depois do `text-[12.5px]`. 2026-11-27 — Task 16 (decisão do dono de 2026-11-27): as linhas das paradas usam `OpenRequestItem badgeIcons={false}` (selos só com texto, como no protótipo); o selo "{n} paradas" do contador mantém o `TriangleAlert`.
 
 ### RequestGroupSection
 - **Status:** ✅ pronto (2026-11-25)
