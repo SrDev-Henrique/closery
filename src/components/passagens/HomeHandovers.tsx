@@ -30,7 +30,10 @@ type HomeHandoversProps = {
 // operador à esquerda e "Ver o dashboard" à direita. O espaçamento do
 // protótipo vem daqui: 32px de gap em cima (pt-8; 24px no celular) e 40px de
 // padding embaixo (pb-10; 28px) — o resto do hero (28px de topo, eyebrow e
-// título) é do `Greeting`. Sem `lead` (erros), só o botão do dashboard.
+// título) é do `Greeting`. Sem `lead` (erros), só o botão do dashboard, que o
+// `ml-auto` leva à direita; com o `lead`, quem o põe à direita é o
+// `justify-between`, e quando a linha quebra (celular) ele fica à esquerda,
+// como no protótipo.
 function HeroRow({ lead }: { lead: ReactNode }) {
   return (
     <div
@@ -44,7 +47,7 @@ function HeroRow({ lead }: { lead: ReactNode }) {
         className={cn(
           buttonVariants({ variant: "surface", size: "pill" }),
           "px-5",
-          "ml-auto",
+          lead === null && "ml-auto",
         )}
       >
         <ChartColumn aria-hidden="true" strokeWidth={2.2} />

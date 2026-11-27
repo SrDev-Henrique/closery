@@ -263,6 +263,17 @@ describe("HomeHandovers", () => {
         "ml-auto",
       );
     });
+
+    it("com o seletor na linha, o botão do dashboard não força a direita: quando a linha quebra (celular), ele fica à esquerda, como no protótipo", async () => {
+      await insertSector(db, "Carga");
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome();
+
+      expect(
+        screen.getByRole("link", { name: "Ver o dashboard" }),
+      ).not.toHaveClass("ml-auto");
+    });
     it("a pílula usa a cor do setor escolhida na tela Setores", async () => {
       const verde = await insertSector(db, "Carga", { color: "green" });
       const ana = await insertUser(db, {
