@@ -33,12 +33,12 @@ export function PendingHandoverCard({
           Passagem para confirmar
         </h2>
         <div className="flex flex-col gap-3">
-          <p className="font-heading text-[19px] font-bold">
+          <p className="font-heading text-[19px] leading-[normal] font-bold">
             {pending.shiftName} · {formatDateBR(pending.operationalDate)}
           </p>
           <div className="flex items-center gap-2.5">
             <UserAvatar src={avatarSrc} size={36} tilt={3} frame="on-pastel" />
-            <p className="text-[15px] text-on-highlight-muted">
+            <p className="text-[15px] leading-[normal] text-on-highlight-muted">
               Entregue às {formatTimeBR(pending.deliveredAt)} por{" "}
               {pending.deliveredByName}
             </p>
