@@ -28,7 +28,8 @@ const buttonVariants = cva(
           "border-transparent hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground dark:hover:bg-accent/50",
         // Os percentuais do fundo (repouso e hover, nos dois temas) entram no
         // guarda de contraste, que os lê desta string: `text-destructive`
-        // sobre o fundo composto em `--background` e `--card` passa 4,5:1.
+        // sobre o fundo composto em `--background`, `--card` e no rodapé
+        // (`accent/50` sobre `--popover`) passa 4,5:1.
         destructive:
           "border-transparent bg-destructive/10 text-destructive hover:bg-destructive/15 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/15 dark:hover:bg-destructive/18 dark:focus-visible:ring-destructive/40",
         link: "border-transparent text-primary underline-offset-4 hover:underline",
