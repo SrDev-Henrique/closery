@@ -44,6 +44,14 @@ describe("RequestSheet", () => {
     expect(dialog).not.toHaveClass("data-[side=right]:w-3/4");
   });
 
+  it("abre com max-w-xl no desktop: o data-[side=right]:sm:max-w-sm do Sheet vencia o sm:max-w-xl", () => {
+    setup();
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("data-[side=right]:sm:max-w-xl");
+    expect(dialog).not.toHaveClass("data-[side=right]:sm:max-w-sm");
+  });
+
   it("o botão de fechar tem texto e é o único (sem o X só com ícone)", () => {
     setup();
 
