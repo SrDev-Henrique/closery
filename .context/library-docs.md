@@ -509,6 +509,23 @@
   silenciam `console.error`. jsdom não tem `matchMedia`; o `test/setup-dom.ts` já fornece um (o provider chama no efeito).
   Limpe `localStorage` e `document.documentElement.className` em `beforeEach`.
 
+## 19. DiceBear (`@dicebear/core` 10.7.0 + `@dicebear/styles` 10.6.0) · visual novo
+
+- **Versões exatas, sem `^`** (`bun add ... --exact`). A 10.7.0 de `styles` não existe; a 11.0.0 (2026-11-25) é nova demais
+  para a regra das duas semanas. Trocar de versão exige rodar `src/lib/avatar.test.ts`: o determinismo trava mudança de saída.
+- **API (conferida no `node_modules` em 2026-11-27):** `import { Avatar, Style } from "@dicebear/core"`,
+  `import notionists from "@dicebear/styles/notionists.json" with { type: "json" }`, `new Style(notionists)` uma vez por módulo e
+  `new Avatar(style, { seed, backgroundColor: [...] }).toDataUri()` por semente.
+- **Só no servidor:** `src/lib/avatar.ts` tem `import "server-only"` e cache em `Map` por semente (~26 KB por data URI). A semente é
+  o **id do usuário** (o avatar não muda quando o nome muda); semente vazia lança erro (o DiceBear sozinho geraria um avatar).
+  Os componentes recebem o data URI pronto (`UserAvatar src=...`); nenhum client importa `@/lib/avatar`.
+- **Sem rede:** nada de `api.dicebear.com`; o SVG nasce no processo do servidor.
+- **Cores:** os 4 fundos (`AVATAR_BACKGROUNDS`) são dados da arte, a única exceção de cor crua do projeto (`ui-tokens.md`);
+  o arquivo é `.ts`, fora do guarda `rawColors`.
+- **Licença:** código MIT; a arte `notionists` é CC0 1.0 (remix de Notionists, de Zoish). Nada a atribuir na interface.
+- **`<img>`:** data URI de SVG não passa pelo `next/image`; o `UserAvatar` usa `<img alt="">` com `biome-ignore
+  lint/performance/noImgElement` e o motivo.
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.

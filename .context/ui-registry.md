@@ -327,6 +327,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `requireUser`, `greetingTitle`.
 - **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda).
 
+### UserAvatar
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/UserAvatar.tsx` (sem `"use client"`, sem `server-only`: só desenha)
+- **Propósito:** avatar decorativo da pessoa (sidebar, "Passagem para confirmar", turno, solicitações vazias, convite).
+- **Como funciona:** props `{ src, size: 34 | 36 | 44 | 52 | 84, tilt?, frame?: "default" | "on-pastel", className? }`. `src` é o data URI de `avatarDataUri(userId)` (`src/lib/avatar.ts`, `server-only`, DiceBear `notionists`, semente = id do usuário, cache por semente; semente vazia lança erro). Moldura de tamanho cheio com padding e raios do protótipo (34 → 2,5px e 11px; 36 → 2,5px e 12px; 44 → 3px e 15px; 52 → 3px e 17px; 84 → 4px e 26px), imagem com o raio que acompanha a moldura (9, 10, 12, 14 e 22px); `bg-frame` (padrão) ou `bg-on-pastel` sobre os cards coloridos; `tilt` em graus via `style.transform` (geometria, não cor). `<img alt="" draggable={false}>` com `width`/`height`: o nome da pessoa sempre aparece ao lado, então a imagem não entra na árvore de acessibilidade. `biome-ignore noImgElement` com motivo (SVG em data URI não passa pelo `next/image`).
+- **Usa:** tokens `frame`, `on-pastel`; `avatarDataUri` (quem chama, no servidor).
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 8).
+
 ### AppError e AppNotFound
 - **Status:** ✅ pronto (2026-11-25)
 - **Local:** `src/app/(app)/error.tsx` (`"use client"`) e `src/app/(app)/not-found.tsx` (arquivos de convenção do Next, não componentes de `src/components`)
