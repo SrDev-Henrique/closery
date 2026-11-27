@@ -31,7 +31,12 @@ const badgeVariants = cva(
       },
       size: {
         default: "h-5 px-2 font-medium",
-        md: "h-6 px-2.5 font-semibold",
+        // Sem a borda transparente de 1px da base: o fundo pinta por baixo
+        // dela e o selo ficava 2px mais largo que o do protótipo. A altura da
+        // linha é a `normal` da fonte, como no protótipo (com a do `text-xs`,
+        // o texto subia até 0,8px dentro da pílula). Quem passa outro
+        // `text-*` no className repete o `leading-[normal]` depois dele.
+        md: "h-6 border-0 px-2.5 leading-[normal] font-semibold",
       },
     },
     defaultVariants: {

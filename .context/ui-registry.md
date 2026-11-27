@@ -211,9 +211,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `destructive`, `outline`, `ghost`, `link`, mais `warning`, `info`, `success` (tokens de estado),
   `neutral` (`bg-accent text-foreground`), `pastel-pending` e `pastel-confirmed` (claros nos dois
   temas, para o cartão de turno). `size`: `default` (h-5, `font-medium`) e `md` (h-6, `px-2.5`,
-  `font-semibold`). Aceita `render`.
+  `font-semibold`, `border-0` e `leading-[normal]`: sem a borda de 1px da base e com a altura de linha da fonte, como no protótipo; quem passa outro `text-*` no `className` repete o `leading-[normal]` depois dele, porque o twMerge descarta o `leading` que vem antes de um `text-*`). Aceita `render`.
 - **Usa:** tokens `primary`, `secondary`, `destructive`, `warning`, `info`, `success`, `accent`, `pastel-pending`, `pastel-confirmed`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): `rounded-full` (era `rounded-4xl`), `whitespace-nowrap` já existia; variantes e `size="md"` novos.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): `rounded-full` (era `rounded-4xl`), `whitespace-nowrap` já existia; variantes e `size="md"` novos. 2026-11-27 — Task 16 (pixel): `md` com `border-0` (era 2px mais largo) e `leading-[normal]` (o texto ficava até 0,8px acima do centro do protótipo).
 
 ### Toggle / ToggleGroup
 - **Status:** ✅ pronto (2026-11-21)

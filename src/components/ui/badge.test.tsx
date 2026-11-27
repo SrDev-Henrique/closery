@@ -31,6 +31,16 @@ describe("Badge — forma", () => {
     expect(el).not.toHaveClass("h-5");
     expect(el).not.toHaveClass("font-medium");
   });
+
+  it("size=md não tem a borda de 1px da base: o padding de 10px é a folga toda, como no protótipo", () => {
+    render(<Badge size="md">Sem borda</Badge>);
+    expect(badge("Sem borda")).toHaveClass("border-0");
+  });
+
+  it("size=md usa a altura de linha normal da fonte (o texto fica centrado como no protótipo)", () => {
+    render(<Badge size="md">Linha</Badge>);
+    expect(badge("Linha")).toHaveClass("leading-[normal]");
+  });
 });
 
 describe("Badge — variantes novas só com tokens", () => {
