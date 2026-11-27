@@ -351,6 +351,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** tokens `frame`, `on-pastel`; `avatarDataUri` (quem chama, no servidor).
 - **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 8).
 
+### InviteTeamCard
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/InviteTeamCard.tsx` (server-safe)
+- **Propósito:** cartão "Convide sua equipe" do primeiro acesso do admin: o último passo é gerar os convites.
+- **Como funciona:** `Card variant="feature"` rosa (`bg-invite`, tinta `text-on-pastel`), grid `minmax(0,1fr) minmax(0,1.2fr)` só a partir de 1040 px de área útil (container query). Coluna 1: quatro tiles de 52 px (o `UserAvatar` do admin a −5° e três tracejados, o primeiro com `Plus`; decorativos, `aria-hidden`), eyebrow "Último passo", `<h2>` "Convide sua equipe" (26 px; 22 px no celular), o texto (máx. 440 px), o link `on-pastel` "Gerar convites" (`/admin/equipe`) e o botão `on-pastel-secondary` "Agora não" (20px de padding; um `<form action={dismissInviteCardAction}>`: a ação da Task 10 devolve `void`, grava o cookie `closery-convite-dispensado` e atualiza a tela; nada de `"use server"` inline no componente, que o `actionsGuards.test.ts` recusaria). Coluna 2: bloco `bg-on-pastel-soft` "Cadastros" com 5 linhas de no mínimo 44 px (Setores, Turnos, Itens, Destinos com "{n} ativo(s)"; Equipe "{n} pessoa(s) ativa(s)", via `pluralize`). O indicador de 24 px vem preenchido com `Check` quando o cadastro tem ao menos um ativo (`data-done`) e tracejado vazio quando não (a Equipe nunca vem marcada); o texto "Feito"/"Falta fazer" é só para leitor de tela.
+- **Usa:** `Card`, `Button`, `buttonVariants`, `UserAvatar`, `pluralize`, tokens `invite`, `on-pastel*`, `on-invite-*`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 14).
+
 ### AppError e AppNotFound
 - **Status:** ✅ pronto (2026-11-25)
 - **Local:** `src/app/(app)/error.tsx` (`"use client"`) e `src/app/(app)/not-found.tsx` (arquivos de convenção do Next, não componentes de `src/components`)
@@ -850,13 +858,21 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Usa:** tokens `on-pastel`, `on-pastel-track`, `on-pastel-muted`; tipo `ShiftProgress`.
 - **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 12).
 
+### HomeCards
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/passagens/HomeCards.tsx` (server-safe)
+- **Propósito:** os cartões do Início depois do hero, numa peça só (o `HomeHandovers` lê os dados; este desenha).
+- **Como funciona:** coluna com gap 16: `InviteTeamCard` (se `inviteCounts` não for nulo), `PendingHandoverCard` (se houver) e uma linha em grid com `MyShiftCard` e `RequestsHomeCard`. A linha é `grid-cols-[minmax(0,1fr)]` e vira `minmax(0,1.3fr) minmax(0,1fr)` com `@min-[1040px]/main:` (área útil do `@container/main`, não a janela). Gera no servidor os avatares (`avatarDataUri`): quem entregou (`deliveredById`), quem salvou o rascunho (`saved.byId`) e quem está logado (`actorId`: convite e solicitações vazias). Admin leva `?setor=` nos links.
+- **Usa:** `InviteTeamCard`, `PendingHandoverCard`, `MyShiftCard`, `RequestsHomeCard`, `avatarDataUri`, `requestsHref`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 14).
+
 ### HomeHandovers
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HomeHandovers.tsx`
 - **Propósito:** os cartões de passagem do Início.
-- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveScreenSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Depois deles vem o `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveScreenSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem (no `HomeCards`): `InviteTeamCard` (admin sozinho, sem convites e sem o cookie de dispensa), `PendingHandoverCard` (se houver) e, lado a lado, `MyShiftCard` e `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
 - **Usa:** `getHomeHandovers`, `resolveScreenSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`, `SectorPill`, `buttonVariants`, `avatarDataUri` (avatar de quem entregou o pendente).
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento). 2026-11-27 — visual novo (Tarefa 11): devolve a linha do hero (`data-slot="home-hero-row"`: o seletor do admin ou o `SectorPill` do operador, e o botão "Ver o dashboard") e, depois, os cartões em `data-slot="home-cards"` (`gap-4`, ponto de extensão do convite e do grid). Os ramos de erro (setor inativo, sem setor ativo) também levam a linha, só com o botão do dashboard. Espaçamento do hero: `pt-8 pb-10` (`max-md:pt-6 max-md:pb-7`). 2026-11-27 — visual novo do Início (Task 12): passa `sectorName`, `sectorColor` e o avatar do rascunho ao `MyShiftCard`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento). 2026-11-27 — visual novo (Tarefa 11): devolve a linha do hero (`data-slot="home-hero-row"`: o seletor do admin ou o `SectorPill` do operador, e o botão "Ver o dashboard") e, depois, os cartões em `data-slot="home-cards"` (`gap-4`, ponto de extensão do convite e do grid). Os ramos de erro (setor inativo, sem setor ativo) também levam a linha, só com o botão do dashboard. Espaçamento do hero: `pt-8 pb-10` (`max-md:pt-6 max-md:pb-7`). 2026-11-27 — visual novo do Início (Task 12): passa `sectorName`, `sectorColor` e o avatar do rascunho ao `MyShiftCard`. 2026-11-27 — visual novo do Início (Task 14): lê `getAdminOverviewCounts` (só admin) e o cookie de dispensa, calcula o primeiro acesso com `shouldShowInviteCard` e entrega o JSX dos cartões ao `HomeCards`; o cartão "Convide sua equipe" abre a lista.
 
 ### QuantityCounter
 - **Status:** ✅ pronto (2026-11-21)

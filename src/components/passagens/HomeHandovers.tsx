@@ -5,19 +5,20 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { EmptyState } from "@/components/admin/EmptyState";
-import { RequestsHomeCard } from "@/components/solicitacoes/RequestsHomeCard";
 import { buttonVariants } from "@/components/ui/button";
 import { db } from "@/db";
+import {
+  readInviteCardDismissed,
+  shouldShowInviteCard,
+} from "@/features/admin/firstAccess";
+import { getAdminOverviewCounts } from "@/features/admin/overview";
 import { getHomeHandovers } from "@/features/handovers/home";
 import { resolveScreenSector } from "@/features/handovers/screenSector";
 import { getHomeRequests } from "@/features/requests/home";
-import { requestsHref } from "@/features/requests/urls";
 import { requireUser } from "@/lib/auth/session";
-import { avatarDataUri } from "@/lib/avatar";
 import type { SearchParams } from "@/lib/searchParams";
 
-import { MyShiftCard } from "./MyShiftCard";
-import { PendingHandoverCard } from "./PendingHandoverCard";
+import { HomeCards } from "./HomeCards";
 import { SectorPicker } from "./SectorPicker";
 import { SectorPill } from "./SectorPill";
 
@@ -129,7 +130,23 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
 
   const { home } = result;
   // O setor já foi validado (existe, é do ator e está ativo) pelo getHomeHandovers.
-  const requests = await getHomeRequests(db, actor, home.sector.id, now);
+  const isAdmin = actor.role === "admin";
+  // Primeiro acesso (spec §5.3): só o admin paga as contagens e lê o cookie
+  // de dispensa (`readInviteCardDismissed`, Task 10: só o valor "1" dispensa).
+  const [requests, counts, dismissed] = await Promise.all([
+    getHomeRequests(db, actor, home.sector.id, now),
+    isAdmin ? getAdminOverviewCounts(db, now) : Promise.resolve(null),
+    isAdmin ? readInviteCardDismissed() : Promise.resolve(false),
+  ]);
+  // "Agora não" some só com o cartão; a linha de apoio das solicitações vazias
+  // continua enquanto for o primeiro acesso (é o que o protótipo faz).
+  const firstAccess =
+    counts !== null &&
+    shouldShowInviteCard({ isAdmin, counts, dismissed: false });
+  const inviteCounts =
+    counts !== null && shouldShowInviteCard({ isAdmin, counts, dismissed })
+      ? counts
+      : null;
   return (
     <HomeFrame
       lead={
@@ -138,34 +155,17 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
         )
       }
     >
-      {/* Ponto de extensão do Início: aqui entram o convite (antes do pendente) e o
-          grid de 2 colunas (no lugar dos dois cartões finais). */}
-      <div data-slot="home-cards" className="flex flex-col gap-4">
-        {home.pending && (
-          <PendingHandoverCard
-            pending={home.pending}
-            avatarSrc={avatarDataUri(home.pending.deliveredById)}
-          />
-        )}
-        <MyShiftCard
-          state={home.mine}
-          sectorId={home.sector.id}
-          sectorName={home.sector.name}
-          sectorColor={home.sector.color}
-          canManageCatalog={actor.role === "admin"}
-          sectorParam={sectorParam}
-          avatarSrc={
-            home.mine.kind === "continue" && home.mine.saved
-              ? avatarDataUri(home.mine.saved.byId)
-              : null
-          }
-        />
-        <RequestsHomeCard
-          home={requests}
-          allHref={requestsHref(sectorParam)}
-          avatarSrc={avatarDataUri(actor.userId)}
-        />
-      </div>
+      {/* Os cartões (convite, pendente e o grid turno + solicitações) são do
+          HomeCards, que mantém o `data-slot="home-cards"`. */}
+      <HomeCards
+        home={home}
+        requests={requests}
+        sectorParam={sectorParam}
+        canManageCatalog={isAdmin}
+        actorId={actor.userId}
+        inviteCounts={inviteCounts}
+        firstAccess={firstAccess}
+      />
     </HomeFrame>
   );
 }

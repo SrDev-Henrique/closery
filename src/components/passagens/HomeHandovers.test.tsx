@@ -9,6 +9,7 @@ import { resetDb } from "../../../test/db";
 import {
   insertDestination,
   insertHandover,
+  insertInvite,
   insertRequest,
   insertSector,
   insertShift,
@@ -20,10 +21,12 @@ const mocks = vi.hoisted(
   (): {
     requireUser: ReturnType<typeof vi.fn>;
     cookie: { value: string | undefined };
+    dismissed: { value: boolean };
     client: PGlite | undefined;
   } => ({
     requireUser: vi.fn(),
     cookie: { value: undefined },
+    dismissed: { value: false },
     client: undefined,
   }),
 );
@@ -31,13 +34,21 @@ const mocks = vi.hoisted(
 vi.mock("@/lib/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("next/headers", () => ({
   cookies: async () => ({
-    get: (name: string) =>
-      name === "closery_setor" && mocks.cookie.value !== undefined
-        ? { name, value: mocks.cookie.value }
-        : undefined,
+    get: (name: string) => {
+      if (name === "closery_setor" && mocks.cookie.value !== undefined) {
+        return { name, value: mocks.cookie.value };
+      }
+      if (name === "closery-convite-dispensado" && mocks.dismissed.value) {
+        return { name, value: "1" };
+      }
+      return undefined;
+    },
   }),
 }));
-vi.mock("@/app/(app)/actions", () => ({ chooseSectorAction: vi.fn() }));
+vi.mock("@/app/(app)/actions", () => ({
+  chooseSectorAction: vi.fn(),
+  dismissInviteCardAction: vi.fn(),
+}));
 vi.mock("@/lib/avatar", () => ({
   avatarDataUri: (seed: string) => `data:image/svg+xml,${seed}`,
 }));
@@ -97,6 +108,7 @@ describe("HomeHandovers", () => {
     if (mocks.client) await resetDb(mocks.client);
     mocks.requireUser.mockReset();
     mocks.cookie.value = undefined;
+    mocks.dismissed.value = false;
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(spDate(TODAY, "10:00"));
   });
@@ -505,6 +517,105 @@ describe("HomeHandovers", () => {
       "src",
       `data:image/svg+xml,${ana.id}`,
     );
+  });
+
+  describe("primeiro acesso do admin", () => {
+    async function soloAdmin() {
+      const uld = await insertSector(db, "ULD");
+      await insertShift(db, { sectorId: uld.id });
+      const admin = await insertUser(db, {
+        role: "admin",
+        sectorId: null,
+        name: "Ana Teste",
+      });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "admin", userId: admin.id }),
+      );
+      return { uld, admin };
+    }
+
+    it("admin sozinho e sem convites: mostra 'Convide sua equipe' no topo, com a linha de apoio nas solicitações", async () => {
+      const { uld } = await soloAdmin();
+
+      await renderHome({ setor: uld.id });
+
+      const headings = screen
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent);
+      expect(headings).toEqual([
+        "Convide sua equipe",
+        "Passagem do meu turno",
+        "Solicitações",
+      ]);
+      expect(screen.getByText("1 pessoa ativa")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Gerar convites" }),
+      ).toHaveAttribute("href", "/admin/equipe");
+      expect(
+        screen.getByText(
+          "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("cookie de dispensa: o cartão some, a linha de apoio das solicitações fica", async () => {
+      const { uld } = await soloAdmin();
+      mocks.dismissed.value = true;
+
+      await renderHome({ setor: uld.id });
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("com mais uma pessoa ativa, não é primeiro acesso: sem cartão e sem linha de apoio", async () => {
+      const { uld } = await soloAdmin();
+      await insertUser(db, { role: "operator", sectorId: uld.id });
+
+      await renderHome({ setor: uld.id });
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Os pedidos da equipe aparecem aqui/),
+      ).not.toBeInTheDocument();
+    });
+
+    it("com um convite pendente, não é primeiro acesso", async () => {
+      const { uld } = await soloAdmin();
+      await insertInvite(db, { role: "operator", sectorId: uld.id });
+
+      await renderHome({ setor: uld.id });
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("operador sozinho no banco nunca vê o cartão (só admin)", async () => {
+      const uld = await insertSector(db, "ULD");
+      await insertShift(db, { sectorId: uld.id });
+      const ana = await insertUser(db, { role: "operator", sectorId: uld.id });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Os pedidos da equipe aparecem aqui/),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("rascunho existente vira 'Continuar passagem'", async () => {

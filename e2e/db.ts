@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm";
 import type { Pool } from "pg";
 
 import { createDb, createPool } from "@/db/client";
@@ -6,6 +6,7 @@ import {
   type HandoverStatus,
   handover,
   handoverCorrection,
+  invite,
   type RequestStatus,
   request,
   requestComment,
@@ -56,6 +57,53 @@ export async function deactivateUserByEmail(
   if (rows.length !== 1) {
     throw new Error(`Usuário ${email} não encontrado para desativar.`);
   }
+}
+
+// Deixa o banco como o primeiro acesso do admin exige (`people === 1` e
+// `pendingInvites === 0`): desativa as pessoas ativas e cancela os convites
+// pendentes, sem apagar nada. Chame ANTES de cadastrar o admin do teste.
+// Devolve `restore`, que reativa EXATAMENTE as pessoas que esta chamada
+// desativou e descancela EXATAMENTE os convites que ela cancelou (pelos ids
+// guardados; o que outra parte do teste mudou depois fica como está). Guarde o
+// `restore` e chame no `test.afterAll` do arquivo (em ordem inversa, se houver
+// mais de um), para os specs seguintes acharem o banco como antes.
+export async function isolateFirstAccess(
+  db: Db,
+  now: Date = new Date(),
+): Promise<() => Promise<void>> {
+  const changed = await db.transaction(async (tx) => {
+    const people = await tx
+      .update(user)
+      .set({ deactivatedAt: now })
+      .where(isNull(user.deactivatedAt))
+      .returning({ id: user.id });
+    const invites = await tx
+      .update(invite)
+      .set({ cancelledAt: now })
+      .where(and(isNull(invite.usedAt), isNull(invite.cancelledAt)))
+      .returning({ id: invite.id });
+    return {
+      userIds: people.map((row) => row.id),
+      inviteIds: invites.map((row) => row.id),
+    };
+  });
+
+  return async () => {
+    await db.transaction(async (tx) => {
+      if (changed.userIds.length > 0) {
+        await tx
+          .update(user)
+          .set({ deactivatedAt: null })
+          .where(inArray(user.id, changed.userIds));
+      }
+      if (changed.inviteIds.length > 0) {
+        await tx
+          .update(invite)
+          .set({ cancelledAt: null })
+          .where(inArray(invite.id, changed.inviteIds));
+      }
+    });
+  };
 }
 
 // Quantas sessões abertas a pessoa tem: desativar apaga todas (P11).
