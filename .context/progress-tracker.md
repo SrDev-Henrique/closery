@@ -112,7 +112,7 @@
 - ✅ `scripts/smoke.mjs` (`bun run smoke`) e `.context/runbook-producao.md` (2026-11-26)
 - ✅ P16, P22 e P12 resolvidas; pendências novas P62–P76; P1, P6, P7, P8 e P10 ganharam `Atualização` (2026-11-26)
 - ✅ Revisão final (três lentes) e a rodada de correções: o erro inesperado do Better Auth sai só pelo `logServerError` (`onAPIError.throw` + embrulho do `route.ts`), o `logServerError` nunca lança, o Sentry sem `BrowserTracing` nem client reports, o smoke com timeout, `--local` só em localhost e robots por linha, o `Voltar` de `/privacidade` (`BackLink`) e três textos da página mais fiéis à configuração, o guarda de 44 px medindo o convite e o `/bem-vindo`; o runbook ganhou o procedimento de conta tomada (P77) e outros acertos; pendências novas P77 a P80 (2026-11-26)
-- ✅ Testes: Vitest 4464 testes em 322 arquivos; E2E com 43 cenários (os 35 de antes, 2 de alvos de toque, 3 da redefinição de senha e 3 das páginas públicas). Verificado: `check-types`, `lint`, `test`, `test:e2e` (43 passed) e `build` verdes (2026-11-26)
+- ✅ Testes: Vitest 4488 testes em 324 arquivos; E2E com 44 cenários (os 35 de antes, 2 de alvos de toque, 3 da redefinição de senha e 4 das páginas públicas). Verificado: `check-types`, `lint`, `test`, `test:e2e` (44 passed), `build` e o smoke local (7 OK, 1 FALHOU esperado, 2 PULADO) verdes (2026-11-27)
 - ⬜ Go-live (Parte B): proteção da `main`, Neon e Vercel de produção, migração, primeiro administrador, aprovação da empresa (P64), convites e a semana de piloto
 
 ## Histórico
