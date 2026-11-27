@@ -491,6 +491,24 @@
   ajuste de fallback (Arial) sozinho (`adjustFontFallback`). `globals.css`: `--font-heading: var(--font-satoshi)`; o utilitário é `font-heading`.
 - **Glifos:** `ª` e `º` **não existem** na Satoshi e caem na próxima fonte da pilha (Geist). Nada a fazer; só não conte com eles no display.
 
+## 18. next-themes 0.4.6 · visual novo
+
+- **Já estava instalado** (veio com o `sonner` do shadcn). O `ThemeProvider` do app é o `src/components/app-shell/ThemeProvider.tsx`
+  (componente próprio, `"use client"`): `attribute="class"`, `defaultTheme="dark"`, `enableSystem={false}`,
+  `disableTransitionOnChange`, `storageKey="closery-tema"`. **Escuro padrão e sem seguir o sistema** (C-V4); a escolha fica no
+  navegador, nunca no banco.
+- **`<html suppressHydrationWarning>`** no `RootLayout`: o script do provider põe a classe `dark` ou `light` antes da hidratação.
+  O `@custom-variant dark (&:is(.dark *))` do `globals.css` continua. A CSP do projeto é só `frame-ancestors 'none'`, então o
+  `<script>` inline não é bloqueado (se um dia houver `script-src`, passe `nonce` ao provider).
+- **O que ler do tema:** `useTheme()` devolve `theme`, `resolvedTheme` e `setTheme`. Com `enableSystem` desligado os dois primeiros
+  são iguais. Sem `ThemeProvider` o hook devolve `setTheme` vazio e `resolvedTheme` indefinido (não lança).
+- **Não leia o tema no render sem esperar montar:** no servidor não existe `localStorage`. O visual que depende do tema usa as
+  variantes `dark:` do Tailwind (o script decide a classe antes da pintura); só o que precisa do valor em JS (`aria-checked`,
+  texto de tooltip) espera `useSyncExternalStore(subscribe, () => true, () => false)`, como o `ThemeSwitch`.
+- **Teste:** o `<script>` do provider, renderizado no cliente, faz o React 19 avisar no console (ruído, não falha): os testes
+  silenciam `console.error`. jsdom não tem `matchMedia`; o `test/setup-dom.ts` já fornece um (o provider chama no efeito).
+  Limpe `localStorage` e `document.documentElement.className` em `beforeEach`.
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.

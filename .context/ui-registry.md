@@ -151,7 +151,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** um `<Toaster />` no layout raiz; dispare com `toast.success(...)` de
   `sonner`. Lê o tema via `next-themes` (sem `ThemeProvider` cai em `system`).
 - **Usa:** tokens `popover`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`).
+- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`). 2026-11-27 — visual novo (Tarefa 3): agora existe `ThemeProvider` no layout raiz e o toast segue o tema do app (escuro padrão), não mais "system".
 
 ### Avatar
 - **Status:** ✅ pronto (2026-11-20)
@@ -278,6 +278,29 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   com `aria-label` e tooltip "Alternar menu". Testado com `fireEvent.pointerEnter/mouseEnter`.
 - **Usa:** `SidebarTrigger`, `Tooltip*`.
 - **Histórico:** 2026-11-20 — criado na Fase 1.
+
+### ThemeProvider
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/ThemeProvider.tsx`
+- **Propósito:** liga o tema claro/escuro do app inteiro; o escuro é o padrão.
+- **Como funciona:** `"use client"`; envolve o `ThemeProvider` do `next-themes` com `attribute="class"`, `defaultTheme="dark"`,
+  `enableSystem={false}` (não segue o sistema), `disableTransitionOnChange` e `storageKey="closery-tema"`. Fica no `RootLayout`,
+  em volta do `TooltipProvider` e do `Toaster` (o `sonner.tsx` lê o tema daqui). O `<html>` leva `suppressHydrationWarning`.
+- **Usa:** `next-themes`; tokens claro/escuro do `globals.css`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3).
+
+### ThemeSwitch
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/ThemeSwitch.tsx`
+- **Propósito:** switch estilo Apple que alterna entre o tema escuro e o claro (vai no cabeçalho).
+- **Como funciona:** `"use client"`; `<button role="switch" aria-checked aria-label="Tema escuro">` em `TooltipTrigger render`, com
+  tooltip "Mudar para o tema claro" / "Mudar para o tema escuro". Trilho 76x44 em `card`, knob de 36px em `primary` com `Moon` (escuro,
+  à direita) ou `Sun` (claro, à esquerda); a posição e o ícone saem do CSS (`dark:`), que o script do `next-themes` resolve antes da
+  pintura (sem piscar), e `transition: left .3s cubic-bezier(.2,.8,.2,1)` (desligada em `motion-reduce`). O `aria-checked` e o texto
+  do tooltip esperam montar no cliente (`useSyncExternalStore`) e antes disso mostram o escuro, igual ao HTML do servidor. Testado
+  com `renderToString` (hidratação), teclado e tooltip com `fireEvent` como o `MenuToggle`.
+- **Usa:** `ThemeProvider`, `Tooltip*`; tokens `card`, `primary`, `primary-foreground`, `ring`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3).
 
 ### Greeting
 - **Status:** ✅ pronto (2026-11-20)
