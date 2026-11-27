@@ -7,12 +7,14 @@ import type { SectorRow } from "@/features/admin/sectors";
 const mocks = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
   listSectors: vi.fn(),
+  suggestColorForNewSector: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/session", () => ({ requireAdmin: mocks.requireAdmin }));
 vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/features/admin/sectors", () => ({
   listSectors: mocks.listSectors,
+  suggestColorForNewSector: mocks.suggestColorForNewSector,
 }));
 // Os componentes de cliente importam as Server Actions; aqui só a tela importa.
 vi.mock("@/app/(app)/admin/setores/actions", () => ({
@@ -25,6 +27,7 @@ function row(overrides: Partial<SectorRow> = {}): SectorRow {
   return {
     id: "s1",
     name: "ULD",
+    color: "lilac",
     active: true,
     activePeople: 3,
     pendingInvites: 1,
@@ -52,6 +55,8 @@ describe("SectorsAdmin", () => {
     mocks.requireAdmin.mockReset();
     mocks.listSectors.mockReset();
     mocks.requireAdmin.mockResolvedValue({ role: "admin" });
+    mocks.suggestColorForNewSector.mockReset();
+    mocks.suggestColorForNewSector.mockResolvedValue("lilac");
   });
 
   it("mostra título, texto, link de volta e o cartão 'Novo setor'", async () => {
@@ -181,5 +186,36 @@ describe("SectorsAdmin", () => {
       "NEXT_HTTP_ERROR_FALLBACK;404",
     );
     expect(mocks.listSectors).not.toHaveBeenCalled();
+  });
+
+  it("o formulário de criação já vem com a cor sugerida pelo servidor marcada", async () => {
+    mocks.listSectors.mockResolvedValue(page([row()]));
+    mocks.suggestColorForNewSector.mockResolvedValue("green");
+
+    render(await SectorsAdmin({ searchParams: NO_PARAMS }));
+
+    expect(screen.getByRole("radiogroup", { name: "Cor" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
+    expect(screen.getAllByRole("radio", { checked: true })).toHaveLength(1);
+    expect(mocks.suggestColorForNewSector).toHaveBeenCalledWith({});
+  });
+
+  it("sem setores ainda, a sugestão também aparece (primeiro setor: a primeira cor)", async () => {
+    mocks.listSectors.mockResolvedValue(page([]));
+
+    render(await SectorsAdmin({ searchParams: NO_PARAMS }));
+
+    expect(screen.getByRole("radio", { name: "Lilás" })).toBeChecked();
+  });
+
+  it("operador (sem acesso): nenhuma leitura de cor acontece antes do portão", async () => {
+    mocks.requireAdmin.mockRejectedValue(new Error("404"));
+
+    await expect(SectorsAdmin({ searchParams: NO_PARAMS })).rejects.toThrow(
+      "404",
+    );
+
+    expect(mocks.listSectors).not.toHaveBeenCalled();
+    expect(mocks.suggestColorForNewSector).not.toHaveBeenCalled();
   });
 });

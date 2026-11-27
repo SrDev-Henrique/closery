@@ -570,7 +570,7 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** criar ou renomear setor e destino (um único campo de nome).
 - **Como funciona:** controlado; rótulo "Nome do setor"/"Nome do destino"; valida no cliente com `validateName` (as mesmas mensagens do servidor); `onSubmit(nomeNormalizado)`. **Limpa só no sucesso** (criar: volta a vazio; editar: mantém o nome salvo) e chama `onDone`. Se o servidor recusar mostra `fieldErrors.name` (ou a mensagem geral) em `FieldError` ligado ao campo e **preserva o que foi digitado**; o erro some ao digitar; botão travado enquanto envia.
 - **Usa:** `Field*`, `Input`, `Button`, `useAdminAction`, `validateName`.
-- **Histórico:** 2026-11-21 — criado na Fase 2. Exceção documentada a "nunca em branco" (F2-9): o nome é a identidade do registro.
+- **Histórico:** 2026-11-21 — criado na Fase 2. Exceção documentada a "nunca em branco" (F2-9): o nome é a identidade do registro. 2026-11-27 — `children` opcional, renderizado entre o campo e o botão (a escolha de cor do setor); destinos não usam.
 
 ### ActiveToggleButton
 - **Status:** ✅ pronto (2026-11-21)
@@ -594,23 +594,31 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** conteúdo de `/admin/setores` (Server Component async).
 - **Como funciona:** `await requireAdmin()` primeiro (operador cai no `notFound()`), lê `?pagina=` e `listSectors` (contagens de pessoas ativas e convites pendentes por subconsulta no SQL), monta `AdminPageHeader` + cartão "Novo setor" + lista de `AdminListRow` (detalhe `{n} pessoas ativas · {m} convites pendentes`, selo "Inativo") + `Pagination`; vazio vira `EmptyState`. A página (`page.tsx`) só embrulha em `<Suspense>` com esqueleto, sem `metadata`.
 - **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Card*`, `pluralize`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6). 2026-11-27 — lê também `suggestColorForNewSector` (em paralelo com `listSectors`, depois do portão) e passa `suggestedColor` ao `SectorCreateForm` (visual novo, Task 6).
 
 ### SectorCreateForm
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/sectors/SectorCreateForm.tsx`
 - **Propósito:** criar setor ("Criar setor").
-- **Como funciona:** `"use client"`; `NameForm` (entity "setor", nome começa vazio por ser a identidade do registro) → `createSectorAction`; toast "Setor criado."; erro de nome repetido inline (com o aviso "Ele está inativo: reative-o na lista." quando for o caso).
-- **Usa:** `NameForm`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+- **Como funciona:** `"use client"`; `NameForm` (entity "setor", nome começa vazio por ser a identidade do registro) + `SectorColorChoice` com a cor sugerida pelo servidor (`suggestedColor`, de `suggestColorForNewSector`) marcada → `createSectorAction({ name, color })`; toast "Setor criado."; erro de nome repetido inline (com o aviso "Ele está inativo: reative-o na lista." quando for o caso). Depois de criar, a cor volta à sugerida (a escolha não "gruda" no próximo cadastro); se o servidor recusar, nome e cor escolhidos ficam.
+- **Usa:** `NameForm`, `SectorColorChoice`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6). 2026-11-27 — ganha a escolha de cor e a prop `suggestedColor` (visual novo, Task 6).
 
 ### SectorRowActions
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/sectors/SectorRowActions.tsx`
 - **Propósito:** ações da linha de um setor: "Editar" e "Desativar"/"Reativar".
-- **Como funciona:** `"use client"`; `EditDialog` "Editar setor" com `NameForm` ("Salvar alterações", toast "Alterações salvas.", fecha ao salvar) e `ActiveToggleButton` → `setSectorActiveAction`. Desativar setor com pessoas ativas ou convites pendentes volta `SECTOR_IN_USE` e a mensagem com as contagens aparece em toast.
-- **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+- **Como funciona:** `"use client"`; `EditDialog` "Editar setor" com `NameForm` ("Salvar alterações", toast "Alterações salvas.", fecha ao salvar) e a `SectorColorChoice` já na cor atual do setor, e `ActiveToggleButton` → `setSectorActiveAction`. O formulário de edição (`SectorEditForm`, interno) monta quando o diálogo abre, então fechar sem salvar descarta a cor trocada. `renameSectorAction({ id, name, color })`. Desativar setor com pessoas ativas ou convites pendentes volta `SECTOR_IN_USE` e a mensagem com as contagens aparece em toast.
+- **Usa:** `EditDialog`, `NameForm`, `SectorColorChoice`, `ActiveToggleButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6). 2026-11-27 — a edição ganha a escolha de cor (visual novo, Task 6).
+
+### SectorColorChoice
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/admin/sectors/SectorColorChoice.tsx` (client)
+- **Propósito:** escolher a cor do setor entre as cinco da paleta (Lilás, Pêssego, Azul, Verde, Rosa), na criação e na edição do setor.
+- **Como funciona:** `<fieldset>` com `<legend>` "Cor" + `RadioGroup`/`Radio.Root` do Base UI (`@base-ui/react/radio-group`, `@base-ui/react/radio`; `role="radiogroup"` nomeado pela legenda, `role="radio"` por opção). Cada opção é uma pílula (`h-9`, `max-md:h-11`) com a amostra de 16px (`size-4 rounded-full`, classe `SECTOR_COLOR_BG[cor]`, `aria-hidden`) **e o nome escrito**: a cor nunca é a única pista (`ui-rules.md §2.1`). A marcada ganha `data-checked` (`border-foreground bg-muted`). Props: `defaultValue: SectorColor` (sempre há uma marcada), `onValueChange?(cor)`, `name` (padrão `"color"`), `legend` (padrão "Cor"), `disabled`. Clicar na marcada não a desmarca. Não é controlado: quem usa guarda a escolha em `onValueChange` e remonta pela `key` para voltar ao padrão (o `SectorCreateForm` faz isso depois de criar). Por que não o `ChoiceGroup`: ele é um `ToggleGroup` com rótulo `string`, sem lugar para a amostra, e botões `aria-pressed` não são um `radiogroup`.
+- **Usa:** `FieldSet`, `FieldLegend`, `RadioGroup`, `Radio`, `SECTOR_COLORS`, `SECTOR_COLOR_LABELS`, `SECTOR_COLOR_BG`, tokens `bg-sector-*`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Task 6).
 
 ### DestinationsAdmin
 - **Status:** ✅ pronto (2026-11-21)

@@ -220,4 +220,27 @@ describe("NameForm", () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
     expect(mocks.success).not.toHaveBeenCalled();
   });
+
+  it("mostra o que vem em children entre o campo e o botão", () => {
+    render(
+      <NameForm
+        entity="setor"
+        initialName=""
+        submitLabel="Criar setor"
+        onSubmit={vi.fn()}
+      >
+        <p>Escolha extra</p>
+      </NameForm>,
+    );
+
+    const extra = screen.getByText("Escolha extra");
+    const field = screen.getByLabelText("Nome do setor");
+    const button = screen.getByRole("button", { name: "Criar setor" });
+    expect(
+      field.compareDocumentPosition(extra) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      extra.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
 });

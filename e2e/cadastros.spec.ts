@@ -125,12 +125,42 @@ test("(a) admin cria setor, turno, item e destino e os vê nas listas", async ({
   // Setor.
   await page.goto("/admin/setores");
   await expect(page.getByRole("heading", { name: "Setores" })).toBeVisible();
+  // A cor já vem marcada (sugestão do servidor): o formulário nunca começa em branco.
+  const colorChoice = page.getByRole("radiogroup", { name: "Cor" });
+  await expect(colorChoice.getByRole("radio", { checked: true })).toHaveCount(
+    1,
+  );
   await page.getByLabel("Nome do setor").fill(sectorName);
+  await colorChoice.getByRole("radio", { name: "Rosa" }).click();
+  await expect(colorChoice.getByRole("radio", { name: "Rosa" })).toBeChecked();
   await page.getByRole("button", { name: "Criar setor" }).click();
   await expect(page.getByText("Setor criado.")).toBeVisible();
   await expect(rowWith(page, sectorName)).toContainText("0 pessoas ativas");
   // Formulário limpo depois de criar com sucesso.
   await expect(page.getByLabel("Nome do setor")).toHaveValue("");
+
+  // A cor escolhida foi gravada: o diálogo de edição abre com ela marcada.
+  await rowWith(page, sectorName)
+    .getByRole("button", { name: `Editar ${sectorName}` })
+    .click();
+  const editDialog = page.getByRole("dialog", { name: "Editar setor" });
+  await expect(editDialog.getByRole("radio", { name: "Rosa" })).toBeChecked();
+  // Troca só a cor e salva.
+  await editDialog.getByRole("radio", { name: "Azul" }).click();
+  await editDialog.getByRole("button", { name: "Salvar alterações" }).click();
+  await expect(page.getByText("Alterações salvas.")).toBeVisible();
+  await expect(editDialog).toBeHidden();
+  // Depois de recarregar (veio do banco): a cor nova persiste.
+  await page.reload();
+  await rowWith(page, sectorName)
+    .getByRole("button", { name: `Editar ${sectorName}` })
+    .click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "Editar setor" })
+      .getByRole("radio", { name: "Azul" }),
+  ).toBeChecked();
+  await page.keyboard.press("Escape");
 
   // Turno: o nome e os horários já vêm preenchidos (Turno 1, 06:00–14:00).
   await page.goto("/admin/turnos");
