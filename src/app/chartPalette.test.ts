@@ -495,9 +495,14 @@ describe("o validador reprova o que deve reprovar", () => {
     );
   });
 
-  it("muted-foreground reprova a separação de chart-4 em tritanopia, nos dois temas: por isso Outros é foreground", () => {
+  it("o muted-foreground antigo (cinza do shadcn) reprova a separação de chart-4 em tritanopia, nos dois temas: por isso Outros é foreground", () => {
+    // Valores de antes do visual novo (2026-11-27): o `muted-foreground` atual é quente e no claro já passa (ΔE 16,1).
+    const oldMuted = {
+      ":root": "oklch(0.556 0 0)",
+      ".dark": "oklch(0.708 0 0)",
+    };
     for (const [, selector] of THEMES) {
-      const muted = readToken(css, selector, "muted-foreground");
+      const muted = parseColor(oldMuted[selector]);
       const chart4 = readToken(css, selector, "chart-4");
       expect(pairDeltaE(muted, chart4, "tritanopia")).toBeLessThan(DELTA_E_MIN);
     }

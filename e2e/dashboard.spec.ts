@@ -351,11 +351,11 @@ test("(f) P45: trocar de setor mantém o período escolhido", async ({
   await signUpAdmin(page, db, "Dora Admin");
 
   await page.goto(`/dashboard?periodo=30&setor=${first.sector.id}`);
-  const picker = page.getByRole("group", { name: "Setor" });
+  const picker = page.getByRole("radiogroup", { name: "Setor" });
   await expect(
-    picker.getByRole("button", { name: first.sector.name }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await picker.getByRole("button", { name: second.sector.name }).click();
+    picker.getByRole("radio", { name: first.sector.name }),
+  ).toBeChecked();
+  await picker.getByRole("radio", { name: second.sector.name }).click();
   await expect(page).toHaveURL(
     `/dashboard?periodo=30&setor=${second.sector.id}`,
   );

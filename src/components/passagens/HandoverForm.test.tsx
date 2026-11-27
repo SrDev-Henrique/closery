@@ -102,6 +102,7 @@ const savedOk = (hour = "10:00") =>
     handoverId: "h1",
     savedAt: spDate("2026-11-20", hour),
     savedByName: "Ana Teste",
+    savedById: "u-ana",
   });
 
 const deliverButton = () =>
@@ -167,7 +168,11 @@ describe("HandoverForm", () => {
       ...STATE,
       handoverId: "h1",
       status: "draft",
-      saved: { at: spDate("2026-11-20", "09:10"), byName: "Bia Teste" },
+      saved: {
+        at: spDate("2026-11-20", "09:10"),
+        byName: "Bia Teste",
+        byId: "u-bia",
+      },
     });
 
     expect(

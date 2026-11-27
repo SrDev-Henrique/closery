@@ -48,6 +48,7 @@ describe("loaders da passagem", () => {
         id: active.id,
         name: "ULD",
         active: true,
+        color: "lilac",
       });
       expect(await loadSector(db, admin, inactive.id)).toMatchObject({
         active: false,
@@ -125,7 +126,9 @@ describe("loaders da passagem", () => {
       await loadSector(logged, admin, own.id);
 
       const selects = queries.filter((query) =>
-        query.startsWith('select "id", "name", "active" from "sector"'),
+        query.startsWith(
+          'select "id", "name", "active", "color" from "sector"',
+        ),
       );
       expect(selects).toHaveLength(2);
       expect(selects[0]).toMatch(/ for share$/);

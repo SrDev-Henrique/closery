@@ -34,7 +34,7 @@ export function OpenRequestsNowSection({
       {data.rows.length === 0 ? (
         <p className="text-muted-foreground">Nenhuma solicitação aberta.</p>
       ) : (
-        <ul className="flex flex-col divide-y">
+        <ul className="flex flex-col">
           {data.rows.map((request) => (
             <OpenRequestItem key={request.id} request={request} />
           ))}

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  adminNavItems,
   isNavItemActive,
+  mainNavItems,
   NAV_ITEMS,
   visibleNavItems,
 } from "@/components/app-shell/navItems";
@@ -89,5 +91,30 @@ describe("isNavItemActive", () => {
 
   it("rota diferente não é ativa", () => {
     expect(isNavItemActive("/entrar", "/conta")).toBe(false);
+  });
+});
+
+describe("grupos do menu (mainNavItems e adminNavItems)", () => {
+  it("o grupo principal tem os cinco itens abertos a todos, nesta ordem", () => {
+    expect(mainNavItems.map((item) => item.label)).toEqual([
+      "Início",
+      "Passagens",
+      "Solicitações",
+      "Dashboard",
+      "Conta",
+    ]);
+    expect(mainNavItems.some((item) => item.adminOnly)).toBe(false);
+  });
+
+  it("o grupo de administração tem só Administração, restrita a admin", () => {
+    expect(adminNavItems.map((item) => item.href)).toEqual(["/admin"]);
+    expect(adminNavItems.every((item) => item.adminOnly)).toBe(true);
+  });
+
+  it("NAV_ITEMS é a soma dos dois grupos, sem item repetido", () => {
+    expect(NAV_ITEMS).toEqual([...mainNavItems, ...adminNavItems]);
+    expect(new Set(NAV_ITEMS.map((item) => item.href)).size).toBe(
+      NAV_ITEMS.length,
+    );
   });
 });

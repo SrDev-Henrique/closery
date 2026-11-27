@@ -9,6 +9,7 @@ import { resetDb } from "../../../test/db";
 import {
   insertDestination,
   insertHandover,
+  insertInvite,
   insertRequest,
   insertSector,
   insertShift,
@@ -20,10 +21,12 @@ const mocks = vi.hoisted(
   (): {
     requireUser: ReturnType<typeof vi.fn>;
     cookie: { value: string | undefined };
+    dismissed: { value: boolean };
     client: PGlite | undefined;
   } => ({
     requireUser: vi.fn(),
     cookie: { value: undefined },
+    dismissed: { value: false },
     client: undefined,
   }),
 );
@@ -31,13 +34,24 @@ const mocks = vi.hoisted(
 vi.mock("@/lib/auth/session", () => ({ requireUser: mocks.requireUser }));
 vi.mock("next/headers", () => ({
   cookies: async () => ({
-    get: (name: string) =>
-      name === "closery_setor" && mocks.cookie.value !== undefined
-        ? { name, value: mocks.cookie.value }
-        : undefined,
+    get: (name: string) => {
+      if (name === "closery_setor" && mocks.cookie.value !== undefined) {
+        return { name, value: mocks.cookie.value };
+      }
+      if (name === "closery-convite-dispensado" && mocks.dismissed.value) {
+        return { name, value: "1" };
+      }
+      return undefined;
+    },
   }),
 }));
-vi.mock("@/app/(app)/actions", () => ({ chooseSectorAction: vi.fn() }));
+vi.mock("@/app/(app)/actions", () => ({
+  chooseSectorAction: vi.fn(),
+  dismissInviteCardAction: vi.fn(),
+}));
+vi.mock("@/lib/avatar", () => ({
+  avatarDataUri: (seed: string) => `data:image/svg+xml,${seed}`,
+}));
 vi.mock("@/db", async () => {
   const { createTestDb } = await import("../../../test/db");
   const { client, db } = await createTestDb();
@@ -49,6 +63,36 @@ const TODAY = "2026-11-20";
 
 async function renderHome(search: Record<string, string> = {}) {
   render(await HomeHandovers({ searchParams: Promise.resolve(search) }));
+}
+
+function requestsCard(): HTMLElement {
+  const card = screen
+    .getByRole("heading", { name: "Solicitações" })
+    .closest('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) {
+    throw new Error("cartão Solicitações não encontrado");
+  }
+  return card;
+}
+
+// As sementes dos avatares do cartão "Passagem do meu turno", na ordem do DOM.
+function shiftCardAvatars(): (string | null)[] {
+  const card = screen
+    .getByRole("heading", { name: "Passagem do meu turno" })
+    .closest('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) {
+    throw new Error("cartão do turno não encontrado");
+  }
+  return Array.from(card.querySelectorAll("img")).map((img) =>
+    img.getAttribute("src"),
+  );
+}
+
+// O contador e a palavra são dois elementos (o número é grande).
+function expectOpenCount(count: string, word: "aberta" | "abertas") {
+  const card = within(requestsCard());
+  expect(card.getByText(count)).toBeInTheDocument();
+  expect(card.getByText(word)).toBeInTheDocument();
 }
 
 async function setup() {
@@ -77,6 +121,7 @@ describe("HomeHandovers", () => {
     if (mocks.client) await resetDb(mocks.client);
     mocks.requireUser.mockReset();
     mocks.cookie.value = undefined;
+    mocks.dismissed.value = false;
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(spDate(TODAY, "10:00"));
   });
@@ -92,6 +137,172 @@ describe("HomeHandovers", () => {
     await expect(
       HomeHandovers({ searchParams: Promise.resolve({}) }),
     ).rejects.toBe(redirectError);
+  });
+
+  describe("hero (linha do seletor/pílula e do dashboard)", () => {
+    it("operador: pílula do setor (só leitura) e o botão 'Ver o dashboard'", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      const row = document.querySelector('[data-slot="home-hero-row"]');
+      const pill = row?.querySelector('[data-slot="sector-pill"]');
+      expect(pill).toHaveTextContent("Setor");
+      expect(pill).toHaveTextContent("ULD");
+      expect(
+        screen.queryByRole("radiogroup", { name: "Setor" }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(row as HTMLElement).getByRole("link", {
+          name: "Ver o dashboard",
+        }),
+      ).toHaveAttribute("href", "/dashboard");
+    });
+
+    it("admin: o seletor de setor fica na linha, sem a pílula, e o botão do dashboard também", async () => {
+      await insertSector(db, "Carga");
+      await insertSector(db, "ULD");
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome();
+
+      const row = document.querySelector(
+        '[data-slot="home-hero-row"]',
+      ) as HTMLElement;
+      expect(
+        within(row).getByRole("radiogroup", { name: "Setor" }),
+      ).toBeInTheDocument();
+      expect(row.querySelector('[data-slot="sector-pill"]')).toBeNull();
+      expect(
+        within(row).getByRole("link", { name: "Ver o dashboard" }),
+      ).toHaveAttribute("href", "/dashboard");
+    });
+
+    it("a linha tem o espaçamento do protótipo: 32px em cima e 40px embaixo (24 e 28 no celular), quebrando linha no celular", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      expect(document.querySelector('[data-slot="home-hero-row"]')).toHaveClass(
+        "flex",
+        "flex-wrap",
+        "items-center",
+        "justify-between",
+        "gap-4",
+        "pt-8",
+        "pb-10",
+        "max-md:pt-6",
+        "max-md:pb-7",
+      );
+    });
+
+    it("a linha vem antes dos cartões, que ficam no ponto de extensão 'home-cards' com 16px de gap", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      const row = document.querySelector('[data-slot="home-hero-row"]');
+      const cards = document.querySelector('[data-slot="home-cards"]');
+      expect(cards).toHaveClass("flex", "flex-col", "gap-4");
+      expect(
+        (row as Node).compareDocumentPosition(cards as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        within(cards as HTMLElement).getByRole("heading", {
+          name: "Passagem do meu turno",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("o botão do dashboard é pílula 'surface' de 48px com o ícone decorativo", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      const link = screen.getByRole("link", { name: "Ver o dashboard" });
+      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      expect(link).toHaveClass("bg-card", "rounded-full", "h-12", "px-5");
+      // 20px de padding (protótipo), não os 22px do `pill`: o `cn` tira o outro.
+      expect(link).not.toHaveClass("px-[22px]");
+    });
+
+    it("sem setor ativo (admin) e setor inativo (operador): sem seletor nem pílula, mas o dashboard continua à mão", async () => {
+      await insertSector(db, "Parado", { active: false });
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+      await renderHome();
+      expect(
+        screen.getByRole("link", { name: "Ver o dashboard" }),
+      ).toHaveAttribute("href", "/dashboard");
+      expect(document.querySelector('[data-slot="sector-pill"]')).toBeNull();
+      cleanup();
+
+      const parado = await insertSector(db, "Inativo operador", {
+        active: false,
+      });
+      const ana = await insertUser(db, {
+        role: "operator",
+        sectorId: parado.id,
+      });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: parado.id }),
+      );
+      await renderHome();
+      expect(
+        screen.getByRole("link", { name: "Ver o dashboard" }),
+      ).toHaveAttribute("href", "/dashboard");
+      expect(screen.getByText("Seu setor está inativo.")).toBeInTheDocument();
+    });
+
+    it("sem seletor nem pílula (ramos de erro), o botão do dashboard fica à direita", async () => {
+      await insertSector(db, "Parado", { active: false });
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome();
+
+      expect(screen.getByRole("link", { name: "Ver o dashboard" })).toHaveClass(
+        "ml-auto",
+      );
+    });
+
+    it("com o seletor na linha, o botão do dashboard não força a direita: quando a linha quebra (celular), ele fica à esquerda, como no protótipo", async () => {
+      await insertSector(db, "Carga");
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome();
+
+      expect(
+        screen.getByRole("link", { name: "Ver o dashboard" }),
+      ).not.toHaveClass("ml-auto");
+    });
+    it("a pílula usa a cor do setor escolhida na tela Setores", async () => {
+      const verde = await insertSector(db, "Carga", { color: "green" });
+      const ana = await insertUser(db, {
+        role: "operator",
+        sectorId: verde.id,
+      });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: verde.id }),
+      );
+
+      await renderHome();
+
+      expect(
+        document.querySelector('[data-slot="sector-pill"] .bg-sector-green'),
+      ).not.toBeNull();
+    });
   });
 
   it("operador sem passagem: só o cartão do turno, 'Começar passagem', sem seletor", async () => {
@@ -115,7 +326,7 @@ describe("HomeHandovers", () => {
       `/passagens/nova?turno=${shiftRow.id}&data=${TODAY}`,
     );
     expect(
-      screen.queryByRole("group", { name: "Setor" }),
+      screen.queryByRole("radiogroup", { name: "Setor" }),
     ).not.toBeInTheDocument();
   });
 
@@ -143,6 +354,10 @@ describe("HomeHandovers", () => {
       expect(
         screen.getByText("Nenhuma solicitação aberta."),
       ).toBeInTheDocument();
+      expect(requestsCard().querySelector("img")).toHaveAttribute(
+        "src",
+        `data:image/svg+xml,${world.ana.id}`,
+      );
       expect(
         screen.getByRole("link", { name: "Ver solicitações" }),
       ).toHaveAttribute("href", "/solicitacoes");
@@ -184,7 +399,8 @@ describe("HomeHandovers", () => {
 
       await renderHome();
 
-      expect(screen.getByText("3 abertas · 1 parada")).toBeInTheDocument();
+      expectOpenCount("3", "abertas");
+      expect(within(requestsCard()).getByText("1 parada")).toBeInTheDocument();
       expect(screen.getByText("Paradas há mais tempo")).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: "Trocar as redes" }),
@@ -205,7 +421,10 @@ describe("HomeHandovers", () => {
       asAna(world);
 
       await renderHome();
-      expect(screen.getByText("1 aberta · 0 paradas")).toBeInTheDocument();
+      expectOpenCount("1", "aberta");
+      expect(
+        within(requestsCard()).queryByText(/\d+ paradas?$/),
+      ).not.toBeInTheDocument();
       cleanup();
 
       await insertRequest(db, {
@@ -216,7 +435,8 @@ describe("HomeHandovers", () => {
       });
       await renderHome();
 
-      expect(screen.getByText("2 abertas · 1 parada")).toBeInTheDocument();
+      expectOpenCount("2", "abertas");
+      expect(within(requestsCard()).getByText("1 parada")).toBeInTheDocument();
       expect(screen.getByText("Parada há 3 dias")).toBeInTheDocument();
     });
 
@@ -234,7 +454,8 @@ describe("HomeHandovers", () => {
 
       await renderHome();
 
-      expect(screen.getByText("7 abertas · 7 paradas")).toBeInTheDocument();
+      expectOpenCount("7", "abertas");
+      expect(within(requestsCard()).getByText("7 paradas")).toBeInTheDocument();
       const items = within(
         screen.getByRole("heading", { name: "Paradas há mais tempo" })
           .parentElement as HTMLElement,
@@ -274,10 +495,150 @@ describe("HomeHandovers", () => {
 
       await renderHome({ setor: world.uld.id });
 
-      expect(screen.getByText("1 aberta · 0 paradas")).toBeInTheDocument();
+      expectOpenCount("1", "aberta");
       expect(
         screen.getByRole("link", { name: "Ver solicitações" }),
       ).toHaveAttribute("href", `/solicitacoes?setor=${world.uld.id}`);
+    });
+  });
+
+  it("o cartão do turno leva o nome e a cor do setor", async () => {
+    const carga = await insertSector(db, "Carga", { color: "peach" });
+    await insertShift(db, { sectorId: carga.id });
+    const ana = await insertUser(db, { role: "operator", sectorId: carga.id });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: carga.id }),
+    );
+
+    await renderHome();
+
+    const card = screen
+      .getByRole("heading", { name: "Passagem do meu turno" })
+      .closest('[data-slot="card"]');
+    expect(card).toHaveClass("bg-sector-peach");
+    expect(within(card as HTMLElement).getByText("Carga")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toBeInTheDocument();
+  });
+
+  it("rascunho: o avatar de quem salvou usa o id dessa pessoa como semente", async () => {
+    const { uld, shiftRow, ana } = await setup();
+    await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: shiftRow.id,
+      operationalDate: TODAY,
+      updatedBy: ana.id,
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+    );
+
+    await renderHome();
+
+    const card = screen
+      .getByRole("heading", { name: "Passagem do meu turno" })
+      .closest('[data-slot="card"]');
+    expect(card?.querySelector("img")).toHaveAttribute(
+      "src",
+      `data:image/svg+xml,${ana.id}`,
+    );
+  });
+
+  describe("primeiro acesso do admin", () => {
+    async function soloAdmin() {
+      const uld = await insertSector(db, "ULD");
+      await insertShift(db, { sectorId: uld.id });
+      const admin = await insertUser(db, {
+        role: "admin",
+        sectorId: null,
+        name: "Ana Teste",
+      });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "admin", userId: admin.id }),
+      );
+      return { uld, admin };
+    }
+
+    it("admin sozinho e sem convites: mostra 'Convide sua equipe' no topo, com a linha de apoio nas solicitações", async () => {
+      const { uld } = await soloAdmin();
+
+      await renderHome({ setor: uld.id });
+
+      const headings = screen
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent);
+      expect(headings).toEqual([
+        "Convide sua equipe",
+        "Passagem do meu turno",
+        "Solicitações",
+      ]);
+      expect(screen.getByText("1 pessoa ativa")).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: "Gerar convites" }),
+      ).toHaveAttribute("href", "/admin/equipe");
+      expect(
+        screen.getByText(
+          "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("cookie de dispensa: o cartão some, a linha de apoio das solicitações fica", async () => {
+      const { uld } = await soloAdmin();
+      mocks.dismissed.value = true;
+
+      await renderHome({ setor: uld.id });
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("com mais uma pessoa ativa, não é primeiro acesso: sem cartão e sem linha de apoio", async () => {
+      const { uld } = await soloAdmin();
+      await insertUser(db, { role: "operator", sectorId: uld.id });
+
+      await renderHome({ setor: uld.id });
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Os pedidos da equipe aparecem aqui/),
+      ).not.toBeInTheDocument();
+    });
+
+    it("com um convite pendente, não é primeiro acesso", async () => {
+      const { uld } = await soloAdmin();
+      await insertInvite(db, { role: "operator", sectorId: uld.id });
+
+      await renderHome({ setor: uld.id });
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("operador sozinho no banco nunca vê o cartão (só admin)", async () => {
+      const uld = await insertSector(db, "ULD");
+      await insertShift(db, { sectorId: uld.id });
+      const ana = await insertUser(db, { role: "operator", sectorId: uld.id });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      expect(
+        screen.queryByRole("heading", { name: "Convide sua equipe" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Os pedidos da equipe aparecem aqui/),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -329,6 +690,9 @@ describe("HomeHandovers", () => {
       "Solicitações",
     ]);
     expect(screen.getByText("Conferir a rede do box 4.")).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-slot="pending-handover"] img'),
+    ).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
     expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
       "href",
       `/passagens/${delivered.id}`,
@@ -359,6 +723,41 @@ describe("HomeHandovers", () => {
         "Entregue às 09:30 por Ana Teste. Aguardando recebimento.",
       ),
     ).toBeInTheDocument();
+    // A linha de entrega leva o avatar de quem entregou (spec §6.4.1).
+    expect(shiftCardAvatars()).toEqual([`data:image/svg+xml,${ana.id}`]);
+  });
+
+  it("confirmada: a linha do meu turno traz o avatar de quem entregou e depois o de quem confirmou", async () => {
+    const { uld, shiftRow, ana, bia } = await setup();
+    await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: shiftRow.id,
+      operationalDate: TODAY,
+      status: "confirmed",
+      deliveredBy: ana.id,
+      deliveredAt: spDate(TODAY, "09:30"),
+      confirmedBy: bia.id,
+      confirmedAt: spDate(TODAY, "09:45"),
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+    );
+
+    await renderHome();
+
+    expect(shiftCardAvatars()).toEqual([
+      `data:image/svg+xml,${ana.id}`,
+      `data:image/svg+xml,${bia.id}`,
+    ]);
+    expect(
+      screen.getByText(
+        "Entregue por Ana Teste às 09:30. Confirmada por Bia Teste às 09:45.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Confirmada")).toHaveClass(
+      "bg-on-pastel-success-soft",
+      "text-on-pastel-success",
+    );
   });
 
   it("passagem entregue de outro setor não vaza para o cartão", async () => {
@@ -435,9 +834,11 @@ describe("HomeHandovers", () => {
 
     await renderHome();
 
-    expect(screen.getByRole("group", { name: "Setor" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Carga" })).toHaveAttribute(
-      "aria-pressed",
+    expect(
+      screen.getByRole("radiogroup", { name: "Setor" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Carga" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     expect(
@@ -454,8 +855,8 @@ describe("HomeHandovers", () => {
 
     await renderHome({ setor: uld.id });
 
-    expect(screen.getByRole("button", { name: "ULD" })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("radio", { name: "ULD" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     expect(
@@ -474,8 +875,8 @@ describe("HomeHandovers", () => {
 
     await renderHome();
 
-    expect(screen.getByRole("button", { name: "ULD" })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("radio", { name: "ULD" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
   });

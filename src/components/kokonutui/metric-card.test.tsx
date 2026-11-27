@@ -369,4 +369,15 @@ describe("MetricCard", () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it("o turno em foco tem fundo bg-accent (o bg-muted é igual ao card e o destaque sumia)", async () => {
+    const user = userEvent.setup();
+    render(<MetricCard {...props()} />);
+    await user.click(screen.getByRole("button", { name: "Mostrar só Manhã" }));
+    const row = screen
+      .getByRole("button", { name: "Mostrar todos os turnos" })
+      .closest("li");
+    expect(row).toHaveClass("bg-accent");
+    expect(row).not.toHaveClass("bg-muted");
+  });
 });

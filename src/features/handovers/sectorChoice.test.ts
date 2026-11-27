@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
 
+import type { SectorChoice } from "@/features/admin/sectors";
 import { resolveHandoverSector } from "./sectorChoice";
 
-const ULD = { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", name: "ULD" };
-const CARGA = { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", name: "Carga" };
+const ULD: SectorChoice = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  name: "ULD",
+  color: "lilac",
+};
+const CARGA: SectorChoice = {
+  id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  name: "Carga",
+  color: "peach",
+};
 const SECTORS = [CARGA, ULD];
 const OTHER = "99999999-9999-4999-8999-999999999999";
 const pick = (sector: typeof ULD) => ({ kind: "sector", sector });

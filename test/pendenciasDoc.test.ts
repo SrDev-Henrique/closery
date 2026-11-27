@@ -232,4 +232,26 @@ describe(".context/pendencias.md", () => {
     expect(entries.get("P10")?.state).toBe("Bloqueado no dono");
     expect(entries.get("P1")?.state).toBe("Resolvido");
   });
+
+  it("Visual: P81 a P108 entraram como Aberto, não triado", () => {
+    for (let number = 81; number <= 108; number++) {
+      const id = `P${number}`;
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Aberto, não triado");
+      expect(entry?.section, id).toBe("1");
+      expect(index.get(id), `${id}: índice`).toBe("Aberto, não triado");
+    }
+  });
+
+  it("Visual: P17 resolvida pelo tema próprio; P67 (aviso ao sair) e P70 (tema medido) com Atualização", () => {
+    const p17 = entries.get("P17");
+    expect(p17?.state, "P17").toBe("Resolvido");
+    expect(p17?.section, "P17").toBe("5");
+    expect(p17?.updates, "P17").toContain("2026-11-27");
+    for (const id of ["P67", "P70"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Aberto, não triado");
+      expect(entry?.updates, id).toContain("2026-11-27");
+    }
+  });
 });

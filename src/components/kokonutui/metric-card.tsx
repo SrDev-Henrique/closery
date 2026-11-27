@@ -497,7 +497,7 @@ function MetricCardBody({
         ) : null}
         {cursor === null ? null : (
           <button
-            className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-muted-foreground text-xs outline-none transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
+            className="ml-auto shrink-0 rounded-full px-2 py-0.5 text-muted-foreground text-xs outline-none transition-colors duration-150 ease-out hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
             onClick={() => setCursor(null)}
             type="button"
           >
@@ -697,7 +697,8 @@ function MetricCardBody({
               <li
                 className={cn(
                   "flex items-center rounded-lg transition-[background-color,opacity] duration-150 ease-out motion-reduce:transition-none",
-                  focus === i && "bg-muted",
+                  // accent, não muted: na paleta nova muted = card e o destaque sumia.
+                  focus === i && "bg-accent",
                   focus !== null && focus !== i && "opacity-50",
                 )}
                 key={segment.key}
@@ -709,7 +710,7 @@ function MetricCardBody({
                       : `Mostrar só ${segment.label}`
                   }
                   aria-pressed={focus === i}
-                  className="flex min-h-9 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-left text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
+                  className="flex min-h-9 min-w-0 flex-1 items-center gap-2.5 rounded-lg px-2 text-left text-sm outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring max-md:min-h-11"
                   onClick={() => setFocus((f) => (f === i ? null : i))}
                   type="button"
                 >

@@ -96,6 +96,14 @@ jobs:
           key: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-${{ hashFiles('src/**', 'next.config.ts') }}
           restore-keys: next-${{ runner.os }}-${{ hashFiles('bun.lock') }}-
 
+      # A Satoshi vem da Fontshare (a licença proíbe versionar o arquivo): o `prebuild` baixa e confere
+      # o SHA-256; com o cache ele só confere. A chave muda quando os hashes (scripts/fontsCheck.mjs) mudam.
+      - name: Cache da fonte Satoshi
+        uses: actions/cache@v6
+        with:
+          path: src/fonts/satoshi
+          key: satoshi-${{ hashFiles('scripts/fontsCheck.mjs') }}
+
       # Sobe PGlite (pglite-socket) + next build + next start com o env do
       # playwright.config.ts: banco efêmero, nunca toca o Neon, sem segredo real.
       - name: E2E (inclui o next build)

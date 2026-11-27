@@ -26,6 +26,7 @@ export type SavedField = {
   handoverId: string;
   savedAt: Date;
   savedByName: string;
+  savedById: string;
 };
 
 // Quantidade e observação de um item do setor. Rascunho: o item precisa estar
@@ -130,6 +131,11 @@ export async function saveHandoverField(
       await tx.update(handover).set(stamp).where(eq(handover.id, row.id));
     }
 
-    return ok({ handoverId: row.id, savedAt: now, savedByName: actor.name });
+    return ok({
+      handoverId: row.id,
+      savedAt: now,
+      savedByName: actor.name,
+      savedById: actor.userId,
+    });
   });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, type ReactNode, useId, useState } from "react";
 
 import { useAdminAction } from "@/components/admin/useAdminAction";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export function NameForm({
   onSubmit,
   successMessage,
   onDone,
+  children,
 }: {
   entity: "setor" | "destino";
   initialName: string;
@@ -31,6 +32,8 @@ export function NameForm({
   onSubmit: (name: string) => Promise<AdminResult<object>>;
   successMessage?: string;
   onDone?: () => void;
+  // Controles extras do mesmo formulário (ex.: a cor do setor), entre o nome e o botão.
+  children?: ReactNode;
 }) {
   const fieldId = useId();
   const errorId = `${fieldId}-error`;
@@ -83,6 +86,7 @@ export function NameForm({
         />
         {error && <FieldError id={errorId}>{error}</FieldError>}
       </Field>
+      {children}
       <Button type="submit" disabled={pending}>
         {submitLabel}
       </Button>

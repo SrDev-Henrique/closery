@@ -138,6 +138,9 @@ describe("NewRequestDialog", () => {
   it("o gatilho aceita a variante outline (usada dentro da passagem)", () => {
     setup("outline");
 
-    expect(trigger().className).toContain("border-border");
+    // As classes próprias da variante outline (a borda virou border-input no
+    // passe de legibilidade, para aparecer no tema claro).
+    expect(trigger().className).toContain("border-input");
+    expect(trigger().className).toContain("bg-background");
   });
 });

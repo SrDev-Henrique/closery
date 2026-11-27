@@ -164,7 +164,7 @@ describe("DashboardScreen", () => {
       "/api/dashboard/export",
     );
     expect(
-      screen.queryByRole("group", { name: "Setor" }),
+      screen.queryByRole("radiogroup", { name: "Setor" }),
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("navigation", { name: "Período" }),
@@ -216,15 +216,15 @@ describe("DashboardScreen", () => {
 
     await renderScreen();
 
-    const picker = screen.getByRole("group", { name: "Setor" });
+    const picker = screen.getByRole("radiogroup", { name: "Setor" });
     expect(
-      within(picker).getByRole("button", { name: "ULD Teste" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      within(picker).getByRole("radio", { name: "ULD Teste" }),
+    ).toHaveAttribute("aria-checked", "true");
     expect(
-      within(picker).getByRole("button", { name: "Câmara Teste" }),
-    ).toHaveAttribute("aria-pressed", "false");
+      within(picker).getByRole("radio", { name: "Câmara Teste" }),
+    ).toHaveAttribute("aria-checked", "false");
     expect(
-      within(picker).getByRole("button", { name: "Todos os setores" }),
+      within(picker).getByRole("radio", { name: "Todos os setores" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Exportar CSV" })).toHaveAttribute(
       "href",
@@ -267,8 +267,8 @@ describe("DashboardScreen", () => {
       "/api/dashboard/export?periodo=30&setor=todos",
     );
     expect(
-      screen.getByRole("button", { name: "Todos os setores" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      screen.getByRole("radio", { name: "Todos os setores" }),
+    ).toHaveAttribute("aria-checked", "true");
   });
 
   it("intervalo: o rótulo mostra só as datas e o formulário do intervalo já vem aberto", async () => {
@@ -299,7 +299,7 @@ describe("DashboardScreen", () => {
     await renderScreen({ periodo: "30" });
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Todos os setores" }),
+      screen.getByRole("radio", { name: "Todos os setores" }),
     );
 
     expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
@@ -315,7 +315,7 @@ describe("DashboardScreen", () => {
     await renderScreen();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Todos os setores" }),
+      screen.getByRole("radio", { name: "Todos os setores" }),
     );
 
     expect(mocks.chooseSectorAction).toHaveBeenCalledWith({

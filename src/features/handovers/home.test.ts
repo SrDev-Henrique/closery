@@ -135,6 +135,7 @@ describe("getHomeHandovers", () => {
         sectorName: "ULD",
         shiftName: "Tarde (nome antigo)",
         operationalDate: "2026-11-20",
+        deliveredById: ana,
         deliveredByName: "Ana Teste",
         deliveredAt: spDate("2026-11-20", "22:03"),
         nextShiftPreview: "Conferir a rede 7.",
@@ -296,6 +297,12 @@ describe("getHomeHandovers", () => {
           startsAt: "06:00",
           endsAt: "14:00",
         },
+        progress: {
+          startLabel: "06:00",
+          endLabel: "14:00",
+          nowLabel: "14:05",
+          pct: 100,
+        },
         saved: null,
       });
     });
@@ -314,6 +321,13 @@ describe("getHomeHandovers", () => {
       expect(mine.kind).toBe("continue");
       if (mine.kind !== "continue") throw new Error("estado inesperado");
       expect(mine.saved?.byName).toBe("Bia Teste");
+      expect(mine.saved?.byId).toBe(bia);
+      expect(mine.progress).toEqual({
+        startLabel: "06:00",
+        endLabel: "14:00",
+        nowLabel: "14:05",
+        pct: 100,
+      });
       expect(mine.saved?.at).toBeInstanceOf(Date);
     });
 
@@ -346,8 +360,11 @@ describe("getHomeHandovers", () => {
       expect(mine).toMatchObject({
         kind: "delivered",
         handoverId: passagem.id,
+        // Semente do avatar da linha de entrega (spec §6.4.1).
+        deliveredById: ana,
         deliveredByName: "Ana Teste",
         deliveredAt: spDate("2026-11-21", "14:02"),
+        confirmedById: null,
         confirmedByName: null,
         confirmedAt: null,
       });
@@ -370,6 +387,10 @@ describe("getHomeHandovers", () => {
 
       expect(mine).toMatchObject({
         kind: "confirmed",
+        // As duas sementes da pilha de avatares (spec §6.4.1).
+        deliveredById: ana,
+        deliveredByName: "Ana Teste",
+        confirmedById: bia,
         confirmedByName: "Bia Teste",
         confirmedAt: spDate("2026-11-21", "14:04"),
       });
@@ -412,7 +433,20 @@ describe("getHomeHandovers", () => {
 
       const home = await homeOf(rootAuthz, uld.id);
 
-      expect(home.sector).toEqual({ id: uld.id, name: "ULD" });
+      expect(home.sector).toEqual({ id: uld.id, name: "ULD", color: "lilac" });
+    });
+
+    it("a cor do setor vai junto (a escolhida, não a padrão)", async () => {
+      const verde = await insertSector(db, "Carga", { color: "green" });
+      const { rootAuthz } = await seed();
+
+      const home = await homeOf(rootAuthz, verde.id);
+
+      expect(home.sector).toEqual({
+        id: verde.id,
+        name: "Carga",
+        color: "green",
+      });
     });
 
     it("operador de outro setor e id inexistente: NOT_FOUND", async () => {

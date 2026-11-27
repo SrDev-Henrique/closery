@@ -79,8 +79,8 @@ describe("resolveScreenSector — admin", () => {
       sectorName: "Câmara Teste",
       sectorParam: camara.id,
       sectors: [
-        { id: camara.id, name: "Câmara Teste" },
-        { id: uld.id, name: "ULD Teste" },
+        { id: camara.id, name: "Câmara Teste", color: "lilac" },
+        { id: uld.id, name: "ULD Teste", color: "lilac" },
       ],
       cookie: uld.id,
     });
@@ -96,8 +96,22 @@ describe("resolveScreenSector — admin", () => {
       sectorId: null,
       sectorName: null,
       sectorParam: "todos",
-      sectors: [{ id: uld.id, name: "ULD Teste" }],
+      sectors: [{ id: uld.id, name: "ULD Teste", color: "lilac" }],
       cookie: undefined,
+    });
+  });
+
+  it("as escolhas do admin levam a cor de cada setor ativo", async () => {
+    const uld = await insertSector(db, "ULD Teste", { color: "sky" });
+
+    const result = await resolveScreenSector(db, admin, {
+      url: uld.id,
+      allowAll: false,
+    });
+
+    expect(result).toMatchObject({
+      kind: "sector",
+      sectors: [{ id: uld.id, name: "ULD Teste", color: "sky" }],
     });
   });
 

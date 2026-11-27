@@ -297,7 +297,7 @@ describe("NewHandover", () => {
     await renderPage({ setor: carga.id });
 
     expect(
-      screen.queryByRole("group", { name: "Setor" }),
+      screen.queryByRole("radiogroup", { name: "Setor" }),
     ).not.toBeInTheDocument();
     expect(screen.getByText("ULD")).toBeInTheDocument();
     expect(
@@ -364,9 +364,11 @@ describe("NewHandover", () => {
 
     await renderPage({ setor: uld.id });
 
-    expect(screen.getByRole("group", { name: "Setor" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "ULD" })).toHaveAttribute(
-      "aria-pressed",
+    expect(
+      screen.getByRole("radiogroup", { name: "Setor" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "ULD" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     expect(screen.getByLabelText("Turno")).toHaveDisplayValue(
@@ -383,8 +385,8 @@ describe("NewHandover", () => {
 
     await renderPage();
 
-    expect(screen.getByRole("button", { name: "Carga" })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("radio", { name: "Carga" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     expect(screen.getByLabelText("Turno")).toHaveDisplayValue(/Turno Carga/);

@@ -146,6 +146,7 @@ describe("saveHandoverField", () => {
         handoverId: expect.any(String),
         savedAt: NOW,
         savedByName: "Ana Teste",
+        savedById: operatorAna.userId,
       });
       expect(second).toMatchObject({ ok: true, savedAt: LATER });
       if (first.ok && second.ok) {
@@ -204,7 +205,11 @@ describe("saveHandoverField", () => {
         NOW,
       );
 
-      expect(result).toMatchObject({ ok: true, savedByName: "Admin" });
+      expect(result).toMatchObject({
+        ok: true,
+        savedByName: "Admin",
+        savedById: admin.userId,
+      });
     });
   });
 

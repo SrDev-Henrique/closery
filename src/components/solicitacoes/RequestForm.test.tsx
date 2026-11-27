@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { fail, ok } from "@/features/admin/result";
+import type { SectorChoice } from "@/features/admin/sectors";
 import type { HandoverRef } from "@/features/handovers/types";
 import {
   DESCRIPTION_REQUIRED_MESSAGE,
@@ -76,7 +77,7 @@ vi.mock("sonner", () => ({
 function setup(
   props: {
     choices?: RequestFormChoices;
-    sectors?: { id: string; name: string }[] | null;
+    sectors?: SectorChoice[] | null;
     initialSectorId?: string;
     originRef?: HandoverRef | null;
   } = {},
@@ -280,9 +281,9 @@ describe("RequestForm", () => {
   });
 
   describe("admin", () => {
-    const SECTORS = [
-      { id: SECTOR_A, name: "Almoxarifado Teste" },
-      { id: SECTOR_B, name: "Outro Setor" },
+    const SECTORS: SectorChoice[] = [
+      { id: SECTOR_A, name: "Almoxarifado Teste", color: "lilac" },
+      { id: SECTOR_B, name: "Outro Setor", color: "peach" },
     ];
 
     it("trocar o setor limpa os itens, troca a lista de itens e mantém o destino", async () => {

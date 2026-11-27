@@ -5,7 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 import { spDate } from "../../../test/clock";
 import { AutosaveIndicator } from "./AutosaveIndicator";
 
-const LAST = { at: spDate("2026-11-20", "09:10"), byName: "Bia Teste" };
+const LAST = {
+  at: spDate("2026-11-20", "09:10"),
+  byName: "Bia Teste",
+  byId: "u-bia",
+};
 
 describe("AutosaveIndicator", () => {
   it("é uma região de status educada (leitor de tela)", () => {

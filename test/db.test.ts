@@ -23,7 +23,9 @@ describe("harness de banco", () => {
   });
 
   it("resetDb apaga os dados de todas as tabelas", async () => {
-    await client.exec("INSERT INTO sector (name) VALUES ('ULD')");
+    await client.exec(
+      "INSERT INTO sector (name, color) VALUES ('ULD', 'lilac')",
+    );
     await resetDb(client);
     const { rows } = await client.query("SELECT 1 FROM sector");
     expect(rows).toHaveLength(0);

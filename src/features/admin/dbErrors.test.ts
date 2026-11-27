@@ -27,9 +27,9 @@ describe("com o erro real do Drizzle + PGlite", () => {
   });
 
   async function duplicateInsertError(): Promise<unknown> {
-    await db.insert(sector).values({ name: "ULD" });
+    await db.insert(sector).values({ name: "ULD", color: "lilac" });
     try {
-      await db.insert(sector).values({ name: "uld" });
+      await db.insert(sector).values({ name: "uld", color: "lilac" });
     } catch (error) {
       return error;
     }

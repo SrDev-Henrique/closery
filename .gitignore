@@ -43,6 +43,9 @@ next-env.d.ts
 # env de exemplo é versionado
 !.env.example
 
+# Satoshi (ITF FFL): o arquivo não pode ficar num repositório público; `bun run fonts` baixa
+/src/fonts/satoshi/
+
 # artefatos do Playwright MCP
 .playwright-mcp/
 

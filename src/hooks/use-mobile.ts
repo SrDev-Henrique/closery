@@ -1,6 +1,8 @@
 import * as React from "react";
 
-const MOBILE_BREAKPOINT = 768;
+// Celular é abaixo de 860px (C-V3). Mesmo número do `--breakpoint-md` (53,75rem) do globals.css;
+// o guarda src/app/themeContrast.test.ts confere os dois.
+const MOBILE_BREAKPOINT = 860;
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(

@@ -423,7 +423,7 @@ test("(d) operador de outro setor não vê a passagem nem o setor alheio", async
   await page.goto(`/passagens?setor=${theirs.sector.id}&situacao=aguardando`);
   await expect(page.getByRole("heading", { name: "Passagens" })).toBeVisible();
   await expect(text(page, /Entregue por Ana Teste/)).toHaveCount(0);
-  await expect(page.getByRole("group", { name: "Setor" })).toHaveCount(0);
+  await expect(page.getByRole("radiogroup", { name: "Setor" })).toHaveCount(0);
 });
 
 test("(e) admin escolhe o setor, corrige a confirmada com motivo e o histórico mostra 'Corrigida'", async ({
@@ -450,24 +450,22 @@ test("(e) admin escolhe o setor, corrige a confirmada com motivo e o histórico 
   await page.goto(`/?setor=${decoy.id}`);
 
   // O seletor de setor fica no Início; a escolha é lembrada no histórico.
-  const picker = page.getByRole("group", { name: "Setor" });
-  await expect(
-    picker.getByRole("button", { name: decoy.name }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await picker.getByRole("button", { name: data.sector.name }).click();
+  const picker = page.getByRole("radiogroup", { name: "Setor" });
+  await expect(picker.getByRole("radio", { name: decoy.name })).toBeChecked();
+  await picker.getByRole("radio", { name: data.sector.name }).click();
   await expect(page).toHaveURL(`/?setor=${data.sector.id}`);
   await expect(
     page
-      .getByRole("group", { name: "Setor" })
-      .getByRole("button", { name: data.sector.name }),
-  ).toHaveAttribute("aria-pressed", "true");
+      .getByRole("radiogroup", { name: "Setor" })
+      .getByRole("radio", { name: data.sector.name }),
+  ).toBeChecked();
 
   await page.goto("/passagens");
   await expect(
     page
-      .getByRole("group", { name: "Setor" })
-      .getByRole("button", { name: data.sector.name }),
-  ).toHaveAttribute("aria-pressed", "true");
+      .getByRole("radiogroup", { name: "Setor" })
+      .getByRole("radio", { name: data.sector.name }),
+  ).toBeChecked();
   const row = page
     .getByRole("main")
     .getByRole("listitem")

@@ -4,10 +4,16 @@ import { asc, count, desc, eq, sql } from "drizzle-orm";
 
 import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
+import {
+  isSectorColor,
+  type SectorColor,
+  suggestSectorColor,
+} from "@/features/sectors/colors";
 import { isUniqueViolation } from "./dbErrors";
 import {
   nameTakenMessage,
   notFoundMessage,
+  SECTOR_COLOR_INVALID_MESSAGE,
   sectorBlockedMessage,
 } from "./messages";
 import { validateName } from "./names";
@@ -22,13 +28,13 @@ import { type AdminResult, fail, ok } from "./result";
 export type SectorRow = {
   id: string;
   name: string;
+  color: SectorColor;
   active: boolean;
   activePeople: number;
   pendingInvites: number;
 };
 
-export type SectorChoice = { id: string; name: string };
-
+export type SectorChoice = { id: string; name: string; color: SectorColor };
 // Subconsultas correlacionadas escritas com a tabela "sector" por extenso: o
 // Drizzle tira o prefixo das colunas num SELECT de uma tabela só, e um "id"
 // sem prefixo dentro da subconsulta apontaria para "user".
@@ -62,6 +68,7 @@ export async function listSectors(
     .select({
       id: sector.id,
       name: sector.name,
+      color: sector.color,
       active: sector.active,
       activePeople: activePeopleSql(),
       pendingInvites: pendingInvitesSql(now),
@@ -76,11 +83,22 @@ export async function listSectors(
 
 export async function listActiveSectors(db: Db): Promise<SectorChoice[]> {
   return db
-    .select({ id: sector.id, name: sector.name })
+    .select({ id: sector.id, name: sector.name, color: sector.color })
     .from(sector)
     .where(eq(sector.active, true))
     .orderBy(sql`lower(${sector.name})`, asc(sector.id))
     .limit(CHOICE_LIST_LIMIT);
+}
+
+// Cor que a tela de criação já traz marcada (o formulário nunca começa em branco): a primeira
+// da paleta que nenhum setor ativo usa; se todas estão em uso, a menos usada. A regra é pura
+// (`suggestSectorColor`); aqui só entram as cores dos setores ativos.
+export async function suggestColorForNewSector(db: Db): Promise<SectorColor> {
+  const rows = await db
+    .select({ color: sector.color })
+    .from(sector)
+    .where(eq(sector.active, true));
+  return suggestSectorColor(rows.map((row) => row.color));
 }
 
 // Setor do filtro `?setor=`: o da URL se estiver na lista (de ativos); senão o
@@ -104,18 +122,27 @@ async function nameTakenFailure(db: Db, name: string) {
   return fail("NAME_TAKEN", message, { name: message });
 }
 
+function colorFailure() {
+  return fail("INVALID_INPUT", SECTOR_COLOR_INVALID_MESSAGE, {
+    color: SECTOR_COLOR_INVALID_MESSAGE,
+  });
+}
+
 export async function createSector(
   db: Db,
-  input: { name: string },
+  input: { name: string; color: SectorColor },
 ): Promise<AdminResult<{ id: string }>> {
   const checked = validateName(input.name);
   if (!checked.ok) {
     return fail("INVALID_INPUT", checked.message, { name: checked.message });
   }
+  // A action já valida com o schema; isto protege quem chamar o domínio direto (o check do
+  // banco é a última barreira e viraria erro 500).
+  if (!isSectorColor(input.color)) return colorFailure();
   try {
     const [created] = await db
       .insert(sector)
-      .values({ name: checked.name })
+      .values({ name: checked.name, color: input.color })
       .returning({ id: sector.id });
     if (!created) throw new Error("setor não criado");
     return ok({ id: created.id });
@@ -125,18 +152,20 @@ export async function createSector(
   }
 }
 
+// Edita nome e cor do setor (o nome da função vem da Fase 2; a cor entrou em 2026-11-27).
 export async function renameSector(
   db: Db,
-  input: { id: string; name: string },
+  input: { id: string; name: string; color: SectorColor },
 ): Promise<AdminResult> {
   const checked = validateName(input.name);
   if (!checked.ok) {
     return fail("INVALID_INPUT", checked.message, { name: checked.message });
   }
+  if (!isSectorColor(input.color)) return colorFailure();
   try {
     const updated = await db
       .update(sector)
-      .set({ name: checked.name })
+      .set({ name: checked.name, color: input.color })
       .where(eq(sector.id, input.id))
       .returning({ id: sector.id });
     if (updated.length === 0) {

@@ -7,7 +7,10 @@ import { SectorRowActions } from "@/components/admin/sectors/SectorRowActions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { db } from "@/db";
 import { parsePage } from "@/features/admin/pagination";
-import { listSectors } from "@/features/admin/sectors";
+import {
+  listSectors,
+  suggestColorForNewSector,
+} from "@/features/admin/sectors";
 import { requireAdmin } from "@/lib/auth/session";
 import { pluralize } from "@/lib/plural";
 
@@ -20,11 +23,10 @@ type SectorsAdminProps = {
 export async function SectorsAdmin({ searchParams }: SectorsAdminProps) {
   await requireAdmin();
   const params = await searchParams;
-  const data = await listSectors(
-    db,
-    { page: parsePage(params.pagina) },
-    new Date(),
-  );
+  const [data, suggestedColor] = await Promise.all([
+    listSectors(db, { page: parsePage(params.pagina) }, new Date()),
+    suggestColorForNewSector(db),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,7 +41,7 @@ export async function SectorsAdmin({ searchParams }: SectorsAdminProps) {
           <CardTitle>Novo setor</CardTitle>
         </CardHeader>
         <CardContent>
-          <SectorCreateForm />
+          <SectorCreateForm suggestedColor={suggestedColor} />
         </CardContent>
       </Card>
 

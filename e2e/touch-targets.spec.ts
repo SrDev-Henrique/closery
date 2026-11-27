@@ -13,6 +13,7 @@ import {
   insertRequest,
   insertRequestItem,
   insertUser,
+  isolateFirstAccess,
   openE2eDb,
 } from "./db";
 import {
@@ -34,10 +35,14 @@ test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
 let pool: Pool;
 let db: Db;
+// Os `restore` do `isolateFirstAccess` (teste do Início do admin), desfeitos em
+// ordem inversa antes de fechar o pool: os specs seguintes acham o banco como antes.
+const restores: (() => Promise<void>)[] = [];
 test.beforeAll(() => {
   ({ pool, db } = openE2eDb());
 });
 test.afterAll(async () => {
+  for (const restore of restores.reverse()) await restore();
   await pool.end();
 });
 
@@ -127,6 +132,15 @@ test("operador: telas públicas e do operador, menu e diálogo têm alvos de toq
     itemId: world.stretch.id,
     quantity: 12,
   });
+  // Parada há 5 dias: entra em "Paradas há mais tempo" no Início (a linha
+  // inteira é um link esticado, que este guarda não mede pelo próprio link).
+  await insertRequest(db, {
+    sectorId: world.sector.id,
+    createdBy: caio.id,
+    destinationId: world.destination.id,
+    description: "Repor fita de amarração",
+    createdAt: ago(5 * 24 * 3_600_000),
+  });
   // Uma passagem entregue ontem, com contagem: sem ela o /dashboard mostra o
   // estado vazio e nem o link da última contagem nem o total do anel aparecem
   // (hoje fica livre: /passagens/nova abre o formulário do turno).
@@ -183,8 +197,31 @@ test("operador: telas públicas e do operador, menu e diálogo têm alvos de toq
     await expectTouchSized(page, path);
   }
 
+  // A linha da solicitação parada do Início é um link esticado (after:inset-0):
+  // o guarda ignora o link, então mede a linha.
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  const rowHeights = await page
+    .locator('[data-slot="open-request-row"]')
+    .evaluateAll((rows) =>
+      rows.map((row) => Math.round(row.getBoundingClientRect().height)),
+    );
+  expect(
+    rowHeights.length,
+    "o Início lista a solicitação parada",
+  ).toBeGreaterThan(0);
+  expect
+    .soft(
+      rowHeights.filter((height) => height < MIN),
+      "linhas de solicitação do Início",
+    )
+    .toEqual([]);
+
   await page.goto("/");
   await page.getByRole("button", { name: "Alternar menu" }).click();
+  await expect(
+    page.getByRole("button", { name: "Fechar menu", exact: true }),
+  ).toBeVisible();
   expect.soft(await smallTargets(page), "menu lateral").toEqual([]);
   await page.keyboard.press("Escape");
 
@@ -192,6 +229,26 @@ test("operador: telas públicas e do operador, menu e diálogo têm alvos de toq
   await page.getByRole("button", { name: "Nova solicitação" }).first().click();
   await expect(page.getByRole("dialog")).toBeVisible();
   expect.soft(await smallTargets(page), "diálogo Nova solicitação").toEqual([]);
+});
+
+test("admin: o Início com seletor de setor, convite, cartões e tema têm alvos de toque de 44px", async ({
+  page,
+}) => {
+  test.slow();
+  const world = await seedSector(db);
+  // Um segundo setor ativo: o seletor aparece com mais de uma opção.
+  await seedSector(db);
+  restores.push(await isolateFirstAccess(db));
+  await signUpAdmin(page, db, "Carla Teste");
+
+  // Primeiro acesso: o cartão "Convide sua equipe" (Gerar convites e Agora não)
+  // está na tela medida, junto do seletor e do switch de tema do cabeçalho.
+  await expectTouchSized(page, `/?setor=${world.sector.id}`);
+  await expect(
+    page.getByRole("heading", { name: "Convide sua equipe" }),
+  ).toBeVisible();
+  await expect(page.getByRole("radiogroup", { name: "Setor" })).toBeVisible();
+  await expect(page.getByRole("switch", { name: "Tema escuro" })).toBeVisible();
 });
 
 test("admin: telas de cadastro e o diálogo do link de nova senha têm alvos de toque de 44px", async ({

@@ -14,8 +14,8 @@
    saiu do normal aparece antes do que está normal.
 3. **Informação precisa.** Todo total ou contagem permite ver o detalhe (tooltip, popover ou
    link). Nenhum número opaco.
-4. **Confortável de ler e tocar.** Corpo `text-sm`+, botões `h-9`+; abaixo de `md`, alvo de toque
-   ≥ 44px.
+4. **Confortável de ler e tocar.** Corpo `text-sm`+, botões `h-9`+; abaixo de `md` (860px, §6),
+   alvo de toque ≥ 44px.
    - **Link solto** (sozinho numa linha ou célula, não dentro de uma frase): mantém a classe do desktop
      e ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center`; `max-md:min-w-11` quando o
      conteúdo é curto (um número) e `max-md:justify-end` quando ele se alinha à direita.
@@ -77,10 +77,57 @@ Toda tela/componente com dado trata:
 
 - Mobile-first: a passagem precisa funcionar bem no celular; o dashboard, bem no desktop.
 - Todo controle só com ícone tem `aria-label` **e** tooltip.
-- Foco visível; navegação por teclado nos formulários.
-- Nada depende só de cor — status tem texto ou ícone junto.
+- Foco visível; navegação por teclado nos formulários. Sobre os cartões coloridos, o foco é o
+  contorno sólido do §6.
+- Nada depende só de cor — status tem texto ou ícone junto (o texto sempre; o ícone sai só nas
+  linhas do cartão de Solicitações do Início, D-V5).
 
-## 6. Referência visual
+## 6. Visual: tema, formas e cor (desde 2026-11-27)
+
+Valores em `ui-tokens.md`; a decisão e os desvios no `architecture.md §10` (2026-11-27).
+
+- **Tema escuro é o padrão, com um switch para o claro.** O `ThemeSwitch` fica no cabeçalho; o tema
+  não segue o sistema e a escolha fica no navegador. Todo componente funciona nos dois temas. O visual
+  que depende do tema usa tokens ou as variantes `dark:`; o valor em JS (rótulo, `aria-checked`) vem
+  só do `useTheme()` (`library-docs.md §18`).
+- **Pílula.** Botões e selos são `rounded-full` no app inteiro. Os tamanhos do Início e do shell
+  (`pill`, 48px, e `icon-pill`, 44px, no `Button`; `md` no `Badge`) não têm a borda transparente de
+  1px da base, que muda o tamanho medido; os outros tamanhos ainda a têm. Os tamanhos grandes, os
+  cards de raio 32 e a tipografia display (Satoshi, `font-heading`) ficam no Início e no shell até
+  cada tela receber o handoff dela.
+- **"Celular" é abaixo de 860px** no app inteiro: o `md` do Tailwind (`53.75rem`) e o
+  `MOBILE_BREAKPOINT` da sidebar. A faixa de 768 a 859px é celular. Dentro do conteúdo do Início, os
+  cortes acima do celular são container queries da área útil (`@container/main`,
+  `library-docs.md §20`), nunca da janela; o celular continua no `max-md:`.
+- **Cartão de destaque (`Card variant="feature"`):** raio 32, padding 32 (22 no celular), sem borda,
+  sem ring e sem sombra; os cartões se separam pela cor. As cores dele são **fixas**, iguais nos dois
+  temas, e a tinta é sempre `--on-pastel` (e as `on-pastel-*`), com os botões `on-pastel` e
+  `on-pastel-secondary`.
+  - **Amarelo (`--highlight`) só para "precisa de atenção"**: hoje, só o "Passagem para confirmar".
+    Nenhum outro cartão, selo ou destaque usa o `--highlight` (o selo `warning`, de "Parada há N
+    dias", é âmbar e tem token próprio).
+  - Rosa (`--invite`) só para o "Convide sua equipe"; o cartão do turno usa a cor do setor. O
+    `--sector-pink` tem o mesmo valor do `--invite` (P108).
+- **A cor do setor vem de `sector.color`**, numa paleta fechada de 5 cores (lilás, pêssego, azul,
+  verde e rosa), escolhida na criação e editável na tela Setores. O mapa chave → token mora só em
+  `src/features/sectors/colors.ts`. Nunca derive a cor da ordem da lista nem a cicle (§4), e mostre
+  sempre o nome do setor ao lado da cor.
+- **Foco visível com contorno sólido sobre pastel.** O anel `ring-ring/50` some sobre os cartões
+  coloridos (1,06 a 1,9:1). Ali o foco é um contorno sólido de 2px na tinta `--on-pastel`, 2px para
+  fora: `focus-visible:outline-solid outline-2 outline-offset-2 outline-on-pastel`, com `ring-0!`.
+  Sem o `outline-solid`, o `outline-none` da base faz o contorno não aparecer. Foco, contraste e
+  tamanho se provam por estilo calculado no navegador (E2E com Tab), nunca só pela classe.
+- **Nunca `bg-muted` dentro de card** (nem `hover:bg-muted`, `aria-expanded:bg-muted` ou
+  `data-checked:bg-muted`). Na paleta nova, `--muted` tem o valor de `--card` e de `--popover`, e no
+  claro o fundo some. Use `accent` para hover e estado, e `primary` para o marcado. Os primitivos
+  ainda têm casos de hover (P83).
+- **Contraste medido sobre cada fundo real e em cada estado.** Texto ≥ 4,5:1 e indicador de estado
+  ≥ 3:1, sobre o fundo onde a peça realmente fica (página, card, popover, cada pastel) e em repouso e
+  hover, com o translúcido composto sobre a superfície. O guarda é `src/app/themeContrast.test.ts`.
+- **Valor fino é do protótipo.** Onde a spec e o protótipo divergem num padding, raio ou altura de
+  linha, vale o protótipo (por exemplo, `leading-[normal]` onde ele não declara `line-height`).
+
+## 7. Referência visual
 
 O **board de ocorrências do klauve** é a referência para a tela de solicitações (D6):
 `klauve/.context/ui-screens.md §8.1` (anatomia: cabeçalho com contagens do servidor + CTA,
@@ -90,10 +137,11 @@ sair da tela, lista agrupada por status no celular) e
 `klauve/apps/web/src/components/occurrences/` (implementação). Copie a **anatomia e as leis**, não
 o código: o klauve tem infraestrutura (oRPC, realtime, mídia) que este projeto não tem.
 
-## 7. Checklist do componente (Definition of Done)
+## 8. Checklist do componente (Definition of Done)
 
 - [ ] Consultou o `ui-registry.md` — não duplica nada existente.
-- [ ] Só tokens; funciona em claro **e** escuro.
+- [ ] Só tokens; funciona em claro **e** escuro (o escuro é o padrão).
+- [ ] Nenhum `bg-muted` dentro de card; contraste e foco medidos sobre o fundo real (§6).
 - [ ] Estados carregando / vazio / erro tratados.
 - [ ] Formulário segue §2 (escolha, nunca em branco, 16px, rótulo de resultado).
 - [ ] Alvos de toque ≥ 44px no celular; ícone-só com tooltip.

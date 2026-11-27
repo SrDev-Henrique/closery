@@ -1,8 +1,11 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { redirect } from "next/navigation";
 import { Component, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { ALL_SECTORS } from "@/features/handovers/limits";
+import { SECTOR_COLOR_BG } from "@/features/sectors/colors";
 
 import { SectorPicker } from "./SectorPicker";
 
@@ -16,8 +19,31 @@ vi.mock("@/app/(app)/actions", () => ({
 }));
 vi.mock("sonner", () => ({ toast: { error: mocks.toastError } }));
 
-const ULD = { id: "11111111-1111-4111-8111-111111111111", name: "ULD" };
-const CARGA = { id: "22222222-2222-4222-8222-222222222222", name: "Carga" };
+const ULD = {
+  id: "11111111-1111-4111-8111-111111111111",
+  name: "ULD",
+  color: "lilac",
+} as const;
+const CARGA = {
+  id: "22222222-2222-4222-8222-222222222222",
+  name: "Carga",
+  color: "peach",
+} as const;
+const OPERACOES = {
+  id: "33333333-3333-4333-8333-333333333333",
+  name: "Operações",
+  color: "sky",
+} as const;
+const ECO = {
+  id: "44444444-4444-4444-8444-444444444444",
+  name: "Eco",
+  color: "green",
+} as const;
+const GELO = {
+  id: "55555555-5555-4555-8555-555555555555",
+  name: "Gelo",
+  color: "pink",
+} as const;
 
 class Catcher extends Component<{ children: ReactNode }, { error: unknown }> {
   state: { error: unknown } = { error: null };
@@ -27,6 +53,10 @@ class Catcher extends Component<{ children: ReactNode }, { error: unknown }> {
   render() {
     return this.state.error ? <p>capturado</p> : this.props.children;
   }
+}
+
+function radio(name: string) {
+  return screen.getByRole("radio", { name });
 }
 
 describe("SectorPicker", () => {
@@ -39,20 +69,61 @@ describe("SectorPicker", () => {
     mocks.toastError.mockReset();
   });
 
-  it("um botão por setor, o selecionado com aria-pressed", () => {
+  it("é um radiogroup 'Setor' com um radio por setor, o selecionado com aria-checked", () => {
     render(
       <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
     );
 
-    expect(screen.getByRole("group", { name: "Setor" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "ULD" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
+    const group = screen.getByRole("radiogroup", { name: "Setor" });
+    expect(within(group).getAllByRole("radio")).toHaveLength(2);
+    expect(radio("ULD")).toHaveAttribute("aria-checked", "true");
+    expect(radio("Carga")).toHaveAttribute("aria-checked", "false");
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("cada setor leva a bolinha na cor dele, o thumb fica no índice do selecionado", () => {
+    render(
+      <SectorPicker
+        sectors={[ULD, CARGA, OPERACOES]}
+        selectedId={CARGA.id}
+        path="/"
+      />,
     );
-    expect(screen.getByRole("button", { name: "Carga" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
+
+    for (const [name, color] of [
+      ["ULD", ULD.color],
+      ["Carga", CARGA.color],
+      ["Operações", OPERACOES.color],
+    ] as const) {
+      const dot = radio(name).querySelector("[data-sector-dot]");
+      expect(dot).not.toBeNull();
+      for (const token of SECTOR_COLOR_BG[color].split(" ")) {
+        expect(dot).toHaveClass(token);
+      }
+    }
+    const thumb = document.querySelector<HTMLElement>(
+      "[data-slot=sector-picker-thumb]",
     );
+    expect(thumb).not.toBeNull();
+    expect(thumb?.style.getPropertyValue("--i")).toBe("1");
+    expect(thumb).not.toHaveClass("opacity-0");
+    expect(
+      screen
+        .getByRole("radiogroup", { name: "Setor" })
+        .style.getPropertyValue("--n"),
+    ).toBe("3");
+  });
+
+  it("o thumb desliza sem animação para quem pede menos movimento", () => {
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    const thumb = document.querySelector("[data-slot=sector-picker-thumb]");
+    expect(thumb).toHaveClass("motion-reduce:transition-none");
+    expect(thumb).toHaveClass("transition-[left]");
+    // A sombra é o token da Task 1, nunca rgba() no .tsx.
+    expect(thumb).toHaveClass("shadow-thumb", "bg-thumb");
   });
 
   it("clicar em outro setor chama a action com setor e caminho", async () => {
@@ -65,7 +136,7 @@ describe("SectorPicker", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+    await userEvent.click(radio("Carga"));
 
     expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
       sectorId: CARGA.id,
@@ -84,7 +155,7 @@ describe("SectorPicker", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+    await userEvent.click(radio("Carga"));
 
     expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
       sectorId: CARGA.id,
@@ -104,7 +175,7 @@ describe("SectorPicker", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+    await userEvent.click(radio("Carga"));
 
     expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
       sectorId: CARGA.id,
@@ -118,12 +189,71 @@ describe("SectorPicker", () => {
       <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "ULD" }));
+    await userEvent.click(radio("ULD"));
 
     expect(mocks.chooseSectorAction).not.toHaveBeenCalled();
   });
 
-  it("falha da action vira toast com a mensagem", async () => {
+  it("as setas do teclado trocam de setor (radio nativo)", async () => {
+    mocks.chooseSectorAction.mockResolvedValue({ ok: true });
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    await userEvent.tab();
+    expect(radio("ULD")).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}");
+
+    await waitFor(() =>
+      expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
+        sectorId: CARGA.id,
+        path: "/",
+      }),
+    );
+  });
+
+  it("durante a troca o thumb já vai ao setor novo, o grupo fica desativado e os segmentos mais claros", async () => {
+    let finish: (value: { ok: true }) => void = () => {};
+    mocks.chooseSectorAction.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve;
+        }),
+    );
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    await userEvent.click(radio("Carga"));
+
+    await waitFor(() =>
+      expect(radio("Carga")).toHaveAttribute("aria-checked", "true"),
+    );
+    expect(screen.getByRole("radiogroup", { name: "Setor" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(radio("ULD")).toHaveClass("opacity-60");
+    expect(radio("Carga")).toHaveClass("opacity-60");
+    expect(
+      document
+        .querySelector<HTMLElement>("[data-slot=sector-picker-thumb]")
+        ?.style.getPropertyValue("--i"),
+    ).toBe("1");
+
+    // Pendente: outro clique não chama a action de novo.
+    await userEvent.click(radio("ULD"));
+    expect(mocks.chooseSectorAction).toHaveBeenCalledTimes(1);
+
+    finish({ ok: true });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("radiogroup", { name: "Setor" }),
+      ).not.toHaveAttribute("aria-disabled"),
+    );
+  });
+
+  it("falha da action vira toast com a mensagem e o thumb volta ao setor de antes", async () => {
     mocks.chooseSectorAction.mockResolvedValue({
       ok: false,
       code: "SECTOR_INACTIVE",
@@ -134,13 +264,17 @@ describe("SectorPicker", () => {
       <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+    await userEvent.click(radio("Carga"));
 
     await waitFor(() =>
       expect(mocks.toastError).toHaveBeenCalledWith(
         "Este setor está inativo. Peça a um administrador para reativá-lo.",
       ),
     );
+    await waitFor(() =>
+      expect(radio("ULD")).toHaveAttribute("aria-checked", "true"),
+    );
+    expect(radio("Carga")).toHaveAttribute("aria-checked", "false");
   });
 
   it("exceção de rede vira o toast genérico", async () => {
@@ -149,7 +283,7 @@ describe("SectorPicker", () => {
       <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+    await userEvent.click(radio("Carga"));
 
     await waitFor(() =>
       expect(mocks.toastError).toHaveBeenCalledWith(
@@ -169,13 +303,13 @@ describe("SectorPicker", () => {
       </Catcher>,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Carga" }));
+    await userEvent.click(radio("Carga"));
 
     expect(await screen.findByText("capturado")).toBeInTheDocument();
     expect(mocks.toastError).not.toHaveBeenCalled();
   });
 
-  it("allowAll acrescenta 'Todos os setores'", async () => {
+  it("allowAll acrescenta 'Todos os setores', sem bolinha, e escolher um setor chama a action", async () => {
     mocks.chooseSectorAction.mockResolvedValue({ ok: true });
     render(
       <SectorPicker
@@ -186,14 +320,292 @@ describe("SectorPicker", () => {
       />,
     );
 
+    expect(radio("Todos os setores")).toHaveAttribute("aria-checked", "true");
     expect(
-      screen.getByRole("button", { name: "Todos os setores" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      radio("Todos os setores").querySelector("[data-sector-dot]"),
+    ).toBeNull();
+    expect(radio("ULD").querySelector("[data-sector-dot]")).not.toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "ULD" }));
+    await userEvent.click(radio("ULD"));
     expect(mocks.chooseSectorAction).toHaveBeenCalledWith({
       sectorId: ULD.id,
       path: "/passagens",
+    });
+  });
+
+  it("allowAll com lista vazia deixa só 'Todos os setores'", () => {
+    render(
+      <SectorPicker
+        sectors={[]}
+        selectedId="todos"
+        path="/passagens"
+        allowAll
+      />,
+    );
+
+    expect(screen.getAllByRole("radio")).toHaveLength(1);
+    expect(radio("Todos os setores")).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("o texto visível do 'Todos os setores' é 'Todos', o nome acessível segue inteiro", () => {
+    render(
+      <SectorPicker
+        sectors={[ULD]}
+        selectedId="todos"
+        path="/passagens"
+        allowAll
+      />,
+    );
+
+    const item = radio("Todos os setores");
+    expect(item).toHaveAttribute("aria-label", "Todos os setores");
+    expect(within(item).getByText("Todos")).toBeInTheDocument();
+    expect(item).not.toHaveTextContent("Todos os setores");
+  });
+
+  it("o nome truncado ganha title com o nome inteiro", () => {
+    render(
+      <SectorPicker
+        sectors={[ULD, OPERACOES]}
+        selectedId={ULD.id}
+        path="/"
+        allowAll
+      />,
+    );
+    expect(
+      within(radio("Operações")).getByTitle("Operações"),
+    ).toBeInTheDocument();
+    expect(
+      within(radio("Todos os setores")).getByTitle("Todos os setores"),
+    ).toBeInTheDocument();
+  });
+
+  describe("rolagem do trilho", () => {
+    // Descritores trocados nos testes, guardados e devolvidos a cada teste.
+    const patched = [
+      [HTMLElement.prototype, "scrollWidth"],
+      [HTMLElement.prototype, "clientWidth"],
+      [Element.prototype, "scrollLeft"],
+      [Element.prototype, "scrollTo"],
+      [Element.prototype, "scrollIntoView"],
+      [Element.prototype, "getBoundingClientRect"],
+    ] as const;
+    const saved = new Map<string, PropertyDescriptor | undefined>();
+    let windowScrolls: ReturnType<typeof vi.spyOn>[] = [];
+
+    beforeEach(() => {
+      for (const [target, key] of patched) {
+        saved.set(key, Object.getOwnPropertyDescriptor(target, key));
+      }
+      // A janela nunca rola: espiões em todas as formas de rolar a janela.
+      windowScrolls = (["scrollTo", "scroll", "scrollBy"] as const).map((key) =>
+        vi.spyOn(window, key).mockImplementation(() => {}),
+      );
+    });
+
+    afterEach(() => {
+      for (const [target, key] of patched) {
+        const descriptor = saved.get(key);
+        if (descriptor) Object.defineProperty(target, key, descriptor);
+        else Reflect.deleteProperty(target, key);
+      }
+      saved.clear();
+      vi.unstubAllGlobals();
+      // `unstubAllGlobals` não desfaz `spyOn`: restaura os espiões da janela.
+      for (const spy of windowScrolls) spy.mockRestore();
+      windowScrolls = [];
+    });
+
+    function overflow(scroll: number, client: number) {
+      Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
+        configurable: true,
+        get: () => scroll,
+      });
+      Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+        configurable: true,
+        get: () => client,
+      });
+    }
+
+    // Geometria do trilho (o jsdom devolve zeros): o trilho começa em
+    // `railLeft` na tela, já rolado `scrollLeft`, e cada opção tem `segment`
+    // de largura, uma depois da outra.
+    function layout({
+      railLeft,
+      scrollLeft,
+      segment,
+    }: {
+      railLeft: number;
+      scrollLeft: number;
+      segment: number;
+    }) {
+      const rect = (left: number, width: number) =>
+        ({
+          left,
+          width,
+          x: left,
+          right: left + width,
+          top: 0,
+          y: 0,
+          bottom: 48,
+          height: 48,
+          toJSON: () => ({}),
+        }) as DOMRect;
+      Object.defineProperty(Element.prototype, "scrollLeft", {
+        configurable: true,
+        get: () => scrollLeft,
+        set: () => {},
+      });
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        const role = this.getAttribute("role");
+        if (role === "radiogroup") return rect(railLeft, 400);
+        if (role === "radio") {
+          const radios = [
+            ...(this.parentElement?.querySelectorAll('[role="radio"]') ?? []),
+          ];
+          return rect(
+            railLeft + radios.indexOf(this) * segment - scrollLeft,
+            segment,
+          );
+        }
+        return rect(0, 0);
+      };
+    }
+
+    // O Base UI também chama `scrollTo` no próprio grupo ao montar, sempre com
+    // `top` (`scrollIntoViewIfNeeded`); as chamadas do seletor só levam `left`.
+    function ours(spy: ReturnType<typeof vi.fn>) {
+      return spy.mock.calls.flatMap(([options], index) =>
+        typeof options === "object" && options !== null && !("top" in options)
+          ? [{ options, context: spy.mock.contexts[index] }]
+          : [],
+      );
+    }
+
+    function spies() {
+      const scrollTo = vi.fn();
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollTo = scrollTo;
+      Element.prototype.scrollIntoView = scrollIntoView;
+      return { scrollTo, scrollIntoView };
+    }
+
+    function expectWindowUntouched() {
+      for (const spy of windowScrolls) expect(spy).not.toHaveBeenCalled();
+    }
+
+    it("rola só o trilho, centralizando a opção marcada, ao montar e a cada troca, sem tocar a janela", () => {
+      overflow(1000, 400);
+      layout({ railLeft: 10, scrollLeft: 50, segment: 104 });
+      const { scrollTo, scrollIntoView } = spies();
+      const sectors = [ULD, CARGA, OPERACOES, ECO, GELO];
+      const { rerender } = render(
+        <SectorPicker
+          sectors={sectors}
+          selectedId={GELO.id}
+          path="/"
+          allowAll
+        />,
+      );
+
+      const group = screen.getByRole("radiogroup", { name: "Setor" });
+      // Gelo é a 5ª opção (começa em 416px do trilho): o centro dela (468)
+      // fica no centro dos 400px visíveis, 468 − 200 = 268.
+      expect(ours(scrollTo)).toEqual([
+        { options: { left: 268, behavior: "smooth" }, context: group },
+      ]);
+
+      // "Todos" é a 6ª (520px): 572 − 200 = 372.
+      rerender(
+        <SectorPicker
+          sectors={sectors}
+          selectedId={ALL_SECTORS}
+          path="/"
+          allowAll
+        />,
+      );
+      // ULD é a 1ª: o centro (52) pediria −148, e a rolagem não passa de 0.
+      rerender(
+        <SectorPicker
+          sectors={sectors}
+          selectedId={ULD.id}
+          path="/"
+          allowAll
+        />,
+      );
+      expect(ours(scrollTo).map(({ options }) => options)).toEqual([
+        { left: 268, behavior: "smooth" },
+        { left: 372, behavior: "smooth" },
+        { left: 0, behavior: "smooth" },
+      ]);
+      for (const call of ours(scrollTo)) expect(call.context).toBe(group);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+      expectWindowUntouched();
+    });
+
+    it("para quem pede menos movimento a rolagem do seletor não é suave", () => {
+      overflow(1000, 400);
+      layout({ railLeft: 10, scrollLeft: 0, segment: 104 });
+      const { scrollTo } = spies();
+      const matchMedia = vi.fn((query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+      }));
+      vi.stubGlobal("matchMedia", matchMedia);
+      render(
+        <SectorPicker
+          sectors={[ULD, CARGA, OPERACOES, ECO]}
+          selectedId={ECO.id}
+          path="/"
+          allowAll
+        />,
+      );
+
+      expect(matchMedia).toHaveBeenCalledWith(
+        "(prefers-reduced-motion: reduce)",
+      );
+      // Só a chamada do seletor (sem `top`): a do Base UI é sempre `auto` e
+      // passaria mesmo que o seletor ignorasse a preferência.
+      // Eco é a 4ª (312px): 364 − 200 = 164.
+      expect(ours(scrollTo).map(({ options }) => options)).toEqual([
+        { left: 164, behavior: "auto" },
+      ]);
+      expectWindowUntouched();
+    });
+
+    it("sem transbordo (o trilho cabe) não rola", () => {
+      overflow(400, 400);
+      const { scrollTo } = spies();
+      render(
+        <SectorPicker
+          sectors={[ULD, CARGA, OPERACOES, ECO, GELO]}
+          selectedId={GELO.id}
+          path="/"
+        />,
+      );
+      expect(ours(scrollTo)).toHaveLength(0);
+    });
+
+    it("até 4 opções não há rolagem para acompanhar", () => {
+      overflow(1000, 400);
+      const { scrollTo } = spies();
+      render(
+        <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+      );
+      expect(ours(scrollTo)).toHaveLength(0);
+    });
+
+    it("sem a API de rolagem (jsdom puro) não quebra", () => {
+      overflow(1000, 400);
+      Reflect.deleteProperty(Element.prototype, "scrollTo");
+      expect(() =>
+        render(
+          <SectorPicker
+            sectors={[ULD, CARGA, OPERACOES, ECO, GELO]}
+            selectedId={GELO.id}
+            path="/"
+          />,
+        ),
+      ).not.toThrow();
     });
   });
 
@@ -201,7 +613,82 @@ describe("SectorPicker", () => {
     render(<SectorPicker sectors={[ULD]} selectedId={ULD.id} path="/" />);
 
     expect(
-      screen.queryByRole("button", { name: "Todos os setores" }),
+      screen.queryByRole("radio", { name: "Todos os setores" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("selecionado fora da lista: nenhum radio marcado e o thumb escondido", () => {
+    render(<SectorPicker sectors={[ULD, CARGA]} selectedId="outro" path="/" />);
+
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).toHaveAttribute("aria-checked", "false");
+    }
+    expect(
+      document.querySelector("[data-slot=sector-picker-thumb]"),
+    ).toHaveClass("opacity-0");
+  });
+
+  it("mais de 4 opções: o trilho rola e cada segmento tem largura mínima", () => {
+    render(
+      <SectorPicker
+        sectors={[ULD, CARGA, OPERACOES, ECO, GELO]}
+        selectedId={GELO.id}
+        path="/"
+        allowAll
+      />,
+    );
+
+    const group = screen.getByRole("radiogroup", { name: "Setor" });
+    expect(group).toHaveClass("overflow-x-auto");
+    expect(group.style.getPropertyValue("--n")).toBe("6");
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).toHaveClass("min-w-[6.5rem]");
+    }
+    expect(
+      document
+        .querySelector<HTMLElement>("[data-slot=sector-picker-thumb]")
+        ?.style.getPropertyValue("--i"),
+    ).toBe("4");
+  });
+
+  it("até 4 opções os segmentos dividem o trilho sem largura mínima (no celular cabem nos 100%, sem rolar), como no protótipo", () => {
+    render(
+      <SectorPicker
+        sectors={[CARGA, ECO, OPERACOES, ULD]}
+        selectedId={ULD.id}
+        path="/"
+      />,
+    );
+
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).not.toHaveClass("min-w-[6.5rem]");
+      expect(item).toHaveClass("min-w-0", "flex-1");
+    }
+    const inner = document.querySelector("[data-slot=sector-picker-thumb]")
+      ?.parentElement as HTMLElement;
+    expect(inner).not.toHaveClass("min-w-[max(100%,calc(var(--n)*6.5rem))]");
+  });
+
+  it("nome longo trunca com reticências, o nome inteiro fica no aria-label", () => {
+    const longo = {
+      id: "66666666-6666-4666-8666-666666666666",
+      name: "Recebimento e conferência de carga especial",
+      color: "green",
+    } as const;
+    render(<SectorPicker sectors={[longo]} selectedId={longo.id} path="/" />);
+
+    const item = radio(longo.name);
+    expect(item).toHaveAttribute("aria-label", longo.name);
+    expect(within(item).getByText(longo.name)).toHaveClass("truncate");
+  });
+
+  it("alvo de toque: 44px abaixo de 860px (guarda de 44px), 40px da spec acima", () => {
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).toHaveClass("max-md:h-11");
+    }
   });
 });

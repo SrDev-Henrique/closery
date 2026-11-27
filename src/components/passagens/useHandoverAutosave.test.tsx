@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type AdminResult, fail, ok } from "@/features/admin/result";
 import type { SavedField } from "@/features/handovers/draft";
-import type { SaveFieldInput } from "@/features/handovers/types";
+import type { SavedMark, SaveFieldInput } from "@/features/handovers/types";
 import { spDate } from "../../../test/clock";
 import { useHandoverAutosave } from "./useHandoverAutosave";
 
@@ -20,7 +20,7 @@ type Deferred = { resolve: (result: AdminResult<SavedField>) => void };
 
 // Cada chamada da action fica pendente até o teste resolver: dá para provar a
 // fila serial e a ordem.
-function setup(initial: { at: Date; byName: string } | null = null) {
+function setup(initial: SavedMark | null = null) {
   const calls: SaveFieldInput[] = [];
   const pending: Deferred[] = [];
   const save = vi.fn((input: SaveFieldInput) => {
@@ -40,6 +40,7 @@ const saved = (hour = "10:00") =>
     handoverId: "h1",
     savedAt: spDate("2026-11-20", hour),
     savedByName: "Ana Teste",
+    savedById: "u-ana",
   });
 
 const quantity = (itemId: string, value: number) =>
@@ -72,7 +73,11 @@ describe("useHandoverAutosave", () => {
   });
 
   it("começa parado, com o último salvamento vindo do servidor", () => {
-    const initial = { at: spDate("2026-11-20", "09:00"), byName: "Bia Teste" };
+    const initial = {
+      at: spDate("2026-11-20", "09:00"),
+      byName: "Bia Teste",
+      byId: "u-bia",
+    };
     const { result } = setup(initial);
 
     expect(result.current.status).toEqual({ kind: "idle" });
@@ -107,6 +112,7 @@ describe("useHandoverAutosave", () => {
     expect(result.current.lastSaved).toEqual({
       at: spDate("2026-11-20", "10:00"),
       byName: "Ana Teste",
+      byId: "u-ana",
     });
     expect(result.current.hasUnsaved).toBe(false);
   });

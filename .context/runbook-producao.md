@@ -129,6 +129,14 @@ organização (fora do Brasil, como diz `/privacidade`).
 Nunca no build nem no CI. O `drizzle-kit` não tem trava de host: a trava é conferir o host impresso
 pelo `db:hosts` antes do `db:migrate`.
 
+**Ordem com o visual novo:** a migração `0005_cor_do_setor` (a coluna `sector.color`, `NOT NULL` com
+o check `sector_color_valid`) é aplicada **antes** do deploy do código que lê `sector.color` (B5).
+Código novo num banco sem a coluna dá erro em toda tela que lê setor (`column "color" does not
+exist`). Código antigo num banco com a coluna só falha ao criar setor (a coluna não tem valor
+padrão). No go-live, a ordem B4 → B5 já garante isso. Se a `0005` um dia chegar a um banco que já
+está no ar, aplique-a fora do horário da passagem e só então faça o deploy. No dev, rode o
+`db:migrate` antes de subir o `bun run dev`.
+
 1. **Dono**, no console do Neon: uma branch de segurança a partir da `main` do projeto novo.
 2. **Dono** abre um Git Bash novo, na pasta do repositório, **fora da sessão do agente**, e cola a
    URL **direta** (não imprime nada):
@@ -149,7 +157,8 @@ bun run db:migrate
 ```
 
 5. No SQL Editor do Neon (projeto de produção): `select count(*) from drizzle.__drizzle_migrations;`
-   deve dar **5**.
+   deve dar **6** (da `0000` à `0005`, com a cor do setor do visual novo). Se a branch do visual novo
+   ainda não estiver na `main`, são **5**.
 6. `exit` (a URL some com o shell).
 
 ### B5. Vercel
@@ -168,6 +177,10 @@ bun run db:migrate
    Sensitive como na tabela) e **[confirma]** o redeploy.
 3. Deployment Protection no padrão.
 4. **[confirma]** o deploy com as quatro variáveis, com o Dono olhando o painel.
+
+**Todo build e todo redeploy baixam a Satoshi do Fontshare** no `prebuild` (`api.fontshare.com` e
+`cdn.fontshare.com`) e conferem o SHA-256 de cada peso; a Vercel não guarda a fonte entre builds. Se
+o log do build mostrar `Não consegui preparar a fonte Satoshi`, siga "Se algo der errado no meio".
 
 ### B6. O domínio de produção é o `BETTER_AUTH_URL`
 
@@ -333,6 +346,11 @@ fora do horário da passagem (gasta CU-h).
 
 **[confirma]** em cada um:
 
+Cada redeploy daqui baixa a Satoshi do Fontshare de novo e confere o SHA-256 (B5): com o Fontshare
+fora, o redeploy falha e a rotação não se completa. Na rotação da senha do Neon, que derruba as
+conexões até o redeploy terminar, confira antes que o Fontshare responde (ver "Se algo der errado no
+meio").
+
 - `BETTER_AUTH_SECRET`: valor novo na Vercel + redeploy (desloga todos; senhas e passkeys não
   dependem dele).
 - Senha do Neon: reset no console, atualizar `DATABASE_URL_POOLED` na Vercel, redeploy. Conexões
@@ -372,3 +390,19 @@ go/no-go. **Controlador:** registra cada achado em `.context/pendencias.md` como
   `Nova senha` na própria linha, entre com a senha nova, remova de novo **todas** as passkeys, crie
   a sua e confira que aparece só uma.
 - Suspeita de segredo exposto: B17 e, se for a URL do banco, resetar a senha no Neon primeiro.
+- O build ou o redeploy falha com `Não consegui preparar a fonte Satoshi`. O deploy que já está no
+  ar continua servindo (a fonte vai dentro do build dele). Leia o resto da linha:
+  - **Rede** (`sem resposta de …` ou `… respondeu 5xx`): o Fontshare está fora ou lento. Espere e
+    **[confirma]** o redeploy de novo. Para saber se ele voltou, no Git Bash do Dono:
+    `curl -gsI "https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap"` deve
+    responder `200`. Na rotação da senha do Neon (B17), faça essa conferência **antes** do reset:
+    com o Fontshare fora, o app fica sem banco até o build passar.
+  - **SHA-256** (`o arquivo do peso … veio com SHA-256 … e o esperado é …`): o Fontshare trocou o
+    arquivo. **Não aceite** e não troque o hash no meio do incidente: siga "Mudou o hash?" em
+    `.context/library-docs.md §17` (conferir a licença da versão nova e atualizar `SATOSHI_SHA256`
+    num commit só dele, com PR e CI verde). Até lá, não há deploy novo; a saída definitiva é o
+    espelho privado da P102.
+  - **Formato** (`… respondeu 404`, `a Fontshare não devolveu o peso …`, `nenhum @font-face na
+    resposta da Fontshare`, `sem woff2 no peso …` ou `URL de fonte inesperada: …`): o Fontshare
+    mudou o endereço ou o formato da resposta, e esperar não resolve. Como no SHA-256, não há
+    deploy novo até o `scripts/fontsCheck.mjs` ser ajustado num PR com CI verde (P102).

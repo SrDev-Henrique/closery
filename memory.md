@@ -1,8 +1,46 @@
-# Memory — Fases 0 a 5 concluídas e o código da Fase 6 pronto; o que falta é o go-live
+# Memory — Fases 0 a 6 (código) prontas; o visual novo do Início espera o portão e o PR; o go-live continua pendente
 
-Last updated: 2026-11-26 (UTC-3)
+Last updated: 2026-11-27 (UTC-3)
 
 ---
+
+## Estado para a próxima sessão (2026-11-27)
+
+- **Branch `feat/visual-inicio`: pronta para o PR depois do portão.** Ela traz o visual novo do Início e do shell
+  (spec `docs/superpowers/specs/2026-11-27-visual-inicio-design.md`, plano `docs/superpowers/plans/2026-11-27-visual-inicio.md`,
+  Tasks 1 a 18): a paleta e o tema escuro padrão no app inteiro, a Satoshi baixada no build, a cor do setor (migração
+  `0005_cor_do_setor`), o seletor de setor deslizante, os avatares DiceBear, o shell, o Início e o pack de correção do cartão
+  "Passagem do meu turno". Revisões feitas: a final em 3 lentes, a re-revisão em 3 lentes e a revisão do delta em 2 lentes, sem
+  Critical e sem Important aberto. Documentos feitos: ADR (`architecture.md §10`, 2026-11-27), `ui-rules.md §6`,
+  `library-docs.md` (§3 e §17 a §20), runbook, pendências P81 a P108 (P17 resolvida, P67 e P70 com `Atualização`) e o
+  `progress-tracker.md`. A migração `0005` já está no banco de dev (2026-11-27), com o host conferido pelo `bun run db:hosts`
+  antes do `db:migrate`.
+- **O que falta nesta branch:** o portão (Vitest em partes, `build` e `test:e2e`; os totais entram na linha "Verificado" do ADR
+  e na linha "Testes" da seção do visual no `progress-tracker.md`); depois o PR e o merge pelo dono.
+- **A fila do roteiro, depois do merge:** `.git/sdd/roadmap/roteiro.md` (fora do git) tem a ordem das próximas branches, uma por
+  vez e cada uma criada da `main` atualizada: **B** processo (o 404 do `next dev`, P81; as ferramentas visuais permanentes; a
+  skill do processo; os guardas de hidratação e de `bg-muted`), **C** Passagens, **D** Passagem de turno (começa pelo item 5 do
+  pack, o `HandoverDetail`), **E** Solicitações (a tela), **F** detalhe da solicitação (o preview do #4 junto com o #5) e **G**
+  Dashboard. O ledger da branch (`progress.md` na pasta dela) manda sobre o roteiro: confira antes de executar um passo dele.
+- **Decisões esperando o dono:** o lote 0 do roteiro (§4.8, a mensagem pronta para colar: T2 a T20 e as decisões por handoff),
+  mais as das pendências novas: P85 (contraste do seletor no claro), P86 (setas do seletor), P99 (avatar com "outra pessoa"),
+  P100 (o bloco verde no setor Eco) e P108 (o setor rosa com a mesma cor do cartão de convite).
+- **Antes de planejar D, E e F:** os mapas do roteiro (`.git/sdd/roadmap/map-passagem-de-turno.md`,
+  `map-solicitacao-completa.md` e `map-solicitacoes.md`) ainda citam o `--destructive` antigo (`#d60000` e `#ff8a8a`); o valor
+  atual é `#b80000` no claro e `#ff9393` no escuro (P107).
+- **A lição das ferramentas (`.git/sdd/visual/tools`, fora do git):** a verificação visual desta branch está toda lá e serve às
+  próximas: o banco PGlite em disco (`start-db-pixel.ts`, porta 54332), o ambiente do app (`env-pixel.sh`, porta 3202), o seed
+  com nomes fictícios (`seed.ts`, `signup.mjs`, `avatars.ts`), a cópia do protótipo com nomes trocados (`mkproto*.mjs`) e a
+  captura e a diferença (`run*.mjs`, `capture.mjs`, `diff.mjs`, `measure.mjs`, `probe*.mjs`, `sbs*.mjs`, `interact.mjs`,
+  `screens.mjs`). O que ela ensinou:
+  - compare contra o **protótipo renderizado** no Chromium, não contra as screenshots;
+  - rode o app em **build de produção** (`next start`): no `next dev` as páginas fora de `(app)` dão 404 (P81) e a página
+    recompila a cada requisição;
+  - **foco, contraste e tamanho se provam por estilo calculado** no navegador, nunca pela string da classe: a primeira correção
+    do foco (F1) passou nos testes de classe e não desenhava nada;
+  - meça o contraste sobre **cada fundo real e cada estado** (o botão destrutivo estava medido só sobre o card);
+  - nunca a porta 3000 e nunca nome real: os protótipos têm nome e e-mail que parecem de pessoa real, e nada disso entra no git.
+  O PR B do roteiro planeja tornar essas ferramentas permanentes em `scripts/visual/`.
 
 ## Onde o projeto está
 
@@ -54,12 +92,28 @@ aprovar) e `bun run smoke <url>`. **Nada foi para produção:** o go-live (Neon 
 administrador, convites) é o passo a passo de `.context/runbook-producao.md`, conduzido com o dono, com confirmação dele
 em cada passo voltado para fora. Plano executado em `docs/superpowers/plans/2026-11-25-fase-6-producao.md`.
 
+**Visual novo do Início e do shell (2026-11-27, ainda na branch `feat/visual-inicio`).** O tema escuro é o padrão, com um switch
+para o claro, e a paleta nova vale para todas as telas; só o Início e o shell mudaram de layout. O Início mostra a saudação com a
+data, o seletor de setor deslizante (admin), "Passagem para confirmar" (amarelo: só o que precisa de atenção), "Convide sua equipe"
+(primeiro acesso do admin), "Passagem do meu turno" na cor do setor (`sector.color`) e "Solicitações". As outras telas seguem no
+layout antigo até os handoffs delas (fila do roteiro e P82).
+
 O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`,
 18 decisões em `.context/build-plan.md §5`) e o plano executado em
 `docs/superpowers/plans/2026-11-20-fase-0-1-fundacao-e-acesso.md`.
 
 ## O que está esperando
 
+- **Visual novo:** o portão, o PR e o merge da `feat/visual-inicio` (ver "Estado para a próxima sessão").
+- **P81–P108 (visual novo):** o `next dev` dá 404 fora de `(app)` (P81); telas sem desenho novo (P82); `bg-muted` some dentro de
+  card (P83); borda dos campos no claro (P84); contraste do seletor no claro (P85); setas do seletor (P86); crossfade e transição de
+  tema não conferidos (P87); cor na lista de Setores (P88); "Agora não" sem retorno (P89); foco fraco e borda de erro (P90); variantes
+  `destructive` fora do guarda (P91); peso dos avatares (P92); `ª`/`º` na Satoshi (P93); id de quem salvou no navegador (P94);
+  `global-error` sem tema (P95); 6 contagens no Início do admin (P96); `uiRegistryDoc` sem `app-shell` (P97); `rawColors` sem `.ts`
+  (P98); avatar com "outra pessoa" (P99); o bloco verde no setor Eco (P100); tema no Strict Mode do dev (P101); build dependente do
+  Fontshare (P102); a prova da borda da amostra (P103); `suggestColorForNewSector` em JS (P104); higiene de testes (P105); sobras de
+  código (P106); os mapas do roteiro com o `--destructive` antigo (P107); o setor rosa com a cor do cartão de convite (P108).
+  Próximo id livre: P109.
 - **Go-live da Fase 6 (Parte B):** seguir `.context/runbook-producao.md` com o dono (B0 a B18). O deploy ainda não foi feito;
   nada é publicado sem o "sim" explícito do dono naquele momento. Sem a aprovação da empresa para `/privacidade` (P64)
   ninguém é convidado.
@@ -67,7 +121,7 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
   Free (P65); passkeys presas ao `*.vercel.app` (P66); aba fechada com salvamento na fila (P67); Sentry sem source maps (P68);
   `scrubEvent` só limpa padrões conhecidos (P69); toque só medido no Chromium (P70); sem manifest (P71); tempo de preenchimento
   sem medição (P72); suíte lenta (P73); `admin:invite` sem contagem de administradores (P74); o Next imprime o erro não tratado
-  inteiro (P75); o link de nova senha não deixa registro de quem gerou (P76); a redefinição e a desativação não apagam passkeys (P77); `createPasswordResetLink` não é atômico (P78); o React Compiler desiste do `SignInPanel` (P79); nenhum guarda impede um script de importar `logServerError` ou `@sentry/*` (P80). Próximo id livre: P81.
+  inteiro (P75); o link de nova senha não deixa registro de quem gerou (P76); a redefinição e a desativação não apagam passkeys (P77); `createPasswordResetLink` não é atômico (P78); o React Compiler desiste do `SignInPanel` (P79); nenhum guarda impede um script de importar `logServerError` ou `@sentry/*` (P80). A P67 ganhou uma `Atualização` em 2026-11-27: o aviso ao sair já existe. A P70 também: com o escuro como padrão, o guarda de toque mede no escuro, e o claro é que fica sem medida.
 - **P34–P36 (Fase 3):** "sem passagem" usa os horários atuais do turno (P34); o cartão "Passagem para
   confirmar" não tem teto de idade (P35); dois operadores no mesmo rascunho: o último a salvar vence (P36).
 - **P44, P46, P47 (Fase 4):** o detalhe rápido depende do cabeçalho `next-url` (P44); um cartão movido para uma coluna
@@ -167,3 +221,14 @@ O design do produto está na spec (`docs/superpowers/specs/2026-11-20-closery-pa
   confira com `bun scripts/rc-check.mjs <arquivos>`. "Outros" e o 5º turno em diante são `foreground` (`chart-5` = `foreground`, nunca usado).
 - **Blocos do dashboard:** cada um num `catchError` com `key` do período e do setor **no limite**, e a `<Suspense>` com esqueleto
   dentro dele; o `catchError` só limpa o erro quando muda o pathname.
+- **Satoshi (visual novo):** o `predev` e o `prebuild` rodam `bun run fonts`, que baixa a fonte do Fontshare e confere o SHA-256;
+  sem rede na primeira vez, o `dev` e o `build` não sobem. O `.woff2` nunca entra no git nem em artefato público (licença,
+  `library-docs.md §17`). Hash diferente: não aceite no automático.
+- **Tema (visual novo):** é próprio (`src/lib/theme.ts` e `useTheme`), sem `next-themes`: o script dele dentro de componente
+  client duplicava o conteúdo dinâmico. Escuro padrão, não segue o sistema. O valor do tema em JS só pelo `useTheme()`.
+- **`sector.color` exige a `0005`:** sem a migração, toda tela que lê setor quebra (`column "color" does not exist`). No dev,
+  `db:migrate` antes do `bun run dev`; em produção, a `0005` vai antes do deploy (runbook B4).
+- **Paleta nova:** `--muted` = `--card` = `--popover`, então `bg-muted` dentro de card some (use `accent`); sobre os cartões
+  coloridos o foco é `outline-solid` + `ring-0!` (o `outline-none` da base engole o `outline-2`). As armadilhas do Tailwind 4 e do
+  `cn` estão em `library-docs.md §3`.
+- **Avatares:** `src/lib/avatar.ts` é `server-only` (semente = id do usuário); o componente recebe o data URI pronto.

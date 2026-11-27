@@ -1,0 +1,144 @@
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+
+import { SectorColorChoice } from "@/components/admin/sectors/SectorColorChoice";
+import { SECTOR_COLORS } from "@/features/sectors/colors";
+
+describe("SectorColorChoice", () => {
+  it("é um grupo de escolha 'Cor' com as cinco opções, cada uma com o nome escrito", () => {
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    const group = screen.getByRole("radiogroup", { name: "Cor" });
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(SECTOR_COLORS.length);
+    expect(radios.map((radio) => radio.textContent)).toEqual([
+      "Lilás",
+      "Pêssego",
+      "Azul",
+      "Verde",
+      "Rosa",
+    ]);
+    for (const radio of radios) expect(group).toContainElement(radio);
+  });
+
+  it("cada opção mostra uma amostra de 16px com a classe da cor, e a amostra não é lida", () => {
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    const expected = [
+      ["Lilás", "bg-sector-lilac"],
+      ["Pêssego", "bg-sector-peach"],
+      ["Azul", "bg-sector-sky"],
+      ["Verde", "bg-sector-green"],
+      ["Rosa", "bg-sector-pink"],
+    ] as const;
+    for (const [label, bg] of expected) {
+      const swatch = screen
+        .getByRole("radio", { name: label })
+        .querySelector("[data-slot='sector-color-swatch']");
+      expect(swatch, label).not.toBeNull();
+      expect(swatch).toHaveClass(bg, "size-4");
+      expect(swatch).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  it("começa com a cor do defaultValue marcada, e só ela", () => {
+    render(<SectorColorChoice defaultValue="sky" />);
+
+    expect(screen.getByRole("radio", { name: "Azul" })).toBeChecked();
+    for (const label of ["Lilás", "Pêssego", "Verde", "Rosa"]) {
+      expect(screen.getByRole("radio", { name: label })).not.toBeChecked();
+    }
+  });
+
+  it("clicar em outra cor marca ela, desmarca a anterior e avisa com a chave", async () => {
+    const onValueChange = vi.fn();
+    render(
+      <SectorColorChoice defaultValue="lilac" onValueChange={onValueChange} />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Rosa" }));
+
+    expect(screen.getByRole("radio", { name: "Rosa" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Lilás" })).not.toBeChecked();
+    expect(onValueChange).toHaveBeenCalledTimes(1);
+    expect(onValueChange).toHaveBeenCalledWith("pink");
+  });
+
+  it("clicar na cor já marcada não desmarca (nunca fica sem cor)", async () => {
+    const onValueChange = vi.fn();
+    render(
+      <SectorColorChoice defaultValue="green" onValueChange={onValueChange} />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Verde" }));
+
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it("desabilitado: nada muda ao clicar", async () => {
+    const onValueChange = vi.fn();
+    render(
+      <SectorColorChoice
+        defaultValue="lilac"
+        disabled
+        onValueChange={onValueChange}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("radio", { name: "Azul" }));
+
+    expect(screen.getByRole("radio", { name: "Lilás" })).toBeChecked();
+    expect(onValueChange).not.toHaveBeenCalled();
+  });
+
+  it("a legenda pode ser trocada", () => {
+    render(<SectorColorChoice defaultValue="lilac" legend="Cor do setor" />);
+
+    expect(
+      screen.getByRole("radiogroup", { name: "Cor do setor" }),
+    ).toBeInTheDocument();
+  });
+
+  it("a opção marcada tem fundo primary (visível no card), a amostra continua à vista", () => {
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    const checked = screen.getByRole("radio", { name: "Lilás" });
+    expect(checked.className).toContain("data-checked:bg-primary");
+    expect(checked.className).toContain("data-checked:text-primary-foreground");
+    expect(
+      checked.querySelector("[data-slot=sector-color-swatch]"),
+    ).toBeInTheDocument();
+  });
+
+  // No escuro a pílula marcada é creme (`primary`) e as amostras pastel ficam
+  // entre 1,46 e 1,92:1 sobre ela; a borda `foreground/20` (creme a 20%) não
+  // separava nada. Na marcada a borda vira `primary-foreground`, a tinta da
+  // própria pílula: o `themeContrast.test.ts` mede esse par (≥3:1, nos dois
+  // temas) no `globals.css`.
+  it("na opção marcada a amostra ganha borda primary-foreground, que contrasta com o fundo marcado", () => {
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio).toHaveClass("group/color");
+      const swatch = radio.querySelector("[data-slot=sector-color-swatch]");
+      expect(swatch).toHaveClass(
+        "border-foreground/20",
+        "group-data-checked/color:border-primary-foreground",
+      );
+    }
+  });
+
+  it("a borda da amostra segue a marcação: só a opção marcada tem data-checked", async () => {
+    const user = userEvent.setup();
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    await user.click(screen.getByRole("radio", { name: "Verde" }));
+
+    const checked = screen
+      .getAllByRole("radio")
+      .filter((radio) => radio.hasAttribute("data-checked"));
+    expect(checked).toEqual([screen.getByRole("radio", { name: "Verde" })]);
+  });
+});

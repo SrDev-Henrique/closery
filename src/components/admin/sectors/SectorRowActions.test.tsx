@@ -23,6 +23,7 @@ vi.mock("sonner", () => ({
 const SECTOR: SectorRow = {
   id: "s1",
   name: "Pátio",
+  color: "green",
   active: true,
   activePeople: 0,
   pendingInvites: 0,
@@ -113,7 +114,7 @@ describe("SectorRowActions", () => {
     ).toBeEnabled();
   });
 
-  it("Editar abre o diálogo 'Editar setor' com o nome atual e salva", async () => {
+  it("Editar abre o diálogo 'Editar setor' com o nome e a cor atuais e salva", async () => {
     mocks.renameSectorAction.mockResolvedValue({ ok: true });
     render(<SectorRowActions sector={SECTOR} />);
 
@@ -122,6 +123,7 @@ describe("SectorRowActions", () => {
     const dialog = await screen.findByRole("dialog", { name: "Editar setor" });
     const field = screen.getByLabelText("Nome do setor");
     expect(field).toHaveValue("Pátio");
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
 
     await userEvent.clear(field);
     await userEvent.type(field, "Pátio Norte");
@@ -135,8 +137,47 @@ describe("SectorRowActions", () => {
     expect(mocks.renameSectorAction).toHaveBeenCalledWith({
       id: "s1",
       name: "Pátio Norte",
+      color: "green",
     });
     await waitFor(() => expect(dialog).not.toBeInTheDocument());
+  });
+
+  it("trocar só a cor e salvar manda o nome atual e a cor nova", async () => {
+    mocks.renameSectorAction.mockResolvedValue({ ok: true });
+    render(<SectorRowActions sector={SECTOR} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Editar Pátio" }));
+    await screen.findByRole("dialog", { name: "Editar setor" });
+    await userEvent.click(screen.getByRole("radio", { name: "Rosa" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Salvar alterações" }),
+    );
+
+    await waitFor(() =>
+      expect(mocks.renameSectorAction).toHaveBeenCalledWith({
+        id: "s1",
+        name: "Pátio",
+        color: "pink",
+      }),
+    );
+  });
+
+  it("fechar o diálogo sem salvar descarta a cor trocada: ao reabrir, volta a atual", async () => {
+    render(<SectorRowActions sector={SECTOR} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "Editar Pátio" }));
+    await screen.findByRole("dialog", { name: "Editar setor" });
+    await userEvent.click(screen.getByRole("radio", { name: "Azul" }));
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Editar Pátio" }));
+    await screen.findByRole("dialog", { name: "Editar setor" });
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Azul" })).not.toBeChecked();
+    expect(mocks.renameSectorAction).not.toHaveBeenCalled();
   });
 
   it("nome repetido na edição mantém o diálogo aberto com o erro", async () => {
@@ -163,5 +204,6 @@ describe("SectorRowActions", () => {
       screen.getByRole("dialog", { name: "Editar setor" }),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Nome do setor")).toHaveValue("ULD");
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
   });
 });

@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { SECTOR_COLORS } from "@/features/sectors/colors";
 import { ITEM_KINDS } from "@/lib/itemKinds";
 import { ROLES } from "@/lib/roles";
 
 import { resolveUnit } from "./itemOptions";
 import {
   INVITE_LABEL_TOO_LONG_MESSAGE,
+  SECTOR_COLOR_INVALID_MESSAGE,
   SECTOR_REQUIRED_MESSAGE,
 } from "./messages";
 import { normalizeName, validateName } from "./names";
@@ -47,8 +49,21 @@ const roleSchema = z.enum(ROLES, { error: "Escolha o papel." });
 const kindSchema = z.enum(ITEM_KINDS, { error: "Escolha o tipo do item." });
 const textSchema = z.string({ error: INVALID_INPUT_MESSAGE });
 
-export const createSectorSchema = z.object({ name: nameSchema });
-export const renameSectorSchema = z.object({ id: idSchema, name: nameSchema });
+// Só as chaves da paleta (D-V3). Mensagem própria em português para qualquer valor fora dela
+// (ausente, tipo errado ou outra cor): a tela só oferece as cinco, então isso é defesa.
+const sectorColorSchema = z.enum(SECTOR_COLORS, {
+  error: SECTOR_COLOR_INVALID_MESSAGE,
+});
+
+export const createSectorSchema = z.object({
+  name: nameSchema,
+  color: sectorColorSchema,
+});
+export const renameSectorSchema = z.object({
+  id: idSchema,
+  name: nameSchema,
+  color: sectorColorSchema,
+});
 export const createDestinationSchema = z.object({ name: nameSchema });
 export const renameDestinationSchema = z.object({
   id: idSchema,

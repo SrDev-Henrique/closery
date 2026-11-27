@@ -22,10 +22,12 @@ vi.mock("sonner", () => ({
 const SECTOR_A: SectorChoice = {
   id: "11111111-1111-4111-8111-111111111111",
   name: "Almoxarifado",
+  color: "lilac",
 };
 const SECTOR_B: SectorChoice = {
   id: "22222222-2222-4222-8222-222222222222",
   name: "Recebimento",
+  color: "peach",
 };
 const LINK = "https://closery.example.test/convite/token-de-teste";
 const EXPIRES_AT = new Date("2026-11-28T17:30:00.000Z");

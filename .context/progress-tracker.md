@@ -11,6 +11,11 @@
 
 ## ▸ Próximo passo
 
+- **2026-11-27 — Visual novo do Início e do shell (branch `feat/visual-inicio`) pronto para o PR depois do portão**
+  (Vitest em partes, `build` e `test:e2e`). Depois do merge, a fila dos próximos handoffs segue o roteiro (fora do git,
+  `.git/sdd/roadmap/roteiro.md`: B processo, C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação,
+  G Dashboard), com as decisões do lote 0 esperando o dono. O go-live continua pendente: se esta branch entrar antes
+  dele, a migração `0005` vai no passo B4, antes do deploy.
 - **2026-11-26 — Fases 0 a 5 concluídas e o código da Fase 6 (Produção) pronto. Próximo: o go-live (Parte B),
   conduzido pelo controlador com o dono, passo a passo e com confirmação do dono em cada passo voltado para
   fora, em `.context/runbook-producao.md`:** proteção da `main` (P62), Neon e Vercel de produção, migração,
@@ -115,6 +120,29 @@
 - ✅ Testes: Vitest 4488 testes em 324 arquivos; E2E com 44 cenários (os 35 de antes, 2 de alvos de toque, 3 da redefinição de senha e 4 das páginas públicas). Verificado: `check-types`, `lint`, `test`, `test:e2e` (44 passed), `build` e o smoke local (7 OK, 1 FALHOU esperado, 2 PULADO) verdes (2026-11-27)
 - ⬜ Go-live (Parte B): proteção da `main`, Neon e Vercel de produção, migração, primeiro administrador, aprovação da empresa (P64), convites e a semana de piloto
 
+## Visual novo (Início e shell) · 🟡
+
+Spec em `docs/superpowers/specs/2026-11-27-visual-inicio-design.md`, plano em `docs/superpowers/plans/2026-11-27-visual-inicio.md`
+(Tasks 1 a 18) e a decisão no `architecture.md §10` (2026-11-27). O go-live (Fase 6, Parte B) continua pendente.
+
+- ✅ Tokens e tema: a paleta nova nos dois temas, o "celular" abaixo de 860px, as cores fixas dos cartões coloridos e do setor, e o tema próprio com o escuro padrão e o `ThemeSwitch` (sem `next-themes`, que duplicava o conteúdo da página; P17 resolvida). Guardas novos: `rawColors` (nenhuma cor crua nos `.tsx`) e `themeContrast` (os pares dos dois temas e dos cartões coloridos) (2026-11-27)
+- ✅ Satoshi: baixada do Fontshare no `predev` e no `prebuild` (`bun run fonts`), conferida por SHA-256, fora do git por licença, servida por `next/font/local`, com o cache no CI e o trace do CI sem a fonte (2026-11-27)
+- ✅ Variantes: `Button` em pílula (`pill`, `icon-pill`, `surface`, `on-pastel` e `on-pastel-secondary`, com contorno sólido de foco sobre o pastel), `Badge` em pílula (`warning`, `info`, `success`, `neutral`) e `Card feature` (2026-11-27)
+- ✅ Cor do setor: a coluna `sector.color` com o check `sector_color_valid` e o backfill único (migração `0005_cor_do_setor`), a cor sugerida e a escolha "Cor" na tela Setores (2026-11-27)
+- ✅ Seletor de setor deslizante: o `SectorPicker` como `radiogroup` em todas as telas que escolhem setor, com "Todos" (D-V4) e a rolagem só do trilho (2026-11-27)
+- ✅ Avatares: DiceBear `notionists` gerado no servidor (`avatarDataUri`), `UserAvatar` e `AvatarStack` (2026-11-27)
+- ✅ Shell: a sidebar de 280px com os grupos e o card do usuário, o cabeçalho com o `MenuToggle` e o `ThemeSwitch`, e a gaveta no celular (2026-11-27)
+- ✅ Início: a saudação com a data, "Passagem para confirmar", "Convide sua equipe" com o "Agora não", "Passagem do meu turno" na cor do setor com a barra do turno, "Solicitações", os esqueletos e as container queries (2026-11-27)
+- ✅ Pack de correção do cartão "Passagem do meu turno": o bloco de status de largura inteira, a linha de entrega com avatares e os ids no `MyShiftState` (spec §6.4.1). O item 5 (`HandoverDetail`) fica para a branch D do roteiro (2026-11-27)
+- ✅ Legibilidade: 27 telas em 136 capturas, nos dois temas; 7 correções (borda do `outline`, selo "Sem passagem", destaques do dashboard, escolha marcada, Sheet no celular, esqueletos) (2026-11-27)
+- ✅ Pixel perfect contra o protótipo renderizado: todos os pares do Início e do shell em até 0,107% (a gaveta aberta, 0,214%, por anti-aliasing); o cartão do pack em até 0,002% (2026-11-27)
+- ✅ Revisões: a final em 3 lentes, a re-revisão em 3 lentes e a revisão do delta em 2 lentes, com duas rodadas de correção (foco dos cartões coloridos provado por E2E, `--destructive` com AA, rolagem do seletor, trace do CI sem a fonte); sem Critical e sem Important aberto (2026-11-27)
+- ✅ Documentos: ADR, `ui-rules.md §6`, `library-docs.md` (§3 e §17 a §20), runbook (a Satoshi em todo build e a `0005` antes do deploy), pendências novas P81 a P108, P17 resolvida e P67 e P70 com `Atualização` (2026-11-27)
+- ✅ Migração `0005` no banco de dev, com o host conferido pelo `db:hosts` antes do `db:migrate` (2026-11-27)
+- ✅ Testes: Vitest 5248 testes em 352 arquivos; E2E com 49 cenários (os 44 de antes, 4 do Início novo e 1 de toque). Verificado: `check-types`, `lint`, `test`, `build` e `test:e2e` (49 passed) verdes (2026-11-27)
+- ⬜ PR da `feat/visual-inicio` e o merge pelo dono
+- ⬜ Os próximos handoffs, na fila do roteiro (`.git/sdd/roadmap/roteiro.md`, fora do git): B processo, C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação, G Dashboard
+
 ## Histórico
 
 - **2026-11-20** — Projeto criado; contexto escrito; planilha analisada; brainstorm concluído
@@ -126,3 +154,4 @@
 - **2026-11-24** — Fase 4 concluída: solicitações de ponta a ponta (Quadro, Lista e Tabela, detalhe rápido em Sheet, cancelar com motivo, comentários, ligação com a passagem e o Início), P29, P33, P37 e P40 resolvidas. Plano em `docs/superpowers/plans/2026-11-23-fase-4-solicitacoes.md`.
 - **2026-11-25** — Fase 5 concluída: dashboard de ponta a ponta (passagens, controles, estoque e solicitações, com período, comparação e todo número como link para a lista filtrada) e exportação CSV; P13, P19, P45 e P48 resolvidas. Plano em `docs/superpowers/plans/2026-11-24-fase-5-dashboard.md`.
 - **2026-11-26** — Fase 6 (código) concluída: configuração de produção, log sanitizado, trava de host, Better Auth endurecido, redefinição de senha pelo link do administrador, Sentry, alvos de toque, `/privacidade`, smoke e runbook; P16, P22 e P12 resolvidas. Falta o go-live (Parte B). Plano em `docs/superpowers/plans/2026-11-25-fase-6-producao.md`.
+- **2026-11-27** — Visual novo do Início e do shell (paleta e tema escuro padrão no app inteiro, Satoshi, cor do setor, seletor deslizante, avatares, shell e Início, mais o pack de correção do cartão do turno), revisado e documentado, com a `0005` aplicada no banco de dev; P17 resolvida e P81 a P108 registradas. Falta o portão e o PR; o go-live continua pendente. Plano em `docs/superpowers/plans/2026-11-27-visual-inicio.md`.

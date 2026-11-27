@@ -101,7 +101,7 @@ describe("RequestStatusActions", () => {
     expect(
       screen.getByRole("button", { name: "Mover para Em separação / Trânsito" })
         .className,
-    ).toContain("bg-warning");
+    ).toContain("bg-info");
     expect(
       screen.getByRole("button", { name: "Mover para Entregue" }).className,
     ).toContain("bg-success");

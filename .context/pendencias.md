@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P81.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P109.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -53,7 +53,7 @@
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
 | P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Resolvido |
-| P17 | Tema escuro nunca é ativado | 🟡 | Aberto, não triado |
+| P17 | Tema escuro nunca é ativado | 🟡 | Resolvido |
 | P18 | user.role e invite.role sem CHECK no banco | 🟡 | Resolvido |
 | P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Resolvido |
 | P20 | Login social: ajustes antes de ligar | 🟡 | Aberto, não triado |
@@ -117,6 +117,34 @@
 | P78 | createPasswordResetLink não é atômico | ⚪ | Aberto, não triado |
 | P79 | React Compiler desiste do SignInPanel inteiro | ⚪ | Aberto, não triado |
 | P80 | Nenhum guarda impede script de importar logServerError ou Sentry | ⚪ | Aberto, não triado |
+| P81 | `next dev` dá 404 nas páginas fora do grupo (app) por causa do slot @detalhe | 🟡 | Aberto, não triado |
+| P82 | Telas sem desenho novo ficam no layout antigo sem prazo: Conta, Administração, entrada, privacidade, erro e 404 | 🟡 | Aberto, não triado |
+| P83 | Hover e estado aberto com bg-muted somem dentro de card, Dialog e Sheet | 🟡 | Aberto, não triado |
+| P84 | Borda dos campos no tema claro tem 1,36:1, abaixo de 3:1 | 🟡 | Aberto, não triado |
+| P85 | Segmento marcado do seletor de setor tem pouco contraste no claro (thumb 1,32:1) | 🟡 | Aberto, não triado |
+| P86 | Setas do seletor de setor trocam de setor a cada passo, recarregam a tela e perdem o foco | 🟡 | Aberto, não triado |
+| P87 | Crossfade de cor do cartão do turno provavelmente não roda, e a transição da troca de tema não foi conferida | ⚪ | Aberto, não triado |
+| P88 | Lista de Setores não mostra a cor de cada setor | ⚪ | Aberto, não triado |
+| P89 | "Agora não" do cartão de convite não dá retorno durante o envio | ⚪ | Aberto, não triado |
+| P90 | Foco fraco fora dos cartões coloridos, sem indicador no alto contraste do Windows, e borda de erro abaixo de 3:1 no escuro | 🟡 | Aberto, não triado |
+| P91 | Variantes destructive sem uso ficam fora do guarda de contraste, e o hover do Badge reprova | ⚪ | Aberto, não triado |
+| P92 | Avatares em data URI pesam de 12 a 38 KB e saem duas vezes na página | ⚪ | Aberto, não triado |
+| P93 | Satoshi não tem os glifos ª e º | ⚪ | Aberto, não triado |
+| P94 | Id de quem salvou o rascunho vai ao navegador sem uso | ⚪ | Aberto, não triado |
+| P95 | global-error ignora o tema e as fontes | ⚪ | Aberto, não triado |
+| P96 | Início do admin roda 6 contagens a cada carga só para decidir o cartão de convite | ⚪ | Aberto, não triado |
+| P97 | uiRegistryDoc não varre src/components/app-shell | ⚪ | Aberto, não triado |
+| P98 | Guarda de cor crua não varre .ts, prefixos direcionais nem // dentro de string | ⚪ | Aberto, não triado |
+| P99 | Avatar de quem confirmou aparece mesmo quando o nome não é achado ("outra pessoa") | ⚪ | Aberto, não triado |
+| P100 | No setor verde (Eco) o bloco "Confirmada" se destaca pouco | ⚪ | Aberto, não triado |
+| P101 | No next dev o Strict Mode pode tirar a classe do tema do html | ⚪ | Aberto, não triado |
+| P102 | Build e redeploy dependem do Fontshare no ar e com o mesmo arquivo | 🟡 | Aberto, não triado |
+| P103 | Borda da amostra marcada do SectorColorChoice provada sem passar pelo CSS gerado | ⚪ | Aberto, não triado |
+| P104 | suggestColorForNewSector conta as cores em JS, contra a regra de agregação no SQL | ⚪ | Aberto, não triado |
+| P105 | Higiene de testes do visual novo | ⚪ | Aberto, não triado |
+| P106 | Sobras de código do visual novo: "use client" sem hook, valores repetidos e mensagens | ⚪ | Aberto, não triado |
+| P107 | Mapas do roteiro citam o --destructive de antes do ajuste AA | ⚪ | Aberto, não triado |
+| P108 | Setor rosa tem a mesma cor do cartão "Convide sua equipe" | ⚪ | Aberto, não triado |
 
 ---
 
@@ -134,13 +162,6 @@
 **Arquivos:** `src/components/auth/InviteSignup.tsx` · `src/lib/auth/createAuth.ts`
 **Impacto:** `errorCallbackURL: /convite/<token>` com `storeStateStrategy` "database" grava o token bruto em `verification.value`; fica até 7 dias se o fluxo for abandonado.
 **Correção:** — (opção: rota de erro sem token ou `account.storeStateStrategy: "cookie"`)
-**Registrado em:** 2026-11-20
-
-#### P17 — Tema escuro nunca é ativado 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/app/globals.css` · `src/app/layout.tsx` · `src/components/ui/sonner.tsx`
-**Impacto:** `globals.css` usa a classe `.dark`, mas nada a aplica (sem ThemeProvider) e o Sonner chama `useTheme` sem provider; o tema escuro dos tokens nunca aparece.
-**Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
 **Registrado em:** 2026-11-20
 
 #### P20 — Login social: ajustes antes de ligar 🟡
@@ -422,6 +443,7 @@
 **Impacto:** não há guarda `beforeunload`: com sinal fraco no galpão (provável), fechar ou recarregar a aba com salvamentos na fila perde o que ainda não chegou ao servidor.
 **Correção:** — (opção: avisar ao sair com salvamento pendente e mostrar o estado "Salvando…" por mais tempo; observar no piloto)
 **Registrado em:** 2026-11-26
+**Atualização (2026-11-27):** o "não há guarda `beforeunload`" do Impacto está vencido. O aviso ao sair já existe: `useHandoverAutosave.ts:198-207` liga o `beforeunload` enquanto há algo não salvo (`hasUnsaved`). O resto continua valendo: se a pessoa confirma a saída com o sinal fraco, o que ainda não chegou ao servidor se perde, porque nada fica guardado no aparelho. Guardar no aparelho é a decisão T15 do lote 0 do roteiro (`.git/sdd/roadmap/roteiro.md` §4.1, fora do git), que recomenda não prometer isso no texto da tela.
 
 #### P68 — Sentry sem source maps e com +67 KB gzip de JS no cliente ⚪
 **Estado:** Aberto, não triado
@@ -443,6 +465,7 @@
 **Impacto:** o guarda mede em Chromium emulado a 390×844. iOS e Android reais, o tema escuro e a área do link esticado do cartão da Lista não foram medidos.
 **Correção:** — (opção: conferir no celular dos operadores no primeiro dia do piloto)
 **Registrado em:** 2026-11-26
+**Atualização (2026-11-27):** o "tema escuro não medido" do Impacto está vencido. Com o visual novo, o escuro virou o padrão, e o `e2e/touch-targets.spec.ts`, que não escolhe tema, passou a medir no escuro; o que fica sem medida é o claro. O tema não muda o tamanho dos controles, então o risco é baixo. iOS e Android reais e a área do link esticado da Lista continuam sem medida.
 
 #### P71 — Sem instalação como app (manifest e ícones) ⚪
 **Estado:** Aberto, não triado
@@ -513,6 +536,202 @@
 **Impacto:** nada impede que um script de `scripts/*.ts` (rodado pelo Bun) passe a importar `logServerError` ou `@sentry/*`, o que quebraria o `admin:invite` só na hora do go-live (o Bun resolve `@sentry/bun`, que não está instalado). Hoje os dois scripts não chegam lá (conferido com `bun build --target bun`).
 **Correção:** — (opção: um caso em `test/logGuard.test.ts` que segue os imports estáticos de `scripts/*.ts`)
 **Registrado em:** 2026-11-26
+
+#### P81 — `next dev` dá 404 nas páginas fora do grupo (app) por causa do slot @detalhe 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(app)/@detalhe/` · `src/app/(auth)/entrar` · `src/app/(auth)/convite` · `src/app/(auth)/redefinir-senha` · `src/app/privacidade`
+**Impacto:** no `bun run dev` (Next 16.4.6, com strict route matching ligado por padrão), `/entrar`, `/convite/<token>`, `/redefinir-senha` e `/privacidade` dão 404 ou 500, com o aviso "page files do not match any complete route". São as páginas fora do grupo `(app)`, que tem o slot `@detalhe`. Quem usa o `dev` não consegue entrar no app. O defeito já existe na `main` (conferido numa worktree). O build de produção não tem o problema, e o E2E roda em `next start`, por isso nenhum teste pega.
+**Correção:** — (o roteiro planeja a correção no PR B, de processo, antes da tela de Passagens: `.git/sdd/roadmap/roteiro.md` §2.1, fora do git; é a decisão T3 do lote 0. Se o dono recusar o PR B, fica aqui)
+**Registrado em:** 2026-11-27
+
+#### P82 — Telas sem desenho novo ficam no layout antigo sem prazo: Conta, Administração, entrada, privacidade, erro e 404 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/(auth)/` (entrar, convite, redefinir-senha) · `src/app/(app)/bem-vindo` · `src/app/(app)/conta` · `src/app/(app)/admin/` (visão geral e os 5 cadastros) · `src/app/privacidade` · `src/app/error.tsx` · `src/app/not-found.tsx` · `src/app/global-error.tsx` · `src/app/(app)/error.tsx` · `src/app/(app)/not-found.tsx`
+**Impacto:** o visual novo trouxe a paleta, as fontes e o tema escuro para todas as telas (D-V1), mas só o Início e o shell mudaram de layout. Estas telas continuam no layout antigo: cartão pequeno centrado, títulos em Geist, sem a tipografia display nem os raios grandes, botões de 36px no desktop. Os selos `outline` dessas telas (os papéis da Equipe, "Atravessa a meia-noite" nos Turnos e o tipo do item) têm a borda `--border`, de 9% de tinta, tênue nos dois temas; o texto deles é legível. Nenhum handoff do designer as cobre, então o piloto conviveria com dois estilos sem prazo para acabar. As telas que têm handoff (Passagens, Passagem de turno, Solicitações e Dashboard) não entram aqui: a fila do roteiro já as planeja (PRs C a G), inclusive o item 5 do pack de correção (`HandoverDetail`), que é a primeira tarefa da branch D.
+**Correção:** — (opção: pedir já ao designer os desenhos dessas telas, para entrarem na fila depois do Dashboard; é a decisão T20 do lote 0 do roteiro, `.git/sdd/roadmap/roteiro.md` §4.1)
+**Registrado em:** 2026-11-27
+
+#### P83 — Hover e estado aberto com bg-muted somem dentro de card, Dialog e Sheet 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/ui/button.tsx` (`outline` e `ghost`: `hover:bg-muted`, `aria-expanded:bg-muted`) · `src/components/ui/badge.tsx` (`outline` e `ghost`) · `src/components/ui/table.tsx` (hover, linha aberta, selecionada e rodapé) · `src/components/ui/card.tsx` e `src/components/ui/dialog.tsx` (rodapé `bg-muted/50`) · `src/components/ui/field.tsx` (hover do rótulo com campo) · `src/components/dashboard/BarList.tsx` · `src/components/dashboard/StatLink.tsx` · `src/components/app-shell/AdminOverview.tsx`
+**Impacto:** na paleta nova, `--muted` tem o mesmo valor de `--card` e `--popover`. Dentro de cartão, diálogo ou Sheet, o hover do botão contornado ou fantasma (por exemplo "Tentar de novo" e o menu "…" do `RequestCard`), o da linha de tabela, o das linhas do `BarList` e do `StatLink` e o do cartão da Administração não mudam de cor. O rodapé do `Card` e o do `Dialog` também não se separam do corpo. O passe de legibilidade (Task 15) corrigiu os casos de estado (escolha marcada, selo, esqueleto e destaques do dashboard), mas não os de hover.
+**Correção:** — (opção: trocar por `accent` nos primitivos, num commit `fix(visual)` com prova por estilo calculado; o roteiro planeja um guarda que recusa `bg-muted` nos `.tsx` no PR B, `.git/sdd/roadmap/roteiro.md` §7)
+**Registrado em:** 2026-11-27
+
+#### P84 — Borda dos campos no tema claro tem 1,36:1, abaixo de 3:1 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/globals.css` (`--input`) · `src/components/ui/input.tsx` · `src/components/ui/textarea.tsx` · `src/components/ui/native-select.tsx`
+**Impacto:** no claro, a borda `--input` (15% de tinta) mede 1,36:1 sobre o branco. O campo é visível, mas fica abaixo dos 3:1 do WCAG 1.4.11 para o contorno de um controle. Os campos do shadcn de antes eram iguais. O valor veio da spec, para as telas que ainda não têm handoff.
+**Correção:** — (opção: no handoff de cada tela com formulário, a variante `surface` de `Input` e `Textarea` (decisão PT-D12 do roteiro) ou um `--input` mais forte, medido no guarda de contraste)
+**Registrado em:** 2026-11-27
+
+#### P85 — Segmento marcado do seletor de setor tem pouco contraste no claro (thumb 1,32:1) 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/SectorPicker.tsx` · `src/app/globals.css` (`--seg`, `--thumb`)
+**Impacto:** no tema claro, o thumb branco contra o trilho (`--seg`) mede 1,32:1, e o trilho contra a página, 1,17:1. O segmento marcado se apoia no peso da fonte (700 contra 500) e na sombra, abaixo dos 3:1 do WCAG 1.4.11 para indicador de estado. É o desenho do protótipo. No escuro, o anel de foco do segmento marcado (`ring-ring` por dentro, sobre o thumb creme) mede 2,16:1.
+**Correção:** — (decisão do dono. Opções: um `--seg` claro mais escuro, ou `ring-1 ring-foreground/10` no thumb do claro; no anel, `ring-thumb-foreground/60` quando `aria-checked`)
+**Registrado em:** 2026-11-27
+
+#### P86 — Setas do seletor de setor trocam de setor a cada passo, recarregam a tela e perdem o foco 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/SectorPicker.tsx` · `src/app/(app)/actions.ts` (`chooseSectorAction`)
+**Impacto:** no Base UI 1.9, a seleção do grupo de rádio segue o foco. Cada seta chama o `chooseSectorAction`, e o grupo fica desabilitado até o redirecionamento: ir do 1º ao 4º setor custa 3 idas ao servidor. A cada troca, a árvore do `HomeHandovers` remonta e o foco volta ao `body` (com os botões antigos já era assim). Quem usa teclado perde o lugar a cada passo.
+**Correção:** — (decisão do dono. Opções: trocar de setor só com Espaço ou Enter, ou só depois de uns 400 ms sem tecla)
+**Registrado em:** 2026-11-27
+
+#### P87 — Crossfade de cor do cartão do turno provavelmente não roda, e a transição da troca de tema não foi conferida ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/MyShiftCard.tsx` (`transition-colors duration-[450ms]`) · `src/lib/theme.ts`
+**Impacto:** a spec §7 promete que o cartão "Passagem do meu turno" faz crossfade da cor quando o admin troca de setor. Como a troca remonta o cartão (P86), ele já nasce com a cor nova e a transição não tem de onde animar. A verificação visual não conferiu o crossfade nem a transição de cor na troca de tema (sem `disableTransitionOnChange`, as cores com transição mudam devagar). Sem efeito na operação.
+**Correção:** — (opção: conferir as duas no navegador; se o crossfade não roda, tirar a promessa da spec e do registro, ou manter o nó do cartão entre as trocas)
+**Registrado em:** 2026-11-27
+
+#### P88 — Lista de Setores não mostra a cor de cada setor ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/admin/sectors/SectorsAdmin.tsx` · `src/components/admin/AdminListRow.tsx`
+**Impacto:** a cor virou parte da identidade do setor (seletor de setor e cartão do turno), mas para saber a cor de um setor o admin precisa abrir "Editar" (`ui-rules.md §2.5`: mostrar o que a pessoa reconhece).
+**Correção:** — (opção: a amostra `SECTOR_COLOR_BG` e o nome da cor no subtítulo do `AdminListRow`)
+**Registrado em:** 2026-11-27
+
+#### P89 — "Agora não" do cartão de convite não dá retorno durante o envio ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/app-shell/InviteTeamCard.tsx`
+**Impacto:** o `<form action>` de Server Component não desabilita o botão durante o envio. Até o `revalidatePath` redesenhar, nada muda na tela, e dá para clicar de novo (é inofensivo: só grava o cookie outra vez). Falta o retorno de ação de `ui-rules.md §3`.
+**Correção:** — (opção: um filho client pequeno com `useFormStatus`, que desabilita o botão e mostra "Dispensando…")
+**Registrado em:** 2026-11-27
+
+#### P90 — Foco fraco fora dos cartões coloridos, sem indicador no alto contraste do Windows, e borda de erro abaixo de 3:1 no escuro 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/ui/button.tsx` (base com `outline-none` e `ring-ring/50`; `destructive` com `ring-destructive/20`) · `src/components/ui/input.tsx` (o mesmo padrão e `dark:aria-invalid:border-destructive/50`) · os outros primitivos com `outline-none`
+**Impacto:** o anel `ring-ring/50` mede de 2,05:1 a 2,73:1 contra o vizinho, e o do `destructive`, 1,46:1 no claro (2,37:1 no escuro). No Tailwind 4, o `outline-none` não tem a reserva de `forced-colors`: com o alto contraste do Windows ligado, o `box-shadow` é zerado e esses controles ficam sem indicador de foco. A borda de erro do campo no escuro mede 2,98:1 contra a página (2,85:1 contra o fundo do campo), abaixo dos 3:1 do WCAG 1.4.11; o erro também chega pelo texto do `FieldError`. Nada disso reprova o WCAG 2.4.7, que não tem limiar, e não é regressão desta branch: os botões dos cartões coloridos já usam contorno sólido (G1).
+**Correção:** — (opção: `outline-hidden` na base, ou contorno sólido também no `destructive` e nos campos, provado por estilo calculado; a borda de erro mais forte medida no guarda)
+**Registrado em:** 2026-11-27
+
+#### P91 — Variantes destructive sem uso ficam fora do guarda de contraste, e o hover do Badge reprova ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/ui/badge.tsx` (`destructive`) · `src/components/ui/dropdown-menu.tsx` (item `destructive`) · `src/components/ui/alert.tsx` (`text-destructive/90`) · `src/app/themeContrast.test.ts`
+**Impacto:** o guarda mede o `--destructive` no texto e no `Button`, nos dois temas, em repouso e no hover. Duas variantes sem uso hoje ficam de fora: o hover `[a]:hover:bg-destructive/20` do `Badge` mede 4,20:1 sobre a página no claro (reprova), e o item `destructive` do `DropdownMenu` passa (5,72:1 e 4,72:1 sobre o `popover`). O primeiro `<Badge variant="destructive">` num link entraria abaixo do AA sem o guarda acusar. A descrição do `Alert` (`text-destructive/90`, usada no `DashboardBlockBoundary`) passa (6,22:1 no claro, 5,95:1 no escuro), mas também não é medida.
+**Correção:** — (opção: medir as duas variantes e o `/90` no `themeContrast.test.ts`, ou um `it.todo` até o primeiro uso; o `--danger` da decisão T9 do roteiro entra na branch D)
+**Registrado em:** 2026-11-27
+
+#### P92 — Avatares em data URI pesam de 12 a 38 KB e saem duas vezes na página ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/lib/avatar.ts` · `src/components/passagens/HomeCards.tsx` · `src/components/app-shell/AuthedSidebar.tsx`
+**Impacto:** cada avatar do DiceBear é um data URI de 12 a 38 KB (cerca de 16 KB na mediana, medido com 40 sementes em 2026-11-27) e sai duas vezes: no atributo do HTML e no payload RSC. O avatar da mesma pessoa se repete na sidebar, no "Convide sua equipe" e nas "Solicitações" vazias. No primeiro acesso do admin, ou com pendente e `continue`, são dezenas de KB só de avatar (o brotli da Vercel reduz bem). O comentário de `avatar.ts` ainda diz "~26 KB".
+**Correção:** — (opção: medir no celular do piloto; se pesar, um `GET` autenticado que devolve o SVG com `Cache-Control: immutable`, ou um avatar menor. A decisão T11 do lote 0 do roteiro mede de novo nas branches C e F, com teto de uns 300 KB de avatar por página)
+**Registrado em:** 2026-11-27
+
+#### P93 — Satoshi não tem os glifos ª e º ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/layout.tsx` (`localFont`) · `.context/library-docs.md §17`
+**Impacto:** num texto em Satoshi (`font-heading`), `ª` e `º` caem na fonte seguinte da pilha (Geist) e destoam. Nenhum texto de display usa os dois hoje.
+**Correção:** — (opção: evitar `ª` e `º` em texto display; a licença proíbe editar ou converter a fonte)
+**Registrado em:** 2026-11-27
+
+#### P94 — Id de quem salvou o rascunho vai ao navegador sem uso ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/types.ts` (`SavedMark.byId`) · `src/features/handovers/draft.ts` (`savedById`) · `src/features/handovers/formState.ts` · `src/components/passagens/useHandoverAutosave.ts`
+**Impacto:** só o `HomeCards` (servidor) usa o id de quem salvou, como semente do avatar do estado `continue`. Mesmo assim, o `SavedMark` compartilhado leva o id, e por isso o estado do `HandoverForm` (client) e a resposta da Server Action do salvamento automático mandam o id ao navegador. Fere a minimização de dados (LGPD, princípio da necessidade), mas o id não é segredo. Os ids de quem entregou e de quem confirmou ficam no servidor (`MyShiftCard` e `PendingHandoverCard` são Server Components).
+**Correção:** — (opção: o `SavedMark` volta a `{ at, byName }` e o id fica só no `MyShiftState` `continue`)
+**Registrado em:** 2026-11-27
+
+#### P95 — global-error ignora o tema e as fontes ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/global-error.tsx`
+**Impacto:** quando o próprio layout raiz quebra, o `<html>` do `global-error` substitui o do layout e sai sem a classe `dark` e sem as variáveis de fonte. Com o escuro como padrão, quem nunca escolheu o tema vê a tela de erro clara, na fonte do sistema. É raro e só visual.
+**Correção:** — (opção: `className="dark"` no `<html>` e um `useLayoutEffect` com a regra do `THEME_INIT_SCRIPT` (só `"light"` guardado tira a classe); as variáveis de fonte, se valer a pena)
+**Registrado em:** 2026-11-27
+
+#### P96 — Início do admin roda 6 contagens a cada carga só para decidir o cartão de convite ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/HomeHandovers.tsx` (`getAdminOverviewCounts`) · `src/features/admin/overview.ts`
+**Impacto:** o `getAdminOverviewCounts` (6 subconsultas de contagem, 2 com `EXISTS`) roda em toda carga do Início do admin, só para decidir um cartão que aparece com 1 pessoa ativa e nenhum convite pendente. Com os dados do piloto é barato.
+**Correção:** — (opção: contar primeiro as pessoas ativas e só buscar o resto com 1 pessoa; ou deixar como está)
+**Registrado em:** 2026-11-27
+
+#### P97 — uiRegistryDoc não varre src/components/app-shell ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `test/uiRegistryDoc.test.ts`
+**Impacto:** `ThemeSwitch`, `UserAvatar`, `AvatarStack`, `InviteTeamCard`, `AppHeader` e os outros componentes do shell entraram no `ui-registry.md` à mão. Nada impede que o próximo componente do shell fique fora do registro, e os nomes deles não estão na lista de cabeçalho próprio. Hoje todos têm `###`.
+**Correção:** — (opção: pôr `app-shell` no `sourceFiles` e os nomes na lista de cabeçalhos)
+**Registrado em:** 2026-11-27
+
+#### P98 — Guarda de cor crua não varre .ts, prefixos direcionais nem // dentro de string ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/rawColors.test.ts`
+**Impacto:** o guarda só lê `.tsx`. `statusStyle.ts`, `chartColors.ts` e `features/sectors/colors.ts` guardam strings de classe e são `.ts`. `border-t-*`, `border-x-*`, `inset-ring-*` e `drop-shadow-*` não estão no `CLASS_PREFIX`. O `stripComments` pode esconder um hex que venha depois de `//` dentro de uma string. Hoje não há violação (conferido com `grep` em `src`).
+**Correção:** — (opção: varrer também os `.ts`, com `avatar.ts` como exceção, e acrescentar os prefixos)
+**Registrado em:** 2026-11-27
+
+#### P99 — Avatar de quem confirmou aparece mesmo quando o nome não é achado ("outra pessoa") ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/HomeCards.tsx` · `src/components/passagens/MyShiftCard.tsx` · `src/components/passagens/HomeCards.test.tsx`
+**Impacto:** na passagem confirmada, sem o nome de quem confirmou, a frase diz "Confirmada por outra pessoa às …" e a pilha mostra o avatar gerado do id. O avatar é decorativo (`alt=""`), mas põe um rosto ao lado de "outra pessoa". O `HomeCards.test.tsx` documenta o comportamento de hoje.
+**Correção:** — (decisão do dono: esconder o avatar quando o nome não é achado; o teste muda junto)
+**Registrado em:** 2026-11-27
+
+#### P100 — No setor verde (Eco) o bloco "Confirmada" se destaca pouco ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/MyShiftCard.tsx` (`STATUS_TONE`) · `src/app/globals.css` (`--on-pastel-success`, `--on-pastel-success-soft`)
+**Impacto:** o bloco verde "Confirmada" segue a regra geral (o mesmo bloco em todo setor) e passa no contraste (6,01:1 no verde). Sobre o setor verde, porém, verde sobre verde chama menos atenção que nos outros setores.
+**Correção:** — (decisão do dono na conferência visual. A alternativa do pack de correção, fundo `#1f5131` com texto `#d3eedd` só no setor verde, não foi implementada; spec §6.4.1 e PK-D4 do roteiro)
+**Registrado em:** 2026-11-27
+
+#### P101 — No next dev o Strict Mode pode tirar a classe do tema do html ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/lib/theme.ts` · `src/lib/useTheme.ts` · `src/app/layout.tsx`
+**Impacto:** só em desenvolvimento: depois de uma remontagem do Strict Mode, o React pode limpar a classe `dark` do `<html>`, e o switch passa a mostrar o claro até recarregar. Em produção não acontece (`library-docs.md §18`).
+**Correção:** — (opção: reaplicar a classe num efeito do `useTheme`; ou aceitar, por ser só do dev)
+**Registrado em:** 2026-11-27
+
+#### P102 — Build e redeploy dependem do Fontshare no ar e com o mesmo arquivo 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/fetchFonts.mjs` · `scripts/fontsCheck.mjs` · `package.json` (`prebuild`) · `.context/runbook-producao.md` (B5, B17 e "Se algo der errado no meio")
+**Impacto:** na Vercel a pasta `src/fonts/satoshi` não sobrevive entre builds: todo deploy baixa a Satoshi de `api.fontshare.com` e `cdn.fontshare.com` e exige o mesmo SHA-256. Com o Fontshare fora, ou com o arquivo trocado, o build para com código 1. Isso vale também para o redeploy da rotação urgente de segredo (B17), e o rollback não serve depois de mudar uma variável (B16). O mesmo acontece no CI quando o cache da fonte falha.
+**Correção:** — (opção: um espelho privado, por exemplo um `SATOSHI_MIRROR_URL` não público com o mesmo SHA-256, porque a licença só proíbe repositório público; até lá, o procedimento de "Se algo der errado no meio" do runbook)
+**Registrado em:** 2026-11-27
+
+#### P103 — Borda da amostra marcada do SectorColorChoice provada sem passar pelo CSS gerado ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/admin/sectors/SectorColorChoice.test.tsx` · `src/app/themeContrast.test.ts`
+**Impacto:** os testes provam as classes (`group/color` na pílula e `group-data-checked/color:border-primary-foreground` na amostra), o `data-checked` só na marcada e o contraste do par `primary-foreground` sobre `primary`. Nenhum teste prova que a variante compila e se aplica: isso só foi medido num script avulso e na revisão. É a mesma lacuna que deixou a primeira correção do foco (F1) passar com o defeito. O risco é baixo.
+**Correção:** — (opção: um caso no E2E de cadastros que lê o estilo calculado da borda da amostra marcada)
+**Registrado em:** 2026-11-27
+
+#### P104 — suggestColorForNewSector conta as cores em JS, contra a regra de agregação no SQL ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/sectors.ts` (`suggestColorForNewSector`)
+**Impacto:** a função lê a cor de todos os setores ativos, sem limite, e a função pura conta as cores em JS. São poucos setores, mas a regra do projeto manda agregar no SQL. Veio do plano.
+**Correção:** — (opção: `group by color` no SQL; o desempate pela ordem da paleta continua na função pura)
+**Registrado em:** 2026-11-27
+
+#### P105 — Higiene de testes do visual novo ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/themeContrast.test.ts` e `src/app/chartPalette.test.ts` · `test/fontsConfig.test.ts` · `src/components/app-shell/ThemeSwitch.test.tsx` · `src/components/ui/button.test.ts` e `src/components/ui/button.variants.test.ts` · `src/components/admin/sectors/SectorsAdmin.test.tsx` · `src/lib/avatar.test.ts` · `src/components/passagens/SectorPicker.test.tsx` · `src/components/solicitacoes/OpenRequestItem.test.tsx` e `RequestsHomeCard.test.tsx` · `src/components/admin/sectors/SectorColorChoice.test.tsx`
+**Impacto:** sem defeito conhecido: são testes que provam menos do que o nome diz, ou que vazam estado depois de uma falha. A revisão final listou: a matemática de cor duplicada entre os dois guardas; a ordem do cache do CI conferida por `indexOf`; o `afterEach` do `ThemeSwitch` que afirma antes de restaurar o espião, e a hidratação sem `finally`; `SIZES` e `VARIANTS` escritos em dois testes do `Button`; um teste duplicado e um token conferido por substring no `SectorsAdmin`; o cache do avatar não afirmado; o teste do redirecionamento do seletor que não afirma o thumb; os testes de destino longo e de zero abertas, fracos; o `SectorColorChoice` sem teste das setas do teclado; e testes por classe em px onde o jsdom não mede layout.
+**Correção:** — (um commit só de testes; extrair a matemática de cor para `test/colorMath.ts` num commit de refatoração próprio)
+**Registrado em:** 2026-11-27
+
+#### P106 — Sobras de código do visual novo: "use client" sem hook, valores repetidos e mensagens ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/app-shell/AppHeader.tsx` · `src/components/app-shell/SidebarSkeleton.tsx` · `src/components/app-shell/InviteTeamCard.tsx` · `src/components/app-shell/MenuToggle.tsx` · `src/components/passagens/SectorPicker.tsx` · `src/components/passagens/MyShiftCard.tsx` · `src/components/admin/sectors/SectorColorChoice.tsx` · `src/components/admin/NameForm.tsx` · `scripts/fetchFonts.mjs`
+**Impacto:** sem perda de dados; cada item é pequeno. O `AppHeader` tem `"use client"` sem hook (veio do plano). O `SidebarSkeleton` reserva 264px fixos, e no admin, que tem dois grupos, a sidebar salta ao carregar. O `mt-auto` do `InviteTeamCard` não tem efeito. O `MenuToggle` repete "Alternar menu" num `sr-only` que o `aria-label` já dá. O `6.5rem` do `SectorPicker` está escrito 3 vezes nas classes (e uma no comentário). No estado `delivered` do `MyShiftCard`, o leitor de tela ouve "Aguardando recebimento" duas vezes (no bloco e na frase). O `SectorColorChoice` tem a prop `disabled` sem uso e nomeia o grupo duas vezes: a `legend` do `fieldset` e o `aria-labelledby` do `radiogroup` apontam para o mesmo "Cor", e o leitor de tela pode ler "Cor" duas vezes. No `NameForm`, um erro de `color` vindo do servidor cairia no campo nome (não se alcança pela tela). A mensagem de erro do `fetchFonts` pode sair com "..", e o script rodado por um caminho com link simbólico sai com código 0 sem baixar nada (o caminho documentado é `bun run fonts`).
+**Correção:** — (opção: um commit de limpeza para cada arquivo, com os testes verdes antes e depois)
+**Registrado em:** 2026-11-27
+
+#### P107 — Mapas do roteiro citam o --destructive de antes do ajuste AA ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `.git/sdd/roadmap/map-passagem-de-turno.md` · `.git/sdd/roadmap/map-solicitacao-completa.md` · `.git/sdd/roadmap/map-solicitacoes.md` (fora do git)
+**Impacto:** os três mapas dos handoffs das branches D, E e F dizem que o `--destructive` é `#d60000` no claro e `#ff8a8a` no escuro. O valor atual é `#b80000` e `#ff9393`, com o fundo do botão em `/10` e hover `/15` no claro e em `/15` e hover `/20` no escuro (`architecture.md §10`, 2026-11-27, desvio f). Quem planejar essas branches pelos mapas compara os tons de erro dos handoffs (`--err`, `--dang`) com um valor que não existe mais. A revisão do delta apontou; o `memory.md` também avisa.
+**Correção:** — (opção: trocar os valores nos três mapas antes de planejar a branch D)
+**Registrado em:** 2026-11-27
+
+#### P108 — Setor rosa tem a mesma cor do cartão "Convide sua equipe" ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/globals.css` (`--invite` e `--sector-pink`, os dois `#f2a7c6`) · `src/components/passagens/HomeCards.tsx` · `src/components/app-shell/InviteTeamCard.tsx`
+**Impacto:** a spec deu o mesmo valor aos dois tokens. No primeiro acesso do admin, com o setor escolhido em rosa, o "Convide sua equipe" fica logo acima do "Passagem do meu turno", e os dois têm o mesmo rosa. Sem borda nem sombra, os cartões coloridos se separam pela cor (`ui-rules.md §6`), e a regra "rosa só para o convite" não vale nesse caso. O rosa é a última cor da sugestão: só aparece a partir do 5º setor ativo ou por escolha do admin.
+**Correção:** — (decisão do dono. Opções: outro tom para o `--invite`, outro rosa na paleta do setor, ou aceitar)
+**Registrado em:** 2026-11-27
 
 ## 2. Triado, plano pronto
 
@@ -776,3 +995,11 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-26):** resolvida na Fase 6 (Tarefa 7). A pendência estava desatualizada: `Input`, `NativeSelect`, `Button` e o `SidebarMenuButton` padrão já têm `max-md:h-11` (P3), e os primitivos que ela cita (`SidebarMenuButton` `sm` e ícone, `InputGroup`, `InputGroupButton` `icon-sm`, `SidebarInput`) não aparecem em nenhuma tela. Os achados reais eram links soltos de componentes nossos, medidos a 390x844: `Greeting` ("Ver o dashboard", 120x21), `RequestDetail` ("Ver todas as solicitações", 159x20), `DashboardStock` (link da última contagem, 80x32) e o total do `SpendingRing` (9x44); os quatro ganharam o padrão do link solto (`ui-rules.md §1.4`). O guarda permanente `e2e/touch-targets.spec.ts` mede as telas do operador e do admin (e os diálogos) e reprova qualquer controle abaixo de 44 px, inclusive um primitivo da lista acima se um dia aparecer numa tela. Exceções medidas e justificadas: o link `inline` dentro de uma frase e o link esticado do `RequestCard` (`after:inset-0`, cuja área é o cartão inteiro). Não medido: iOS e Android reais, tema escuro e o contêiner do link esticado na Lista (ver P70).
+
+#### P17 — Tema escuro nunca é ativado 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/app/globals.css` · `src/app/layout.tsx` · `src/components/ui/sonner.tsx`
+**Impacto:** `globals.css` usa a classe `.dark`, mas nada a aplica (sem ThemeProvider) e o Sonner chama `useTheme` sem provider; o tema escuro dos tokens nunca aparece.
+**Correção:** — (opção: seguir o sistema ou adicionar `next-themes` com `ThemeProvider`)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-27):** resolvida no visual novo do Início e do shell (branch `feat/visual-inicio`). O tema escuro passou a ser o padrão, e o claro sai por um switch no cabeçalho (`ThemeSwitch`). O tema não segue o sistema, e a escolha fica no navegador. Não foi com `next-themes`: o script dele, dentro de um componente client, fazia o React 19 com Cache Components duplicar o conteúdo dinâmico da página. O tema é próprio: `src/lib/theme.ts` (com o script anti-flash no `<head>` do layout raiz) e o hook `src/lib/useTheme.ts`, que o Sonner também lê (`library-docs.md §18`). Testes: `src/lib/theme.test.ts`, `src/components/app-shell/ThemeSwitch.test.tsx` e o cenário do tema em `e2e/inicio.spec.ts` (escuro por padrão, a troca e a escolha depois de recarregar).

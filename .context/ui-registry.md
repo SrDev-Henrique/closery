@@ -36,16 +36,26 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (scaffold, 2026-11-20)
 - **Local:** `src/components/ui/button.tsx`
 - **Propósito:** toda ação clicável.
-- **Como funciona:** `@base-ui/react/button` + `cva`. Variantes `default`, `outline`, `secondary`,
-  `ghost`, `destructive`, `link`; tamanhos `default`, `xs`, `sm`, `lg` (h-11), `icon`, `icon-xs`,
-  `icon-sm`, `icon-lg`. Composição com `render`, não `asChild`.
+- **Como funciona:** `@base-ui/react/button` + `cva`. Pílula (`rounded-full`) em todas as variantes e
+  tamanhos (C-V2, 2026-11-27). Variantes `default`, `outline`, `secondary`, `ghost`, `destructive`,
+  `link`, mais `surface` (`bg-card`, hover `bg-accent`: botão sobre o fundo da página),
+  `on-pastel` (`bg-on-pastel text-on-pastel-ink`, `active:scale-[.97]`: primário dentro de card
+  colorido) e `on-pastel-secondary` (`bg-on-pastel-secondary`, hover `-hover`: secundário dentro de
+  card colorido). Tamanhos `default`, `xs`, `sm`, `lg` (h-11), `icon`, `icon-xs`, `icon-sm`,
+  `icon-lg`, `pill` (48px, `font-heading` 16px/700, `px-[22px]`, `gap-2.5`, ícone 18px) e
+  `icon-pill` (44px redondo); os dois sem a borda transparente de 1px da base (`border-0`: com o `bg-clip-padding` ela deixava o fundo visível com 46/42px e 2px mais largo). As variantes `on-pastel` e `on-pastel-secondary` trocam o anel `ring/50` (invisível sobre os pastéis) por contorno sólido de 2px (`outline-offset-2`) na tinta `on-pastel`: `focus-visible:outline-solid` é obrigatório (o `outline-none` da base grava `--tw-outline-style: none`, e sem ele o `outline-2` não desenha nada) e `focus-visible:ring-0!` apaga o anel da base tanto no `buttonVariants` cru num `<Link>` quanto pelo `cn`. Prova pelo estilo calculado no Chromium em `e2e/inicio.spec.ts` (`expectPastelFocusRing`). Composição com `render`, não `asChild`. O tamanho do texto fica em
+  cada `size` (não na base) para `buttonVariants` usado cru em `<Link>` não ter dois `font-size`.
+  Padding do `pill` (protótipo): 22px nos primários `on-pastel`; 20px no `surface` ("Ver o
+  dashboard"), no `default` ("Ver solicitações") e nos secundários `on-pastel-secondary`, sempre por
+  `cn(buttonVariants({ variant, size: "pill" }), "px-5")` (o `cn` resolve o conflito com o
+  `px-[22px]`; nunca concatene as duas classes sem ele).
 - **Atenção:** todo tamanho tem h-9 / size-9 no desktop e `max-md:h-11` / `max-md:size-11` no
-  celular (`lg` e `icon-lg` são 44px sempre). Teste: `button.test.ts`. Para navegação use
+  celular (`lg`, `icon-lg` e `icon-pill` são 44px sempre; `pill` é 48px sempre). Teste: `button.test.ts`. Para navegação use
   `<Link className={buttonVariants()}>` (continua role link); `render={<Link />}` (com
   `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
-- **Usa:** tokens `primary`, `border`, `muted`, `ring`, `destructive`.
+- **Usa:** tokens `primary`, `input`, `muted`, `accent`, `card`, `ring`, `destructive`, `on-pastel*`.
 - **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
-  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24).
+  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24). 2026-11-27 — Visual do Início (Task 4): `rounded-full` em tudo (sai o `rounded-lg` e os `rounded-[min(...)]`, e o `in-data-[slot=button-group]:rounded-lg`); variantes `surface`, `on-pastel`, `on-pastel-secondary`; tamanhos `pill` e `icon-pill`; `text-sm font-medium` saiu da base para cada `size`. 2026-11-27 — Task 16 (pixel): `pill` e `icon-pill` com `border-0` (o fundo visível era 46×(largura+2) e 42px; agora 48 e 44px, iguais ao protótipo). 2026-11-27 — Task 15 (legibilidade): `outline` com a borda `border-input` nos dois temas (era `border-border`, que no claro some no fundo da página: "Corrigir", "Sair" e afins pareciam texto solto). 2026-11-27 — Task 15 (legibilidade): `border-transparent` saiu da base para cada variante menos o `outline` (no CSS gerado `.border-transparent` vem depois de `.border-input` e, com `buttonVariants` cru num `<Link>`, apagava a borda do outline no tema claro). 2026-11-27 — Segunda rodada de correções (G1): `on-pastel` e `on-pastel-secondary` com `focus-visible:outline-solid` e `focus-visible:ring-0!` (a F1 só pedia `outline-2`, que com o `outline-none` da base resolvia para `outline-style: none`; pelo `cn`, "Agora não" e "Ver todas as passagens" ficavam sem indicador nenhum); E2E mede `outline-style: solid`, 2px, offset 2px, cor `rgb(28, 27, 25)` e nenhum anel. 2026-11-27 — Segunda rodada (G2): `destructive` com fundo `/10` → hover `/15` no claro e `/15` → hover `/20` no escuro (era `/10`→`/20` e `/20`→`/30`), junto com o `--destructive` `#b80000` / `#ff9393`: `text-destructive` passa 4,5:1 sobre o fundo do botão em repouso e no hover, sobre `background` e `card`; o `themeContrast.test.ts` lê os percentuais desta variante.
 
 ### Input
 - **Status:** ✏️ estendido
@@ -99,9 +109,12 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/ui/card.tsx`
 - **Propósito:** superfície que agrupa um bloco de conteúdo.
 - **Como funciona:** `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`,
-  `CardContent`, `CardFooter`; HTML puro.
+  `CardContent`, `CardFooter`; HTML puro. `Card` aceita `variant="default" | "feature"` (escreve
+  `data-variant`). `feature` = raio 32px, padding 32px (22px abaixo de 860px, via `--card-spacing`),
+  `gap-0`, sem `ring`, sem borda e sem sombra; o fundo vem do `className` (`bg-highlight`, etc.).
+  Num `feature` o conteúdo vai direto nos filhos: `CardHeader`/`CardContent` somariam o `px` deles.
 - **Usa:** tokens `card`, `card-foreground`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): variante `feature`; o `default` não mudou.
 
 ### Separator
 - **Status:** ✅ pronto (2026-11-20)
@@ -118,12 +131,13 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** `SidebarProvider` > `Sidebar` > `SidebarHeader`/`SidebarContent`/
   `SidebarFooter`, com `SidebarInset` ao lado e `SidebarTrigger` (Ctrl/Cmd+B). `SidebarMenuButton`
   aceita `isActive` e `render={<Link />}`; `useSidebar().setOpenMobile(false)` fecha a gaveta
-  após navegar. Breakpoint do celular: 768px (igual ao `md`). O primeiro render é sempre desktop
+  após navegar. Breakpoint do celular: 860px (igual ao `md`, Task 1 do visual novo); largura 17,5rem (280px), sem borda no desktop; a gaveta do celular tem a sombra `data-[side=left]:shadow-drawer` (token, `20px 0 60px`), o scrim `bg-scrim` (token, preto a 45%, sem blur) e desliza 350ms com `cubic-bezier(.2,.8,.2,1)` (`motion-reduce` desliga). O primeiro render é sempre desktop
   (`useIsMobile` começa `false`). Exige `TooltipProvider` acima. Ler `cookies()` para
   `defaultOpen` exigiria `Suspense`; use `defaultOpen` fixo.
 - **Usa:** `Button`, `Input`, `Separator`, `Sheet`, `Skeleton`, `Tooltip`; tokens `sidebar-*`.
 - **Histórico:** 2026-11-20 — `shadcn add`; `SidebarMenuButton` default sobe de h-8 para
   `h-9 max-md:h-11` (P3); textos acessíveis em pt-BR ("Alternar menu", gaveta "Menu").
+  2026-11-27 — visual novo (Task 9): `SIDEBAR_WIDTH` e `SIDEBAR_WIDTH_MOBILE` 17.5rem; some a borda lateral do desktop; o `SheetContent` da gaveta ganha largura pelo token (a `w-3/4` do Sheet perdia para a classe sem variante), `border-r-0`, sombra, curva e deslize de −105% sem fade; `overlayClassName` troca o scrim. O visual dos itens (pílula de 48px) vem por `className` no `AppSidebar`; o `default` de `SidebarMenuButton` não mudou.
 
 ### Sheet
 - **Status:** ✅ pronto (2026-11-20)
@@ -133,7 +147,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `SheetTitle`, `SheetDescription`, `SheetFooter`, `SheetClose`. O botão de fechar usa
   `Button size="icon-sm"` (44px no celular).
 - **Usa:** `Button`; tokens `background`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar".
+- **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar". 2026-11-27 — visual novo (Task 9): `SheetContent` aceita `overlayClassName` (o padrão `bg-black/10` + blur continua para os outros Sheets); só a gaveta do menu usa.
 
 ### Tooltip
 - **Status:** ✅ pronto (2026-11-20)
@@ -149,9 +163,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/ui/sonner.tsx`
 - **Propósito:** toasts de confirmação ("Passkey criada.").
 - **Como funciona:** um `<Toaster />` no layout raiz; dispare com `toast.success(...)` de
-  `sonner`. Lê o tema via `next-themes` (sem `ThemeProvider` cai em `system`).
+  `sonner`. Lê o tema via `useTheme` (`src/lib/useTheme.ts`).
 - **Usa:** tokens `popover`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`).
+- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`). 2026-11-27 — visual novo (Tarefa 3): agora existe `ThemeProvider` no layout raiz e o toast segue o tema do app (escuro padrão), não mais "system". 2026-11-27 — fix(tema): o tema vem do `useTheme` próprio (sem `next-themes`).
 
 ### Avatar
 - **Status:** ✅ pronto (2026-11-20)
@@ -175,9 +189,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/ui/skeleton.tsx`
 - **Propósito:** estado de carregamento (fallback de `Suspense`).
-- **Como funciona:** `div` pulsante; dê o tamanho por `className`.
-- **Usa:** token `muted`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Como funciona:** `div` pulsante com `bg-accent` (o `muted` é igual ao card na paleta nova); dê o tamanho por `className`, e troque o fundo por `className` quando o esqueleto estiver sobre outro fundo (o Início usa `bg-card`).
+- **Usa:** token `accent`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Task 15 (legibilidade): fundo `bg-accent` (era `bg-muted`, igual ao card na paleta nova: o esqueleto sumia dentro dos cards e do Sheet do detalhe); quem precisa de outro fundo troca pelo `className` (o Início usa `bg-card`). Teste novo.
 
 ### Alert
 - **Status:** ✅ pronto (2026-11-20)
@@ -193,10 +207,12 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/ui/badge.tsx`
 - **Propósito:** etiqueta curta de estado ou papel.
-- **Como funciona:** variantes `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`;
-  aceita `render`.
-- **Usa:** tokens `primary`, `secondary`, `destructive`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Como funciona:** pílula (`rounded-full`, `whitespace-nowrap`). Variantes `default`, `secondary`,
+  `destructive`, `outline`, `ghost`, `link`, mais `warning`, `info`, `success` (tokens de estado),
+  `neutral` (`bg-accent text-foreground`). `size`: `default` (h-5, `font-medium`) e `md` (h-6, `px-2.5`,
+  `font-semibold`, `border-0` e `leading-[normal]`: sem a borda de 1px da base e com a altura de linha da fonte, como no protótipo; quem passa outro `text-*` no `className` repete o `leading-[normal]` depois dele, porque o twMerge descarta o `leading` que vem antes de um `text-*`). Aceita `render`.
+- **Usa:** tokens `primary`, `secondary`, `destructive`, `warning`, `info`, `success`, `accent`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): `rounded-full` (era `rounded-4xl`), `whitespace-nowrap` já existia; variantes e `size="md"` novos. 2026-11-27 — Task 16 (pixel): `md` com `border-0` (era 2px mais largo) e `leading-[normal]` (o texto ficava até 0,8px acima do centro do protótipo). 2026-11-27 — Pack de correção do Início (Task 18, spec §6.4.1): saem as variantes `pastel-pending` e `pastel-confirmed` e os tokens delas (o cartão de turno passou a usar blocos de largura inteira).
 
 ### Toggle / ToggleGroup
 - **Status:** ✅ pronto (2026-11-21)
@@ -204,8 +220,8 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Propósito:** controle segmentado para um conjunto pequeno e fechado de respostas (papel, tipo do item).
 - **Como funciona:** `@base-ui/react/toggle-group`; `ToggleGroup` (`variant`, `size`, `spacing`) + `ToggleGroupItem`; o item marcado tem `aria-pressed="true"`. No uso do projeto: `variant="outline"`, `size="lg"`. Clicar no item já marcado **desmarca** (lista vazia em `onValueChange`): quem precisa de "nunca vazio" usa o `ChoiceGroup`.
 - **Atenção:** todo tamanho tem `h-9` / `min-w-9` no desktop e `max-md:h-11` / `max-md:min-w-11` no celular. Teste: `touchTargets.test.tsx`.
-- **Usa:** tokens `muted`, `input`, `ring`.
-- **Histórico:** 2026-11-21 — `shadcn add toggle-group` (traz `toggle`); alturas `h-8`/`h-7` viram `h-9 max-md:h-11` (P3).
+- **Usa:** tokens `primary` / `primary-foreground` (marcado), `accent` (hover), `input`, `ring`.
+- **Histórico:** 2026-11-21 — `shadcn add toggle-group` (traz `toggle`); alturas `h-8`/`h-7` viram `h-9 max-md:h-11` (P3). 2026-11-27 — Task 15 (legibilidade): marcado (`aria-pressed`) com `bg-primary text-primary-foreground` e hover `bg-accent` (eram `bg-muted`, igual ao card na paleta nova: no formulário a opção escolhida não se distinguia).
 
 ### NativeSelect
 - **Status:** ✅ pronto (2026-11-21)
@@ -245,48 +261,104 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
 - **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Dashboard (ícone `ChartColumn`), Conta e, só para admin, Administração.
-- **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
+- **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`, `avatarSrc` (data URI pronto do `AuthedSidebar`). Item ativo por
   `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
   `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
-  gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
+  gaveta do celular (`setOpenMobile(false)`). Wordmark "Closery" (Satoshi 900, 28px) no topo; no celular o botão X ("Fechar menu", `Button surface icon-pill` com tooltip) fica ao lado dele. Dois grupos em `nav` (raio 28, `bg-card`): "Principal" (`mainNavItems`) e, só para admin, "Administração" (`adminNavItems`); itens de 48px em pílula, Satoshi 16/700, ativo em `bg-primary`, hover `bg-accent` em 150ms. Card do usuário (raio 24) com `UserAvatar` de 44px a −4°, nome e e-mail truncados e o chip ADMIN/COLEGA (Geist Mono 11px). O Início fica
   atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
-- **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava. 2026-11-25 — Fase 5 (Tarefa 12): o menu ganha o item Dashboard (`/dashboard`, ícone `ChartColumn`) entre Solicitações e Conta.
+- **Usa:** `Sidebar*`, `UserAvatar`, `Button` (`surface`, `icon-pill`), `Tooltip`, `lucide-react`; tokens `sidebar-*`, `card`, `primary`, `accent`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava. 2026-11-25 — Fase 5 (Tarefa 12): o menu ganha o item Dashboard (`/dashboard`, ícone `ChartColumn`) entre Solicitações e Conta. 2026-11-27 — visual novo (Task 9): sidebar de 280px sem borda, dois grupos, card do usuário com avatar e chip de papel, X no drawer; `navItems.ts` separa `mainNavItems` e `adminNavItems` (`NAV_ITEMS` e `visibleNavItems` continuam). 2026-11-27 — Task 16 (pixel): nome e e-mail do card do usuário com `leading-[normal]` (eram 22,5 e 18,75px de linha; o nome ficava 1px acima do protótipo).
 
 ### AuthedSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AuthedSidebar.tsx`
 - **Propósito:** liga a sessão ao menu.
-- **Como funciona:** Server Component assíncrono; `requireUser()` e devolve `<AppSidebar />`.
+- **Como funciona:** Server Component assíncrono; `requireUser()` e devolve `<AppSidebar />` com `avatarSrc = avatarDataUri(userId)` (semente = id).
   Sempre dentro de `<Suspense fallback={<SidebarSkeleton />}>` no layout `(app)`.
 - **Usa:** `AppSidebar`, `requireUser`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-20 — o `RequireUser` (portão no layout) foi tentado e removido na re-revisão: o Next não deixa o layout controlar a página; o portão é `requireUser`/`requireAdmin` em cada página, guardado por `appPagesAuth.test.ts`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-20 — o `RequireUser` (portão no layout) foi tentado e removido na re-revisão: o Next não deixa o layout controlar a página; o portão é `requireUser`/`requireAdmin` em cada página, guardado por `appPagesAuth.test.ts`. 2026-11-27 — visual novo (Task 9): passa `avatarSrc` ao `AppSidebar`.
 
 ### SidebarSkeleton
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/SidebarSkeleton.tsx`
 - **Propósito:** reserva o espaço da barra lateral enquanto a sessão carrega.
-- **Como funciona:** só no desktop (`hidden md:flex`), `aria-hidden`, largura `--sidebar-width`.
+- **Como funciona:** só no desktop (`hidden md:flex`), `aria-hidden`, largura `--sidebar-width`, sem borda. Três blocos: wordmark, grupo de navegação (264px, raio 28) e card do usuário (68px, raio 24) colado embaixo.
 - **Usa:** `Skeleton`; token `sidebar`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-27 — visual novo (Task 9): forma nova, sem `border-r`.
 
 ### MenuToggle
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/MenuToggle.tsx`
 - **Propósito:** botão do cabeçalho que abre e fecha a barra lateral.
-- **Como funciona:** `"use client"`; `SidebarTrigger` (só ícone) dentro de `TooltipTrigger render`,
-  com `aria-label` e tooltip "Alternar menu". Testado com `fireEvent.pointerEnter/mouseEnter`.
-- **Usa:** `SidebarTrigger`, `Tooltip*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Como funciona:** `"use client"`; `Button variant="surface" size="icon-pill"` (44px, redondo) dentro de
+  `TooltipTrigger render`, com `aria-label`, `sr-only` e tooltip "Alternar menu", chamando
+  `useSidebar().toggleSidebar`. Os dois ícones (`PanelLeft` e `Menu`) estão sempre no HTML e o CSS
+  escolhe: `PanelLeft` com `max-md:hidden`, `Menu` com `hidden max-md:block` (abaixo de 860px abre a
+  gaveta). `aria-expanded` segue o que o botão abre: a gaveta (`openMobile`) no celular, a barra
+  (`open`) no desktop. Testado com `fireEvent.pointerEnter/mouseEnter` e, no celular, com
+  `window.innerWidth` 390.
+- **Usa:** `Button`, `useSidebar`, `Tooltip*`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-27 — visual novo (Task 9): deixa de usar o
+  `SidebarTrigger` (ghost, `icon-sm`) e vira o botão redondo de 44px com ícone por viewport.
+  2026-11-27 — Revisão final (F11): `aria-expanded` (`isMobile ? openMobile : open`). 2026-11-27 —
+  Segunda rodada (G5): teste do ramo do celular.
+
+### AppHeader
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/AppHeader.tsx`
+- **Propósito:** cabeçalho do app autenticado: botão de menu à esquerda e switch de tema à direita.
+- **Como funciona:** `"use client"` (não usa hooks; só compõe `MenuToggle` e `ThemeSwitch`). `<header>` de
+  76px (`h-[76px]`), `justify-between`, **sem borda**. O wordmark "Closery" (Satoshi 900, 24px) usa
+  `hidden max-md:inline`: só aparece abaixo de 860px, onde a sidebar fixa não está na tela. Vive dentro
+  do div centrado (1240px, 40px/16px de padding) que fica dentro do `@container/main` do `(app)/layout.tsx`.
+- **Usa:** `MenuToggle`, `ThemeSwitch`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Task 9); substitui o `<header>` com `border-b` do layout.
+
+### ThemeSwitch
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/ThemeSwitch.tsx`
+- **Propósito:** switch estilo Apple que alterna entre o tema escuro e o claro (vai no cabeçalho).
+- **Como funciona:** `"use client"`; `<button role="switch" aria-checked aria-label="Tema escuro">` em `TooltipTrigger render`, com
+  tooltip "Mudar para o tema claro" / "Mudar para o tema escuro". Trilho 76x44 em `card`, knob de 36px em `primary` com `Moon` (escuro,
+  à direita) ou `Sun` (claro, à esquerda); a posição e o ícone saem do CSS (`dark:`), que o script do `<head>` (`src/lib/theme.ts`) resolve antes da
+  pintura (sem piscar), e `transition: left .3s cubic-bezier(.2,.8,.2,1)` (desligada em `motion-reduce`). O `aria-checked` e o texto
+  do tooltip vêm do `useTheme` (`useSyncExternalStore`, snapshot do servidor "escuro", igual ao HTML). Testado
+  com `renderToString` (hidratação), teclado e tooltip com `fireEvent` como o `MenuToggle`.
+- **Usa:** `useTheme` (`src/lib/useTheme.ts`), `Tooltip*`; tokens `card`, `primary`, `primary-foreground`, `ring`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3). 2026-11-27 — fix(tema): saiu do `next-themes` para o módulo de tema próprio; o `ThemeProvider` foi removido (o script do `next-themes` duplicava conteúdo).
 
 ### Greeting
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/Greeting.tsx`
-- **Propósito:** título "Olá, {primeiro nome}" e o link para o dashboard.
+- **Propósito:** o topo do hero do Início: eyebrow com a data por extenso (São Paulo, caixa alta) e o título "Olá, {primeiro nome}".
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
-- **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda).
+- **Usa:** `requireUser`, `greetingTitle`, `formatEyebrowDateBR`.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda). 2026-11-27 — visual novo do Início (Tarefa 11): eyebrow mono 13px com a data e `h1` Satoshi 900 de 72px (60px com área útil abaixo de 900px, 44px no celular); o link "Ver o dashboard" saiu daqui e virou o botão `surface` da linha do hero no `HomeHandovers`; topo do hero `pt-7` (`max-md:pt-3`), gap de 14px entre eyebrow e título.
+
+### UserAvatar
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/UserAvatar.tsx` (sem `"use client"`, sem `server-only`: só desenha)
+- **Propósito:** avatar decorativo da pessoa (sidebar, "Passagem para confirmar", turno, solicitações vazias, convite).
+- **Como funciona:** props `{ src, size: 34 | 36 | 44 | 52 | 84, tilt?, frame?: "default" | "on-pastel", className? }`. `src` é o data URI de `avatarDataUri(userId)` (`src/lib/avatar.ts`, `server-only`, DiceBear `notionists`, semente = id do usuário, cache por semente; semente vazia lança erro). Moldura de tamanho cheio com padding e raios do protótipo (34 → 2,5px e 11px; 36 → 2,5px e 12px; 44 → 3px e 15px; 52 → 3px e 17px; 84 → 4px e 26px), imagem com o raio que acompanha a moldura (9, 10, 12, 14 e 22px); `bg-frame` (padrão) ou `bg-on-pastel` sobre os cards coloridos; `tilt` em graus via `style.transform` (geometria, não cor). `<img alt="" draggable={false}>` com `width`/`height`: o nome da pessoa sempre aparece ao lado, então a imagem não entra na árvore de acessibilidade. `biome-ignore noImgElement` com motivo (SVG em data URI não passa pelo `next/image`).
+- **Usa:** tokens `frame`, `on-pastel`; `avatarDataUri` (quem chama, no servidor).
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 8). 2026-11-27 — Pack de correção (Task 18): também na linha de entrega do `MyShiftCard` (36 px, +3° quem entregou, −4° quem confirmou), pelo `AvatarStack`.
+
+### AvatarStack
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/AvatarStack.tsx` (sem `"use client"`, sem `server-only`: só desenha)
+- **Propósito:** avatares sobrepostos de mais de uma pessoa numa linha de texto (hoje, quem entregou e quem confirmou, no `MyShiftCard`).
+- **Como funciona:** props `{ avatars: { id, src, tilt? }[], size: UserAvatarSize, frame?: "default" | "on-pastel", className? }`. Invólucro `flex flex-none items-center` (`data-slot="avatar-stack"`) com um `UserAvatar` por item, na ordem recebida: o primeiro com `relative z-1` (fica por cima, como o `z-index: 1` do protótipo) e cada um depois dele com `-ml-2` (8 px por baixo do anterior). `id` é a chave React (estável e única na pilha: o papel ou o id da pessoa). Lista vazia não desenha nada. Decorativo: as imagens têm `alt=""` e o nome das pessoas está no texto ao lado.
+- **Usa:** `UserAvatar`.
+- **Histórico:** 2026-11-27 — criado no pack de correção do Início (Task 18).
+
+### InviteTeamCard
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/InviteTeamCard.tsx` (server-safe)
+- **Propósito:** cartão "Convide sua equipe" do primeiro acesso do admin: o último passo é gerar os convites.
+- **Como funciona:** `Card variant="feature"` rosa (`bg-invite`, tinta `text-on-pastel`), grid `minmax(0,1fr) minmax(0,1.2fr)` só a partir de 1040 px de área útil (container query). Coluna 1: quatro tiles de 52 px (o `UserAvatar` do admin a −5° e três tracejados, o primeiro com `Plus`; decorativos, `aria-hidden`), eyebrow "Último passo", `<h2>` "Convide sua equipe" (26 px; 22 px no celular), o texto (máx. 440 px), o link `on-pastel` "Gerar convites" (`/admin/equipe`) e o botão `on-pastel-secondary` "Agora não" (20px de padding; um `<form action={dismissInviteCardAction}>`: a ação da Task 10 devolve `void`, grava o cookie `closery-convite-dispensado` e atualiza a tela; nada de `"use server"` inline no componente, que o `actionsGuards.test.ts` recusaria). Coluna 2: bloco `bg-on-pastel-soft` "Cadastros" com 5 linhas de no mínimo 44 px (Setores, Turnos, Itens, Destinos com "{n} ativo(s)"; Equipe "{n} pessoa(s) ativa(s)", via `pluralize`). O indicador de 24 px vem preenchido com `Check` quando o cadastro tem ao menos um ativo (`data-done`) e tracejado vazio quando não (a Equipe nunca vem marcada); o texto "Feito"/"Falta fazer" é só para leitor de tela.
+- **Usa:** `Card`, `Button`, `buttonVariants`, `UserAvatar`, `pluralize`, tokens `invite`, `on-pastel*`, `on-invite-*`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 14). 2026-11-27 — Task 16 (pixel): linhas de Cadastros com `box-content` (os 44px mínimos são do conteúdo e a divisória soma 1px por fora, como no protótipo; com o `border-box` do reset cada linha tinha 1px a menos e o cartão, 4px).
 
 ### AppError e AppNotFound
 - **Status:** ✅ pronto (2026-11-25)
@@ -465,9 +537,9 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/InactiveBadge.tsx` (server-safe)
 - **Propósito:** selo "Inativo" (nada se apaga; só desativa).
-- **Como funciona:** `<Badge variant="secondary">Inativo</Badge>`; sempre texto, nunca só cor.
-- **Usa:** `Badge`.
-- **Histórico:** 2026-11-21 — criado na Fase 2.
+- **Como funciona:** `<Badge variant="neutral">Inativo</Badge>` (fundo `accent`, visível sobre o card); sempre texto, nunca só cor.
+- **Usa:** `Badge` (variante `neutral`), token `accent`.
+- **Histórico:** 2026-11-21 — criado na Fase 2. 2026-11-27 — Task 15 (legibilidade): variante `neutral` (era `secondary`, igual ao card na paleta nova: a pílula sumia na linha).
 
 ### Pagination
 - **Status:** ✏️ estendido (2026-11-24)
@@ -499,7 +571,7 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** escolha entre poucas opções (Papel: Operador | Administrador; Tipo do item: Controle | Estoque).
 - **Como funciona:** `<fieldset>` com `<legend>` + `ToggleGroup` único (`outline`, `lg`); **nunca fica sem seleção**: clicar no item escolhido é ignorado. Genérico no tipo do valor (sem `as`). `description` liga ao grupo por `aria-describedby`.
 - **Usa:** `FieldSet`, `FieldLegend`, `FieldDescription`, `ToggleGroup`.
-- **Histórico:** 2026-11-21 — criado na Fase 2.
+- **Histórico:** 2026-11-21 — criado na Fase 2. 2026-11-27 — Task 15 (legibilidade): a opção escolhida volta a aparecer (Toggle marcado em `primary`); teste novo.
 
 ### SelectField
 - **Status:** ✅ pronto (2026-11-21)
@@ -531,7 +603,7 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** criar ou renomear setor e destino (um único campo de nome).
 - **Como funciona:** controlado; rótulo "Nome do setor"/"Nome do destino"; valida no cliente com `validateName` (as mesmas mensagens do servidor); `onSubmit(nomeNormalizado)`. **Limpa só no sucesso** (criar: volta a vazio; editar: mantém o nome salvo) e chama `onDone`. Se o servidor recusar mostra `fieldErrors.name` (ou a mensagem geral) em `FieldError` ligado ao campo e **preserva o que foi digitado**; o erro some ao digitar; botão travado enquanto envia.
 - **Usa:** `Field*`, `Input`, `Button`, `useAdminAction`, `validateName`.
-- **Histórico:** 2026-11-21 — criado na Fase 2. Exceção documentada a "nunca em branco" (F2-9): o nome é a identidade do registro.
+- **Histórico:** 2026-11-21 — criado na Fase 2. Exceção documentada a "nunca em branco" (F2-9): o nome é a identidade do registro. 2026-11-27 — `children` opcional, renderizado entre o campo e o botão (a escolha de cor do setor); destinos não usam.
 
 ### ActiveToggleButton
 - **Status:** ✅ pronto (2026-11-21)
@@ -555,23 +627,31 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** conteúdo de `/admin/setores` (Server Component async).
 - **Como funciona:** `await requireAdmin()` primeiro (operador cai no `notFound()`), lê `?pagina=` e `listSectors` (contagens de pessoas ativas e convites pendentes por subconsulta no SQL), monta `AdminPageHeader` + cartão "Novo setor" + lista de `AdminListRow` (detalhe `{n} pessoas ativas · {m} convites pendentes`, selo "Inativo") + `Pagination`; vazio vira `EmptyState`. A página (`page.tsx`) só embrulha em `<Suspense>` com esqueleto, sem `metadata`.
 - **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Card*`, `pluralize`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6). 2026-11-27 — lê também `suggestColorForNewSector` (em paralelo com `listSectors`, depois do portão) e passa `suggestedColor` ao `SectorCreateForm` (visual novo, Task 6).
 
 ### SectorCreateForm
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/sectors/SectorCreateForm.tsx`
 - **Propósito:** criar setor ("Criar setor").
-- **Como funciona:** `"use client"`; `NameForm` (entity "setor", nome começa vazio por ser a identidade do registro) → `createSectorAction`; toast "Setor criado."; erro de nome repetido inline (com o aviso "Ele está inativo: reative-o na lista." quando for o caso).
-- **Usa:** `NameForm`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+- **Como funciona:** `"use client"`; `NameForm` (entity "setor", nome começa vazio por ser a identidade do registro) + `SectorColorChoice` com a cor sugerida pelo servidor (`suggestedColor`, de `suggestColorForNewSector`) marcada → `createSectorAction({ name, color })`; toast "Setor criado."; erro de nome repetido inline (com o aviso "Ele está inativo: reative-o na lista." quando for o caso). A cor é derivada a cada renderização: a escolha da pessoa (`chosen`) ou, se ela não tocou, a sugestão **atual** do servidor; uma sugestão nova (tela revalidada) só muda a marcada enquanto a pessoa não escolheu. Depois de criar, `onDone` limpa a escolha e soma o `resets` (a `key` `{sugestão}-{resets}` remonta o grupo): a marcada volta à sugestão atual, chegue a tela revalidada antes ou depois do fim do envio (o `onDone` é o da renderização em que o envio começou, então nunca copia a sugestão). Se o servidor recusar, nome e cor escolhidos ficam.
+- **Usa:** `NameForm`, `SectorColorChoice`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6). 2026-11-27 — ganha a escolha de cor e a prop `suggestedColor` (visual novo, Task 6). 2026-11-27 — Revisão final (F6): a cor escolhida não volta à sugestão quando a página revalida (`touched`); o `onDone` volta a acompanhar a sugestão. 2026-11-27 — Segunda rodada (G9): a cor passa a ser derivada (`chosen ?? suggestedColor`), sem cópia da sugestão em estado; com a tela revalidada chegando antes do `onDone`, a sugestão velha voltava e nunca mais sincronizava.
 
 ### SectorRowActions
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/sectors/SectorRowActions.tsx`
 - **Propósito:** ações da linha de um setor: "Editar" e "Desativar"/"Reativar".
-- **Como funciona:** `"use client"`; `EditDialog` "Editar setor" com `NameForm` ("Salvar alterações", toast "Alterações salvas.", fecha ao salvar) e `ActiveToggleButton` → `setSectorActiveAction`. Desativar setor com pessoas ativas ou convites pendentes volta `SECTOR_IN_USE` e a mensagem com as contagens aparece em toast.
-- **Usa:** `EditDialog`, `NameForm`, `ActiveToggleButton`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6).
+- **Como funciona:** `"use client"`; `EditDialog` "Editar setor" com `NameForm` ("Salvar alterações", toast "Alterações salvas.", fecha ao salvar) e a `SectorColorChoice` já na cor atual do setor, e `ActiveToggleButton` → `setSectorActiveAction`. O formulário de edição (`SectorEditForm`, interno) monta quando o diálogo abre, então fechar sem salvar descarta a cor trocada. `renameSectorAction({ id, name, color })`. Desativar setor com pessoas ativas ou convites pendentes volta `SECTOR_IN_USE` e a mensagem com as contagens aparece em toast.
+- **Usa:** `EditDialog`, `NameForm`, `SectorColorChoice`, `ActiveToggleButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 6). 2026-11-27 — a edição ganha a escolha de cor (visual novo, Task 6).
+
+### SectorColorChoice
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/admin/sectors/SectorColorChoice.tsx` (client)
+- **Propósito:** escolher a cor do setor entre as cinco da paleta (Lilás, Pêssego, Azul, Verde, Rosa), na criação e na edição do setor.
+- **Como funciona:** `<fieldset>` com `<legend>` "Cor" + `RadioGroup`/`Radio.Root` do Base UI (`@base-ui/react/radio-group`, `@base-ui/react/radio`; `role="radiogroup"` nomeado pela legenda, `role="radio"` por opção). Cada opção é uma pílula (`group/color`, `h-9`, `max-md:h-11`, borda `border-input`, hover `bg-accent`) com a amostra de 16px (`size-4 rounded-full`, borda `border-foreground/20`, classe `SECTOR_COLOR_BG[cor]`, `aria-hidden`) **e o nome escrito**: a cor nunca é a única pista (`ui-rules.md §2.1`). A marcada ganha `data-checked` e vira pílula `primary` (`border-primary bg-primary text-primary-foreground`, hover também `bg-primary`), como o `Toggle`; a amostra dela troca a borda para `primary-foreground` (`group-data-checked/color:`), que contrasta com a pílula nos dois temas (15,26:1 claro, 14,99:1 escuro; no escuro a pílula é creme e a borda `foreground/20` sumia, com a amostra pastel a 1,46–1,92:1). O par é medido no `themeContrast.test.ts` (≥3:1). Props: `defaultValue: SectorColor` (sempre há uma marcada), `onValueChange?(cor)`, `name` (padrão `"color"`), `legend` (padrão "Cor"), `disabled`. Clicar na marcada não a desmarca. Não é controlado: quem usa guarda a escolha em `onValueChange` e remonta pela `key` para voltar ao padrão (o `SectorCreateForm` faz isso depois de criar). Por que não o `ChoiceGroup`: ele é um `ToggleGroup` com rótulo `string`, sem lugar para a amostra, e botões `aria-pressed` não são um `radiogroup`.
+- **Usa:** `FieldSet`, `FieldLegend`, `RadioGroup`, `Radio`, `SECTOR_COLORS`, `SECTOR_COLOR_LABELS`, `SECTOR_COLOR_BG`, tokens `bg-sector-*`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Task 6). 2026-11-27 — Revisão final (F7): a marcada passa de `border-foreground bg-muted` (muted = card na paleta nova; só a borda de 1px separava) para pílula `primary`; hover `accent`. 2026-11-27 — Segunda rodada (G3): a amostra da marcada ganha borda `primary-foreground` (`group/color` na pílula).
 
 ### DestinationsAdmin
 - **Status:** ✅ pronto (2026-11-21)
@@ -732,44 +812,68 @@ Componentes da passagem. Regras comuns: só tokens de cor, tema claro e escuro, 
 o operador usa o próprio setor e nunca vê o seletor.
 
 ### SectorPicker
-- **Status:** ✅ pronto (2026-11-21)
+- **Status:** ✏️ estendido (2026-11-27)
 - **Local:** `src/components/passagens/SectorPicker.tsx`
-- **Propósito:** o admin escolher o setor no Início, na Nova passagem e no Histórico (D-F3-3).
-- **Como funciona:** `"use client"`; `<fieldset>` com legenda "Setor" (só para leitor de tela) e um `Button` por setor ativo (selecionado = `variant="default"` e `aria-pressed`); com `allowAll`, o último botão é "Todos os setores" (`todos`). Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; com a prop `query` (o query canônico dos filtros da tela, sem o setor) o payload é `{ sectorId, path, query }` e o servidor o reinterpreta pelo parse da tela, mantendo os filtros que valem para qualquer setor e soltando os do setor antigo (P45); o redirect chega como exceção e segue adiante (`unstable_rethrow`). Falha da action ou exceção de rede = `toast.error`. Clicar no setor já selecionado não faz nada. O `SectorSwitcher` (links) do admin continua separado.
-- **Usa:** `Button`, `FieldSet`, `FieldLegend`, `chooseSectorAction`, `sonner`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 3, P45): prop opcional `query`; sem ela o payload continua exatamente `{ sectorId, path }`.
+- **Propósito:** o admin escolher o setor no Início, na Nova passagem, no Histórico, em Solicitações e no Dashboard (D-F3-3, C-V8: um seletor só).
+- **Como funciona:** `"use client"`; seletor deslizante (segmented control). `RadioGroup` e `Radio.Root` do Base UI: `role="radiogroup"` com `aria-label="Setor"` e um `role="radio"` (`aria-checked`, `aria-label` = nome) por setor ativo; com `allowAll`, o último é "Todos os setores" (`todos`, sem bolinha; texto visível "Todos", `aria-label` "Todos os setores"). As setas do teclado trocam de setor (radio nativo), Tab entra no marcado. Trilho `h-12 p-1 rounded-full bg-seg`, largura `min(100%, max(30rem, N*6.5rem + 0.5rem))` (480px com 4 opções; cresce com mais; rola em `overflow-x-auto` só quando nem o espaço da tela comporta); até 4 opções os segmentos dividem o trilho (`flex-1 min-w-0`; no celular cabem nos 100%, como no protótipo), com mais de 4 cada segmento tem `min-w-[6.5rem]` e o trilho rola; padding de 6px (`px-1.5`, o do botão do protótipo), altura de linha `normal`; bolinha de 8px na cor do setor (`SECTOR_COLOR_BG[color]`), nome em Satoshi 15px (`truncate`; 700 no marcado com `text-thumb-foreground`, 500 nos outros). O thumb (`bg-thumb`, `shadow-thumb`: a sombra única do app, token da Task 1) fica em `left: calc(i * 100% / N)` por variáveis CSS (`--i`, `--n`) e desliza em `.4s cubic-bezier(.3,1.25,.4,1)`; `motion-reduce:transition-none` tira o deslize. Clicar chama `chooseSectorAction({ sectorId, path })` dentro de `useTransition`, que grava o cookie `closery_setor` e faz `redirect` para `{path}?setor={id}`; com a prop `query` (o query canônico dos filtros da tela, sem o setor) o payload é `{ sectorId, path, query }` e o servidor o reinterpreta pelo parse da tela (P45); o redirect chega como exceção e segue adiante (`unstable_rethrow`). `useOptimistic` leva o thumb ao setor novo na hora e o devolve se a action falhar. Falha da action ou exceção de rede = `toast.error`. Durante o `pending` o grupo fica `disabled` (`aria-disabled`, sem clique) e os segmentos em `opacity-60`. Clicar no setor já selecionado não faz nada. Selecionado fora da lista: nenhum marcado e thumb oculto. Alvo de toque: o segmento tem 40px acima de 860px e `max-md:h-11` (44px, centrado sobre o padding do trilho) abaixo, para o guarda `e2e/touch-targets.spec.ts`. Com mais de 4 opções e o trilho transbordando, um efeito centraliza a opção marcada rolando **só o `radiogroup`** (`group.scrollTo({ left, behavior })`, `left` com piso 0; `auto` com `prefers-reduced-motion`, senão `smooth`), ao montar e a cada troca; a janela nunca rola e sem a API (`scrollTo` ausente) nada acontece. O rótulo (que trunca) tem `title` com o nome inteiro. O `SectorSwitcher` (links) das telas Turnos e Itens continua separado.
+- **Usa:** `RadioGroup`, `Radio` (`@base-ui/react`), `SECTOR_COLOR_BG`, tokens `seg`, `thumb`, `thumb-foreground`, `shadow-thumb`, `ring`, `chooseSectorAction`, `sonner`. Recebe `SectorChoice` (agora com `color`).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 3, P45): prop opcional `query`; sem ela o payload continua exatamente `{ sectorId, path }`. 2026-11-27 — visual novo (Task 7): vira o seletor deslizante em todas as telas (era `fieldset` com um `Button` por setor e `aria-pressed`); semântica `radiogroup`/`radio`; a bolinha usa a `color` que `listActiveSectors` passou a levar na Task 5; sem mudança na lógica nem na assinatura. 2026-11-27 — Task 16 (pixel): a largura mínima de 6.5rem só com mais de 4 opções (com 4, no celular de 390px o trilho rolava e cortava "Carga"); padding do segmento 12 → 6px e `leading-[normal]` (rótulo 0,8px acima do protótipo). 2026-11-27 — "Todos" no seletor: com `allowAll` o texto visível da última opção é "Todos" (com 5 opções cada segmento tem 104px e "Todos os setores" truncava), e o `aria-label` segue "Todos os setores" (contém o texto visível, WCAG 2.5.3). Com o trilho rolando (mais de 4 opções) um `useEffect` rola só o `radiogroup` (`scrollTo({ left })`, centralizando o radio marcado, só quando `scrollWidth > clientWidth`; `behavior: "auto"` com `prefers-reduced-motion`, senão `smooth`) ao montar e a cada troca; antes usava `scrollIntoView`, que também rolava a janela na vertical. O nome truncado tem `title` com o nome inteiro; o contêiner interno ganhou `shrink-0` para o primeiro segmento começar inteiro em `scrollLeft` 0. 2026-11-27 — Revisão final (F2, F11): o `scrollIntoView` (que também rolava a janela e não existe no jsdom) virou o `scrollTo` só no grupo, com guarda de API e de transbordo; `title` no rótulo, inclusive "Todos" → "Todos os setores". 2026-11-27 — Segunda rodada (G4): testes da rolagem com espiões na janela, o `left` calculado afirmado e o caso de menos movimento separado da chamada do Base UI.
 
 ### HandoverStatusBadge
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HandoverStatusBadge.tsx`
 - **Propósito:** mostrar a situação da passagem (aguardando, confirmada, não confirmada, sem passagem) e o selo "Corrigida".
-- **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-muted`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
-- **Usa:** `Badge`, tokens `info`, `success`, `warning`, `muted`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 11): exporta `SITUATION_STYLE` (ícone e classe de cada situação), que o anel do dashboard reusa para o ícone das fatias; nada mais muda.
+- **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-accent`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
+- **Usa:** `Badge`, tokens `info`, `success`, `warning`, `accent`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 11): exporta `SITUATION_STYLE` (ícone e classe de cada situação), que o anel do dashboard reusa para o ícone das fatias; nada mais muda. 2026-11-27 — Task 15 (legibilidade): "Sem passagem" com `bg-accent` (era `bg-muted`, igual ao card na paleta nova: a pílula sumia na linha do histórico); teste novo recusa fundo igual ao do card.
 
 ### PendingHandoverCard
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/PendingHandoverCard.tsx`
 - **Propósito:** cartão do topo do Início "Passagem para confirmar".
-- **Como funciona:** Server-safe. Mostra `{turno} · {dd/mm/aaaa}`, "Entregue às {HH:mm} por {nome}", o bloco "Fica para o próximo turno" em destaque (trecho do texto ou "Nada registrado para o próximo turno.") e o link-botão "Ver passagem" (`/passagens/{id}`). Não confirma aqui: a confirmação é no resumo.
-- **Usa:** `Card`, `buttonVariants`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Como funciona:** Server-safe, só desenha (recebe `avatarSrc` pronto). `Card feature` amarelo (`--highlight`, tinta `--on-pastel`), em grid de uma coluna que vira duas (`minmax(0,1fr) minmax(0,1.2fr)`) só com área útil de 1040px ou mais. Coluna da esquerda: título "Passagem para confirmar", `{turno} · {dd/mm/aaaa}`, o avatar de quem entregou com "Entregue às {HH:mm} por {nome}" e o botão `on-pastel` "Ver passagem" (`/passagens/{id}`) no fim. Coluna da direita: o bloco "Fica para o próximo turno" (trecho do texto ou "Nada registrado para o próximo turno."). Não confirma aqui: a confirmação é no resumo.
+- **Usa:** `Card` (`feature`), `buttonVariants` (`on-pastel`, `pill`), `UserAvatar`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-27 — visual novo (Tarefa 11): prop nova `avatarSrc` (data URI de quem entregou, gerado por quem chama: o cartão só desenha); `Card feature` em `--highlight` com tinta `--on-pastel`, grid `minmax(0,1fr) minmax(0,1.2fr)` só com área útil ≥ 1040px, avatar de 36px (inclinado 3°) de quem entregou, bloco `--on-pastel-soft` "Fica para o próximo turno" e botão `on-pastel` "Ver passagem" com `ArrowRight` no fim da coluna; sem mudança de regra. 2026-11-27 — Task 16 (pixel): "{turno} · {data}" e "Entregue às…" com `leading-[normal]` (a linha de 27,1px empurrava o botão e o fim do cartão 1px para baixo).
+
+### SectorPill
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/passagens/SectorPill.tsx`
+- **Propósito:** o setor do operador no hero do Início, só para leitura (o admin troca pelo `SectorPicker`).
+- **Como funciona:** Server-safe. Pílula de 48px em `bg-card`: bolinha de 10px na cor do setor (`SECTOR_COLOR_BG`, `aria-hidden`), "Setor" em mono 12px `text-muted-foreground` e o nome em Satoshi 700/16px com reticências. Não é botão nem link.
+- **Usa:** `SECTOR_COLOR_BG`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Tarefa 11).
 
 ### MyShiftCard
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/MyShiftCard.tsx`
 - **Propósito:** cartão "Passagem do meu turno" do Início, nos cinco estados.
-- **Como funciona:** Server-safe. Mostra `{turno} · {início}–{fim} · {data}` (horário com `tabular-nums`) e "Turno sugerido pelo horário de agora.". `start` → "Começar passagem"; `continue` → "Rascunho salvo às {HH:mm} por {nome}" + "Continuar passagem"; `delivered` → "Entregue às … Aguardando recebimento." + "Ver passagem"; `confirmed` → "Entregue por … Confirmada por …" + "Ver passagem"; `no-shifts` → "Nenhum turno neste setor." (admin: link "Ir para Turnos"). Todos, menos `no-shifts`, trazem o link "Ver todas as passagens". Admin leva `&setor=` no link de começar.
-- **Usa:** `Card`, `buttonVariants`, `newHandoverHref`, `handoverHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Como funciona:** Server-safe. `Card variant="feature"` na cor do setor (`SECTOR_COLOR_BG[sectorColor]`; crossfade de .45 s, desligado com `prefers-reduced-motion`) e tinta `text-on-pastel`. Topo: `<h2>` "Passagem do meu turno" e o chip do setor (`sectorName`, Geist Mono 12 px, reticências se longo). Corpo: nome do turno (Satoshi 700, 20 px), horário `{início}–{fim}` (Satoshi 900, `tabular-nums`, 64 px; 52 px em 2 colunas com área útil < 1240 px e 44 px no celular, por container query de `@container/main`) e a data em mono. `start`/`continue`: `ShiftProgressBar` e "Turno sugerido pelo horário de agora.". `start` → "Começar passagem"; `continue` → pílula `bg-on-pastel-soft` com `UserAvatar` de 34 px (`avatarSrc`, de quem salvou) e "Rascunho salvo às … por …" + "Continuar passagem"; `delivered` → bloco de largura inteira "Aguardando recebimento" (`<p>` `self-stretch`, raio 22 px, padding 18/22 px, Satoshi 700/16 px, `Clock` de 18 px `aria-hidden`, `bg-on-pastel/10` e `text-on-pastel`) e, 12 px abaixo, a linha de entrega (`flex items-center gap-2.5`: `AvatarStack` de 36 px com quem entregou a +3°, de `deliveredAvatarSrc`, e "Entregue às … Aguardando recebimento." em 15 px/1,5, numa string só, um nó de texto como no protótipo) + "Ver passagem"; `confirmed` → o mesmo bloco em verde, "Confirmada" com `CircleCheck` (`bg-on-pastel-success-soft` e `text-on-pastel-success`), e a linha com a pilha (quem entregou a +3°, por cima; quem confirmou a −4°, de `confirmedAvatarSrc`, 8 px sobreposto) e "Entregue por … Confirmada por …" + "Ver passagem"; sem avatar, a frase aparece sozinha; `no-shifts` → "Nenhum turno neste setor." (Satoshi 900, 32 px) e, só para o admin, "Ir para Turnos". Rodapé (`mt-auto`): o primário (`on-pastel`, `pill`, 22px de padding, com `ArrowRight`) e o secundário "Ver todas as passagens" (`on-pastel-secondary`, `pill` com `px-5` pelo `cn`: 20px, como no protótipo), em todos os estados. Admin leva `&setor=` no link de começar.
+- **Usa:** `Card`, `buttonVariants`, `UserAvatar`, `AvatarStack`, `ShiftProgressBar`, `SECTOR_COLOR_BG`, `newHandoverHref`, `handoverHref`; tokens `on-pastel`, `on-pastel-success`, `on-pastel-success-soft`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-27 — visual novo do Início (Task 12): cor do setor, chip, horário grande, barra do turno, avatar do rascunho, selos pastel e rodapé com secundário; props novas `sectorName`, `sectorColor` e `avatarSrc`; o `no-shifts` passou a ter o link "Ver todas as passagens". 2026-11-27 — Task 16 (pixel): título, nome do turno, data, "Turno sugerido…", texto do rascunho e do sem-turnos com `leading-[normal]` (a barra descia 4px); selos de estado com `leading-[normal]` depois do `text-[13px]` (o twMerge do Badge descarta o `leading` que vem antes). 2026-11-27 — Pack de correção do Início (Task 18, spec §6.4.1): `delivered` e `confirmed` trocam o selo pastel por um bloco de largura inteira (neutro `on-pastel/10` e verde `on-pastel-success*`) e ganham avatar na linha de entrega (pilha de dois no `confirmed`); props novas `deliveredAvatarSrc` e `confirmedAvatarSrc`. 2026-11-27 — Pixel do pack de correção: a frase da linha de entrega (`delivered` e `confirmed`) vai montada numa string só; partida em vários nós de texto (com os comentários do SSR entre eles), o Chromium posicionava alguns glifos diferente do protótipo (cartão de 0,004–0,019% para 0,000–0,002%). 2026-11-27 — Segunda rodada (G10): `STATUS_TONE` exportado para o `themeContrast.test.ts` ler o alfa do bloco "Aguardando recebimento" e os tokens do "Confirmada" do próprio componente (uma fonte só); testes do traço 2.2 dos ícones dos blocos, da pilha só com quem confirmou e do avatar com "outra pessoa".
+
+### ShiftProgressBar
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/passagens/ShiftProgressBar.tsx` (server-safe)
+- **Propósito:** barra de quanto do turno já passou, nos estados `start` e `continue` do `MyShiftCard`.
+- **Como funciona:** recebe o `ShiftProgress` já calculado no servidor (`shiftProgress`). Trilho de 10 px (`bg-on-pastel-track`) com o preenchimento `bg-on-pastel` na largura `pct` (presa entre 0 e 100; `NaN` vira 0); abaixo, em Geist Mono 12 px com `tabular-nums`: início · "agora HH:MM" · fim. O trilho é uma `progressbar` (`aria-label` "Progresso do turno", `aria-valuenow` arredondado e `aria-valuetext`).
+- **Usa:** tokens `on-pastel`, `on-pastel-track`, `on-pastel-muted`; tipo `ShiftProgress`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 12).
+
+### HomeCards
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/passagens/HomeCards.tsx` (server-safe)
+- **Propósito:** os cartões do Início depois do hero, numa peça só (o `HomeHandovers` lê os dados; este desenha).
+- **Como funciona:** coluna com gap 16: `InviteTeamCard` (se `inviteCounts` não for nulo), `PendingHandoverCard` (se houver) e uma linha em grid com `MyShiftCard` e `RequestsHomeCard`. A linha é `grid-cols-[minmax(0,1fr)]` e vira `minmax(0,1.3fr) minmax(0,1fr)` com `@min-[1040px]/main:` (área útil do `@container/main`, não a janela). Gera no servidor os avatares (`avatarDataUri`): quem entregou a passagem pendente (`pending.deliveredById`), quem salvou o rascunho (`saved.byId`), quem entregou e quem confirmou a passagem do meu turno (`mine.deliveredById`, `mine.confirmedById`; id vazio ou nulo não vira avatar) e quem está logado (`actorId`: convite e solicitações vazias). Admin leva `?setor=` nos links.
+- **Usa:** `InviteTeamCard`, `PendingHandoverCard`, `MyShiftCard`, `RequestsHomeCard`, `avatarDataUri`, `requestsHref`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 14). 2026-11-27 — Pack de correção (Task 18): avatares de quem entregou e de quem confirmou para o `MyShiftCard` (`deliveredAvatarSrc`, `confirmedAvatarSrc`).
 
 ### HomeHandovers
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/HomeHandovers.tsx`
 - **Propósito:** os cartões de passagem do Início.
-- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveScreenSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Depois deles vem o `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
-- **Usa:** `getHomeHandovers`, `resolveScreenSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento).
+- **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveScreenSector` (URL → cookie → primeiro ativo) e `SectorPicker` (sem `allowAll`: no Início não há "Todos"); sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem (no `HomeCards`): `InviteTeamCard` (admin sozinho, sem convites e sem o cookie de dispensa), `PendingHandoverCard` (se houver) e, lado a lado, `MyShiftCard` e `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
+- **Usa:** `requireUser`, `resolveScreenSector`, `getHomeHandovers`, `getHomeRequests`, `getAdminOverviewCounts` e `readInviteCardDismissed` (só admin), `shouldShowInviteCard`, `HomeCards` (que monta os cartões e os avatares: `RequestsHomeCard`, `requestsHref` e `avatarDataUri` são dele), `SectorPicker`, `SectorPill`, `EmptyState`, `buttonVariants` e o ícone `ChartColumn` ("Ver o dashboard").
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento). 2026-11-27 — visual novo (Tarefa 11): devolve a linha do hero (`data-slot="home-hero-row"`: o seletor do admin ou o `SectorPill` do operador, e o botão "Ver o dashboard") e, depois, os cartões em `data-slot="home-cards"` (`gap-4`, ponto de extensão do convite e do grid). Os ramos de erro (setor inativo, sem setor ativo) também levam a linha, só com o botão do dashboard. Espaçamento do hero: `pt-8 pb-10` (`max-md:pt-6 max-md:pb-7`). 2026-11-27 — visual novo do Início (Task 12): passa `sectorName`, `sectorColor` e o avatar do rascunho ao `MyShiftCard`. 2026-11-27 — visual novo do Início (Task 14): lê `getAdminOverviewCounts` (só admin) e o cookie de dispensa, calcula o primeiro acesso com `shouldShowInviteCard` e entrega o JSX dos cartões ao `HomeCards`; o cartão "Convide sua equipe" abre a lista. 2026-11-27 — Task 16 (pixel): o `ml-auto` do "Ver o dashboard" só vale sem o seletor/pílula (ramos de erro, à direita); com eles, o `justify-between` o põe à direita no desktop e, quando a linha quebra no celular, ele fica à esquerda, como no protótipo (screenshot 13). 2026-11-27 — Segunda rodada (G6): "Usa" em dia com os imports (o `RequestsHomeCard`, o `requestsHref` e o `avatarDataUri` passaram ao `HomeCards` na Task 14).
 
 ### QuantityCounter
 - **Status:** ✅ pronto (2026-11-21)
@@ -909,31 +1013,31 @@ o operador usa o próprio setor e nunca vê o seletor.
 
 ### Solicitações — `src/components/solicitacoes/*` (Fase 4)
 
-Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitações. Status sempre com ícone e texto (a cor pertence ao status e nunca é ciclada); ação que muda status usa a cor do status de destino.
+Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitações. Status sempre com texto (a cor pertence ao status e nunca é ciclada) e com ícone em todas as telas, menos nas linhas do cartão de Solicitações do Início, onde os selos de status e de parada saem só com texto, como no protótipo (D-V5, decisão do dono de 2026-11-27; `showIcon`/`badgeIcons`). Ação que muda status usa a cor do status de destino.
 
 ### statusStyle
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/statusStyle.ts` (server-safe)
 - **Propósito:** o ícone e as classes de cor de cada status de solicitação, num lugar só.
-- **Como funciona:** `REQUEST_STATUS_STYLE[status]` devolve `{ icon, badgeClass, buttonClass }`. Solicitada `CircleDot` + `bg-info text-info-foreground`; Em separação / Trânsito `Truck` + `bg-warning text-warning-foreground`; Entregue `CircleCheck` + `bg-success text-success-foreground`; Cancelada `CircleX` + `bg-muted text-muted-foreground`. `buttonClass` = `badgeClass` + `border-transparent hover:bg-{token}/80`: é a cor do botão "Mover para {status}" (o de cancelar usa `variant="destructive"`). Classes sempre inteiras no texto, para o Tailwind enxergá-las.
-- **Usa:** tokens `info`, `warning`, `success`, `muted`; ícones do lucide.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Como funciona:** `REQUEST_STATUS_STYLE[status]` devolve `{ icon, badgeClass, buttonClass }`. Solicitada `CircleDot` + `bg-accent text-foreground` (neutro); Em separação / Trânsito `Truck` + `bg-info text-info-foreground`; Entregue `CircleCheck` + `bg-success text-success-foreground`; Cancelada `CircleX` + `bg-accent text-muted-foreground` (`bg-muted` some no tema novo, onde `--muted` = `--card`). `buttonClass` = `badgeClass` + `border-transparent hover:bg-{token}/80`: é a cor do botão "Mover para {status}" (o de cancelar usa `variant="destructive"`). Classes sempre inteiras no texto, para o Tailwind enxergá-las.
+- **Usa:** tokens `accent`, `info`, `success`; ícones do lucide.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo do Início (Task 13): Solicitada passa a neutra, Em separação / Trânsito a azul (`info`) e Cancelada a `bg-accent`; a parada continua em `warning`, só no `StaleBadge`. Vale para o botão "Mover para …", a Timeline e os grupos da Lista.
 
 ### RequestStatusBadge
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestStatusBadge.tsx` (server-safe)
 - **Propósito:** selo do status da solicitação (cartão, linha, tabela, detalhe, passagem).
-- **Como funciona:** `<Badge variant="secondary" className="h-6 …">` com o ícone (`aria-hidden`) e o rótulo (`Solicitada`, `Em separação / Trânsito`, `Entregue`, `Cancelada`) do `REQUEST_STATUS_STYLE`. Nunca só cor.
+- **Como funciona:** `<Badge variant="secondary" size="md" className="…">` (pílula de 24 px, `whitespace-nowrap`, vindo do `Badge`) com o ícone (`aria-hidden`) e o rótulo do `REQUEST_STATUS_STYLE`. Nunca só cor: o texto vem sempre. `showIcon={false}` (padrão `true`) tira o ícone; só as linhas do cartão do Início usam (D-V5, decisão do dono de 2026-11-27, como no protótipo).
 - **Usa:** `Badge`, `statusStyle`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): pílula `size="md"`; as cores de Solicitada, Em separação / Trânsito e Cancelada mudam (ver `statusStyle`). 2026-11-27 — Task 16 (D-V5, decisão do dono de 2026-11-27): prop `showIcon` (padrão `true`); `false` só nas linhas do `RequestsHomeCard`.
 
 ### StaleBadge
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/StaleBadge.tsx` (server-safe)
 - **Propósito:** selo "Parada há N dias" das solicitações abertas há mais de 72 h no mesmo status.
-- **Como funciona:** `<Badge variant="secondary" className="h-6 bg-warning text-warning-foreground">` com `ClockAlert` (`aria-hidden`) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
+- **Como funciona:** `<Badge variant="warning" size="md">` com `ClockAlert` (`aria-hidden`; `showIcon={false}` o tira, só nas linhas do cartão do Início) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
 - **Usa:** `Badge`, `staleLabel`, token `warning`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): usa a variante `warning` e `size="md"` do `Badge` (mesma cor de antes, agora em pílula). 2026-11-27 — Task 16 (D-V5, decisão do dono de 2026-11-27): prop `showIcon` (padrão `true`); `false` só nas linhas do `RequestsHomeCard`.
 
 ### RequestForm
 - **Status:** ✅ pronto (2026-11-24)
@@ -1058,9 +1162,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestSheet.tsx`
 - **Propósito:** o Sheet do detalhe rápido (rota interceptada `@detalhe/(.)solicitacoes/[id]`).
-- **Como funciona:** `"use client"`. `open` é constante: o slot só existe enquanto a URL é a do detalhe, e estado local não reabriria sob a Activity. Fechar (Escape, fundo ou o botão com texto "Fechar") chama `router.back()` uma vez só: a trava `closing` (um `ref` liberado no efeito de montagem) impede dois `back()` antes de a navegação terminar. O X só com ícone do primitivo fica desligado (`showCloseButton={false}`): o botão "Fechar" tem texto.
+- **Como funciona:** `"use client"`. `open` é constante: o slot só existe enquanto a URL é a do detalhe, e estado local não reabriria sob a Activity. Fechar (Escape, fundo ou o botão com texto "Fechar") chama `router.back()` uma vez só: a trava `closing` (um `ref` liberado no efeito de montagem) impede dois `back()` antes de a navegação terminar. O X só com ícone do primitivo fica desligado (`showCloseButton={false}`): o botão "Fechar" tem texto. Largura: `data-[side=right]:w-full` (tela inteira no celular) e `data-[side=right]:sm:max-w-xl` a partir de 640px (o `cn` descarta o `sm:max-w-sm` da base do Sheet; 384px apertava o detalhe no desktop).
 - **Usa:** `Sheet`, `SheetContent`, `SheetClose`, `Button`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: o teste da trava usa `Activity` com a mesma instância; Escape num diálogo de dentro do Sheet (cancelar, apagar comentário) fecha só o diálogo, coberto pelo E2E (b), sem mudança no código. O fallback de carregamento do slot `@detalhe/(.)solicitacoes/[id]` ganha `SheetTitle` `sr-only` "Carregando solicitação".
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: o teste da trava usa `Activity` com a mesma instância; Escape num diálogo de dentro do Sheet (cancelar, apagar comentário) fecha só o diálogo, coberto pelo E2E (b), sem mudança no código. O fallback de carregamento do slot `@detalhe/(.)solicitacoes/[id]` ganha `SheetTitle` `sr-only` "Carregando solicitação". 2026-11-27 — Task 15 (legibilidade): `data-[side=right]:w-full` no `SheetContent` (o `w-3/4` do Sheet vencia o `w-full`; em 390px o painel tinha 290px e "Mover para Em separação / Trânsito" ficava cortado na borda). 2026-11-27 — Revisão final (F8): `data-[side=right]:sm:max-w-xl` no `SheetContent` (o detalhe ficava em 384px no desktop).
 
 ### RequestDetailSkeleton
 - **Status:** ✅ pronto (2026-11-24)
@@ -1121,9 +1225,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/OpenRequestItem.tsx` (server-safe)
 - **Propósito:** uma solicitação aberta nas seções da passagem e no cartão do Início.
-- **Como funciona:** `<li>` com a prévia da descrição (`requestPreview`: 1ª linha, até 60 pontos de código) num `<Link href={requestHref(id)} scroll={false}>` (abre o detalhe rápido no Sheet), "Para {destino}", `RequestStatusBadge` e, se parada, `StaleBadge`. Com `statusNow` diferente do status mostra "Agora: {status}" (só o resumo da entrega passa a prop). O link tem alvo ≥ 44px no celular.
+- **Como funciona:** `<li class="border-t">` com uma linha (`data-slot="open-request-row"`, raio 18, margem lateral −10 px, `hover:bg-accent` em 150 ms) inteira clicável: o `<Link href={requestHref(id)} scroll={false}>` com a prévia (`requestPreview`, Geist 600/15 px) é esticado por `after:inset-0` (o nome acessível continua sendo a prévia; o foco desenha o anel no `::after`). Abaixo, "Para {destino}" (13 px), `RequestStatusBadge`, `StaleBadge` e, com `statusNow` diferente, "Agora: {status}". Fecha com o `ChevronRight` de 18 px. A divisória é o `border-t` da `<li>` (as seções não usam mais `divide-y`).
 - **Usa:** `RequestStatusBadge`, `StaleBadge`, `requestPreview`, `requestHref`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): linha inteira clicável com chevron; vale também para as seções da passagem. 2026-11-27 — Task 16 (pixel): "Para {destino}" com `leading-[normal]` (a linha de 18,6px deixava cada linha 1,6px mais alta que a do protótipo). 2026-11-27 — Task 16 (D-V5, decisão do dono de 2026-11-27): prop `badgeIcons` (padrão `true`); `false` tira o ícone dos selos de status e de parada (o chevron fica). Só o `RequestsHomeCard` usa; as seções da passagem mantêm os ícones.
 
 ### OpenRequestsNowSection
 - **Status:** ✅ pronto (2026-11-24)
@@ -1145,9 +1249,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestsHomeCard.tsx` (server-safe)
 - **Propósito:** cartão "Solicitações" do Início, depois de "Passagem do meu turno".
-- **Como funciona:** `Card` com `<h2>` "Solicitações"; linha "{n abertas} · {m paradas}" (`tabular-nums`, singular em 1) ou "Nenhuma solicitação aberta."; havendo paradas, o rótulo `<h3>` "Paradas há mais tempo" e até 5 `OpenRequestItem` (as mais antigas no status); link-botão "Ver solicitações" (`allHref`; o admin leva `?setor=`).
-- **Usa:** `Card`, `OpenRequestItem`, `openCountLabel`, `staleCountLabel`, `buttonVariants`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+- **Como funciona:** `Card variant="feature"` com `<h2>` "Solicitações" (Satoshi 700/18 px). Com abertas: o contador `{openCount}` (Satoshi 900, `tabular-nums`, 76 px; 60 px em 2 colunas com área útil < 1240 px; 52 px no celular), ao lado "aberta"/"abertas" e o `Badge warning` com `TriangleAlert` "{n} paradas" (some sem paradas); com paradas, o `<h3>` "Paradas há mais tempo" (mono, caixa alta) e até 5 `OpenRequestItem`. Vazio: `UserAvatar` de 84 px (`avatarSrc`, quem está logado) e "Nenhuma solicitação aberta."; com `firstAccess`, a linha "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.". Rodapé: link `default` `pill` "Ver solicitações" com `ArrowRight` e 20px de padding (`cn(..., "px-5")`, como no protótipo) (`allHref`; o admin leva `?setor=`).
+- **Usa:** `Card`, `Badge`, `UserAvatar`, `OpenRequestItem`, `staleCountLabel`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): contador grande + selo de paradas no lugar da linha "{n abertas} · {m paradas}"; props novas `avatarSrc` e `firstAccess`. 2026-11-27 — Task 16 (pixel): título "Solicitações" com `leading-[normal]` (a linha de 28px empurrava o contador e a lista 4px para baixo); selo "{n} paradas" com `leading-[normal]` depois do `text-[12.5px]`. 2026-11-27 — Task 16 (D-V5, decisão do dono de 2026-11-27): as linhas das paradas usam `OpenRequestItem badgeIcons={false}` (selos só com texto, como no protótipo); o selo "{n} paradas" do contador mantém o `TriangleAlert`.
 
 ### RequestGroupSection
 - **Status:** ✅ pronto (2026-11-25)
@@ -1168,7 +1272,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Como funciona:** props `label`, `unit`, `context` (setor, admin em "Todos os setores"), `periodDays`, `total`, `average`, `handoverCount`, `delta`, `segments` (um por turno, todos com `href`), `series` (2N dias; cada ponto traz o `total` do dia e as `parts` por turno), `href`. O número grande e a legenda `{n} passagens` são `Link` para a lista que o total conta; `handoverCount` 0 mostra "Sem passagens no período", sem gráfico. A variação é neutra (ícone `ArrowUp`/`ArrowDown`/`Minus` e texto de `deltaText`, sem verde nem vermelho). A escala vai de 0 ao maior valor desenhado, rotulada com a unidade. O `slider` lê um dia por vez (setas, Home, End, Escape; `aria-valuetext` `dd/mm/aaaa: n unidade`) e o botão "Voltar ao período" volta à leitura do período. Com 2 ou mais segmentos aparece "Por turno": barra de participação, uma linha por turno (cor fixa, total como `Link`, `sharePercent`) e o botão "Mostrar só {turno}" / "Mostrar todos os turnos" (`aria-pressed`); em foco o número e a variação são do turno (`segment.total` e `previousTotal` vindos do SQL), a linha usa a cor do turno e **nenhuma classe de swatch muda**. Nada é somado no cliente.
 - **Adaptações do original:** só tokens (`border-border bg-card`, `stroke-foreground`, `stroke-muted-foreground/50` tracejado…); pt-BR e unidade; export nomeado; período por prop e sem pílulas, sem dados de demonstração, sem Shift/intervalo; escala a partir de 0 (saiu o `mínimo × 0,85`); vazio; `clipId` com `useId().replace(/[^a-zA-Z0-9_-]/g, "")`; `motion-reduce` no `RollingNumber`, nas barras e no morph em JS; alvos `max-md:min-h-11`; resumo `sr-only` e `<output>` anunciando só a troca de foco.
 - **Usa:** `Link`, `computeDelta`/`deltaText`/`deltaAriaLabel`, `sharePercent`, `formatInteger`/`formatDecimal`, `formatDateBR`, `pluralize`, `cn`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10); `bun scripts/rc-check.mjs` com `compiled: 4` e nenhum `CompileError`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10); `bun scripts/rc-check.mjs` com `compiled: 4` e nenhum `CompileError`. 2026-11-27 — Task 15 (legibilidade): turno em foco e hovers com `bg-accent` (eram `bg-muted`, igual ao card na paleta nova).
 
 ### SpendingRing
 - **Status:** ✅ pronto (2026-11-25)
@@ -1177,7 +1281,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Como funciona:** props `title`, `legendLabel`, `total` (do SQL; o anel não soma as fatias), `totalHref` (obrigatório: o total do cabeçalho, e o `0` do vazio, são um `Link` com nome `{n} passagens: ver a lista`), `slices` (`key`, `label`, `value`, `href`, `strokeClass`, `dotClass`, `icon?`), `emptyText`. `ringSpans` (pura) desenha só as fatias com valor, com sweep mínimo de 3° e soma de 360° menos os vãos. O anel é um `slider` (setas, Home, End, arrastar, tocar na fatia; `aria-valuetext` `{rótulo}: {n} ({p}%)`) e o centro mostra o valor, o rótulo e `{p}% do total` da fatia selecionada. A legenda é uma `<ul aria-label={legendLabel}>` com um `Link` por fatia (todas, inclusive as zeradas): ponto, ícone, rótulo, valor e porcentagem; foco ou passagem do mouse numa linha seleciona a fatia. `total` 0 mostra `emptyText` no lugar do anel e mantém a legenda.
 - **Adaptações do original:** só tokens; pt-BR, sem moeda; export nomeado; `legendLabel` e links; vazio e fatia minúscula (sem arco invertido); `motion-reduce:transition-none`; linhas da legenda `max-md:min-h-11`; `touch-none` só no anel. **React Compiler:** o original o fazia desistir em silêncio; corrigido com `turnTo(restAt?)` (padrão resolvido no corpo), `tickRef` (o `tick` se reagenda por ref), `ringSpans` com `reduce` (sem `let` reatribuído) e `transform` inicial calculado dos `spans`; `bun scripts/rc-check.mjs` com `compiled: 3`.
 - **Usa:** `Link`, `sharePercent`, `formatInteger`, `cn`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-26 — Fase 6 (Tarefa 7, P12): o total do cabeçalho (`TOTAL_LINK`) ganha `max-md:min-w-11 max-md:justify-end` (um número curto como `1` ou `0` media 9x44 no celular).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-26 — Fase 6 (Tarefa 7, P12): o total do cabeçalho (`TOTAL_LINK`) ganha `max-md:min-w-11 max-md:justify-end` (um número curto como `1` ou `0` media 9x44 no celular). 2026-11-27 — Task 15 (legibilidade): linha selecionada da legenda com `bg-accent` e hover `bg-accent/60` (eram `bg-muted`, igual ao card na paleta nova).
 
 ### chartColors
 - **Status:** ✅ pronto (2026-11-25)
@@ -1217,7 +1321,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Propósito:** linhas com o valor escrito ao lado e, opcionalmente, uma barra proporcional: o tempo até a entrega por destino (com barras) e a quantidade pedida por item (só números, porque as unidades diferem).
 - **Como funciona:** `<ul aria-label>` com um `<Link>` por linha (`min-h-11`): rótulo (+ contexto, o setor, em "Todos os setores"), `valueText` em `tabular-nums` e `detail`. Com `bars`, a barra tem `width = barPercent(value, max)%` (`max` = maior valor mostrado; valor maior que zero nunca some, piso de 2%) e a cor `SINGLE_BAR_CLASS` (`bg-foreground`); a barra é decorativa, o número escrito é a escala. Sem linhas mostra `emptyText`; `moreText` ("Mostrando 8 de 11 destinos.") fica abaixo da lista.
 - **Usa:** `Link`, `barPercent`, `chartColors`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11). 2026-11-27 — Task 15 (legibilidade): trilho da barra com `bg-accent` (o `bg-muted` é igual ao card na paleta nova e o trilho sumia).
 
 ### DashboardBlockSkeleton
 - **Status:** ✅ pronto (2026-11-25)

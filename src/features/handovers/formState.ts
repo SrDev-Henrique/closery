@@ -148,8 +148,8 @@ async function buildState(
     controls: lines.filter((line) => line.kind === "control"),
     stock: lines.filter((line) => line.kind === "stock"),
     saved:
-      row && savedByName !== undefined
-        ? { at: row.updatedAt, byName: savedByName }
+      row?.updatedBy && savedByName !== undefined
+        ? { at: row.updatedAt, byName: savedByName, byId: row.updatedBy }
         : null,
     deliveredByName: row?.deliveredBy
       ? (names.get(row.deliveredBy) ?? null)
