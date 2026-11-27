@@ -96,6 +96,31 @@ describe("SectorCreateForm", () => {
     expect(screen.getByRole("radio", { name: "Lilás" })).not.toBeChecked();
   });
 
+  it("a cor escolhida não volta para a sugestão quando a tela revalida com outra sugestão", async () => {
+    const { rerender } = render(<SectorCreateForm suggestedColor="lilac" />);
+    await userEvent.click(screen.getByRole("radio", { name: "Verde" }));
+
+    rerender(<SectorCreateForm suggestedColor="peach" />);
+
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Pêssego" })).not.toBeChecked();
+  });
+
+  it("depois de criar, volta a acompanhar a sugestão do servidor", async () => {
+    mocks.createSectorAction.mockResolvedValue({ ok: true, id: "s1" });
+    const { rerender } = render(<SectorCreateForm suggestedColor="lilac" />);
+    await userEvent.type(screen.getByLabelText("Nome do setor"), "Pátio");
+    await userEvent.click(screen.getByRole("radio", { name: "Verde" }));
+    await userEvent.click(screen.getByRole("button", { name: "Criar setor" }));
+    await waitFor(() =>
+      expect(mocks.toastSuccess).toHaveBeenCalledWith("Setor criado."),
+    );
+
+    rerender(<SectorCreateForm suggestedColor="peach" />);
+
+    expect(screen.getByRole("radio", { name: "Pêssego" })).toBeChecked();
+  });
+
   it("nome vazio mostra o erro sem chamar o servidor", async () => {
     render(<SectorCreateForm suggestedColor="lilac" />);
 

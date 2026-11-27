@@ -52,8 +52,9 @@ export function SectorColorChoice({
             value={color}
             className={cn(
               "inline-flex h-9 items-center gap-2 rounded-full border border-input bg-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none max-md:h-11",
-              "hover:bg-muted focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              "data-checked:border-foreground data-checked:bg-muted",
+              "hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              // Marcada = primary, como o Toggle (muted = card na paleta nova e a borda de 1px não bastava).
+              "data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground data-checked:hover:bg-primary",
               "data-disabled:pointer-events-none data-disabled:opacity-50",
             )}
           >

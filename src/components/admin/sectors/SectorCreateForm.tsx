@@ -17,13 +17,15 @@ export function SectorCreateForm({
   suggestedColor: SectorColor;
 }) {
   const [color, setColor] = useState(suggestedColor);
+  // A cor só acompanha o servidor enquanto a pessoa não escolheu a dela.
+  const [touched, setTouched] = useState(false);
   const [syncedFrom, setSyncedFrom] = useState(suggestedColor);
   const [resets, setResets] = useState(0);
 
   // Sugestão nova vinda do servidor: acompanha (padrão "ajustar estado durante a renderização").
   if (syncedFrom !== suggestedColor) {
     setSyncedFrom(suggestedColor);
-    setColor(suggestedColor);
+    if (!touched) setColor(suggestedColor);
   }
 
   return (
@@ -35,13 +37,17 @@ export function SectorCreateForm({
       onSubmit={(name) => createSectorAction({ name, color })}
       onDone={() => {
         setColor(suggestedColor);
+        setTouched(false);
         setResets((count) => count + 1);
       }}
     >
       <SectorColorChoice
         key={`${suggestedColor}-${resets}`}
         defaultValue={color}
-        onValueChange={setColor}
+        onValueChange={(next) => {
+          setTouched(true);
+          setColor(next);
+        }}
       />
     </NameForm>
   );

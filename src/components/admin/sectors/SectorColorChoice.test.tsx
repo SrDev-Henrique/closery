@@ -100,4 +100,15 @@ describe("SectorColorChoice", () => {
       screen.getByRole("radiogroup", { name: "Cor do setor" }),
     ).toBeInTheDocument();
   });
+
+  it("a opção marcada tem fundo primary (visível no card), a amostra continua à vista", () => {
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    const checked = screen.getByRole("radio", { name: "Lilás" });
+    expect(checked.className).toContain("data-checked:bg-primary");
+    expect(checked.className).toContain("data-checked:text-primary-foreground");
+    expect(
+      checked.querySelector("[data-slot=sector-color-swatch]"),
+    ).toBeInTheDocument();
+  });
 });
