@@ -3,8 +3,11 @@ import { ArrowRight, CircleCheck, Clock } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import {
+  AvatarStack,
+  type StackedAvatar,
+} from "@/components/app-shell/AvatarStack";
 import { UserAvatar } from "@/components/app-shell/UserAvatar";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { MyShiftState } from "@/features/handovers/home";
@@ -22,12 +25,26 @@ const SECONDARY = cn(
   "px-5",
 );
 
-// Os selos do cartão de turno são maiores que o `md` do Badge (protótipo):
-// 28px de altura, 12px de padding, 13px/600, ícone de 14px e gap de 6px. O
-// `leading-[normal]` vem depois do tamanho: o twMerge do Badge descarta o
-// `leading-*` que vier antes de um `text-*`.
-const STATE_BADGE =
-  "h-7 gap-1.5 px-3 text-[13px] leading-[normal] [&>svg]:size-3.5!";
+// Bloco de status de `delivered` e `confirmed` (pack de correção, spec
+// §6.4.1): largura inteira, no estilo do bloco "Fica para o próximo turno"
+// (raio 22px, padding 18px 22px), Satoshi 700/16px e ícone de 18px. O tom
+// escurece (`on-pastel/10`) ou esverdeia (`on-pastel-success-soft`) a cor do
+// setor por cima, então serve para qualquer setor.
+const STATUS_BLOCK =
+  "flex items-center gap-2.5 self-stretch rounded-[22px] px-[22px] py-[18px] font-heading text-base leading-[normal] font-bold";
+
+const STATUS_TONE = {
+  pending: { className: "bg-on-pastel/10 text-on-pastel", Icon: Clock },
+  confirmed: {
+    className: "bg-on-pastel-success-soft text-on-pastel-success",
+    Icon: CircleCheck,
+  },
+} as const;
+
+// Inclinação dos avatares da linha de entrega (protótipo): +3° quem entregou,
+// −4° quem confirmou.
+const DELIVERED_TILT = 3;
+const CONFIRMED_TILT = -4;
 
 // 64px; 52px quando o cartão divide a linha com Solicitações e a área útil é
 // menor que 1240px (container query do contêiner principal); 44px no celular.
@@ -93,6 +110,48 @@ function Actions({ primary }: { primary: ReactNode }) {
   );
 }
 
+function StatusBlock({
+  tone,
+  children,
+}: {
+  tone: keyof typeof STATUS_TONE;
+  children: ReactNode;
+}) {
+  const { className, Icon } = STATUS_TONE[tone];
+  return (
+    <p className={cn(STATUS_BLOCK, className)}>
+      <Icon
+        aria-hidden="true"
+        strokeWidth={2.2}
+        className="size-[18px] shrink-0"
+      />
+      {children}
+    </p>
+  );
+}
+
+// Linha de entrega: o avatar (ou a pilha) à esquerda e a frase à direita, em
+// 15px/1.5. Sem avatar, a frase aparece sozinha.
+function DeliveryLine({
+  avatars,
+  children,
+}: {
+  avatars: readonly StackedAvatar[];
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <AvatarStack avatars={avatars} size={36} frame="on-pastel" />
+      <p className="text-[15px] leading-normal">{children}</p>
+    </div>
+  );
+}
+
+// Os avatares que existem, na ordem da pilha (quem entregou por cima).
+function present(avatars: readonly (StackedAvatar | null)[]): StackedAvatar[] {
+  return avatars.filter((avatar): avatar is StackedAvatar => avatar !== null);
+}
+
 export function MyShiftCard({
   state,
   sectorId,
@@ -101,6 +160,8 @@ export function MyShiftCard({
   canManageCatalog,
   sectorParam,
   avatarSrc = null,
+  deliveredAvatarSrc = null,
+  confirmedAvatarSrc = null,
 }: {
   state: MyShiftState;
   sectorId: string;
@@ -110,6 +171,10 @@ export function MyShiftCard({
   sectorParam: string | null;
   // Avatar de quem salvou o rascunho (estado `continue`).
   avatarSrc?: string | null;
+  // Avatares da linha de entrega (`delivered` e `confirmed`): quem entregou e
+  // quem confirmou, data URIs gerados no servidor pelo `HomeCards`.
+  deliveredAvatarSrc?: string | null;
+  confirmedAvatarSrc?: string | null;
 }) {
   if (state.kind === "no-shifts") {
     return (
@@ -139,6 +204,14 @@ export function MyShiftCard({
 
   const { shift, ref } = state;
   const newHref = newHandoverHref(ref, sectorParam ?? undefined);
+  const deliverer: StackedAvatar | null =
+    deliveredAvatarSrc === null
+      ? null
+      : { id: "delivered", src: deliveredAvatarSrc, tilt: DELIVERED_TILT };
+  const confirmer: StackedAvatar | null =
+    confirmedAvatarSrc === null
+      ? null
+      : { id: "confirmed", src: confirmedAvatarSrc, tilt: CONFIRMED_TILT };
 
   return (
     <Shell color={sectorColor} sectorName={sectorName}>
@@ -177,29 +250,23 @@ export function MyShiftCard({
 
       {state.kind === "delivered" && (
         <div className="flex flex-col items-start gap-3">
-          <Badge variant="pastel-pending" size="md" className={STATE_BADGE}>
-            <Clock aria-hidden="true" strokeWidth={2.2} />
-            Aguardando recebimento
-          </Badge>
-          <p className="text-[15px] leading-normal">
+          <StatusBlock tone="pending">Aguardando recebimento</StatusBlock>
+          <DeliveryLine avatars={present([deliverer])}>
             Entregue às {formatTimeBR(state.deliveredAt)} por{" "}
             {state.deliveredByName}. Aguardando recebimento.
-          </p>
+          </DeliveryLine>
         </div>
       )}
 
       {state.kind === "confirmed" && (
         <div className="flex flex-col items-start gap-3">
-          <Badge variant="pastel-confirmed" size="md" className={STATE_BADGE}>
-            <CircleCheck aria-hidden="true" strokeWidth={2.2} />
-            Confirmada
-          </Badge>
-          <p className="text-[15px] leading-normal">
+          <StatusBlock tone="confirmed">Confirmada</StatusBlock>
+          <DeliveryLine avatars={present([deliverer, confirmer])}>
             Entregue por {state.deliveredByName} às{" "}
             {formatTimeBR(state.deliveredAt)}. Confirmada por{" "}
             {state.confirmedByName ?? "outra pessoa"}
             {state.confirmedAt ? ` às ${formatTimeBR(state.confirmedAt)}` : ""}.
-          </p>
+          </DeliveryLine>
         </div>
       )}
 

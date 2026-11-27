@@ -46,8 +46,11 @@ export type MyShiftState =
       handoverId: string;
       ref: HandoverRef;
       shift: ShiftChoice;
+      // Ids para o avatar da linha de entrega (semente estável, spec §6.4.1).
+      deliveredById: string;
       deliveredByName: string;
       deliveredAt: Date;
+      confirmedById: string | null;
       confirmedByName: string | null;
       confirmedAt: Date | null;
     };
@@ -167,10 +170,15 @@ async function loadMine(
     handoverId: row.id,
     ref,
     shift: chosen,
+    // O check handover_status_consistent garante quem entregou (e quem
+    // confirmou, na confirmada). O "" é o mesmo fallback do nome, para uma
+    // linha fora do check; o HomeCards não gera avatar com id vazio.
+    deliveredById: row.deliveredBy ?? "",
     deliveredByName:
       (row.deliveredBy === null ? undefined : people.get(row.deliveredBy)) ??
       "",
     deliveredAt: row.deliveredAt ?? row.updatedAt,
+    confirmedById: row.confirmedBy,
     confirmedByName:
       row.confirmedBy === null ? null : (people.get(row.confirmedBy) ?? null),
     confirmedAt: row.confirmedAt,

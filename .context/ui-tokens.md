@@ -74,8 +74,9 @@ Só em `:root` (o `.dark` herda e o guarda confere que não as redefine). Utilit
 | `invite` | `#f2a7c6` | só o "Convide sua equipe" |
 | `on-invite-muted` / `on-invite-soft` | `#3a2730` / `#4a2c3a` | texto e eyebrow sobre o rosa |
 | `sector-lilac` `sector-peach` `sector-sky` `sector-green` `sector-pink` | `#b3a6e6` `#f6b48f` `#8ecae6` `#a7d49b` `#f2a7c6` | cor do setor (coluna `sector.color`, `src/features/sectors/colors.ts`); **nunca ciclada** |
-| `pastel-pending` / `-foreground` | `#cbe4f6` / `#1d4a72` | badge "Aguardando recebimento" no cartão de turno |
-| `pastel-confirmed` / `-foreground` | `#d3eedd` / `#1f5131` | badge "Confirmada" no cartão de turno |
+| `on-pastel-success-soft` / `on-pastel-success` | `rgba(46,125,79,.22)` / `#123b27` | bloco "Confirmada" do cartão de turno (spec §6.4.1). O `#14402a` do handoff dava 4,41:1 no lilás e foi escurecido até passar |
+
+**Bloco "Aguardando recebimento"** (spec §6.4.1): `bg-on-pastel/10`, o `on-pastel` com 10% de opacidade (= `rgba(28,27,25,.10)`), sem token próprio; o texto é `text-on-pastel`.
 
 **Sombras e véu** (tokens do `@theme`; valores literais só no `globals.css`): `shadow-thumb`
 (`0 2px 8px rgba(0,0,0,.18), 0 0 0 .5px rgba(0,0,0,.06)`, só o thumb do seletor), `shadow-drawer`
@@ -108,8 +109,9 @@ para reimprimir). Piso nunca se afrouxa: reprovou, ajuste o token.
 | `on-highlight-muted` · `-soft` sobre `highlight` | 8,34 · 6,80 |
 | `on-invite-muted` · `-soft` sobre `invite` | 7,35 · 6,49 |
 | `on-pastel-ink` sobre `on-pastel` | 14,99 |
-| `pastel-pending-foreground` · `pastel-confirmed-foreground` | 7,02 · 7,48 |
-| o menor par sobre bloco translúcido (`on-pastel-muted` sobre `on-pastel-soft` em lilás) | 5,19 |
+| `on-pastel` sobre `on-pastel/10` (bloco "Aguardando recebimento") em lilás · pêssego · azul · verde · rosa | 6,56 · 8,08 · 8,02 · 8,54 · 7,61 |
+| `on-pastel-success` sobre `on-pastel-success-soft` (bloco "Confirmada") em lilás · pêssego · azul · verde · rosa | 4,71 · 5,61 · 5,69 · 6,01 · 5,29 |
+| o menor par sobre bloco translúcido (`on-pastel-success` sobre `on-pastel-success-soft` em lilás) | 4,71 |
 
 ## 4. Gráficos (D16, valores do klauve, inalterados no visual novo)
 

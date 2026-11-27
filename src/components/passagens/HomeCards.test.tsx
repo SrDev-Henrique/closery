@@ -42,6 +42,30 @@ const START: MyShiftState = {
     pct: 34,
   },
 };
+const DELIVERED: MyShiftState = {
+  kind: "delivered",
+  handoverId: "h2",
+  ref: REF,
+  shift: SHIFT,
+  deliveredById: "u-ana",
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "13:52"),
+  confirmedById: null,
+  confirmedByName: null,
+  confirmedAt: null,
+};
+const CONFIRMED: MyShiftState = {
+  kind: "confirmed",
+  handoverId: "h2",
+  ref: REF,
+  shift: SHIFT,
+  deliveredById: "u-ana",
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "13:52"),
+  confirmedById: "u-bruno",
+  confirmedByName: "Bruno Teste",
+  confirmedAt: spDate("2026-11-20", "14:06"),
+};
 const PENDING: PendingHandover = {
   id: "h1",
   sectorName: "ULD",
@@ -233,5 +257,62 @@ describe("HomeCards", () => {
     expect(
       screen.getByRole("link", { name: "Ver solicitações" }),
     ).toHaveAttribute("href", `/solicitacoes?setor=${SECTOR_ID}`);
+  });
+
+  describe("avatares da linha de entrega do meu turno (spec §6.4.1)", () => {
+    // As sementes (o mock devolve `data:image/svg+xml,<id>`), na ordem do DOM.
+    function shiftCardAvatars(): (string | null)[] {
+      const card = screen
+        .getByRole("heading", { name: "Passagem do meu turno" })
+        .closest('[data-slot="card"]');
+      if (!(card instanceof HTMLElement)) {
+        throw new Error("cartão do turno ausente");
+      }
+      return Array.from(card.querySelectorAll("img")).map((img) =>
+        img.getAttribute("src"),
+      );
+    }
+
+    it("entregue: o avatar usa o id de quem entregou", () => {
+      renderCards({ home: home({ mine: DELIVERED }) });
+
+      expect(shiftCardAvatars()).toEqual(["data:image/svg+xml,u-ana"]);
+    });
+
+    it("confirmada: a pilha traz quem entregou e depois quem confirmou, pelos ids", () => {
+      renderCards({ home: home({ mine: CONFIRMED }) });
+
+      expect(shiftCardAvatars()).toEqual([
+        "data:image/svg+xml,u-ana",
+        "data:image/svg+xml,u-bruno",
+      ]);
+    });
+
+    it("confirmada sem o id de quem confirmou: só o avatar de quem entregou", () => {
+      renderCards({
+        home: home({ mine: { ...CONFIRMED, confirmedById: null } }),
+      });
+
+      expect(shiftCardAvatars()).toEqual(["data:image/svg+xml,u-ana"]);
+    });
+
+    it("id vazio de quem entregou (linha fora do check do banco): sem avatar, e a frase continua", () => {
+      renderCards({
+        home: home({ mine: { ...DELIVERED, deliveredById: "" } }),
+      });
+
+      expect(shiftCardAvatars()).toEqual([]);
+      expect(
+        screen.getByText(
+          "Entregue às 13:52 por Ana Teste. Aguardando recebimento.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("começar passagem não tem linha de entrega nem avatar no cartão do turno", () => {
+      renderCards();
+
+      expect(shiftCardAvatars()).toEqual([]);
+    });
   });
 });

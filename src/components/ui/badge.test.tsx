@@ -49,12 +49,6 @@ describe("Badge — variantes novas só com tokens", () => {
     ["info", "bg-info", "text-info-foreground"],
     ["success", "bg-success", "text-success-foreground"],
     ["neutral", "bg-accent", "text-foreground"],
-    ["pastel-pending", "bg-pastel-pending", "text-pastel-pending-foreground"],
-    [
-      "pastel-confirmed",
-      "bg-pastel-confirmed",
-      "text-pastel-confirmed-foreground",
-    ],
   ] as const)("variant=%s usa %s e %s", (variant, background, foreground) => {
     render(<Badge variant={variant}>Texto</Badge>);
     expect(badge("Texto")).toHaveClass(background, foreground);
@@ -73,15 +67,17 @@ describe("Badge — variantes novas só com tokens", () => {
     expect(badge("Parada")).not.toHaveClass("bg-secondary");
   });
 
+  it("as variantes pastel-pending e pastel-confirmed saíram (o cartão de turno usa blocos, spec §6.4.1)", () => {
+    // @ts-expect-error variante removida no pack de correção do Início
+    const pending = badgeVariants({ variant: "pastel-pending" });
+    // @ts-expect-error variante removida no pack de correção do Início
+    const confirmed = badgeVariants({ variant: "pastel-confirmed" });
+    expect(pending).not.toMatch(/pastel/);
+    expect(confirmed).not.toMatch(/pastel/);
+  });
+
   it("nenhuma variante usa hex cru nem cor crua do Tailwind", () => {
-    for (const variant of [
-      "warning",
-      "info",
-      "success",
-      "neutral",
-      "pastel-pending",
-      "pastel-confirmed",
-    ] as const) {
+    for (const variant of ["warning", "info", "success", "neutral"] as const) {
       expect(badgeVariants({ variant })).not.toMatch(
         /#[0-9a-f]{3,8}\b|\b(?:bg|text|border)-(?:red|blue|green|yellow|pink|purple|gray|slate|zinc|neutral|stone|amber|orange|white|black)\b/i,
       );

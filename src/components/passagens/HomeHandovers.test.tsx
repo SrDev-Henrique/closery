@@ -75,6 +75,19 @@ function requestsCard(): HTMLElement {
   return card;
 }
 
+// As sementes dos avatares do cartão "Passagem do meu turno", na ordem do DOM.
+function shiftCardAvatars(): (string | null)[] {
+  const card = screen
+    .getByRole("heading", { name: "Passagem do meu turno" })
+    .closest('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) {
+    throw new Error("cartão do turno não encontrado");
+  }
+  return Array.from(card.querySelectorAll("img")).map((img) =>
+    img.getAttribute("src"),
+  );
+}
+
 // O contador e a palavra são dois elementos (o número é grande).
 function expectOpenCount(count: string, word: "aberta" | "abertas") {
   const card = within(requestsCard());
@@ -710,6 +723,41 @@ describe("HomeHandovers", () => {
         "Entregue às 09:30 por Ana Teste. Aguardando recebimento.",
       ),
     ).toBeInTheDocument();
+    // A linha de entrega leva o avatar de quem entregou (spec §6.4.1).
+    expect(shiftCardAvatars()).toEqual([`data:image/svg+xml,${ana.id}`]);
+  });
+
+  it("confirmada: a linha do meu turno traz o avatar de quem entregou e depois o de quem confirmou", async () => {
+    const { uld, shiftRow, ana, bia } = await setup();
+    await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: shiftRow.id,
+      operationalDate: TODAY,
+      status: "confirmed",
+      deliveredBy: ana.id,
+      deliveredAt: spDate(TODAY, "09:30"),
+      confirmedBy: bia.id,
+      confirmedAt: spDate(TODAY, "09:45"),
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+    );
+
+    await renderHome();
+
+    expect(shiftCardAvatars()).toEqual([
+      `data:image/svg+xml,${ana.id}`,
+      `data:image/svg+xml,${bia.id}`,
+    ]);
+    expect(
+      screen.getByText(
+        "Entregue por Ana Teste às 09:30. Confirmada por Bia Teste às 09:45.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Confirmada")).toHaveClass(
+      "bg-on-pastel-success-soft",
+      "text-on-pastel-success",
+    );
   });
 
   it("passagem entregue de outro setor não vaza para o cartão", async () => {

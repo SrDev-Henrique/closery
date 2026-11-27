@@ -25,6 +25,8 @@ const PROGRESS = {
   pct: 34,
 };
 const AVATAR = "data:image/svg+xml,rascunho";
+const DELIVERED_AVATAR = "data:image/svg+xml,entregou";
+const CONFIRMED_AVATAR = "data:image/svg+xml,confirmou";
 
 const START: MyShiftState = {
   kind: "start",
@@ -49,8 +51,10 @@ const DELIVERED: MyShiftState = {
   handoverId: "h1",
   ref: REF,
   shift: SHIFT,
+  deliveredById: "u-ana",
   deliveredByName: "Ana Teste",
   deliveredAt: spDate("2026-11-20", "14:05"),
+  confirmedById: null,
   confirmedByName: null,
   confirmedAt: null,
 };
@@ -59,8 +63,10 @@ const CONFIRMED: MyShiftState = {
   handoverId: "h1",
   ref: REF,
   shift: SHIFT,
+  deliveredById: "u-ana",
   deliveredByName: "Ana Teste",
   deliveredAt: spDate("2026-11-20", "14:05"),
+  confirmedById: "u-bia",
   confirmedByName: "Bia Teste",
   confirmedAt: spDate("2026-11-20", "14:20"),
 };
@@ -81,6 +87,8 @@ function renderCard(
       canManageCatalog={false}
       sectorParam={null}
       avatarSrc={null}
+      deliveredAvatarSrc={null}
+      confirmedAvatarSrc={null}
       {...props}
     />,
   );
@@ -90,6 +98,23 @@ function cardOf(container: HTMLElement): HTMLElement {
   const card = container.querySelector('[data-slot="card"]');
   if (!(card instanceof HTMLElement)) throw new Error("cartão ausente");
   return card;
+}
+
+function parentOf(element: Element | undefined): HTMLElement {
+  const parent = element?.parentElement;
+  if (!(parent instanceof HTMLElement)) throw new Error("elemento sem pai");
+  return parent;
+}
+
+function avatarsIn(element: Element): HTMLImageElement[] {
+  return Array.from(element.querySelectorAll("img"));
+}
+
+/** `later` vem depois de `earlier` na ordem do documento (sem ser filho dele). */
+function follows(earlier: Node, later: Node): boolean {
+  return (
+    earlier.compareDocumentPosition(later) === Node.DOCUMENT_POSITION_FOLLOWING
+  );
 }
 
 describe("MyShiftCard", () => {
@@ -211,27 +236,69 @@ describe("MyShiftCard", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
-  it("delivered: selo 'Aguardando recebimento', quem entregou, link para a passagem e sem barra", () => {
-    renderCard(DELIVERED);
+  it("delivered: bloco 'Aguardando recebimento' de largura inteira, sem selo, com ícone decorativo", () => {
+    const { container } = renderCard(DELIVERED);
 
-    // Selo pastel no tamanho do protótipo (28px, 12px de padding, 13px).
-    expect(screen.getByText("Aguardando recebimento")).toHaveClass(
-      "bg-pastel-pending",
-      "text-pastel-pending-foreground",
-      "h-7",
-      "px-3",
-      "text-[13px]",
+    // Pack de correção (spec §6.4.1): bloco, não mais o selo em pílula.
+    const block = screen.getByText("Aguardando recebimento");
+    expect(block.tagName).toBe("P");
+    expect(block).toHaveClass(
+      "flex",
+      "items-center",
+      "gap-2.5",
+      "self-stretch",
+      "rounded-[22px]",
+      "px-[22px]",
+      "py-[18px]",
+      "font-heading",
+      "text-base",
+      "leading-[normal]",
+      "font-bold",
+      "bg-on-pastel/10",
+      "text-on-pastel",
     );
-    expect(screen.getByText("Aguardando recebimento")).not.toHaveClass("h-6");
-    expect(
+    expect(block).not.toHaveClass("h-7");
+    expect(block).not.toHaveClass("rounded-full");
+    expect(container.querySelector('[data-slot="badge"]')).toBeNull();
+    const icon = block.querySelector("svg");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveClass("size-[18px]", "shrink-0");
+  });
+
+  it("delivered: linha de entrega com o avatar de quem entregou (36px, +3°) e a frase em 15px/1.5", () => {
+    renderCard(DELIVERED, { deliveredAvatarSrc: DELIVERED_AVATAR });
+
+    const sentence = screen.getByText(
+      "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+    );
+    expect(sentence).toHaveClass("text-[15px]", "leading-normal");
+    const line = parentOf(sentence);
+    expect(line).toHaveClass("flex", "items-center", "gap-2.5");
+    const [avatar, ...rest] = avatarsIn(line);
+    expect(rest).toHaveLength(0);
+    expect(avatar).toHaveAttribute("src", DELIVERED_AVATAR);
+    expect(avatar).toHaveAttribute("alt", "");
+    const frame = parentOf(avatar);
+    expect(frame).toHaveClass("size-[36px]", "bg-on-pastel");
+    expect(frame.style.transform).toBe("rotate(3deg)");
+  });
+
+  it("delivered: bloco, linha de entrega e ações nessa ordem; 12px entre o bloco e a linha; sem barra", () => {
+    renderCard(DELIVERED, { deliveredAvatarSrc: DELIVERED_AVATAR });
+
+    const block = screen.getByText("Aguardando recebimento");
+    const line = parentOf(
       screen.getByText(
         "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
       ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
-      "href",
-      "/passagens/h1",
     );
+    const group = parentOf(block);
+    expect(parentOf(line)).toBe(group);
+    expect(group).toHaveClass("flex", "flex-col", "items-start", "gap-3");
+    const primary = screen.getByRole("link", { name: "Ver passagem" });
+    expect(follows(block, line)).toBe(true);
+    expect(follows(line, primary)).toBe(true);
+    expect(primary).toHaveAttribute("href", "/passagens/h1");
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Turno sugerido pelo horário de agora."),
@@ -241,23 +308,113 @@ describe("MyShiftCard", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("confirmed: selo 'Confirmada', entrega e confirmação com nomes e horas", () => {
-    renderCard(CONFIRMED);
+  it("delivered sem avatar: a frase aparece sozinha, sem imagem nem pilha", () => {
+    const { container } = renderCard(DELIVERED);
 
-    expect(screen.getByText("Confirmada")).toHaveClass(
-      "bg-pastel-confirmed",
-      "text-pastel-confirmed-foreground",
-      "h-7",
+    expect(
+      screen.getByText(
+        "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+      ),
+    ).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector('[data-slot="avatar-stack"]')).toBeNull();
+  });
+
+  it("delivered ignora o avatar de quem confirmou (ainda não houve confirmação)", () => {
+    const { container } = renderCard(DELIVERED, {
+      deliveredAvatarSrc: DELIVERED_AVATAR,
+      confirmedAvatarSrc: CONFIRMED_AVATAR,
+    });
+
+    expect(avatarsIn(container).map((img) => img.getAttribute("src"))).toEqual([
+      DELIVERED_AVATAR,
+    ]);
+  });
+
+  it("confirmed: bloco verde 'Confirmada' de largura inteira, sem selo, com ícone decorativo", () => {
+    const { container } = renderCard(CONFIRMED);
+
+    const block = screen.getByText("Confirmada");
+    expect(block.tagName).toBe("P");
+    expect(block).toHaveClass(
+      "flex",
+      "items-center",
+      "gap-2.5",
+      "self-stretch",
+      "rounded-[22px]",
+      "px-[22px]",
+      "py-[18px]",
+      "font-heading",
+      "text-base",
+      "leading-[normal]",
+      "font-bold",
+      "bg-on-pastel-success-soft",
+      "text-on-pastel-success",
     );
+    expect(block).not.toHaveClass("bg-on-pastel/10");
+    expect(block).not.toHaveClass("h-7");
+    expect(container.querySelector('[data-slot="badge"]')).toBeNull();
+    expect(block.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("confirmed: pilha com quem entregou por cima (+3°) e quem confirmou 8px por baixo (−4°), com nomes e horas", () => {
+    renderCard(CONFIRMED, {
+      deliveredAvatarSrc: DELIVERED_AVATAR,
+      confirmedAvatarSrc: CONFIRMED_AVATAR,
+    });
+
+    const sentence = screen.getByText(
+      "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
+    );
+    expect(sentence).toHaveClass("text-[15px]", "leading-normal");
+    const line = parentOf(sentence);
+    expect(line).toHaveClass("flex", "items-center", "gap-2.5");
+    expect(line.querySelector('[data-slot="avatar-stack"]')).not.toBeNull();
+    const [delivered, confirmed, ...rest] = avatarsIn(line);
+    expect(rest).toHaveLength(0);
+    expect(delivered).toHaveAttribute("src", DELIVERED_AVATAR);
+    expect(confirmed).toHaveAttribute("src", CONFIRMED_AVATAR);
+    expect(parentOf(delivered)).toHaveClass(
+      "relative",
+      "z-1",
+      "size-[36px]",
+      "bg-on-pastel",
+    );
+    expect(parentOf(delivered).style.transform).toBe("rotate(3deg)");
+    expect(parentOf(confirmed)).toHaveClass("-ml-2", "size-[36px]");
+    expect(parentOf(confirmed).style.transform).toBe("rotate(-4deg)");
+
+    const block = screen.getByText("Confirmada");
+    expect(parentOf(line)).toBe(parentOf(block));
+    expect(parentOf(block)).toHaveClass("flex-col", "items-start", "gap-3");
+    expect(follows(block, line)).toBe(true);
+    expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
+      "href",
+      "/passagens/h1",
+    );
+  });
+
+  it("confirmed sem o avatar de quem confirmou: só o de quem entregou, por cima e sem recuo", () => {
+    const { container } = renderCard(CONFIRMED, {
+      deliveredAvatarSrc: DELIVERED_AVATAR,
+    });
+
+    const [only, ...rest] = avatarsIn(container);
+    expect(rest).toHaveLength(0);
+    expect(only).toHaveAttribute("src", DELIVERED_AVATAR);
+    expect(parentOf(only)).toHaveClass("relative", "z-1");
+    expect(parentOf(only)).not.toHaveClass("-ml-2");
+  });
+
+  it("confirmed sem avatares: a frase inteira e nenhuma imagem", () => {
+    const { container } = renderCard(CONFIRMED);
+
     expect(
       screen.getByText(
         "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
-      "href",
-      "/passagens/h1",
-    );
+    expect(container.querySelector("img")).toBeNull();
   });
 
   it("confirmed sem quem confirmou nem hora: 'outra pessoa', sem inventar a hora", () => {
@@ -334,7 +491,11 @@ describe("MyShiftCard", () => {
 
   it("usa só tokens de cor (sem hex nem classe crua do Tailwind)", () => {
     for (const state of [START, CONTINUE, DELIVERED, CONFIRMED, NO_SHIFTS]) {
-      const { container, unmount } = renderCard(state, { avatarSrc: AVATAR });
+      const { container, unmount } = renderCard(state, {
+        avatarSrc: AVATAR,
+        deliveredAvatarSrc: DELIVERED_AVATAR,
+        confirmedAvatarSrc: CONFIRMED_AVATAR,
+      });
 
       expect(container.innerHTML).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
       expect(container.innerHTML).not.toMatch(

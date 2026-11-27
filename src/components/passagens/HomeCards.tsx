@@ -11,6 +11,13 @@ import { avatarDataUri } from "@/lib/avatar";
 import { MyShiftCard } from "./MyShiftCard";
 import { PendingHandoverCard } from "./PendingHandoverCard";
 
+// O `avatarDataUri` recusa semente vazia. Quem entregou só vem vazio se a
+// linha da passagem escapar do check do banco (spec §6.4.1); aí a frase
+// aparece sem avatar.
+function avatarOf(userId: string | null): string | null {
+  return userId === null || userId === "" ? null : avatarDataUri(userId);
+}
+
 // Os cartões do Início, depois do hero. Em coluna, na ordem: convite (primeiro
 // acesso do admin), pendente (se houver) e, na linha de baixo, turno e
 // solicitações. Esta linha é 1 coluna e vira `minmax(0,1.3fr) minmax(0,1fr)` a
@@ -41,6 +48,14 @@ export function HomeCards({
     home.mine.kind === "continue" && home.mine.saved
       ? avatarDataUri(home.mine.saved.byId)
       : null;
+  // Linha de entrega do meu turno: quem entregou e, na confirmada, quem
+  // confirmou (a pilha do `MyShiftCard`).
+  const deliveredAvatar =
+    home.mine.kind === "delivered" || home.mine.kind === "confirmed"
+      ? avatarOf(home.mine.deliveredById)
+      : null;
+  const confirmedAvatar =
+    home.mine.kind === "confirmed" ? avatarOf(home.mine.confirmedById) : null;
 
   return (
     <div data-slot="home-cards" className="flex flex-col gap-4">
@@ -65,6 +80,8 @@ export function HomeCards({
           canManageCatalog={canManageCatalog}
           sectorParam={sectorParam}
           avatarSrc={savedAvatar}
+          deliveredAvatarSrc={deliveredAvatar}
+          confirmedAvatarSrc={confirmedAvatar}
         />
         <RequestsHomeCard
           home={requests}

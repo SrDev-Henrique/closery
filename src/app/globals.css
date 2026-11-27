@@ -65,10 +65,8 @@
   --color-sector-sky: var(--sector-sky);
   --color-sector-green: var(--sector-green);
   --color-sector-pink: var(--sector-pink);
-  --color-pastel-pending: var(--pastel-pending);
-  --color-pastel-pending-foreground: var(--pastel-pending-foreground);
-  --color-pastel-confirmed: var(--pastel-confirmed);
-  --color-pastel-confirmed-foreground: var(--pastel-confirmed-foreground);
+  --color-on-pastel-success: var(--on-pastel-success);
+  --color-on-pastel-success-soft: var(--on-pastel-success-soft);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -163,10 +161,13 @@
   --sector-sky: #8ecae6;
   --sector-green: #a7d49b;
   --sector-pink: #f2a7c6;
-  --pastel-pending: #cbe4f6;
-  --pastel-pending-foreground: #1d4a72;
-  --pastel-confirmed: #d3eedd;
-  --pastel-confirmed-foreground: #1f5131;
+  /*
+   * Bloco "Confirmada" do cartão de turno (spec §6.4.1): verde translúcido por cima da cor do
+   * setor e a tinta verde-escura. A tinta do handoff dava 4,41:1 no lilás; esta passa (AA) nos
+   * cinco setores. O "Aguardando recebimento" não tem token: é `bg-on-pastel/10`.
+   */
+  --on-pastel-success-soft: rgba(46, 125, 79, 0.22);
+  --on-pastel-success: #123b27;
 }
 
 .dark {

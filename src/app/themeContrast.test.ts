@@ -144,10 +144,8 @@ const FIXED_TOKENS = [
   "on-invite-muted",
   "on-invite-soft",
   ...SECTOR_TOKENS,
-  "pastel-pending",
-  "pastel-pending-foreground",
-  "pastel-confirmed",
-  "pastel-confirmed-foreground",
+  "on-pastel-success",
+  "on-pastel-success-soft",
 ];
 /** Novos tokens que mudam com o tema (existem em `:root` e em `.dark`). */
 const THEMED_TOKENS = ["seg", "thumb", "thumb-foreground", "frame"];
@@ -355,10 +353,10 @@ const SPEC_FIXED: Record<string, string> = {
   "sector-sky": "#8ecae6",
   "sector-green": "#a7d49b",
   "sector-pink": "#f2a7c6",
-  "pastel-pending": "#cbe4f6",
-  "pastel-pending-foreground": "#1d4a72",
-  "pastel-confirmed": "#d3eedd",
-  "pastel-confirmed-foreground": "#1f5131",
+  // Bloco "Confirmada" do cartão de turno (spec §6.4.1). A tinta do handoff
+  // (#14402a) dava 4,41:1 no lilás; o token é ela escurecida até passar.
+  "on-pastel-success": "#123b27",
+  "on-pastel-success-soft": "rgba(46, 125, 79, 0.22)",
 };
 
 for (const [theme, selector] of THEMES) {
@@ -492,8 +490,6 @@ const PASTEL_PAIRS: [string, string][] = [
   ["on-invite-muted", "invite"],
   ["on-invite-soft", "invite"],
   ["on-pastel-ink", "on-pastel"],
-  ["pastel-pending-foreground", "pastel-pending"],
-  ["pastel-confirmed-foreground", "pastel-confirmed"],
 ];
 
 const OVERLAYS = [
@@ -520,6 +516,12 @@ const OVERLAY_CASES: [string, string, string][] = [
   ["on-highlight-soft", "on-pastel-soft", "highlight"],
   ["on-invite-muted", "on-pastel-soft", "invite"],
   ["on-invite-soft", "on-pastel-soft", "invite"],
+  // Bloco "Confirmada" do cartão de turno (§6.4.1), sobre a cor de cada setor.
+  ...SECTOR_TOKENS.map((base): [string, string, string] => [
+    "on-pastel-success",
+    "on-pastel-success-soft",
+    base,
+  ]),
 ];
 
 describe("contraste dos cards pastel (cores fixas, iguais nos dois temas)", () => {
@@ -588,5 +590,56 @@ describe("o validador reprova o que deve reprovar", () => {
   it("o bloco translúcido muda o fundo medido (compor não é no-op)", () => {
     const base = solid(fixed("sector-lilac"), "sector-lilac");
     expect(over(fixed("on-pastel-soft"), base)).not.toEqual(base);
+  });
+
+  it("a tinta verde do handoff (#14402a) no bloco 'Confirmada' em cima do lilás reprova: por isso o token é mais escuro", () => {
+    const ratio = contrast(
+      parseColor("#14402a").rgb,
+      over(
+        fixed("on-pastel-success-soft"),
+        solid(fixed("sector-lilac"), "sector-lilac"),
+      ),
+    );
+    expect(ratio, `${ratio.toFixed(2)}:1`).toBeLessThan(TEXT_MIN);
+  });
+});
+
+// ---------------------------------------------------------------- contraste: bloco "Aguardando recebimento"
+/**
+ * O bloco "Aguardando recebimento" do cartão de turno (spec §6.4.1) é `bg-on-pastel/10`: o token
+ * `on-pastel` com 10% de opacidade, sem token próprio. O guarda compõe essa mistura sobre a cor de
+ * cada setor e mede a tinta `on-pastel`. O "Confirmada" está em OVERLAY_CASES, com os tokens dele.
+ */
+const PENDING_BLOCK_ALPHA = 0.1;
+
+function pendingBlockRatio(base: string): number {
+  const ink = solid(fixed("on-pastel"), "on-pastel");
+  const block = over(
+    { rgb: ink, alpha: PENDING_BLOCK_ALPHA },
+    solid(fixed(base), base),
+  );
+  return contrast(ink, block);
+}
+
+describe("contraste do bloco 'Aguardando recebimento' (on-pastel/10 sobre a cor do setor)", () => {
+  if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+    it("imprime a matriz medida", () => {
+      const lines = SECTOR_TOKENS.map(
+        (base) =>
+          `on-pastel sobre on-pastel/10 em ${base}: ${pendingBlockRatio(base).toFixed(2)}:1`,
+      );
+      console.log(`\n[bloco Aguardando recebimento]\n${lines.join("\n")}`);
+      expect(lines).toHaveLength(SECTOR_TOKENS.length);
+    });
+  }
+
+  it.each(
+    SECTOR_TOKENS,
+  )("on-pastel sobre on-pastel/10 em cima de %s (≥4,5:1)", (base) => {
+    const ratio = pendingBlockRatio(base);
+    expect(
+      ratio,
+      `on-pastel sobre on-pastel/10 em ${base}: ${ratio.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(TEXT_MIN);
   });
 });

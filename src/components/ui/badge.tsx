@@ -24,10 +24,6 @@ const badgeVariants = cva(
         info: "bg-info text-info-foreground",
         success: "bg-success text-success-foreground",
         neutral: "bg-accent text-foreground",
-        // Sempre claros nos dois temas: ficam sobre o pastel do cartão de turno.
-        "pastel-pending": "bg-pastel-pending text-pastel-pending-foreground",
-        "pastel-confirmed":
-          "bg-pastel-confirmed text-pastel-confirmed-foreground",
       },
       size: {
         default: "h-5 px-2 font-medium",

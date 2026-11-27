@@ -360,8 +360,11 @@ describe("getHomeHandovers", () => {
       expect(mine).toMatchObject({
         kind: "delivered",
         handoverId: passagem.id,
+        // Semente do avatar da linha de entrega (spec §6.4.1).
+        deliveredById: ana,
         deliveredByName: "Ana Teste",
         deliveredAt: spDate("2026-11-21", "14:02"),
+        confirmedById: null,
         confirmedByName: null,
         confirmedAt: null,
       });
@@ -384,6 +387,10 @@ describe("getHomeHandovers", () => {
 
       expect(mine).toMatchObject({
         kind: "confirmed",
+        // As duas sementes da pilha de avatares (spec §6.4.1).
+        deliveredById: ana,
+        deliveredByName: "Ana Teste",
+        confirmedById: bia,
         confirmedByName: "Bia Teste",
         confirmedAt: spDate("2026-11-21", "14:04"),
       });
