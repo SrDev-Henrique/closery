@@ -53,9 +53,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   celular (`lg`, `icon-lg` e `icon-pill` são 44px sempre; `pill` é 48px sempre). Teste: `button.test.ts`. Para navegação use
   `<Link className={buttonVariants()}>` (continua role link); `render={<Link />}` (com
   `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
-- **Usa:** tokens `primary`, `input`, `muted`, `accent`, `card`, `ring`, `destructive`, `on-pastel*`.
+- **Usa:** tokens `primary`, `input`, `accent`, `card`, `ring`, `destructive`, `on-pastel*`.
 - **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
-  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24). 2026-11-27 — Visual do Início (Task 4): `rounded-full` em tudo (sai o `rounded-lg` e os `rounded-[min(...)]`, e o `in-data-[slot=button-group]:rounded-lg`); variantes `surface`, `on-pastel`, `on-pastel-secondary`; tamanhos `pill` e `icon-pill`; `text-sm font-medium` saiu da base para cada `size`. 2026-11-27 — Task 16 (pixel): `pill` e `icon-pill` com `border-0` (o fundo visível era 46×(largura+2) e 42px; agora 48 e 44px, iguais ao protótipo). 2026-11-27 — Task 15 (legibilidade): `outline` com a borda `border-input` nos dois temas (era `border-border`, que no claro some no fundo da página: "Corrigir", "Sair" e afins pareciam texto solto). 2026-11-27 — Task 15 (legibilidade): `border-transparent` saiu da base para cada variante menos o `outline` (no CSS gerado `.border-transparent` vem depois de `.border-input` e, com `buttonVariants` cru num `<Link>`, apagava a borda do outline no tema claro). 2026-11-27 — Segunda rodada de correções (G1): `on-pastel` e `on-pastel-secondary` com `focus-visible:outline-solid` e `focus-visible:ring-0!` (a F1 só pedia `outline-2`, que com o `outline-none` da base resolvia para `outline-style: none`; pelo `cn`, "Agora não" e "Ver todas as passagens" ficavam sem indicador nenhum); E2E mede `outline-style: solid`, 2px, offset 2px, cor `rgb(28, 27, 25)` e nenhum anel. 2026-11-27 — Segunda rodada (G2): `destructive` com fundo `/10` → hover `/15` no claro e `/15` → hover `/20` no escuro (era `/10`→`/20` e `/20`→`/30`), junto com o `--destructive` `#b80000` / `#ff9393`: `text-destructive` passa 4,5:1 sobre o fundo do botão em repouso e no hover, sobre `background` e `card`; o `themeContrast.test.ts` lê os percentuais desta variante.
+  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24). 2026-11-27 — Visual do Início (Task 4): `rounded-full` em tudo (sai o `rounded-lg` e os `rounded-[min(...)]`, e o `in-data-[slot=button-group]:rounded-lg`); variantes `surface`, `on-pastel`, `on-pastel-secondary`; tamanhos `pill` e `icon-pill`; `text-sm font-medium` saiu da base para cada `size`. 2026-11-27 — Task 16 (pixel): `pill` e `icon-pill` com `border-0` (o fundo visível era 46×(largura+2) e 42px; agora 48 e 44px, iguais ao protótipo). 2026-11-27 — Task 15 (legibilidade): `outline` com a borda `border-input` nos dois temas (era `border-border`, que no claro some no fundo da página: "Corrigir", "Sair" e afins pareciam texto solto). 2026-11-27 — Task 15 (legibilidade): `border-transparent` saiu da base para cada variante menos o `outline` (no CSS gerado `.border-transparent` vem depois de `.border-input` e, com `buttonVariants` cru num `<Link>`, apagava a borda do outline no tema claro). 2026-11-27 — Segunda rodada de correções (G1): `on-pastel` e `on-pastel-secondary` com `focus-visible:outline-solid` e `focus-visible:ring-0!` (a F1 só pedia `outline-2`, que com o `outline-none` da base resolvia para `outline-style: none`; pelo `cn`, "Agora não" e "Ver todas as passagens" ficavam sem indicador nenhum); E2E mede `outline-style: solid`, 2px, offset 2px, cor `rgb(28, 27, 25)` e nenhum anel. 2026-11-27 — Segunda rodada (G2): `destructive` com fundo `/10` → hover `/15` no claro e `/15` → hover `/20` no escuro (era `/10`→`/20` e `/20`→`/30`), junto com o `--destructive` `#b80000` / `#ff9393`: `text-destructive` passa 4,5:1 sobre o fundo do botão em repouso e no hover, sobre `background` e `card`; o `themeContrast.test.ts` lê os percentuais desta variante. 2026-11-27 — PR B (P83): `outline` e `ghost` com hover e `aria-expanded` em `bg-accent` (e `dark:hover:bg-accent/50` no `ghost`); eram `bg-muted`, igual ao card na paleta nova, e o hover sumia dentro de cartão, diálogo e Sheet. Guarda: `src/app/mutedBackground.test.ts`.
 
 ### Input
 - **Status:** ✏️ estendido
@@ -83,8 +83,8 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `aria-invalid` no `Input` e `aria-describedby` apontando para o `FieldError`. `Field
   data-invalid` pinta o rótulo de `destructive`. `FieldError` renderiza `role="alert"` e retorna
   `null` se vazio.
-- **Usa:** `Label`, `Separator`; tokens `destructive`, `muted-foreground`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Usa:** `Label`, `Separator`; tokens `destructive`, `muted-foreground`, `accent`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — PR B (P83): o hover do `FieldLabel` que envolve um campo em `bg-accent/50` (era `bg-muted/50`, igual ao card).
 
 ### InputGroup
 - **Status:** ✅ pronto (2026-11-20)
@@ -113,8 +113,8 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `data-variant`). `feature` = raio 32px, padding 32px (22px abaixo de 860px, via `--card-spacing`),
   `gap-0`, sem `ring`, sem borda e sem sombra; o fundo vem do `className` (`bg-highlight`, etc.).
   Num `feature` o conteúdo vai direto nos filhos: `CardHeader`/`CardContent` somariam o `px` deles.
-- **Usa:** tokens `card`, `card-foreground`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): variante `feature`; o `default` não mudou.
+- **Usa:** tokens `card`, `card-foreground`, `border`, `accent`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): variante `feature`; o `default` não mudou. 2026-11-27 — PR B (P83): `CardFooter` com `bg-accent/50` (era `bg-muted/50`: o rodapé não se separava do corpo).
 
 ### Separator
 - **Status:** ✅ pronto (2026-11-20)
@@ -173,8 +173,8 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Propósito:** foto ou iniciais de uma pessoa.
 - **Como funciona:** `Avatar`, `AvatarImage`, `AvatarFallback`, `AvatarGroup`, `AvatarBadge`;
   `size` = `default|sm|lg`.
-- **Usa:** `@base-ui/react/avatar`; tokens `muted`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Usa:** `@base-ui/react/avatar`; tokens `accent`, `muted-foreground`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — PR B (P83): fundo do `AvatarFallback` e do `AvatarGroupCount` em `bg-accent` (era `bg-muted`, igual ao card; primitivo sem uso hoje).
 
 ### DropdownMenu
 - **Status:** ✅ pronto (2026-11-20)
@@ -212,7 +212,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `neutral` (`bg-accent text-foreground`). `size`: `default` (h-5, `font-medium`) e `md` (h-6, `px-2.5`,
   `font-semibold`, `border-0` e `leading-[normal]`: sem a borda de 1px da base e com a altura de linha da fonte, como no protótipo; quem passa outro `text-*` no `className` repete o `leading-[normal]` depois dele, porque o twMerge descarta o `leading` que vem antes de um `text-*`). Aceita `render`.
 - **Usa:** tokens `primary`, `secondary`, `destructive`, `warning`, `info`, `success`, `accent`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): `rounded-full` (era `rounded-4xl`), `whitespace-nowrap` já existia; variantes e `size="md"` novos. 2026-11-27 — Task 16 (pixel): `md` com `border-0` (era 2px mais largo) e `leading-[normal]` (o texto ficava até 0,8px acima do centro do protótipo). 2026-11-27 — Pack de correção do Início (Task 18, spec §6.4.1): saem as variantes `pastel-pending` e `pastel-confirmed` e os tokens delas (o cartão de turno passou a usar blocos de largura inteira).
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): `rounded-full` (era `rounded-4xl`), `whitespace-nowrap` já existia; variantes e `size="md"` novos. 2026-11-27 — Task 16 (pixel): `md` com `border-0` (era 2px mais largo) e `leading-[normal]` (o texto ficava até 0,8px acima do centro do protótipo). 2026-11-27 — Pack de correção do Início (Task 18, spec §6.4.1): saem as variantes `pastel-pending` e `pastel-confirmed` e os tokens delas (o cartão de turno passou a usar blocos de largura inteira). 2026-11-27 — PR B (P83): `outline` (`[a]:hover:`) e `ghost` (hover e `dark:hover:`) em `bg-accent`, com a mesma opacidade (eram `bg-muted`, igual ao card).
 
 ### Toggle / ToggleGroup
 - **Status:** ✅ pronto (2026-11-21)
@@ -236,16 +236,16 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/ui/dialog.tsx`
 - **Propósito:** diálogo modal (editar um registro, confirmar uma ação sem volta fácil).
 - **Como funciona:** `@base-ui/react/dialog`; `Dialog`, `DialogTrigger`, `DialogContent` (botão `Fechar` `sr-only` com `size="icon-sm"`, 44px no celular; `showCloseButton={false}` o remove), `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter` (`showCloseButton` acrescenta um "Fechar" `outline`), `DialogClose`. Gatilho por `render`: `<DialogTrigger render={<Button … />}>`. Foco entra no diálogo e volta ao gatilho; `Esc` fecha. Funciona no jsdom sem polyfill.
-- **Usa:** `Button`; tokens `popover`, `muted`.
-- **Histórico:** 2026-11-21 — `shadcn add dialog`; os dois "Close" viram "Fechar" (P12). O CLI sobrescreve `button.tsx` (pergunta mesmo com `--yes`): rode com `--overwrite` e depois `git checkout -- src/components/ui/button.tsx` (F2-24).
+- **Usa:** `Button`; tokens `popover`, `accent`.
+- **Histórico:** 2026-11-21 — `shadcn add dialog`; os dois "Close" viram "Fechar" (P12). O CLI sobrescreve `button.tsx` (pergunta mesmo com `--yes`): rode com `--overwrite` e depois `git checkout -- src/components/ui/button.tsx` (F2-24). 2026-11-27 — PR B (P83): `DialogFooter` com `bg-accent/50` (era `bg-muted/50`; o `popover` tem o valor do card e o rodapé não se separava).
 
 ### Table (TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption…)
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/ui/table.tsx`
 - **Propósito:** a primeira tabela do projeto: a visão Tabela das solicitações (dado que se compara em colunas).
 - **Como funciona:** adicionado pelo CLI (`bunx shadcn@latest add table --yes`); o contêiner `data-slot="table-container"` tem `overflow-x-auto`, então a tabela rola na horizontal sozinha e a página nunca rola. Ajustes depois do CLI: sem `"use client"` (é server-safe) e formatação do Biome. Quem usa põe `text-right tabular-nums` nas colunas numéricas e `TableCaption className="sr-only"` com o nome da tabela.
-- **Usa:** tokens `border`, `muted`, `foreground`.
-- **Histórico:** 2026-11-24 — `shadcn add table` na Fase 4 (Tarefa 11).
+- **Usa:** tokens `border`, `accent`, `foreground`.
+- **Histórico:** 2026-11-24 — `shadcn add table` na Fase 4 (Tarefa 11). 2026-11-27 — PR B (P83): rodapé, hover e linha aberta (`has-aria-expanded`) em `bg-accent/50` e linha selecionada em `bg-accent` (eram `bg-muted`, igual ao card).
 
 ### Chart (ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent)
 - **Status:** ✅ pronto (2026-11-25)
@@ -386,11 +386,11 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   Turnos, Itens, Destinos, Equipe) com título, descrição e contagem (`{n} ativos`; Equipe:
   `{n} pessoas ativas · {m} convites pendentes`), singular e plural por `pluralize`. Grade de uma
   coluna no celular, duas em `sm` e três em `lg`; o cartão inteiro é o link (foco visível, hover
-  `bg-muted/50`). O título fica dentro do `<Suspense>` para o operador não ver "Administração"
+  `bg-accent`, opaco). O título fica dentro do `<Suspense>` para o operador não ver "Administração"
   antes do 404, e a página não exporta `metadata` (o `<title>` revelaria a rota; T12); enquanto
   carrega, `page.tsx` mostra um esqueleto (título e cinco cartões).
 - **Usa:** `requireAdmin`, `getAdminOverviewCounts`, `pluralize`, `Card*`, `next/link`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (placeholder). 2026-11-21 — Fase 2: cartões dos cinco cadastros e contagens.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (placeholder). 2026-11-21 — Fase 2: cartões dos cinco cadastros e contagens. 2026-11-27 — PR B (P83): hover do cartão em `group-hover:bg-accent`, opaco (era `bg-muted/50`, igual ao card; com `accent/50` sobre a página escura o resultado seria o próprio `--card` e o hover sumiria de novo).
 
 ### SessionKeepAlive
 - **Status:** ✅ pronto (2026-11-20)
@@ -1312,8 +1312,8 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Local:** `src/components/dashboard/StatLink.tsx` (server-safe)
 - **Propósito:** um número do dashboard que é sempre um link para a lista que conta exatamente aquilo (D-F5-3).
 - **Como funciona:** props `label`, `value`, `href`, `icon` (ícone do lucide, decorativo) e `caption` opcional. `<Link>` com `min-h-11`, número em `text-3xl tabular-nums` (`formatInteger`), ícone + rótulo e legenda em `text-xs`. O nome acessível é número + rótulo + legenda ("19 Esperadas turnos já encerrados"); zero é escrito, nunca vazio. Ícone e texto, nunca só cor.
-- **Usa:** `Link`, tokens `card`, `muted`, `ring`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+- **Usa:** `Link`, tokens `card`, `accent`, `ring`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11). 2026-11-27 — PR B (P83): hover em `bg-accent` (era `bg-muted`, igual ao card).
 
 ### BarList
 - **Status:** ✅ pronto (2026-11-25)
@@ -1321,7 +1321,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Propósito:** linhas com o valor escrito ao lado e, opcionalmente, uma barra proporcional: o tempo até a entrega por destino (com barras) e a quantidade pedida por item (só números, porque as unidades diferem).
 - **Como funciona:** `<ul aria-label>` com um `<Link>` por linha (`min-h-11`): rótulo (+ contexto, o setor, em "Todos os setores"), `valueText` em `tabular-nums` e `detail`. Com `bars`, a barra tem `width = barPercent(value, max)%` (`max` = maior valor mostrado; valor maior que zero nunca some, piso de 2%) e a cor `SINGLE_BAR_CLASS` (`bg-foreground`); a barra é decorativa, o número escrito é a escala. Sem linhas mostra `emptyText`; `moreText` ("Mostrando 8 de 11 destinos.") fica abaixo da lista.
 - **Usa:** `Link`, `barPercent`, `chartColors`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11). 2026-11-27 — Task 15 (legibilidade): trilho da barra com `bg-accent` (o `bg-muted` é igual ao card na paleta nova e o trilho sumia).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11). 2026-11-27 — Task 15 (legibilidade): trilho da barra com `bg-accent` (o `bg-muted` é igual ao card na paleta nova e o trilho sumia). 2026-11-27 — PR B (P83): hover da linha em `bg-accent` (era `bg-muted`).
 
 ### DashboardBlockSkeleton
 - **Status:** ✅ pronto (2026-11-25)

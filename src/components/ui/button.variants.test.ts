@@ -209,3 +209,31 @@ describe("buttonVariants — foco visível nos cartões coloridos (F1, G1)", () 
     expect(names).toContain("focus-visible:ring-0!");
   });
 });
+
+describe("buttonVariants — hover e aberto em accent, não muted (P83)", () => {
+  // `--muted` tem o valor do `--card`: dentro de cartão o hover com bg-muted não
+  // mudava nada. A prova por estilo calculado é a sonda de hover do C1.
+  it("outline: hover e aria-expanded em bg-accent", () => {
+    expect(classesOf({ variant: "outline" })).toEqual(
+      expect.arrayContaining(["hover:bg-accent", "aria-expanded:bg-accent"]),
+    );
+  });
+
+  it("ghost: hover e aria-expanded em bg-accent; no escuro, accent/50", () => {
+    expect(classesOf({ variant: "ghost" })).toEqual(
+      expect.arrayContaining([
+        "hover:bg-accent",
+        "aria-expanded:bg-accent",
+        "dark:hover:bg-accent/50",
+      ]),
+    );
+  });
+
+  it.each(VARIANTS)("variant=%s não usa bg-muted", (variant) => {
+    expect(
+      classesOf({ variant }).filter((name) =>
+        /(?:^|:)bg-muted(?:\/|$)/.test(name),
+      ),
+    ).toEqual([]);
+  });
+});

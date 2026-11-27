@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Card, CardContent, CardHeader, CardTitle } from "./card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "./card";
 
 function card(): HTMLElement {
   const el = document.querySelector('[data-slot="card"]');
@@ -90,5 +90,19 @@ describe("Card — subcomponentes", () => {
       );
       unmount();
     }
+  });
+});
+
+describe("CardFooter — rodapé em accent (P83)", () => {
+  it("se separa do corpo com bg-accent/50 (o bg-muted/50 de antes era o próprio card)", () => {
+    render(
+      <Card>
+        <CardFooter>Rodapé</CardFooter>
+      </Card>,
+    );
+    const footer = screen.getByText("Rodapé");
+    expect(footer).toHaveAttribute("data-slot", "card-footer");
+    expect(footer).toHaveClass("bg-accent/50");
+    expect(footer.className).not.toMatch(/bg-muted/);
   });
 });

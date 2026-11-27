@@ -121,6 +121,15 @@ describe("AdminOverview", () => {
     ).toBeInTheDocument();
   });
 
+  it("o hover do cartão é bg-accent opaco: accent/50 sobre a página escura daria o próprio card (P83)", async () => {
+    await renderOverview();
+    const link = screen.getByRole("link", { name: /^Setores/ });
+    const card = link.querySelector('[data-slot="card"]');
+    expect(card).toHaveClass("bg-card", "group-hover:bg-accent");
+    expect(card).not.toHaveClass("group-hover:bg-accent/50");
+    expect(card?.className).not.toMatch(/bg-muted/);
+  });
+
   it("operador: requireAdmin lança (notFound), nada é renderizado e o banco não é lido", async () => {
     mocks.requireAdmin.mockRejectedValue(
       new Error("NEXT_HTTP_ERROR_FALLBACK;404"),

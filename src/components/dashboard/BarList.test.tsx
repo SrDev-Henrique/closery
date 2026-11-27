@@ -108,4 +108,14 @@ describe("BarList", () => {
     expect(track).toHaveClass("bg-accent");
     expect(track).not.toHaveClass("bg-muted");
   });
+
+  it("o hover da linha usa bg-accent (o bg-muted era o próprio card e o hover sumia)", () => {
+    renderList();
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveClass("bg-card", "hover:bg-accent");
+      expect(link).not.toHaveClass("hover:bg-muted");
+    }
+  });
 });

@@ -21,7 +21,7 @@ export function StatLink({
   return (
     <Link
       href={href}
-      className="flex min-h-11 flex-col gap-1 rounded-lg border bg-card p-3 text-card-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
+      className="flex min-h-11 flex-col gap-1 rounded-lg border bg-card p-3 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
     >
       <span className="text-3xl font-semibold tabular-nums">
         {formatInteger(value)}

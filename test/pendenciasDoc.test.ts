@@ -234,7 +234,7 @@ describe(".context/pendencias.md", () => {
   });
 
   it("Visual: P81 a P108 entraram como Aberto, não triado (menos as que o PR B fechou)", () => {
-    const closedByPrB = new Set(["P81"]);
+    const closedByPrB = new Set(["P81", "P83"]);
     for (let number = 81; number <= 108; number++) {
       const id = `P${number}`;
       if (closedByPrB.has(id)) continue;
@@ -266,5 +266,12 @@ describe(".context/pendencias.md", () => {
     expect(p44?.state, "P44").toBe("Aberto, não triado");
     expect(p44?.section, "P44").toBe("1");
     expect(p44?.updates, "P44").toContain("2026-11-27");
+  });
+
+  it("PR B: P83 resolvida pelo guarda do bg-muted", () => {
+    const p83 = entries.get("P83");
+    expect(p83?.state, "P83").toBe("Resolvido");
+    expect(p83?.section, "P83").toBe("5");
+    expect(p83?.updates, "P83").toContain("2026-11-27");
   });
 });

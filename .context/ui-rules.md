@@ -119,8 +119,8 @@ Valores em `ui-tokens.md`; a decisão e os desvios no `architecture.md §10` (20
   tamanho se provam por estilo calculado no navegador (E2E com Tab), nunca só pela classe.
 - **Nunca `bg-muted` dentro de card** (nem `hover:bg-muted`, `aria-expanded:bg-muted` ou
   `data-checked:bg-muted`). Na paleta nova, `--muted` tem o valor de `--card` e de `--popover`, e no
-  claro o fundo some. Use `accent` para hover e estado, e `primary` para o marcado. Os primitivos
-  ainda têm casos de hover (P83).
+  claro o fundo some. Use `accent` para hover e estado, e `primary` para o marcado. O guarda
+  `src/app/mutedBackground.test.ts` recusa `bg-muted` em `src/`, com lista fechada de exceções (P83).
 - **Contraste medido sobre cada fundo real e em cada estado.** Texto ≥ 4,5:1 e indicador de estado
   ≥ 3:1, sobre o fundo onde a peça realmente fica (página, card, popover, cada pastel) e em repouso e
   hover, com o translúcido composto sobre a superfície. O guarda é `src/app/themeContrast.test.ts`.

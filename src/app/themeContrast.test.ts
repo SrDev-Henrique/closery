@@ -440,6 +440,9 @@ const SURFACE_PAIRS: [string, string][] = [
   ["muted-foreground", "card"],
   ["muted-foreground", "muted"],
   ["muted-foreground", "accent"],
+  // Texto sobre o fundo de estado opaco (hover e aberto do Button outline e
+  // ghost, linha selecionada, BarList, StatLink, cartão da Administração; P83).
+  ["foreground", "accent"],
   ["muted-foreground", "seg"],
   ["foreground", "seg"],
   ["primary-foreground", "primary"],
@@ -787,5 +790,146 @@ describe(`contraste do bloco 'Aguardando recebimento' (${PENDING_BLOCK} sobre a 
       ratio,
       `on-pastel sobre ${PENDING_BLOCK} em ${base}: ${ratio.toFixed(2)}:1`,
     ).toBeGreaterThanOrEqual(TEXT_MIN);
+  });
+});
+
+// ---------------------------------------------------------------- fundos de estado (P83, PR B §9)
+/**
+ * Os estados e rodapés que eram `bg-muted` viraram `bg-accent` (PB-D8): `--muted` tem o valor do
+ * `--card`, e dentro de cartão, diálogo ou Sheet o fundo antigo não mudava nada. Dois guardas, nos
+ * dois temas: (1) o texto (`foreground` e `muted-foreground`) sobre `accent/50` composto em cima do
+ * card e da página (rodapé do Card e do Dialog, linha da tabela, rótulo com campo, `ghost` no
+ * escuro; o `accent` opaco está em SURFACE_PAIRS); (2) cada fundo de estado composto sobre o fundo
+ * real muda a cor de repouso daquele lugar (outra cor de 8 bits). Os casos negativos mostram por que
+ * o `bg-muted` sumia e por que o cartão da Administração usa `accent` opaco.
+ */
+const ACCENT_HALF = 0.5;
+const STATE_TEXT = ["foreground", "muted-foreground"] as const;
+const STATE_BASES = ["card", "background"] as const;
+const BOTH_THEMES = [":root", ".dark"] as const;
+
+/** A cor como os 3 bytes que a tela pinta: iguais aqui = a mesma cor na tela. */
+function bytes(rgb: Rgb): string {
+  return rgb.map((channel) => Math.round(channel * 255)).join(",");
+}
+
+/** Um fundo de estado: `accent` com `alpha`, composto sobre `under`; `resting` é o fundo sem o estado. */
+type StateCase = {
+  name: string;
+  alpha: number;
+  under: string;
+  resting: string;
+  themes: readonly string[];
+};
+
+const STATE_CASES: StateCase[] = [
+  {
+    name: "Button outline no hover e aberto, dentro de cartão (repouso bg-background; o escuro usa input/50)",
+    alpha: 1,
+    under: "card",
+    resting: "background",
+    themes: [":root"],
+  },
+  {
+    name: "Button e Badge ghost no hover, dentro de cartão",
+    alpha: 1,
+    under: "card",
+    resting: "card",
+    themes: [":root"],
+  },
+  {
+    name: "Button e Badge ghost no hover, sobre a página",
+    alpha: 1,
+    under: "background",
+    resting: "background",
+    themes: [":root"],
+  },
+  {
+    name: "Button e Badge ghost no hover (dark:hover:bg-accent/50), dentro de cartão",
+    alpha: ACCENT_HALF,
+    under: "card",
+    resting: "card",
+    themes: [".dark"],
+  },
+  {
+    name: "Button e Badge ghost no hover (dark:hover:bg-accent/50), sobre a página",
+    alpha: ACCENT_HALF,
+    under: "background",
+    resting: "background",
+    themes: [".dark"],
+  },
+  {
+    name: "rodapé do Card e do Dialog, linha da tabela e rótulo com campo (bg-accent/50), dentro de cartão",
+    alpha: ACCENT_HALF,
+    under: "card",
+    resting: "card",
+    themes: BOTH_THEMES,
+  },
+  {
+    name: "linha da tabela e rótulo com campo (bg-accent/50), sobre a página",
+    alpha: ACCENT_HALF,
+    under: "background",
+    resting: "background",
+    themes: BOTH_THEMES,
+  },
+  {
+    name: "linha do BarList e do StatLink no hover (bg-card para bg-accent)",
+    alpha: 1,
+    under: "card",
+    resting: "card",
+    themes: BOTH_THEMES,
+  },
+  {
+    name: "cartão da Administração no hover (bg-card para bg-accent), sobre a página",
+    alpha: 1,
+    under: "background",
+    resting: "card",
+    themes: BOTH_THEMES,
+  },
+];
+
+for (const [theme, selector] of THEMES) {
+  describe(`fundos de estado (accent) — tema ${theme}`, () => {
+    const token = (name: string) => solid(readToken(css, selector, name), name);
+    const accentOver = (alpha: number, under: string) =>
+      over({ rgb: token("accent"), alpha }, token(under));
+
+    it.each(
+      STATE_TEXT.flatMap((fg) =>
+        STATE_BASES.map((base): [string, string] => [fg, base]),
+      ),
+    )("%s sobre accent/50 composto em cima de --%s (≥4,5:1)", (fg, base) => {
+      const ratio = contrast(token(fg), accentOver(ACCENT_HALF, base));
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
+
+    it.each(
+      STATE_CASES.filter((item) => item.themes.includes(selector)).map(
+        (item): [string, StateCase] => [item.name, item],
+      ),
+    )("%s: o estado muda a cor de repouso", (_name, item) => {
+      expect(bytes(accentOver(item.alpha, item.under))).not.toBe(
+        bytes(token(item.resting)),
+      );
+    });
+
+    it("caso negativo: o bg-muted/50 de antes, dentro de cartão, pinta a mesma cor do cartão", () => {
+      const old = over(
+        { rgb: token("muted"), alpha: ACCENT_HALF },
+        token("card"),
+      );
+      expect(bytes(old)).toBe(bytes(token("card")));
+    });
+  });
+}
+
+describe("caso negativo: o cartão da Administração com accent/50 sumiria no escuro (por isso accent opaco)", () => {
+  it("accent/50 sobre a página escura é exatamente o --card", () => {
+    const token = (name: string) => solid(readToken(css, ".dark", name), name);
+    expect(
+      bytes(
+        over({ rgb: token("accent"), alpha: ACCENT_HALF }, token("background")),
+      ),
+    ).toBe(bytes(token("card")));
   });
 });

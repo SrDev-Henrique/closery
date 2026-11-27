@@ -39,7 +39,7 @@ export function BarList({
           <li key={row.key}>
             <Link
               href={row.href}
-              className="flex min-h-11 flex-col justify-center gap-1 rounded-lg border bg-card px-3 py-2 text-card-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
+              className="flex min-h-11 flex-col justify-center gap-1 rounded-lg border bg-card px-3 py-2 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
             >
               <span className="flex flex-wrap items-baseline justify-between gap-x-3">
                 <span className="text-sm font-medium">

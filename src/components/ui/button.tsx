@@ -18,12 +18,14 @@ const buttonVariants = cva(
         // Borda com o token dos campos (--input) nos dois temas: o --border da
         // paleta nova (9% de tinta) sumia no fundo da página no tema claro e o
         // botão parecia texto solto.
+        // Hover e aberto em `accent`: o `--muted` tem o valor do `--card`, e o
+        // hover sumia dentro de cartão, diálogo e Sheet (P83).
         outline:
-          "border-input bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:bg-input/30 dark:hover:bg-input/50",
+          "border-input bg-background hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground dark:bg-input/30 dark:hover:bg-input/50",
         secondary:
           "border-transparent bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
         ghost:
-          "border-transparent hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+          "border-transparent hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground dark:hover:bg-accent/50",
         // Os percentuais do fundo (repouso e hover, nos dois temas) entram no
         // guarda de contraste, que os lê desta string: `text-destructive`
         // sobre o fundo composto em `--background` e `--card` passa 4,5:1.

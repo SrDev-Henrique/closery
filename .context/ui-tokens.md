@@ -178,12 +178,12 @@ Celular é **abaixo de 860px** no app inteiro (`md:` e `max-md:` valem em 860px;
 
 ## 7. Como usar
 
-✅ `bg-background`, `text-foreground`, `bg-muted`, `text-muted-foreground`, `bg-card`,
+✅ `bg-background`, `text-foreground`, `bg-accent` (hover e estado), `text-muted-foreground`, `bg-card`,
 `border-border`, `bg-primary text-primary-foreground`, `rounded-full`, `ring-ring`,
 `bg-highlight text-on-pastel`, `bg-sector-sky`, `shadow-thumb`.
 
 ❌ `bg-[#F5F5F6]`, `text-zinc-500`, `bg-green-500`, `border-gray-200`, `shadow-[0_2px_8px_rgba(...)]`,
-`z-[...]` arbitrário.
+`z-[...]` arbitrário, `bg-muted` (tem o valor do `card`: use `bg-accent`; `mutedBackground.test.ts`).
 
 🔁 **Faltou um token?** Adicione no `globals.css` (claro **e** escuro, ou só `:root` se for fixo), exponha no
 `@theme inline`, mede o contraste em `themeContrast.test.ts` e documente aqui.
