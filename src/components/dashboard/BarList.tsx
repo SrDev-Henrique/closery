@@ -65,7 +65,8 @@ export function BarList({
               {bars && (
                 <span
                   aria-hidden="true"
-                  className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                  // accent, não muted: na paleta nova muted = card e o trilho sumia.
+                  className="h-2 w-full overflow-hidden rounded-full bg-accent"
                 >
                   <span
                     className={`block h-full rounded-full ${SINGLE_BAR_CLASS}`}

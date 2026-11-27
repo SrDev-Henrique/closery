@@ -101,4 +101,11 @@ describe("BarList", () => {
       /(?:bg|text|border)-(?:red|green|blue|zinc|slate|gray)-\d/,
     );
   });
+
+  it("o trilho da barra usa bg-accent: o bg-muted é igual ao card na paleta nova e o trilho sumia", () => {
+    const { container } = renderList();
+    const track = container.querySelector("span.h-2");
+    expect(track).toHaveClass("bg-accent");
+    expect(track).not.toHaveClass("bg-muted");
+  });
 });

@@ -185,9 +185,10 @@ function RingLegend({
               aria-label={`${slice.label}: ${formatInteger(slice.value)} (${percent}%)`}
               className={cn(
                 ROW,
+                // accent, não muted: na paleta nova muted = card e o destaque sumia.
                 i === selectedIndex
-                  ? "bg-muted"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-accent"
+                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
               )}
               href={slice.href}
               onFocus={() => onSelect?.(i)}

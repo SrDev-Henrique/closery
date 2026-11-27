@@ -341,4 +341,14 @@ describe("SpendingRing", () => {
     );
     expect(container.innerHTML).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
+
+  it("a linha selecionada da legenda usa bg-accent (o bg-muted é igual ao card e o destaque sumia)", () => {
+    render(<SpendingRing {...ring()} />);
+    const legend = screen.getByRole("list", { name: LEGEND });
+    const selected = within(legend).getByRole("link", {
+      name: "Confirmadas: 1.200 (78%)",
+    });
+    expect(selected).toHaveClass("bg-accent");
+    expect(selected).not.toHaveClass("bg-muted");
+  });
 });
