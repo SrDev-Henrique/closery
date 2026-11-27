@@ -222,7 +222,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** `@base-ui/react/toggle-group`; `ToggleGroup` (`variant`, `size`, `spacing`) + `ToggleGroupItem`; o item marcado tem `aria-pressed="true"`. No uso do projeto: `variant="outline"`, `size="lg"`. Clicar no item já marcado **desmarca** (lista vazia em `onValueChange`): quem precisa de "nunca vazio" usa o `ChoiceGroup`.
 - **Atenção:** todo tamanho tem `h-9` / `min-w-9` no desktop e `max-md:h-11` / `max-md:min-w-11` no celular. Teste: `touchTargets.test.tsx`.
 - **Usa:** tokens `muted`, `input`, `ring`.
-- **Histórico:** 2026-11-21 — `shadcn add toggle-group` (traz `toggle`); alturas `h-8`/`h-7` viram `h-9 max-md:h-11` (P3).
+- **Histórico:** 2026-11-21 — `shadcn add toggle-group` (traz `toggle`); alturas `h-8`/`h-7` viram `h-9 max-md:h-11` (P3). 2026-11-27 — Task 15 (legibilidade): marcado (`aria-pressed`) com `bg-primary text-primary-foreground` e hover `bg-accent` (eram `bg-muted`, igual ao card na paleta nova: no formulário a opção escolhida não se distinguia).
 
 ### NativeSelect
 - **Status:** ✅ pronto (2026-11-21)
@@ -528,7 +528,7 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** selo "Inativo" (nada se apaga; só desativa).
 - **Como funciona:** `<Badge variant="secondary">Inativo</Badge>`; sempre texto, nunca só cor.
 - **Usa:** `Badge`.
-- **Histórico:** 2026-11-21 — criado na Fase 2.
+- **Histórico:** 2026-11-21 — criado na Fase 2. 2026-11-27 — Task 15 (legibilidade): variante `neutral` (era `secondary`, igual ao card na paleta nova: a pílula sumia na linha).
 
 ### Pagination
 - **Status:** ✏️ estendido (2026-11-24)
@@ -560,7 +560,7 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Propósito:** escolha entre poucas opções (Papel: Operador | Administrador; Tipo do item: Controle | Estoque).
 - **Como funciona:** `<fieldset>` com `<legend>` + `ToggleGroup` único (`outline`, `lg`); **nunca fica sem seleção**: clicar no item escolhido é ignorado. Genérico no tipo do valor (sem `as`). `description` liga ao grupo por `aria-describedby`.
 - **Usa:** `FieldSet`, `FieldLegend`, `FieldDescription`, `ToggleGroup`.
-- **Histórico:** 2026-11-21 — criado na Fase 2.
+- **Histórico:** 2026-11-21 — criado na Fase 2. 2026-11-27 — Task 15 (legibilidade): a opção escolhida volta a aparecer (Toggle marcado em `primary`); teste novo.
 
 ### SelectField
 - **Status:** ✅ pronto (2026-11-21)

@@ -120,4 +120,15 @@ describe("ChoiceGroup", () => {
       "true",
     );
   });
+
+  it("a opção escolhida tem fundo primary (o bg-muted de antes é igual ao card na paleta nova e a escolha não aparecia)", () => {
+    render(<Harness onChange={vi.fn()} />);
+
+    const chosen = screen.getByRole("button", { name: "Operador" });
+    expect(chosen).toHaveClass(
+      "aria-pressed:bg-primary",
+      "aria-pressed:text-primary-foreground",
+    );
+    expect(chosen.className.split(" ")).not.toContain("aria-pressed:bg-muted");
+  });
 });
