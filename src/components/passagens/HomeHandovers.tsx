@@ -43,6 +43,7 @@ function HeroRow({ lead }: { lead: ReactNode }) {
         className={cn(
           buttonVariants({ variant: "surface", size: "pill" }),
           "px-5",
+          "ml-auto",
         )}
       >
         <ChartColumn aria-hidden="true" strokeWidth={2.2} />

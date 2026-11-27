@@ -822,9 +822,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/PendingHandoverCard.tsx`
 - **Propósito:** cartão do topo do Início "Passagem para confirmar".
-- **Como funciona:** Server-safe. Mostra `{turno} · {dd/mm/aaaa}`, "Entregue às {HH:mm} por {nome}", o bloco "Fica para o próximo turno" em destaque (trecho do texto ou "Nada registrado para o próximo turno.") e o link-botão "Ver passagem" (`/passagens/{id}`). Não confirma aqui: a confirmação é no resumo.
-- **Usa:** `Card`, `buttonVariants`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Como funciona:** Server-safe, só desenha (recebe `avatarSrc` pronto). `Card feature` amarelo (`--highlight`, tinta `--on-pastel`), em grid de uma coluna que vira duas (`minmax(0,1fr) minmax(0,1.2fr)`) só com área útil de 1040px ou mais. Coluna da esquerda: título "Passagem para confirmar", `{turno} · {dd/mm/aaaa}`, o avatar de quem entregou com "Entregue às {HH:mm} por {nome}" e o botão `on-pastel` "Ver passagem" (`/passagens/{id}`) no fim. Coluna da direita: o bloco "Fica para o próximo turno" (trecho do texto ou "Nada registrado para o próximo turno."). Não confirma aqui: a confirmação é no resumo.
 - **Usa:** `Card` (`feature`), `buttonVariants` (`on-pastel`, `pill`), `UserAvatar`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-27 — visual novo (Tarefa 11): prop nova `avatarSrc` (data URI de quem entregou, gerado por quem chama: o cartão só desenha); `Card feature` em `--highlight` com tinta `--on-pastel`, grid `minmax(0,1fr) minmax(0,1.2fr)` só com área útil ≥ 1040px, avatar de 36px (inclinado 3°) de quem entregou, bloco `--on-pastel-soft` "Fica para o próximo turno" e botão `on-pastel` "Ver passagem" com `ArrowRight` no fim da coluna; sem mudança de regra.
 
@@ -835,6 +833,8 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Como funciona:** Server-safe. Pílula de 48px em `bg-card`: bolinha de 10px na cor do setor (`SECTOR_COLOR_BG`, `aria-hidden`), "Setor" em mono 12px `text-muted-foreground` e o nome em Satoshi 700/16px com reticências. Não é botão nem link.
 - **Usa:** `SECTOR_COLOR_BG`.
 - **Histórico:** 2026-11-27 — criado no visual novo do Início (Tarefa 11).
+
+### MyShiftCard
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/MyShiftCard.tsx`
 - **Propósito:** cartão "Passagem do meu turno" do Início, nos cinco estados.

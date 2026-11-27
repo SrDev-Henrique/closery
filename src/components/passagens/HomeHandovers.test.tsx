@@ -221,6 +221,16 @@ describe("HomeHandovers", () => {
       expect(screen.getByText("Seu setor está inativo.")).toBeInTheDocument();
     });
 
+    it("sem seletor nem pílula (ramos de erro), o botão do dashboard fica à direita", async () => {
+      await insertSector(db, "Parado", { active: false });
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome();
+
+      expect(screen.getByRole("link", { name: "Ver o dashboard" })).toHaveClass(
+        "ml-auto",
+      );
+    });
     it("a pílula usa a cor do setor escolhida na tela Setores", async () => {
       const verde = await insertSector(db, "Carga", { color: "green" });
       const ana = await insertUser(db, {
