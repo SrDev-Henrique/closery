@@ -159,7 +159,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 
 - **Celular** é abaixo de 860px: `--breakpoint-md: 53.75rem` no `@theme` e `MOBILE_BREAKPOINT = 860` em `src/hooks/use-mobile.ts`.
 - As regras `max-md:` de alvo de toque passam a valer até 860px.
-- O conteúdo do Início usa **container queries** com `@container` no contêiner principal. Os limites são de **área útil** (a tela menos a sidebar):
+- O conteúdo do Início usa **container queries** com `@container/main`. Os limites são de **área útil**: a tela menos a sidebar, **incluindo** o padding lateral de 40px, como o protótipo calcula (`mainW = largura − 280`). Por isso o `@container/main` fica num invólucro **sem padding**, e o padding e o `max-width` ficam num elemento de dentro.
   - abaixo de 1040px, os grids viram 1 coluna;
   - a partir de 1040px, turno e solicitações ficam em `minmax(0,1.3fr) minmax(0,1fr)`;
   - em 2 colunas com área útil abaixo de 1240px, o horário cai para 52px e o contador para 60px;
@@ -169,7 +169,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 
 - **`Button`:**
   - `rounded-full` em todas as variantes, no app inteiro;
-  - tamanho novo `pill`: 48px de altura, Satoshi 16px/700, `padding 0 22px`, `gap 10px`, ícone de 18px;
+  - tamanho novo `pill`: 48px de altura, Satoshi 16px/700, `padding 0 22px`, `gap 10px`, ícone de 18px. Como no protótipo, os botões neutros ("Ver o dashboard" em `--card` e "Ver solicitações" em `--primary`) usam `padding 0 20px`;
   - variantes novas: `surface` (fundo `--card`, hover `--accent`), `on-pastel` (fundo `--on-pastel`, texto `--on-pastel-ink`, `active:scale-[.97]`) e `on-pastel-secondary` (fundo e hover `--on-pastel-secondary`/`-hover`);
   - o `focus-visible:ring` atual continua em todas.
 - **`Badge`:**
@@ -194,7 +194,9 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
   | 52px | 17px |
   | 84px | 26px |
 
-- **Sombras:** só o thumb do seletor (`0 2px 8px rgba(0,0,0,.18), 0 0 0 .5px rgba(0,0,0,.06)`) e o drawer do celular (`20px 0 60px rgba(0,0,0,.35)`, scrim `rgba(0,0,0,.45)`).
+- **Sombras:** só o thumb do seletor (`0 2px 8px rgba(0,0,0,.18), 0 0 0 .5px rgba(0,0,0,.06)`) e o drawer do celular (`20px 0 60px rgba(0,0,0,.35)`, scrim `rgba(0,0,0,.45)`). Viram os tokens `--shadow-thumb`, `--shadow-drawer` e `--color-scrim`, para nenhum `.tsx` ter cor em valor arbitrário.
+- **Regra geral:** nenhum `.tsx` tem cor literal (hex, `rgb()`, `rgba()`). Os tons translúcidos de `#1c1b19` (as bordas tracejadas do cartão de convite, por exemplo) usam o token com modificador de opacidade, como `border-on-pastel/40`.
+- **Quando a spec e o protótipo divergirem num valor fino** (padding, raio interno de avatar), o protótipo manda, porque é a referência do pixel perfect. Por exemplo, o avatar de 84px tem a imagem interna com raio de 22px.
 
 ## 5. Dados
 
@@ -286,7 +288,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 
 ### 6.2 Saudação (`Greeting`) e seletor de setor (`SectorPicker`)
 
-- **Eyebrow:** a data por extenso em pt-BR, no fuso de São Paulo, em caixa alta, por exemplo "QUINTA-FEIRA · 27 NOV 2026". Geist Mono 13px/500, `--muted-foreground`, `.06em`.
+- **Eyebrow:** a data por extenso em pt-BR, no fuso de São Paulo, em caixa alta, com o dia em dois dígitos, por exemplo "SEXTA-FEIRA · 27 NOV 2026" (o protótipo diz "QUINTA-FEIRA", mas 27/11/2026 é sexta). Geist Mono 13px/500, `--muted-foreground`, `.06em`.
 - **`h1`** com `greetingTitle`: Satoshi 900, 72px (60px com área útil abaixo de 900px; 44px no celular), line-height .95, `-0.04em`.
 - **Hero:** padding `28px 0 40px` (no celular, `12px 0 28px`), gap 32 (24 no celular).
 - **Linha de baixo** (`flex-wrap`, `justify-between`, gap 16):
@@ -347,7 +349,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
   - **Cada item:**
     - é um link na linha inteira, com padding `14px 10px` e margem lateral de −10px, raio 18, hover `--accent` e `border-top: 1px --border`;
     - mostra o `requestPreview` (Geist 600/15px) e "Para {destino}" (13px, `--muted-foreground`);
-    - leva os badges de status ("Solicitada" em `neutral`; "Em separação / Trânsito" em `info`) e o `StaleBadge` (`warning`, com o texto atual de `staleLabel`);
+    - leva os badges de status ("Solicitada" em `neutral`; "Em separação / Trânsito" em `info`) e o `StaleBadge` (`warning`, com o texto atual de `staleLabel`). O `RequestStatusBadge` e o `StaleBadge` são os mesmos em todas as telas de Solicitações, então o visual novo vale para todas (D-V1). "Cancelada" usa `--accent`, porque no claro o `--muted` novo é igual ao `--card`;
     - fecha com o `ChevronRight` de 18px em `--muted-foreground`;
     - mantém `scroll={false}` e a rota interceptada do detalhe.
 - **Sem abertas:**
@@ -372,7 +374,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
   - bloco `--on-pastel-soft`, raio 22, padding `18px 22px`, com o eyebrow "CADASTROS";
   - 5 linhas de no mínimo 44px, separadas por `--on-pastel-line`;
   - cada linha tem o indicador de 24px, o nome (Satoshi 700/16px) e a contagem (Geist Mono 13px) à direita, com o `pluralize` como no `AdminOverview`;
-  - Setores, Turnos, Itens e Destinos têm o indicador preenchido em `--on-pastel`, com `Check` (`strokeWidth 3`) na cor do card;
+  - Setores, Turnos, Itens e Destinos têm o indicador preenchido em `--on-pastel`, com `Check` (`strokeWidth 3`) na cor do card, **quando a contagem é maior que zero**; com zero, o indicador fica vazio como o da Equipe, porque um "feito" ao lado de "0 ativos" enganaria;
   - Equipe tem o indicador vazio (`2px dashed rgba(28,27,25,.45)`) e "1 pessoa ativa".
 
 No primeiro acesso, a tela não tem "Passagem para confirmar", o cartão de turno fica em `start` e "Solicitações" fica vazio.
