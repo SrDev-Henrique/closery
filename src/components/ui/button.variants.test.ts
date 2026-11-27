@@ -162,3 +162,18 @@ describe("buttonVariants — outline legível nos dois temas", () => {
     expect(classes).not.toContain("border-border");
   });
 });
+
+describe("buttonVariants — borda transparente só onde não há borda", () => {
+  // O `.border-transparent` vem depois do `.border-input` no CSS gerado: com
+  // `buttonVariants` cru num <Link> (sem twMerge), ele apagava a borda do outline.
+  it("o outline não leva border-transparent; as outras variantes levam", () => {
+    expect(classesOf({ variant: "outline" })).not.toContain(
+      "border-transparent",
+    );
+    for (const variant of VARIANTS.filter((v) => v !== "outline")) {
+      expect(classesOf({ variant }), `variant=${variant}`).toContain(
+        "border-transparent",
+      );
+    }
+  });
+});
