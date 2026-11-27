@@ -95,8 +95,23 @@
   Não existe `tailwind.config.js`. Token novo entra lá (claro **e** escuro) e é documentado no
   `ui-tokens.md`.
 - Só classes semânticas (`bg-background`, `text-muted-foreground`…). Proibido cor crua.
-- Fonte: `next/font` define `--font-sans` (Geist) e `--font-geist-mono` no `<html>`; o CSS lê
-  essas variáveis. Mudou a fonte? Mude o `variable` no `layout.tsx` junto.
+- Fonte: `next/font` define `--font-sans` (Geist), `--font-geist-mono` e `--font-satoshi` (§17) no `<html>`;
+  o CSS lê essas variáveis (`--font-heading: var(--font-satoshi)`, utilitário `font-heading`). Mudou a fonte?
+  Mude o `variable` no `layout.tsx` junto.
+- **Armadilhas que custaram rodadas no visual novo** (prove foco, contraste e tamanho por estilo calculado
+  no navegador, nunca só pela string da classe):
+  - `outline-none` na base mais `focus-visible:outline-2` não desenha nada: o `outline-none` grava
+    `--tw-outline-style: none`, e o `outline-2` usa essa variável. Junte `focus-visible:outline-solid`.
+  - O merge do `cn` descarta o `focus-visible:ring-3` da base quando um `focus-visible:ring-0` vem depois,
+    mas mantém os dois com `ring-0!` (o `!` muda a chave do conflito); quem apaga o anel, nos dois
+    caminhos (pelo `cn` e no `buttonVariants` cru), é o `!important`.
+  - O merge do `cn` descarta um `leading-*` que vem **antes** de um `text-*` (o tamanho de texto também
+    define a altura de linha): ponha o `leading-*` depois.
+  - `buttonVariants` cru num `<Link>` não passa pelo `cn`, e quem decide entre duas classes do mesmo
+    grupo é a ordem do CSS gerado, não a da string. Foi assim que o `border-transparent` da base apagava
+    a borda do `outline`; por isso cada variante declara a própria cor de borda.
+  - Na paleta nova `--muted` = `--card` = `--popover`: `bg-muted` (e `hover:bg-muted`) dentro de cartão,
+    diálogo ou Sheet não aparece. Use `accent` (`ui-rules.md §6`).
 
 ## 4. Biome 2.4
 
@@ -482,15 +497,22 @@
   Hash diferente ou sem rede: código 1 e uma mensagem que diz o que fazer. As regras puras são testadas em
   `test/fontsCheck.test.ts` e a orquestração (com `fetch` e disco falsos) em `test/fetchFonts.test.ts`.
 - **Ganchos:** `predev` e `prebuild` chamam `bun run fonts` (o Bun roda os scripts `pre*`, conferido em 2026-11-27). Na Vercel o
-  `bun run build` roda o `prebuild`. No CI o job do E2E guarda `src/fonts/satoshi` em cache (`satoshi-<hash de scripts/fontsCheck.mjs>`),
-  porque o E2E faz `bun run build`; o job `checks` não precisa da fonte (nenhum teste importa o `RootLayout`).
+  `bun run build` roda o `prebuild`, e a pasta não sobrevive entre builds: **todo build e todo redeploy baixam a fonte do Fontshare**
+  e conferem o SHA-256 (o runbook avisa no B5 e no B17; com o Fontshare fora, o build para: P102). No CI o job do E2E guarda
+  `src/fonts/satoshi` em cache (`satoshi-<hash de scripts/fontsCheck.mjs>`), porque o E2E faz `bun run build`; o job `checks` não
+  precisa da fonte (nenhum teste importa o `RootLayout`). O script também roda pelo Node (`node scripts/fetchFonts.mjs`): no Node 22
+  o `import.meta.main` não existe, e a guarda do CLI compara o `process.argv[1]` com o caminho do módulo.
 - **Mudou o hash?** Não aceite no automático. A Fontshare pode ter trocado o arquivo: confira a licença da versão nova, baixe,
   calcule o SHA-256 (`sha256sum`) e atualize `SATOSHI_SHA256` num commit só dele (a chave do cache do CI muda junto).
 - **`next/font/local`:** `localFont` em `src/app/layout.tsx` com os 3 pesos (`src` em array, `path` **literal** e relativo ao
   `layout.tsx`), `variable: "--font-satoshi"`, `display: "swap"`, `fallback: ["Geist", "system-ui", "sans-serif"]`. O Next gera o
   ajuste de fallback (Arial) sozinho (`adjustFontFallback`). `globals.css`: `--font-heading: var(--font-satoshi)`; o utilitário é `font-heading`.
-- **Artefato público:** o trace do Playwright guarda os recursos da página (a fonte entra) nos snapshots do DOM. Por isso, no CI, `playwright.config.ts` grava o trace com `snapshots: false` e `sources: false` (ficam prints, passos e console); nada de `.woff2` em artefato público. Travado em `test/playwrightTrace.test.ts`.
-- **Glifos:** `ª` e `º` **não existem** na Satoshi e caem na próxima fonte da pilha (Geist). Nada a fazer; só não conte com eles no display.
+- **Artefato público:** o trace do Playwright 1.65 grava o corpo de cada resposta (o `.woff2` entra, em `resources/`) pelo `HarTracer`,
+  que só liga junto com os snapshots do DOM. Por isso, no CI, `playwright.config.ts` grava o trace com
+  `{ mode: "retain-on-failure", snapshots: false, screenshots: true, sources: false }`: ficam os quadros, os passos e o console, e
+  somem o DOM e a aba de rede. Nada de `.woff2` em artefato público. Fora do CI o trace continua completo. Travado em
+  `test/playwrightTrace.test.ts`, que avalia a config de verdade com `CI` ligado e desligado (inverter o ternário reprova).
+- **Glifos:** `ª` e `º` **não existem** na Satoshi e caem na próxima fonte da pilha (Geist). Nada a fazer; só não conte com eles no display (P93).
 
 ## 18. Tema (próprio, sem next-themes) · visual novo
 
@@ -510,18 +532,23 @@
 - **Não leia o tema no render sem o hook:** no servidor não existe `localStorage`. O visual que depende do tema usa as variantes
   `dark:` do Tailwind (o script decide a classe antes da pintura); o que precisa do valor em JS (`aria-checked`, texto de tooltip,
   tema do Sonner) usa `useTheme()`, que hidrata como `"dark"` e relê o `<html>` logo depois.
-- **Dev (Strict Mode):** o React pode limpar a classe do `<html>` na remontagem de desenvolvimento; em produção isso não acontece.
+- **Sem `disableTransitionOnChange`** (decisão do dono): o knob do `ThemeSwitch` desliza, e as cores com transição também mudam devagar
+  na troca de tema.
+- **Dev (Strict Mode):** o React pode limpar a classe do `<html>` na remontagem de desenvolvimento, e o switch mostra o claro até recarregar;
+  em produção isso não acontece (P101).
 - **Teste:** `src/lib/theme.test.ts` executa o script num jsdom. Nos testes de componente, `new Function(THEME_INIT_SCRIPT)()` faz o
   papel do script do `<head>`; limpe `localStorage` e `document.documentElement.className` em `beforeEach`.
 
 ## 19. DiceBear (`@dicebear/core` 10.7.0 + `@dicebear/styles` 10.6.0) · visual novo
 
 - **Versões exatas, sem `^`** (`bun add ... --exact`). A 10.7.0 de `styles` não existe; a 11.0.0 (2026-11-25) é nova demais
-  para a regra das duas semanas. Trocar de versão exige rodar `src/lib/avatar.test.ts`: o determinismo trava mudança de saída.
+  para a regra das duas semanas. Trocar de versão exige rodar `src/lib/avatar.test.ts`: ele fixa o SHA-256 da saída de uma semente,
+  então uma versão que mude a arte ou os metadados falha alto (a saída é JS puro, sem data, locale ou sorteio, e vale igual no CI).
 - **API (conferida no `node_modules` em 2026-11-27):** `import { Avatar, Style } from "@dicebear/core"`,
   `import notionists from "@dicebear/styles/notionists.json" with { type: "json" }`, `new Style(notionists)` uma vez por módulo e
   `new Avatar(style, { seed, backgroundColor: [...] }).toDataUri()` por semente.
-- **Só no servidor:** `src/lib/avatar.ts` tem `import "server-only"` e cache em `Map` por semente (~26 KB por data URI). A semente é
+- **Só no servidor:** `src/lib/avatar.ts` tem `import "server-only"` e cache em `Map` por semente. Cada data URI tem de 12 a 38 KB (cerca
+  de 16 KB na mediana, medido com 40 sementes em 2026-11-27) e sai no HTML e no payload RSC (P92). A semente é
   o **id do usuário** (o avatar não muda quando o nome muda); semente vazia lança erro (o DiceBear sozinho geraria um avatar).
   Os componentes recebem o data URI pronto (`UserAvatar src=...`); nenhum client importa `@/lib/avatar`.
 - **Sem rede:** nada de `api.dicebear.com`; o SVG nasce no processo do servidor.
@@ -547,7 +574,8 @@
   pelo pai (`w-full` dentro do `SidebarInset`, que é `flex-col`). Classe de container query fora de um descendente do
   `@container/main` (um portal, um `Sheet`) não casa com nada: o slot `detalhe` fica fora dele de propósito.
 - **Teste:** o jsdom não calcula layout; os testes conferem a string da classe. A medida real é conferida na verificação
-  visual (spec §10).
+  visual (spec §10). Na de 2026-11-27 (Task 16), os pares de 1440px (área útil de 1160px: 2 colunas, horário de 52px) e de 390px
+  bateram com o protótipo, e nenhum corte mudou; o corte de 899px não foi medido em captura.
 
 ## Como adicionar uma biblioteca nova
 
