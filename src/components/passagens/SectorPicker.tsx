@@ -79,19 +79,28 @@ export function SectorPicker({
 
   const trackRef = useRef<HTMLDivElement>(null);
   // Com o trilho rolando (celular), a opção marcada entra na tela ao montar e a
-  // cada troca; sem animação para quem pede menos movimento.
+  // cada troca. Rola só o contêiner na horizontal (scrollIntoView também rolaria
+  // a janela na vertical); sem animação para quem pede menos movimento.
   useEffect(() => {
     if (!scrolls || index < 0) return;
     const checked = trackRef.current?.querySelector<HTMLElement>(
       '[role="radio"][aria-checked="true"]',
     );
-    if (!checked) return;
+    const group = checked?.closest<HTMLElement>('[role="radiogroup"]');
+    if (!checked || !group || typeof group.scrollTo !== "function") return;
+    if (group.scrollWidth <= group.clientWidth) return;
     const reduce =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    checked.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
+    const box = checked.getBoundingClientRect();
+    const rail = group.getBoundingClientRect();
+    // Centraliza a opção marcada no trilho visível.
+    const left =
+      group.scrollLeft +
+      (box.left - rail.left) -
+      (group.clientWidth - box.width) / 2;
+    group.scrollTo({
+      left: Math.max(0, left),
       behavior: reduce ? "auto" : "smooth",
     });
   }, [index, scrolls]);
@@ -159,7 +168,9 @@ export function SectorPicker({
                 )}
               />
             )}
-            <span className="truncate">{option.label}</span>
+            <span className="truncate" title={option.name}>
+              {option.label}
+            </span>
           </Radio.Root>
         ))}
       </div>

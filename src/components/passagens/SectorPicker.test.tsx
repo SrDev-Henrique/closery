@@ -362,54 +362,169 @@ describe("SectorPicker", () => {
     expect(item).not.toHaveTextContent("Todos os setores");
   });
 
-  it("com o trilho rolando, a opção marcada entra na tela ao montar e a cada troca", () => {
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    const sectors = [ULD, CARGA, OPERACOES, ECO, GELO];
-    const { rerender } = render(
-      <SectorPicker sectors={sectors} selectedId={GELO.id} path="/" allowAll />,
-    );
-
-    expect(scrollIntoView).toHaveBeenCalledTimes(1);
-    expect(scrollIntoView.mock.contexts[0]).toBe(radio("Gelo"));
-    expect(scrollIntoView).toHaveBeenCalledWith(
-      expect.objectContaining({ block: "nearest", inline: "nearest" }),
-    );
-
-    rerender(
-      <SectorPicker sectors={sectors} selectedId={ULD.id} path="/" allowAll />,
-    );
-    expect(scrollIntoView).toHaveBeenCalledTimes(2);
-    expect(scrollIntoView.mock.contexts[1]).toBe(radio("ULD"));
-  });
-
-  it("para quem pede menos movimento a rolagem não é suave", () => {
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+  it("o nome truncado ganha title com o nome inteiro", () => {
     render(
       <SectorPicker
-        sectors={[ULD, CARGA, OPERACOES, ECO]}
+        sectors={[ULD, OPERACOES]}
         selectedId={ULD.id}
         path="/"
         allowAll
       />,
     );
-    vi.unstubAllGlobals();
-
-    expect(scrollIntoView).toHaveBeenCalledWith(
-      expect.objectContaining({ behavior: "auto" }),
-    );
+    expect(
+      within(radio("Operações")).getByTitle("Operações"),
+    ).toBeInTheDocument();
+    expect(
+      within(radio("Todos os setores")).getByTitle("Todos os setores"),
+    ).toBeInTheDocument();
   });
 
-  it("até 4 opções não há rolagem para acompanhar", () => {
-    const scrollIntoView = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoView;
-    render(
-      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
-    );
+  describe("rolagem do trilho", () => {
+    const widths = ["scrollWidth", "clientWidth"] as const;
+    const saved = new Map<string, PropertyDescriptor | undefined>();
 
-    expect(scrollIntoView).not.toHaveBeenCalled();
+    beforeEach(() => {
+      for (const key of widths) {
+        saved.set(
+          key,
+          Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+        );
+      }
+      saved.set(
+        "scrollTo",
+        Object.getOwnPropertyDescriptor(Element.prototype, "scrollTo"),
+      );
+      saved.set(
+        "scrollIntoView",
+        Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView"),
+      );
+    });
+
+    afterEach(() => {
+      for (const [key, descriptor] of saved) {
+        const target =
+          key === "scrollWidth" || key === "clientWidth"
+            ? HTMLElement.prototype
+            : Element.prototype;
+        if (descriptor) Object.defineProperty(target, key, descriptor);
+        else Reflect.deleteProperty(target, key);
+      }
+      saved.clear();
+    });
+
+    function overflow(scroll: number, client: number) {
+      Object.defineProperty(HTMLElement.prototype, "scrollWidth", {
+        configurable: true,
+        get: () => scroll,
+      });
+      Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+        configurable: true,
+        get: () => client,
+      });
+    }
+
+    // O Base UI também chama scrollTo (com top); as chamadas do seletor só levam left.
+    function ours(spy: ReturnType<typeof vi.fn>) {
+      return spy.mock.calls.filter(([options]) => !("top" in options));
+    }
+
+    function spies() {
+      const scrollTo = vi.fn();
+      const scrollIntoView = vi.fn();
+      Element.prototype.scrollTo = scrollTo;
+      Element.prototype.scrollIntoView = scrollIntoView;
+      return { scrollTo, scrollIntoView };
+    }
+
+    it("rola só o trilho na horizontal, ao montar e a cada troca, sem tocar a janela", () => {
+      overflow(1000, 400);
+      const { scrollTo, scrollIntoView } = spies();
+      const sectors = [ULD, CARGA, OPERACOES, ECO, GELO];
+      const { rerender } = render(
+        <SectorPicker
+          sectors={sectors}
+          selectedId={GELO.id}
+          path="/"
+          allowAll
+        />,
+      );
+
+      const group = screen.getByRole("radiogroup", { name: "Setor" });
+      expect(ours(scrollTo)).toHaveLength(1);
+      expect(scrollTo.mock.contexts.at(-1)).toBe(group);
+      expect(scrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          left: expect.any(Number),
+          behavior: "smooth",
+        }),
+      );
+
+      rerender(
+        <SectorPicker
+          sectors={sectors}
+          selectedId={ULD.id}
+          path="/"
+          allowAll
+        />,
+      );
+      expect(ours(scrollTo)).toHaveLength(2);
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it("para quem pede menos movimento a rolagem não é suave", () => {
+      overflow(1000, 400);
+      const { scrollTo } = spies();
+      vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+      render(
+        <SectorPicker
+          sectors={[ULD, CARGA, OPERACOES, ECO]}
+          selectedId={ULD.id}
+          path="/"
+          allowAll
+        />,
+      );
+      vi.unstubAllGlobals();
+
+      expect(scrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "auto" }),
+      );
+    });
+
+    it("sem transbordo (o trilho cabe) não rola", () => {
+      overflow(400, 400);
+      const { scrollTo } = spies();
+      render(
+        <SectorPicker
+          sectors={[ULD, CARGA, OPERACOES, ECO, GELO]}
+          selectedId={GELO.id}
+          path="/"
+        />,
+      );
+      expect(ours(scrollTo)).toHaveLength(0);
+    });
+
+    it("até 4 opções não há rolagem para acompanhar", () => {
+      overflow(1000, 400);
+      const { scrollTo } = spies();
+      render(
+        <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+      );
+      expect(ours(scrollTo)).toHaveLength(0);
+    });
+
+    it("sem a API de rolagem (jsdom puro) não quebra", () => {
+      overflow(1000, 400);
+      Reflect.deleteProperty(Element.prototype, "scrollTo");
+      expect(() =>
+        render(
+          <SectorPicker
+            sectors={[ULD, CARGA, OPERACOES, ECO, GELO]}
+            selectedId={GELO.id}
+            path="/"
+          />,
+        ),
+      ).not.toThrow();
+    });
   });
 
   it("sem allowAll não há 'Todos os setores'", () => {
