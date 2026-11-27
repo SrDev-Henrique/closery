@@ -238,6 +238,31 @@ export async function armInvite(token: string) {
   });
 });
 
+describe("src/app/(app)/actions.ts (o arquivo real)", () => {
+  const source = readFileSync(join(SRC, "app", "(app)", "actions.ts"), "utf8");
+
+  it("exporta chooseSectorAction e dismissInviteCardAction", () => {
+    expect(source).toContain("export async function chooseSectorAction");
+    expect(source).toContain("export async function dismissInviteCardAction");
+  });
+
+  it("toda função exportada começa com requireAdmin() (nenhuma é de operador)", () => {
+    expect(actionsMissingGuard(source, ["requireAdmin"])).toEqual([]);
+  });
+
+  it("a dispensa do convite sem requireAdmin reprovaria", () => {
+    const sneaky = source.replace(
+      /(export async function dismissInviteCardAction\(\)[^{]*\{\s*)await requireAdmin\(\);/,
+      "$1await requireUser();",
+    );
+
+    expect(sneaky).not.toBe(source);
+    expect(actionsMissingGuard(sneaky, ["requireAdmin"])).toEqual([
+      "dismissInviteCardAction",
+    ]);
+  });
+});
+
 describe("hasUseServerDirective", () => {
   it("vê a diretiva de arquivo, com aspas simples ou duplas, depois de comentário", () => {
     expect(hasUseServerDirective(`"use server";\nexport {}`)).toBe(true);

@@ -11,6 +11,7 @@ function pending(overrides: Partial<PendingHandover> = {}): PendingHandover {
     sectorName: "ULD",
     shiftName: "Turno Manhã",
     operationalDate: "2026-11-20",
+    deliveredById: "u-ana",
     deliveredByName: "Ana Teste",
     deliveredAt: spDate("2026-11-20", "14:05"),
     nextShiftPreview: "Rede de proteção no box 4.",

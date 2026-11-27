@@ -22,6 +22,14 @@ const TIME_FORMAT = new Intl.DateTimeFormat("pt-BR", {
   hourCycle: "h23",
 });
 
+const EYEBROW_FORMAT = new Intl.DateTimeFormat("pt-BR", {
+  timeZone: SAO_PAULO_TIME_ZONE,
+  weekday: "long",
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const MS_PER_DAY = 86_400_000;
 
@@ -107,4 +115,20 @@ export function formatDateBR(isoDate: string): string {
 /** "21/11/2026 às 07:05": o dia e a hora de São Paulo juntos. */
 export function formatDateAtTimeBR(date: Date): string {
   return `${formatDateBR(saoPauloParts(date).date)} às ${formatTimeBR(date)}`;
+}
+
+/**
+ * Data do eyebrow do Início: "SEXTA-FEIRA · 27 NOV 2026". Dia da semana por
+ * extenso, mês abreviado sem o ponto que o Intl põe ("nov." → "NOV"), caixa
+ * alta, tudo na hora de parede de São Paulo (02:59Z ainda é o dia anterior).
+ */
+export function formatEyebrowDateBR(date: Date): string {
+  const parts = new Map<string, string>();
+  for (const part of EYEBROW_FORMAT.formatToParts(date)) {
+    parts.set(part.type, part.value);
+  }
+  const month = (parts.get("month") ?? "").replace(/\.$/, "");
+  return `${parts.get("weekday")} · ${parts.get("day")} ${month} ${parts.get("year")}`.toLocaleUpperCase(
+    "pt-BR",
+  );
 }

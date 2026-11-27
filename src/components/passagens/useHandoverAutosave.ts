@@ -117,6 +117,7 @@ export function useHandoverAutosave(options: {
               core.lastSaved = {
                 at: result.savedAt,
                 byName: result.savedByName,
+                byId: result.savedById,
               };
             } else {
               failure = result.message;

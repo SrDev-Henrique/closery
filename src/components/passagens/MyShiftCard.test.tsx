@@ -17,6 +17,12 @@ const REF = {
   shiftId: SHIFT.id,
   operationalDate: "2026-11-20",
 };
+const PROGRESS = {
+  startLabel: "06:00",
+  endLabel: "14:00",
+  nowLabel: "10:00",
+  pct: 50,
+};
 
 function renderCard(
   state: MyShiftState,
@@ -34,7 +40,13 @@ function renderCard(
 
 describe("MyShiftCard", () => {
   it("start: turno, horário, data, nota de sugestão e 'Começar passagem'", () => {
-    renderCard({ kind: "start", ref: REF, shift: SHIFT, saved: null });
+    renderCard({
+      kind: "start",
+      ref: REF,
+      shift: SHIFT,
+      progress: PROGRESS,
+      saved: null,
+    });
 
     expect(
       screen.getByRole("heading", { name: "Passagem do meu turno" }),
@@ -59,7 +71,13 @@ describe("MyShiftCard", () => {
 
   it("start de admin leva o setor na URL", () => {
     renderCard(
-      { kind: "start", ref: REF, shift: SHIFT, saved: null },
+      {
+        kind: "start",
+        ref: REF,
+        shift: SHIFT,
+        progress: PROGRESS,
+        saved: null,
+      },
       { sectorParam: SECTOR_ID },
     );
 
@@ -76,7 +94,12 @@ describe("MyShiftCard", () => {
       kind: "continue",
       ref: REF,
       shift: SHIFT,
-      saved: { at: spDate("2026-11-20", "13:41"), byName: "Ana Teste" },
+      progress: PROGRESS,
+      saved: {
+        at: spDate("2026-11-20", "13:41"),
+        byName: "Ana Teste",
+        byId: "u-ana",
+      },
     });
 
     expect(
@@ -91,7 +114,13 @@ describe("MyShiftCard", () => {
   });
 
   it("continue sem marca de salvamento não inventa a frase", () => {
-    renderCard({ kind: "continue", ref: REF, shift: SHIFT, saved: null });
+    renderCard({
+      kind: "continue",
+      ref: REF,
+      shift: SHIFT,
+      progress: PROGRESS,
+      saved: null,
+    });
 
     expect(screen.queryByText(/Rascunho salvo/)).not.toBeInTheDocument();
     expect(
@@ -149,8 +178,24 @@ describe("MyShiftCard", () => {
   });
 
   it.each([
-    [{ kind: "start", ref: REF, shift: SHIFT, saved: null }],
-    [{ kind: "continue", ref: REF, shift: SHIFT, saved: null }],
+    [
+      {
+        kind: "start",
+        ref: REF,
+        shift: SHIFT,
+        progress: PROGRESS,
+        saved: null,
+      },
+    ],
+    [
+      {
+        kind: "continue",
+        ref: REF,
+        shift: SHIFT,
+        progress: PROGRESS,
+        saved: null,
+      },
+    ],
     [
       {
         kind: "delivered",
@@ -211,7 +256,13 @@ describe("MyShiftCard", () => {
   });
 
   it("o horário usa tabular-nums", () => {
-    renderCard({ kind: "start", ref: REF, shift: SHIFT, saved: null });
+    renderCard({
+      kind: "start",
+      ref: REF,
+      shift: SHIFT,
+      progress: PROGRESS,
+      saved: null,
+    });
 
     expect(screen.getByText("06:00–14:00")).toHaveClass("tabular-nums");
   });

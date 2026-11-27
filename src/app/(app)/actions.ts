@@ -1,8 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
+import { rememberInviteCardDismissed } from "@/features/admin/firstAccess";
 import { notFoundMessage } from "@/features/admin/messages";
 import {
   type AdminResult,
@@ -45,4 +47,15 @@ export async function chooseSectorAction(input: unknown): Promise<AdminResult> {
       todayInSaoPaulo(new Date()),
     ),
   );
+}
+
+// "Agora não" do cartão "Convide sua equipe" (spec §5.3): só o admin, só o
+// cookie (nada no banco). `revalidatePath` faz o Início renderizar de novo já
+// sem o cartão. Devolve `void` porque vai direto no `<form action>` do cartão
+// (Task 14); não há falha a informar (sem permissão, o `requireAdmin` já
+// interrompe com redirect ou notFound).
+export async function dismissInviteCardAction(): Promise<void> {
+  await requireAdmin();
+  await rememberInviteCardDismissed();
+  revalidatePath("/");
 }

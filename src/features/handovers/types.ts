@@ -53,4 +53,4 @@ export type FieldValues = {
   notes: Record<string, string>; // por itemId, "" = sem observação
 };
 
-export type SavedMark = { at: Date; byName: string };
+export type SavedMark = { at: Date; byName: string; byId: string };

@@ -7,10 +7,16 @@ import { handover } from "@/db/schema/handovers";
 import { sector } from "@/db/schema/sectors";
 import type { Db } from "@/db/types";
 import { type Authz, canAccessSector } from "@/features/authz/authz";
+import type { SectorColor } from "@/features/sectors/colors";
 
 import type { HandoverRef } from "./types";
 
-export type SectorRow = { id: string; name: string; active: boolean };
+export type SectorRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  color: SectorColor;
+};
 export type HandoverRow = typeof handover.$inferSelect;
 
 export const sameRef = (ref: HandoverRef) =>
@@ -33,7 +39,12 @@ export async function loadSector(
   options: { lock?: "share" } = {},
 ): Promise<SectorRow | null> {
   const query = db
-    .select({ id: sector.id, name: sector.name, active: sector.active })
+    .select({
+      id: sector.id,
+      name: sector.name,
+      active: sector.active,
+      color: sector.color,
+    })
     .from(sector)
     .where(eq(sector.id, sectorId));
   const [row] = await (options.lock === "share" ? query.for("share") : query);

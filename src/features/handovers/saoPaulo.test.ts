@@ -6,6 +6,7 @@ import {
   daysBetween,
   formatDateAtTimeBR,
   formatDateBR,
+  formatEyebrowDateBR,
   formatTimeBR,
   isIsoDate,
   isOperationalDateAllowed,
@@ -161,5 +162,50 @@ describe("formatDateAtTimeBR", () => {
     expect(formatDateAtTimeBR(new Date("2027-01-01T02:59:00Z"))).toBe(
       "31/12/2026 às 23:59",
     );
+  });
+});
+
+describe("formatEyebrowDateBR", () => {
+  it("dia da semana por extenso, dia, mês abreviado sem ponto e ano, em caixa alta", () => {
+    expect(formatEyebrowDateBR(spDate("2026-11-27", "10:00"))).toBe(
+      "SEXTA-FEIRA · 27 NOV 2026",
+    );
+  });
+
+  it("dia de um dígito ganha zero à esquerda; dia da semana com cedilha e acento", () => {
+    expect(formatEyebrowDateBR(spDate("2026-03-05", "12:00"))).toBe(
+      "QUINTA-FEIRA · 05 MAR 2026",
+    );
+    expect(formatEyebrowDateBR(spDate("2026-02-03", "12:00"))).toBe(
+      "TERÇA-FEIRA · 03 FEV 2026",
+    );
+    expect(formatEyebrowDateBR(spDate("2026-11-28", "12:00"))).toBe(
+      "SÁBADO · 28 NOV 2026",
+    );
+  });
+
+  it("virada da meia-noite: 02:59Z ainda é 23:59 do dia 27 em São Paulo; 03:00Z já é dia 28", () => {
+    expect(formatEyebrowDateBR(new Date("2026-11-28T02:59:00Z"))).toBe(
+      "SEXTA-FEIRA · 27 NOV 2026",
+    );
+    expect(formatEyebrowDateBR(new Date("2026-11-28T03:00:00Z"))).toBe(
+      "SÁBADO · 28 NOV 2026",
+    );
+  });
+
+  it("virada do ano: 02:00Z de 1º de janeiro ainda é 31 de dezembro em São Paulo", () => {
+    expect(formatEyebrowDateBR(new Date("2027-01-01T02:00:00Z"))).toBe(
+      "QUINTA-FEIRA · 31 DEZ 2026",
+    );
+  });
+
+  it("os 12 meses saem com 3 letras maiúsculas e sem ponto", () => {
+    for (let month = 1; month <= 12; month += 1) {
+      const iso = `2026-${String(month).padStart(2, "0")}-10`;
+      const text = formatEyebrowDateBR(spDate(iso, "12:00"));
+
+      expect(text, iso).toMatch(/^[A-ZÇÁÉ-]+ · 10 [A-Z]{3} 2026$/);
+      expect(text, iso).not.toContain(".");
+    }
   });
 });

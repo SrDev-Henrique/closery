@@ -10,11 +10,13 @@ import type { Db } from "@/db/types";
 import { notFoundMessage } from "@/features/admin/messages";
 import { type AdminResult, fail, ok } from "@/features/admin/result";
 import type { Authz } from "@/features/authz/authz";
+import type { SectorColor } from "@/features/sectors/colors";
 
 import { codePointLength } from "./fieldRules";
 import { NEXT_SHIFT_PREVIEW_LENGTH } from "./limits";
 import { findHandoverByRef, loadSector, userNames } from "./loaders";
 import { SECTOR_INACTIVE_HANDOVER_MESSAGE } from "./messages";
+import { type ShiftProgress, shiftProgress } from "./shiftProgress";
 import { suggestShift } from "./shiftSuggestion";
 import { listActiveShifts } from "./targets";
 import type { HandoverRef, SavedMark, ShiftChoice } from "./types";
@@ -24,6 +26,7 @@ export type PendingHandover = {
   sectorName: string;
   shiftName: string;
   operationalDate: string;
+  deliveredById: string;
   deliveredByName: string;
   deliveredAt: Date;
   nextShiftPreview: string | null;
@@ -35,6 +38,7 @@ export type MyShiftState =
       kind: "start" | "continue";
       ref: HandoverRef;
       shift: ShiftChoice;
+      progress: ShiftProgress;
       saved: SavedMark | null;
     }
   | {
@@ -49,7 +53,7 @@ export type MyShiftState =
     };
 
 export type HomeHandovers = {
-  sector: { id: string; name: string };
+  sector: { id: string; name: string; color: SectorColor };
   pending: PendingHandover | null;
   mine: MyShiftState;
 };
@@ -100,6 +104,7 @@ async function loadPending(
     !row ||
     row.status !== "delivered" ||
     row.deliveredAt === null ||
+    row.deliveredBy === null ||
     row.deliveredBy === actor.userId
   ) {
     return null;
@@ -109,6 +114,7 @@ async function loadPending(
     sectorName: row.sectorName,
     shiftName: row.shiftNameSnapshot ?? row.shiftName,
     operationalDate: row.operationalDate,
+    deliveredById: row.deliveredBy,
     deliveredByName: row.deliveredByName,
     deliveredAt: row.deliveredAt,
     nextShiftPreview: previewOf(row.nextShiftText),
@@ -130,8 +136,11 @@ async function loadMine(
     shiftId: target.shiftId,
     operationalDate: target.operationalDate,
   };
+  const progress = shiftProgress(chosen, now);
   const row = await findHandoverByRef(db, ref);
-  if (!row) return { kind: "start", ref, shift: chosen, saved: null };
+  if (!row) {
+    return { kind: "start", ref, shift: chosen, progress, saved: null };
+  }
 
   const people = await userNames(
     db,
@@ -146,7 +155,11 @@ async function loadMine(
       kind: "continue",
       ref,
       shift: chosen,
-      saved: byName === undefined ? null : { at: row.updatedAt, byName },
+      progress,
+      saved:
+        byName === undefined || row.updatedBy === null
+          ? null
+          : { at: row.updatedAt, byName, byId: row.updatedBy },
     };
   }
   return {
@@ -180,6 +193,10 @@ export async function getHomeHandovers(
     loadMine(db, sectorId, now),
   ]);
   return ok({
-    home: { sector: { id: found.id, name: found.name }, pending, mine },
+    home: {
+      sector: { id: found.id, name: found.name, color: found.color },
+      pending,
+      mine,
+    },
   });
 }
