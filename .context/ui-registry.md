@@ -131,12 +131,13 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** `SidebarProvider` > `Sidebar` > `SidebarHeader`/`SidebarContent`/
   `SidebarFooter`, com `SidebarInset` ao lado e `SidebarTrigger` (Ctrl/Cmd+B). `SidebarMenuButton`
   aceita `isActive` e `render={<Link />}`; `useSidebar().setOpenMobile(false)` fecha a gaveta
-  após navegar. Breakpoint do celular: 768px (igual ao `md`). O primeiro render é sempre desktop
+  após navegar. Breakpoint do celular: 860px (igual ao `md`, Task 1 do visual novo); largura 17,5rem (280px), sem borda no desktop; a gaveta do celular tem a sombra `data-[side=left]:shadow-drawer` (token, `20px 0 60px`), o scrim `bg-scrim` (token, preto a 45%, sem blur) e desliza 350ms com `cubic-bezier(.2,.8,.2,1)` (`motion-reduce` desliga). O primeiro render é sempre desktop
   (`useIsMobile` começa `false`). Exige `TooltipProvider` acima. Ler `cookies()` para
   `defaultOpen` exigiria `Suspense`; use `defaultOpen` fixo.
 - **Usa:** `Button`, `Input`, `Separator`, `Sheet`, `Skeleton`, `Tooltip`; tokens `sidebar-*`.
 - **Histórico:** 2026-11-20 — `shadcn add`; `SidebarMenuButton` default sobe de h-8 para
   `h-9 max-md:h-11` (P3); textos acessíveis em pt-BR ("Alternar menu", gaveta "Menu").
+  2026-11-27 — visual novo (Task 9): `SIDEBAR_WIDTH` e `SIDEBAR_WIDTH_MOBILE` 17.5rem; some a borda lateral do desktop; o `SheetContent` da gaveta ganha largura pelo token (a `w-3/4` do Sheet perdia para a classe sem variante), `border-r-0`, sombra, curva e deslize de −105% sem fade; `overlayClassName` troca o scrim. O visual dos itens (pílula de 48px) vem por `className` no `AppSidebar`; o `default` de `SidebarMenuButton` não mudou.
 
 ### Sheet
 - **Status:** ✅ pronto (2026-11-20)
@@ -146,7 +147,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `SheetTitle`, `SheetDescription`, `SheetFooter`, `SheetClose`. O botão de fechar usa
   `Button size="icon-sm"` (44px no celular).
 - **Usa:** `Button`; tokens `background`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar".
+- **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar". 2026-11-27 — visual novo (Task 9): `SheetContent` aceita `overlayClassName` (o padrão `bg-black/10` + blur continua para os outros Sheets); só a gaveta do menu usa.
 
 ### Tooltip
 - **Status:** ✅ pronto (2026-11-20)
@@ -261,39 +262,54 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
 - **Propósito:** navegação lateral do app autenticado: Início, Passagens, Solicitações (ícone `PackageOpen`), Dashboard (ícone `ChartColumn`), Conta e, só para admin, Administração.
-- **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`. Item ativo por
+- **Como funciona:** `"use client"`; recebe `isAdmin`, `userName`, `userEmail`, `avatarSrc` (data URI pronto do `AuthedSidebar`). Item ativo por
   `usePathname` (`/` só na raiz exata; os demais valem para a rota e subrotas) com `isActive` +
   `aria-current="page"`. Cada item é `SidebarMenuButton render={<Link />}`; ao navegar fecha a
-  gaveta do celular (`setOpenMobile(false)`). Rodapé com nome e e-mail truncados. O Início fica
+  gaveta do celular (`setOpenMobile(false)`). Wordmark "Closery" (Satoshi 900, 28px) no topo; no celular o botão X ("Fechar menu", `Button surface icon-pill` com tooltip) fica ao lado dele. Dois grupos em `nav` (raio 28, `bg-card`): "Principal" (`mainNavItems`) e, só para admin, "Administração" (`adminNavItems`); itens de 48px em pílula, Satoshi 16/700, ativo em `bg-primary`, hover `bg-accent` em 150ms. Card do usuário (raio 24) com `UserAvatar` de 44px a −4°, nome e e-mail truncados e o chip ADMIN/COLEGA (Geist Mono 11px). O Início fica
   atrás de `<Suspense>` no layout (o `usePathname` suspende em rota dinâmica).
 - **Usa:** `Sidebar*`, `lucide-react`; tokens `sidebar-*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava. 2026-11-25 — Fase 5 (Tarefa 12): o menu ganha o item Dashboard (`/dashboard`, ícone `ChartColumn`) entre Solicitações e Conta.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-24 — Fase 4 (revisão final): o menu lista o item Solicitações (`/solicitacoes`, ícone `PackageOpen`) entre Passagens e Conta; o registro não o mencionava. 2026-11-25 — Fase 5 (Tarefa 12): o menu ganha o item Dashboard (`/dashboard`, ícone `ChartColumn`) entre Solicitações e Conta. 2026-11-27 — visual novo (Task 9): sidebar de 280px sem borda, dois grupos, card do usuário com avatar e chip de papel, X no drawer; `navItems.ts` separa `mainNavItems` e `adminNavItems` (`NAV_ITEMS` e `visibleNavItems` continuam).
 
 ### AuthedSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AuthedSidebar.tsx`
 - **Propósito:** liga a sessão ao menu.
-- **Como funciona:** Server Component assíncrono; `requireUser()` e devolve `<AppSidebar />`.
+- **Como funciona:** Server Component assíncrono; `requireUser()` e devolve `<AppSidebar />` com `avatarSrc = avatarDataUri(userId)` (semente = id).
   Sempre dentro de `<Suspense fallback={<SidebarSkeleton />}>` no layout `(app)`.
 - **Usa:** `AppSidebar`, `requireUser`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-20 — o `RequireUser` (portão no layout) foi tentado e removido na re-revisão: o Next não deixa o layout controlar a página; o portão é `requireUser`/`requireAdmin` em cada página, guardado por `appPagesAuth.test.ts`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-20 — o `RequireUser` (portão no layout) foi tentado e removido na re-revisão: o Next não deixa o layout controlar a página; o portão é `requireUser`/`requireAdmin` em cada página, guardado por `appPagesAuth.test.ts`. 2026-11-27 — visual novo (Task 9): passa `avatarSrc` ao `AppSidebar`.
 
 ### SidebarSkeleton
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/SidebarSkeleton.tsx`
 - **Propósito:** reserva o espaço da barra lateral enquanto a sessão carrega.
-- **Como funciona:** só no desktop (`hidden md:flex`), `aria-hidden`, largura `--sidebar-width`.
+- **Como funciona:** só no desktop (`hidden md:flex`), `aria-hidden`, largura `--sidebar-width`, sem borda. Três blocos: wordmark, grupo de navegação (264px, raio 28) e card do usuário (68px, raio 24) colado embaixo.
 - **Usa:** `Skeleton`; token `sidebar`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-27 — visual novo (Task 9): forma nova, sem `border-r`.
 
 ### MenuToggle
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/MenuToggle.tsx`
 - **Propósito:** botão do cabeçalho que abre e fecha a barra lateral.
-- **Como funciona:** `"use client"`; `SidebarTrigger` (só ícone) dentro de `TooltipTrigger render`,
-  com `aria-label` e tooltip "Alternar menu". Testado com `fireEvent.pointerEnter/mouseEnter`.
-- **Usa:** `SidebarTrigger`, `Tooltip*`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Como funciona:** `"use client"`; `Button variant="surface" size="icon-pill"` (44px, redondo) dentro de
+  `TooltipTrigger render`, com `aria-label`, `sr-only` e tooltip "Alternar menu", chamando
+  `useSidebar().toggleSidebar`. Os dois ícones (`PanelLeft` e `Menu`) estão sempre no HTML e o CSS
+  escolhe: `PanelLeft` com `max-md:hidden`, `Menu` com `hidden max-md:block` (abaixo de 860px abre a
+  gaveta). Testado com `fireEvent.pointerEnter/mouseEnter`.
+- **Usa:** `Button`, `useSidebar`, `Tooltip*`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-27 — visual novo (Task 9): deixa de usar o
+  `SidebarTrigger` (ghost, `icon-sm`) e vira o botão redondo de 44px com ícone por viewport.
+
+### AppHeader
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/AppHeader.tsx`
+- **Propósito:** cabeçalho do app autenticado: botão de menu à esquerda e switch de tema à direita.
+- **Como funciona:** `"use client"` (não usa hooks; só compõe `MenuToggle` e `ThemeSwitch`). `<header>` de
+  76px (`h-[76px]`), `justify-between`, **sem borda**. O wordmark "Closery" (Satoshi 900, 24px) usa
+  `hidden max-md:inline`: só aparece abaixo de 860px, onde a sidebar fixa não está na tela. Vive dentro
+  do div centrado (1240px, 40px/16px de padding) que fica dentro do `@container/main` do `(app)/layout.tsx`.
+- **Usa:** `MenuToggle`, `ThemeSwitch`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Task 9); substitui o `<header>` com `border-b` do layout.
 
 ### ThemeProvider
 - **Status:** ✅ pronto (2026-11-27)

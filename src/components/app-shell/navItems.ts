@@ -15,7 +15,7 @@ export type NavItem = {
   adminOnly: boolean;
 };
 
-export const NAV_ITEMS: readonly NavItem[] = [
+export const mainNavItems: readonly NavItem[] = [
   { href: "/", label: "Início", icon: House, adminOnly: false },
   {
     href: "/passagens",
@@ -36,12 +36,20 @@ export const NAV_ITEMS: readonly NavItem[] = [
     adminOnly: false,
   },
   { href: "/conta", label: "Conta", icon: UserRound, adminOnly: false },
+];
+
+export const adminNavItems: readonly NavItem[] = [
   {
     href: "/admin",
     label: "Administração",
     icon: ShieldCheck,
     adminOnly: true,
   },
+];
+
+export const NAV_ITEMS: readonly NavItem[] = [
+  ...mainNavItems,
+  ...adminNavItems,
 ];
 
 export function visibleNavItems(isAdmin: boolean): NavItem[] {

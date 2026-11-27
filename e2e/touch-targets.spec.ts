@@ -185,6 +185,9 @@ test("operador: telas públicas e do operador, menu e diálogo têm alvos de toq
 
   await page.goto("/");
   await page.getByRole("button", { name: "Alternar menu" }).click();
+  await expect(
+    page.getByRole("button", { name: "Fechar menu", exact: true }),
+  ).toBeVisible();
   expect.soft(await smallTargets(page), "menu lateral").toEqual([]);
   await page.keyboard.press("Escape");
 

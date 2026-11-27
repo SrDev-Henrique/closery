@@ -26,8 +26,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
+const SIDEBAR_WIDTH = "17.5rem";
+const SIDEBAR_WIDTH_MOBILE = "17.5rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
@@ -186,7 +186,8 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="w-(--sidebar-width) bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          className="bg-sidebar p-0 text-sidebar-foreground duration-[350ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none data-[side=left]:w-(--sidebar-width) data-[side=left]:border-r-0 data-[side=left]:shadow-drawer data-[side=left]:sm:max-w-none data-[side=left]:data-starting-style:translate-x-[-105%] data-[side=left]:data-ending-style:translate-x-[-105%] data-starting-style:opacity-100 data-ending-style:opacity-100 [&>button]:hidden"
+          overlayClassName="bg-scrim supports-backdrop-filter:backdrop-blur-none"
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
@@ -233,7 +234,7 @@ function Sidebar({
           // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
-            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            : "group-data-[collapsible=icon]:w-(--sidebar-width-icon)",
           className,
         )}
         {...props}

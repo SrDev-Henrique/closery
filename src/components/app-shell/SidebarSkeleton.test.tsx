@@ -20,4 +20,20 @@ describe("SidebarSkeleton", () => {
     expect(classes).toContain("hidden");
     expect(classes).toContain("md:flex");
   });
+
+  it("tem a forma nova: wordmark, grupo de navegação e card do usuário, sem borda", () => {
+    const { container } = render(<SidebarSkeleton />);
+    const root = container.firstElementChild as HTMLElement;
+    const classes = root.className.split(" ");
+
+    expect(classes).toContain("bg-sidebar");
+    expect(classes).not.toContain("border-r");
+    expect(root.children).toHaveLength(3);
+    expect((root.children[1] as HTMLElement).className).toContain(
+      "rounded-[28px]",
+    );
+    expect((root.children[2] as HTMLElement).className).toContain(
+      "rounded-[24px]",
+    );
+  });
 });

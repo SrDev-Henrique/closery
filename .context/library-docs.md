@@ -526,6 +526,24 @@
 - **`<img>`:** data URI de SVG não passa pelo `next/image`; o `UserAvatar` usa `<img alt="">` com `biome-ignore
   lint/performance/noImgElement` e o motivo.
 
+## 20. Container queries do Tailwind 4 · visual novo
+
+- **Nativas no Tailwind 4**, sem plugin: `@container/<nome>` marca o contêiner; `@min-[<largura>]/<nome>:` e
+  `@max-[<largura>]/<nome>:` aplicam a classe pela largura **dele**, não da janela. Dá para empilhar
+  (`@min-[1040px]/main:@max-[1239px]/main:`) e misturar com mídia (`md:@max-[899px]/main:`).
+- **O contêiner do app é `@container/main`**, no `src/app/(app)/layout.tsx`, num `div` **sem padding e sem max-width** que
+  ocupa a largura toda do `SidebarInset`. A medida é a "área útil" da spec §4.4: a tela menos a sidebar (280px aberta, 0
+  recolhida), igual ao `mainW` do protótipo, que conta os 40px de padding. O `div` de dentro é que centra em
+  `max-w-[1240px]` e leva `px-10 pb-12 max-md:px-4`.
+- **Cortes do Início (spec §4.4):** `@min-[1040px]/main:` (grids em 2 colunas), `@min-[1040px]/main:@max-[1239px]/main:`
+  (horário 52px e contador 60px em 2 colunas), `md:@max-[899px]/main:` (saudação 60px). O celular continua no `max-md:`
+  (abaixo de 860px), que vence: os tamanhos do celular nunca dependem do contêiner.
+- **Armadilha:** `container-type: inline-size` faz o elemento não medir pelo conteúdo; o contêiner precisa de largura dada
+  pelo pai (`w-full` dentro do `SidebarInset`, que é `flex-col`). Classe de container query fora de um descendente do
+  `@container/main` (um portal, um `Sheet`) não casa com nada: o slot `detalhe` fica fora dele de propósito.
+- **Teste:** o jsdom não calcula layout; os testes conferem a string da classe. A medida real é conferida na verificação
+  visual (spec §10).
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.
