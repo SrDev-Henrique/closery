@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Component, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ALL_SECTORS } from "@/features/handovers/limits";
 import { SECTOR_COLOR_BG } from "@/features/sectors/colors";
 
 import { SectorPicker } from "./SectorPicker";
@@ -380,36 +381,36 @@ describe("SectorPicker", () => {
   });
 
   describe("rolagem do trilho", () => {
-    const widths = ["scrollWidth", "clientWidth"] as const;
+    // Descritores trocados nos testes, guardados e devolvidos a cada teste.
+    const patched = [
+      [HTMLElement.prototype, "scrollWidth"],
+      [HTMLElement.prototype, "clientWidth"],
+      [Element.prototype, "scrollLeft"],
+      [Element.prototype, "scrollTo"],
+      [Element.prototype, "scrollIntoView"],
+      [Element.prototype, "getBoundingClientRect"],
+    ] as const;
     const saved = new Map<string, PropertyDescriptor | undefined>();
+    let windowScrolls: ReturnType<typeof vi.spyOn>[] = [];
 
     beforeEach(() => {
-      for (const key of widths) {
-        saved.set(
-          key,
-          Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
-        );
+      for (const [target, key] of patched) {
+        saved.set(key, Object.getOwnPropertyDescriptor(target, key));
       }
-      saved.set(
-        "scrollTo",
-        Object.getOwnPropertyDescriptor(Element.prototype, "scrollTo"),
-      );
-      saved.set(
-        "scrollIntoView",
-        Object.getOwnPropertyDescriptor(Element.prototype, "scrollIntoView"),
+      // A janela nunca rola: espiões em todas as formas de rolar a janela.
+      windowScrolls = (["scrollTo", "scroll", "scrollBy"] as const).map((key) =>
+        vi.spyOn(window, key).mockImplementation(() => {}),
       );
     });
 
     afterEach(() => {
-      for (const [key, descriptor] of saved) {
-        const target =
-          key === "scrollWidth" || key === "clientWidth"
-            ? HTMLElement.prototype
-            : Element.prototype;
+      for (const [target, key] of patched) {
+        const descriptor = saved.get(key);
         if (descriptor) Object.defineProperty(target, key, descriptor);
         else Reflect.deleteProperty(target, key);
       }
       saved.clear();
+      vi.unstubAllGlobals();
     });
 
     function overflow(scroll: number, client: number) {
@@ -423,9 +424,59 @@ describe("SectorPicker", () => {
       });
     }
 
-    // O Base UI também chama scrollTo (com top); as chamadas do seletor só levam left.
+    // Geometria do trilho (o jsdom devolve zeros): o trilho começa em
+    // `railLeft` na tela, já rolado `scrollLeft`, e cada opção tem `segment`
+    // de largura, uma depois da outra.
+    function layout({
+      railLeft,
+      scrollLeft,
+      segment,
+    }: {
+      railLeft: number;
+      scrollLeft: number;
+      segment: number;
+    }) {
+      const rect = (left: number, width: number) =>
+        ({
+          left,
+          width,
+          x: left,
+          right: left + width,
+          top: 0,
+          y: 0,
+          bottom: 48,
+          height: 48,
+          toJSON: () => ({}),
+        }) as DOMRect;
+      Object.defineProperty(Element.prototype, "scrollLeft", {
+        configurable: true,
+        get: () => scrollLeft,
+        set: () => {},
+      });
+      Element.prototype.getBoundingClientRect = function (this: Element) {
+        const role = this.getAttribute("role");
+        if (role === "radiogroup") return rect(railLeft, 400);
+        if (role === "radio") {
+          const radios = [
+            ...(this.parentElement?.querySelectorAll('[role="radio"]') ?? []),
+          ];
+          return rect(
+            railLeft + radios.indexOf(this) * segment - scrollLeft,
+            segment,
+          );
+        }
+        return rect(0, 0);
+      };
+    }
+
+    // O Base UI também chama `scrollTo` no próprio grupo ao montar, sempre com
+    // `top` (`scrollIntoViewIfNeeded`); as chamadas do seletor só levam `left`.
     function ours(spy: ReturnType<typeof vi.fn>) {
-      return spy.mock.calls.filter(([options]) => !("top" in options));
+      return spy.mock.calls.flatMap(([options], index) =>
+        typeof options === "object" && options !== null && !("top" in options)
+          ? [{ options, context: spy.mock.contexts[index] }]
+          : [],
+      );
     }
 
     function spies() {
@@ -436,8 +487,13 @@ describe("SectorPicker", () => {
       return { scrollTo, scrollIntoView };
     }
 
-    it("rola só o trilho na horizontal, ao montar e a cada troca, sem tocar a janela", () => {
+    function expectWindowUntouched() {
+      for (const spy of windowScrolls) expect(spy).not.toHaveBeenCalled();
+    }
+
+    it("rola só o trilho, centralizando a opção marcada, ao montar e a cada troca, sem tocar a janela", () => {
       overflow(1000, 400);
+      layout({ railLeft: 10, scrollLeft: 50, segment: 104 });
       const { scrollTo, scrollIntoView } = spies();
       const sectors = [ULD, CARGA, OPERACOES, ECO, GELO];
       const { rerender } = render(
@@ -450,15 +506,22 @@ describe("SectorPicker", () => {
       );
 
       const group = screen.getByRole("radiogroup", { name: "Setor" });
-      expect(ours(scrollTo)).toHaveLength(1);
-      expect(scrollTo.mock.contexts.at(-1)).toBe(group);
-      expect(scrollTo).toHaveBeenCalledWith(
-        expect.objectContaining({
-          left: expect.any(Number),
-          behavior: "smooth",
-        }),
-      );
+      // Gelo é a 5ª opção (começa em 416px do trilho): o centro dela (468)
+      // fica no centro dos 400px visíveis, 468 − 200 = 268.
+      expect(ours(scrollTo)).toEqual([
+        { options: { left: 268, behavior: "smooth" }, context: group },
+      ]);
 
+      // "Todos" é a 6ª (520px): 572 − 200 = 372.
+      rerender(
+        <SectorPicker
+          sectors={sectors}
+          selectedId={ALL_SECTORS}
+          path="/"
+          allowAll
+        />,
+      );
+      // ULD é a 1ª: o centro (52) pediria −148, e a rolagem não passa de 0.
       rerender(
         <SectorPicker
           sectors={sectors}
@@ -467,27 +530,43 @@ describe("SectorPicker", () => {
           allowAll
         />,
       );
-      expect(ours(scrollTo)).toHaveLength(2);
+      expect(ours(scrollTo).map(({ options }) => options)).toEqual([
+        { left: 268, behavior: "smooth" },
+        { left: 372, behavior: "smooth" },
+        { left: 0, behavior: "smooth" },
+      ]);
+      for (const call of ours(scrollTo)) expect(call.context).toBe(group);
       expect(scrollIntoView).not.toHaveBeenCalled();
+      expectWindowUntouched();
     });
 
-    it("para quem pede menos movimento a rolagem não é suave", () => {
+    it("para quem pede menos movimento a rolagem do seletor não é suave", () => {
       overflow(1000, 400);
+      layout({ railLeft: 10, scrollLeft: 0, segment: 104 });
       const { scrollTo } = spies();
-      vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+      const matchMedia = vi.fn((query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+      }));
+      vi.stubGlobal("matchMedia", matchMedia);
       render(
         <SectorPicker
           sectors={[ULD, CARGA, OPERACOES, ECO]}
-          selectedId={ULD.id}
+          selectedId={ECO.id}
           path="/"
           allowAll
         />,
       );
-      vi.unstubAllGlobals();
 
-      expect(scrollTo).toHaveBeenCalledWith(
-        expect.objectContaining({ behavior: "auto" }),
+      expect(matchMedia).toHaveBeenCalledWith(
+        "(prefers-reduced-motion: reduce)",
       );
+      // Só a chamada do seletor (sem `top`): a do Base UI é sempre `auto` e
+      // passaria mesmo que o seletor ignorasse a preferência.
+      // Eco é a 4ª (312px): 364 − 200 = 164.
+      expect(ours(scrollTo).map(({ options }) => options)).toEqual([
+        { left: 164, behavior: "auto" },
+      ]);
+      expectWindowUntouched();
     });
 
     it("sem transbordo (o trilho cabe) não rola", () => {
