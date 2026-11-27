@@ -32,10 +32,10 @@ const buttonVariants = cva(
           "border-transparent bg-card text-card-foreground hover:bg-accent",
         // Primário dentro de card colorido: tinta fixa, afunda ao apertar.
         "on-pastel":
-          "border-transparent bg-on-pastel text-on-pastel-ink active:scale-[.97] [transition-property:background-color,color,scale]",
+          "border-transparent bg-on-pastel text-on-pastel-ink focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-pastel active:scale-[.97] [transition-property:background-color,color,scale]",
         // Secundário dentro de card colorido: fundo translúcido sobre o pastel.
         "on-pastel-secondary":
-          "border-transparent bg-on-pastel-secondary text-on-pastel hover:bg-on-pastel-secondary-hover",
+          "border-transparent bg-on-pastel-secondary text-on-pastel hover:bg-on-pastel-secondary-hover focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-pastel",
       },
       size: {
         default:

@@ -177,3 +177,14 @@ describe("buttonVariants — borda transparente só onde não há borda", () => 
     }
   });
 });
+
+describe("buttonVariants — foco visível nos cartões coloridos (F1)", () => {
+  it.each([
+    "on-pastel",
+    "on-pastel-secondary",
+  ] as const)("variant=%s usa contorno com a tinta do pastel, não o anel ring/50", (variant) => {
+    const names = classesOf({ variant });
+    expect(names).toContain("focus-visible:outline-on-pastel");
+    expect(names).toContain("focus-visible:ring-0");
+  });
+});
