@@ -602,6 +602,23 @@
   visual (spec §10). Na de 2026-11-27 (Task 16), os pares de 1440px (área útil de 1160px: 2 colunas, horário de 52px) e de 390px
   bateram com o protótipo, e nenhum corte mudou; o corte de 899px não foi medido em captura.
 
+## 21. `pixelmatch` 7.2.0 + `pngjs` 7.0.0 · processo visual
+
+- **Versões exatas, sem `^`, só em `devDependencies`** (`bun add -d -E pixelmatch@7.2.0 pngjs@7.0.0`). São as mesmas das
+  ferramentas do PR A, com que os números do `pixel.md` do Início foram medidos: trocar de versão exige rerodar os pares do
+  Início (`bun run visual:pairs --screen=inicio`) e comparar com eles.
+- **Só em `scripts/visual/` e nos testes dele** (`test/visual/`). Nunca em `src/`: nada disso entra no bundle do app.
+- **API (conferida no `node_modules` em 2026-11-27):** `import pixelmatch from "pixelmatch"` (ESM, com tipos próprios) e
+  `import { PNG } from "pngjs"` (CommonJS, sem `@types`). `pixelmatch(a.data, b.data, saida.data, largura, altura, { threshold })`
+  devolve o número de pixels diferentes e **lança** se as duas imagens não têm o mesmo tamanho: quem chama recorta antes
+  (`cropTo` de `scripts/visual/image.mjs`). `PNG.sync.read`/`PNG.sync.write` leem e gravam; `PNG.bitblt` recorta;
+  `new PNG({ width, height })` nasce transparente (`createPng` preenche).
+- **Threshold 0.1** (`PIXELMATCH_THRESHOLD` em `diff.mjs`), com os padrões da biblioteca para o anti-aliasing
+  (`includeAA: false`: o pixel de anti-aliasing detectado não conta). É o mesmo de todos os números desde o PR A.
+- **Testes:** os `.ts` de `test/visual/` **não importam** `pngjs` nem `pixelmatch` (sem `@types` no `pngjs`, o `tsc` reprovaria):
+  montam as imagens com `createPng` e medem com `diffImages`/`regionDiff`. Nada disso roda no CI além desses testes puros
+  (sem navegador, rede, servidor nem a lista de nomes).
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.
