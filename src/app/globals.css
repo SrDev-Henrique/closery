@@ -4,6 +4,19 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Visual novo (spec 2026-11-27). Celular é ABAIXO de 860px no app inteiro (C-V3): o `md` do
+ * Tailwind passa a 53,75rem e o MOBILE_BREAKPOINT de src/hooks/use-mobile.ts vale 860.
+ * As sombras e o véu do drawer têm valor literal aqui, nunca em .tsx (guarda src/app/rawColors.test.ts).
+ */
+@theme {
+  --breakpoint-md: 53.75rem;
+  --shadow-thumb:
+    0 2px 8px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.06);
+  --shadow-drawer: 20px 0 60px rgba(0, 0, 0, 0.35);
+  --color-scrim: rgba(0, 0, 0, 0.45);
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -29,6 +42,33 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-seg: var(--seg);
+  --color-thumb: var(--thumb);
+  --color-thumb-foreground: var(--thumb-foreground);
+  --color-frame: var(--frame);
+  --color-on-pastel: var(--on-pastel);
+  --color-on-pastel-ink: var(--on-pastel-ink);
+  --color-on-pastel-muted: var(--on-pastel-muted);
+  --color-on-pastel-soft: var(--on-pastel-soft);
+  --color-on-pastel-secondary: var(--on-pastel-secondary);
+  --color-on-pastel-secondary-hover: var(--on-pastel-secondary-hover);
+  --color-on-pastel-track: var(--on-pastel-track);
+  --color-on-pastel-line: var(--on-pastel-line);
+  --color-highlight: var(--highlight);
+  --color-on-highlight-muted: var(--on-highlight-muted);
+  --color-on-highlight-soft: var(--on-highlight-soft);
+  --color-invite: var(--invite);
+  --color-on-invite-muted: var(--on-invite-muted);
+  --color-on-invite-soft: var(--on-invite-soft);
+  --color-sector-lilac: var(--sector-lilac);
+  --color-sector-peach: var(--sector-peach);
+  --color-sector-sky: var(--sector-sky);
+  --color-sector-green: var(--sector-green);
+  --color-sector-pink: var(--sector-pink);
+  --color-pastel-pending: var(--pastel-pending);
+  --color-pastel-pending-foreground: var(--pastel-pending-foreground);
+  --color-pastel-confirmed: var(--pastel-confirmed);
+  --color-pastel-confirmed-foreground: var(--pastel-confirmed-foreground);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -55,30 +95,31 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  /* Tema claro. Os nomes do protótipo (bg, surface, surface2, ink, muted, line, btn) estão em ui-tokens.md. */
+  --background: #f4f1ea;
+  --foreground: #1c1b19;
+  --card: #ffffff;
+  --card-foreground: #1c1b19;
+  --popover: #ffffff;
+  --popover-foreground: #1c1b19;
+  --primary: #1c1b19;
+  --primary-foreground: #f4f1ea;
+  --secondary: #ffffff;
+  --secondary-foreground: #1c1b19;
+  --muted: #ffffff;
+  --muted-foreground: #67635b;
+  --accent: #ebe7de;
+  --accent-foreground: #1c1b19;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: rgba(28, 27, 25, 0.09);
+  --input: rgba(28, 27, 25, 0.15);
+  --ring: #67635b;
   --chart-1: #8d3e0f;
   --chart-2: #2c8faf;
   --chart-3: #7235a6;
   --chart-4: #738c57;
   /* "Outros": o mesmo valor de --foreground (P13); nenhum gráfico usa chart-5 como série. */
-  --chart-5: oklch(0.145 0 0);
+  --chart-5: #1c1b19;
   --success: #d3eedd;
   --success-foreground: #1f5131;
   --warning: #f5e0bc;
@@ -86,54 +127,90 @@
   --info: #cbe4f6;
   --info-foreground: #1d4a72;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #f4f1ea;
+  --sidebar-foreground: #1c1b19;
+  --sidebar-primary: #1c1b19;
+  --sidebar-primary-foreground: #f4f1ea;
+  --sidebar-accent: #ebe7de;
+  --sidebar-accent-foreground: #1c1b19;
+  --sidebar-border: rgba(28, 27, 25, 0.09);
+  --sidebar-ring: #67635b;
+  --seg: #e4e0d6;
+  --thumb: #ffffff;
+  --thumb-foreground: #1c1b19;
+  --frame: #1c1b19;
+
+  /*
+   * Cores fixas: iguais nos dois temas, por isso só aqui (o .dark herda; o guarda
+   * src/app/themeContrast.test.ts confere que ele não as redefine).
+   */
+  --on-pastel: #1c1b19;
+  --on-pastel-ink: #f2efe8;
+  --on-pastel-muted: #33302a;
+  --on-pastel-soft: rgba(28, 27, 25, 0.08);
+  --on-pastel-secondary: rgba(28, 27, 25, 0.1);
+  --on-pastel-secondary-hover: rgba(28, 27, 25, 0.16);
+  --on-pastel-track: rgba(28, 27, 25, 0.14);
+  --on-pastel-line: rgba(28, 27, 25, 0.12);
+  --highlight: #ffd23f;
+  --on-highlight-muted: #3b3628;
+  --on-highlight-soft: #4a4332;
+  --invite: #f2a7c6;
+  --on-invite-muted: #3a2730;
+  --on-invite-soft: #4a2c3a;
+  --sector-lilac: #b3a6e6;
+  --sector-peach: #f6b48f;
+  --sector-sky: #8ecae6;
+  --sector-green: #a7d49b;
+  --sector-pink: #f2a7c6;
+  --pastel-pending: #cbe4f6;
+  --pastel-pending-foreground: #1d4a72;
+  --pastel-confirmed: #d3eedd;
+  --pastel-confirmed-foreground: #1f5131;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: #1c1b19;
+  --foreground: #f2efe8;
+  --card: #282724;
+  --card-foreground: #f2efe8;
+  --popover: #282724;
+  --popover-foreground: #f2efe8;
+  --primary: #f2efe8;
+  --primary-foreground: #1c1b19;
+  --secondary: #282724;
+  --secondary-foreground: #f2efe8;
+  --muted: #282724;
+  --muted-foreground: #a9a49a;
+  --accent: #34332f;
+  --accent-foreground: #f2efe8;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #a9a49a;
   --chart-1: #c3550c;
   --chart-2: #56badd;
   --chart-3: #836b9f;
   --chart-4: #95b278;
-  --chart-5: oklch(0.985 0 0);
+  --chart-5: #f2efe8;
   --success: #1d3526;
   --success-foreground: #75d799;
   --warning: #372d1b;
   --warning-foreground: #e4bb67;
   --info: #1b2a37;
   --info-foreground: #74b1e7;
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: #1c1b19;
+  --sidebar-foreground: #f2efe8;
+  --sidebar-primary: #f2efe8;
+  --sidebar-primary-foreground: #1c1b19;
+  --sidebar-accent: #34332f;
+  --sidebar-accent-foreground: #f2efe8;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #a9a49a;
+  --seg: #282724;
+  --thumb: #f2efe8;
+  --thumb-foreground: #1c1b19;
+  --frame: #0f0e0d;
 }
 
 @layer base {
