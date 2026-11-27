@@ -9,24 +9,20 @@ import type { SectorColor } from "@/features/sectors/colors";
 
 // `suggestedColor` vem do servidor (`suggestColorForNewSector`): a cor já nasce marcada, o
 // formulário nunca começa em branco. Depois de criar, a tela é revalidada e chega uma nova
-// sugestão; a `key` remonta a escolha quando ela muda, e o `reset` cobre o caso em que a
+// sugestão; a `key` remonta a escolha quando ela muda, e o `resets` cobre o caso em que a
 // sugestão continua a mesma (a cor escolhida não "gruda" no próximo cadastro).
 export function SectorCreateForm({
   suggestedColor,
 }: {
   suggestedColor: SectorColor;
 }) {
-  const [color, setColor] = useState(suggestedColor);
-  // A cor só acompanha o servidor enquanto a pessoa não escolheu a dela.
-  const [touched, setTouched] = useState(false);
-  const [syncedFrom, setSyncedFrom] = useState(suggestedColor);
+  // A escolha da pessoa; `null` = não tocou, e a cor é a sugestão ATUAL do servidor. A cor é
+  // derivada a cada renderização, nunca copiada: o `onDone` é o da renderização em que o envio
+  // começou (o NameForm o captura) e, se a tela revalidada chegar antes dele, uma cópia da
+  // sugestão daquela renderização traria a sugestão velha de volta.
+  const [chosen, setChosen] = useState<SectorColor | null>(null);
   const [resets, setResets] = useState(0);
-
-  // Sugestão nova vinda do servidor: acompanha (padrão "ajustar estado durante a renderização").
-  if (syncedFrom !== suggestedColor) {
-    setSyncedFrom(suggestedColor);
-    if (!touched) setColor(suggestedColor);
-  }
+  const color = chosen ?? suggestedColor;
 
   return (
     <NameForm
@@ -36,18 +32,14 @@ export function SectorCreateForm({
       successMessage="Setor criado."
       onSubmit={(name) => createSectorAction({ name, color })}
       onDone={() => {
-        setColor(suggestedColor);
-        setTouched(false);
+        setChosen(null);
         setResets((count) => count + 1);
       }}
     >
       <SectorColorChoice
         key={`${suggestedColor}-${resets}`}
         defaultValue={color}
-        onValueChange={(next) => {
-          setTouched(true);
-          setColor(next);
-        }}
+        onValueChange={setChosen}
       />
     </NameForm>
   );

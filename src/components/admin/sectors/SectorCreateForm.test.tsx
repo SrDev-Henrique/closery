@@ -106,7 +106,40 @@ describe("SectorCreateForm", () => {
     expect(screen.getByRole("radio", { name: "Pêssego" })).not.toBeChecked();
   });
 
-  it("depois de criar, volta a acompanhar a sugestão do servidor", async () => {
+  // As duas ordens de eventos depois de criar. O `onDone` é o da renderização
+  // em que o envio começou (o `handleSubmit` do NameForm o captura), então não
+  // pode trazer a sugestão daquela renderização de volta.
+  it("depois de criar, com a tela revalidada chegando ANTES do fim do envio, fica a sugestão nova", async () => {
+    let finish: (value: { ok: true; id: string }) => void = () => {};
+    mocks.createSectorAction.mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+    );
+    const { rerender } = render(<SectorCreateForm suggestedColor="lilac" />);
+    await userEvent.type(screen.getByLabelText("Nome do setor"), "Pátio");
+    await userEvent.click(screen.getByRole("radio", { name: "Verde" }));
+    await userEvent.click(screen.getByRole("button", { name: "Criar setor" }));
+
+    // O servidor revalidou: a sugestão nova chega com o envio ainda aberto.
+    rerender(<SectorCreateForm suggestedColor="peach" />);
+    expect(screen.getByRole("radio", { name: "Verde" })).toBeChecked();
+
+    finish({ ok: true, id: "s1" });
+    await waitFor(() =>
+      expect(mocks.toastSuccess).toHaveBeenCalledWith("Setor criado."),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("radio", { name: "Pêssego" })).toBeChecked(),
+    );
+    expect(screen.getAllByRole("radio", { checked: true })).toHaveLength(1);
+
+    // E continua acompanhando: a próxima sugestão também entra.
+    rerender(<SectorCreateForm suggestedColor="sky" />);
+    expect(screen.getByRole("radio", { name: "Azul" })).toBeChecked();
+  });
+
+  it("depois de criar, com a tela revalidada chegando DEPOIS do fim do envio, fica a sugestão nova", async () => {
     mocks.createSectorAction.mockResolvedValue({ ok: true, id: "s1" });
     const { rerender } = render(<SectorCreateForm suggestedColor="lilac" />);
     await userEvent.type(screen.getByLabelText("Nome do setor"), "Pátio");
