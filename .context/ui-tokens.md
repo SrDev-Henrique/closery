@@ -19,7 +19,7 @@ handoff usa outros nomes; a ponte é a tabela do §2.
 
 Restrições que valem sempre:
 - **Legível em ambiente operacional:** todo texto passa no AA (4,5:1) nos dois temas; o guarda
-  `src/app/themeContrast.test.ts` mede cada par. Uso provável no celular, em área de carga, com pressa.
+  `src/app/themeContrast.test.ts` mede os pares de superfície, status, `destructive` e pastéis listados nele (o guarda só lê `#hex` e `rgba()`; um token em `oklch` fica fora da medição e faz o teste falhar alto). Uso provável no celular, em área de carga, com pressa.
 - **Cor carrega significado, não decoração:** status (ok / atenção / problema) e entidades do
   dashboard têm cor fixa; o amarelo `highlight` é só o "Passagem para confirmar" (precisa de atenção).
 - **Sobre os pastéis a tinta é sempre `on-pastel`** (nunca `foreground`, que muda com o tema).
@@ -43,7 +43,7 @@ Restrições que valem sempre:
 | `thumb` / `thumbInk` | `thumb` / `thumb-foreground`: o botão que desliza | `#ffffff` / `#1c1b19` | `#f2efe8` / `#1c1b19` |
 | `frame` | `frame`: moldura dos avatares | `#1c1b19` | `#0f0e0d` |
 | `warn`, `info`, `succ` | `warning`, `info`, `success` e os `*-foreground` | sem mudança | sem mudança |
-| (erro) | `destructive` | sem mudança | sem mudança |
+| (erro) | `destructive` | `#d60000` | `#ff8a8a` |
 
 | Token de status | Claro | Escuro |
 |---|---|---|
@@ -51,7 +51,9 @@ Restrições que valem sempre:
 | `warning` / `-foreground` | `#f5e0bc` / `#6a451b` | `#372d1b` / `#e4bb67` |
 | `info` / `-foreground` | `#cbe4f6` / `#1d4a72` | `#1b2a37` / `#74b1e7` |
 
-Uso do status: estados de solicitação e de passagem, **sempre com ícone + texto**.
+Uso do status: estados de solicitação e de passagem, sempre com texto; o ícone acompanha o selo em todas as telas, menos no cartão de Solicitações do Início (`showIcon`/`badgeIcons` desligados, decisão do dono de 2026-11-27).
+
+`destructive` foi ajustado para AA nas superfícies novas (decisão do dono, 2026-11-27): o `oklch` antigo dava menos de 4,5:1 para `text-destructive`. Os hex acima medem a partir de 4,5:1 sobre `background`, `card`, `popover` e sobre o fundo do botão `destructive` (`/10` no claro, `/20` no escuro, compostos sobre `card`); o guarda cobre esses pares.
 
 ## 3. Cores fixas (iguais nos dois temas)
 
@@ -155,7 +157,7 @@ Base `--radius: 0.625rem`; escala `rounded-sm` … `rounded-4xl` derivada dela (
 | card do usuário | 24px |
 | bloco interno de card colorido | 22px |
 | linha clicável de solicitação | 18px |
-| avatar 34 / 36 / 44 / 52 / 84px | 12 / 12 / 15 / 17 / 26px (a imagem interna é 3px menor) |
+| avatar 34 / 36 / 44 / 52 / 84px | moldura 11 / 12 / 15 / 17 / 26px, padding 2,5 / 2,5 / 3 / 3 / 4px, imagem interna 9 / 10 / 12 / 14 / 22px (o protótipo vence a spec nesses valores) |
 
 Celular é **abaixo de 860px** no app inteiro (`md:` e `max-md:` valem em 860px; C-V3).
 

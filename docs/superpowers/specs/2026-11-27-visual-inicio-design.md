@@ -119,6 +119,8 @@ Alguns valores não estão no handoff:
 | `--pastel-pending` / `-foreground` | `#cbe4f6` / `#1d4a72` | badge "Aguardando recebimento" no cartão de turno |
 | `--pastel-confirmed` / `-foreground` | `#d3eedd` / `#1f5131` | badge "Confirmada" no cartão de turno |
 
+`--destructive` ajustado para AA nas superfícies novas (decisão do dono, 2026-11-27): `#d60000` no claro e `#ff8a8a` no escuro, medidos em `themeContrast.test.ts`.
+
 Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2730`/`#4a2c3a`. Eles entram como `--on-highlight-muted`, `--on-highlight-soft`, `--on-invite-muted` e `--on-invite-soft`, com os valores na ordem do handoff.
 
 **Os gráficos do dashboard mantêm as cores deles.**

@@ -310,6 +310,7 @@ const SPEC: Record<string, Record<string, string>> = {
     input: "rgba(28, 27, 25, 0.15)",
     primary: "#1c1b19",
     "primary-foreground": "#f4f1ea",
+    destructive: "#d60000",
     seg: "#e4e0d6",
     thumb: "#ffffff",
     "thumb-foreground": "#1c1b19",
@@ -325,6 +326,7 @@ const SPEC: Record<string, Record<string, string>> = {
     input: "rgba(255, 255, 255, 0.15)",
     primary: "#f2efe8",
     "primary-foreground": "#1c1b19",
+    destructive: "#ff8a8a",
     seg: "#282724",
     thumb: "#f2efe8",
     "thumb-foreground": "#1c1b19",
@@ -430,6 +432,10 @@ const SURFACE_PAIRS: [string, string][] = [
   ["success-foreground", "success"],
   ["warning-foreground", "warning"],
   ["info-foreground", "info"],
+  // Texto de erro (text-destructive) sobre as superfícies que o recebem.
+  ["destructive", "background"],
+  ["destructive", "card"],
+  ["destructive", "popover"],
 ];
 
 for (const [theme, selector] of THEMES) {
@@ -456,6 +462,22 @@ for (const [theme, selector] of THEMES) {
         ratio,
         `${fg} sobre ${bg}: ${ratio.toFixed(2)}:1`,
       ).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
+  });
+}
+
+/** Botão destructive: bg-destructive/10 (claro) ou /20 (escuro) composto sobre o card. */
+for (const [theme, selector, alpha] of [
+  ["claro", ":root", 0.1],
+  ["escuro", ".dark", 0.2],
+] as const) {
+  describe(`contraste do botão destructive — tema ${theme}`, () => {
+    it("text-destructive sobre bg-destructive translúcido em cima do card (≥4,5:1)", () => {
+      const destructive = readToken(css, selector, "destructive");
+      const card = solid(readToken(css, selector, "card"), "card");
+      const fill = over({ rgb: destructive.rgb, alpha }, card);
+      const ratio = contrast(solid(destructive, "destructive"), fill);
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
     });
   });
 }
