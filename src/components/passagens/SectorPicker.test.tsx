@@ -388,6 +388,24 @@ describe("SectorPicker", () => {
     ).toBe("4");
   });
 
+  it("até 4 opções os segmentos dividem o trilho sem largura mínima (no celular cabem nos 100%, sem rolar), como no protótipo", () => {
+    render(
+      <SectorPicker
+        sectors={[CARGA, ECO, OPERACOES, ULD]}
+        selectedId={ULD.id}
+        path="/"
+      />,
+    );
+
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).not.toHaveClass("min-w-[6.5rem]");
+      expect(item).toHaveClass("min-w-0", "flex-1");
+    }
+    const inner = document.querySelector("[data-slot=sector-picker-thumb]")
+      ?.parentElement as HTMLElement;
+    expect(inner).not.toHaveClass("min-w-[max(100%,calc(var(--n)*6.5rem))]");
+  });
+
   it("nome longo trunca com reticências, o nome inteiro fica no aria-label", () => {
     const longo = {
       id: "66666666-6666-4666-8666-666666666666",

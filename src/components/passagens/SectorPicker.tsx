@@ -17,10 +17,14 @@ import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
 // "Todos os setores" não é um setor: não tem cor, então não tem bolinha.
 type PickerOption = { id: string; name: string; color: SectorColor | null };
 
-// Largura mínima do segmento: 6.5rem (104px) nas classes abaixo (o Tailwind não
-// aceita constante em classe arbitrária). Cabe "Operações" em Satoshi 15px/700
-// com a bolinha e o respiro; o nome maior trunca com reticências. O trilho
-// cresce até N * 104px (+ o padding de 4px de cada lado) antes de começar a rolar.
+// Largura mínima do segmento, só com mais de 4 opções (o protótipo foi feito
+// para 4: até 4, os segmentos dividem o trilho e, no celular, cabem nos 100%):
+// 6.5rem (104px) nas classes abaixo (o Tailwind não aceita constante em classe
+// arbitrária). Cabe "Operações" em Satoshi 15px/700 com a bolinha e o respiro
+// de 6px (o padding do botão do protótipo); o nome maior trunca com
+// reticências. O trilho cresce até N * 104px (+ o padding de 4px de cada lado)
+// antes de começar a rolar.
+const MAX_WITHOUT_SCROLL = 4;
 
 // Escolha de setor do admin: seletor deslizante (segmented control) que grava o
 // cookie e navega pela Server Action (F3-15). Clicar no setor já selecionado
@@ -47,6 +51,7 @@ export function SectorPicker({
     ? [...sectors, { id: ALL_SECTORS, name: "Todos os setores", color: null }]
     : sectors;
   const count = options.length;
+  const scrolls = count > MAX_WITHOUT_SCROLL;
   const index = options.findIndex((option) => option.id === shownId);
 
   function choose(sectorId: string) {
@@ -75,7 +80,12 @@ export function SectorPicker({
       style={{ "--n": count } as CSSProperties}
       className="flex h-12 w-[min(100%,max(30rem,calc(var(--n)*6.5rem+0.5rem)))] overflow-x-auto rounded-full bg-seg p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      <div className="relative flex min-w-[max(100%,calc(var(--n)*6.5rem))] flex-1">
+      <div
+        className={cn(
+          "relative flex flex-1",
+          scrolls ? "min-w-[max(100%,calc(var(--n)*6.5rem))]" : "min-w-0",
+        )}
+      >
         <span
           aria-hidden="true"
           data-slot="sector-picker-thumb"
@@ -91,7 +101,8 @@ export function SectorPicker({
             value={option.id}
             aria-label={option.name}
             className={cn(
-              "relative z-10 flex min-w-[6.5rem] flex-1 cursor-pointer items-center justify-center gap-[7px] rounded-full px-3 font-heading text-[15px] font-medium text-foreground outline-none transition-colors duration-[250ms] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset aria-checked:font-bold aria-checked:text-thumb-foreground aria-disabled:cursor-default motion-reduce:transition-none max-md:-my-0.5 max-md:h-11",
+              "relative z-10 flex flex-1 cursor-pointer items-center justify-center gap-[7px] rounded-full px-1.5 font-heading text-[15px] leading-[normal] font-medium text-foreground outline-none transition-colors duration-[250ms] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset aria-checked:font-bold aria-checked:text-thumb-foreground aria-disabled:cursor-default motion-reduce:transition-none max-md:-my-0.5 max-md:h-11",
+              scrolls ? "min-w-[6.5rem]" : "min-w-0",
               pending && "opacity-60",
             )}
           >
