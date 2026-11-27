@@ -44,6 +44,14 @@ describe("MenuToggle", () => {
     );
   });
 
+  it("aria-expanded acompanha a barra aberta ou recolhida", async () => {
+    setup();
+    const button = screen.getByRole("button", { name: "Alternar menu" });
+    expect(button).toHaveAttribute("aria-expanded", "true");
+    await userEvent.click(button);
+    expect(button).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("clicar alterna a barra lateral", async () => {
     setup();
     const state = screen.getByLabelText("estado da barra");

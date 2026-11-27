@@ -16,7 +16,7 @@ import {
 // SidebarProvider); abaixo disso é o Menu (abre a gaveta). `max-md:` é o mesmo
 // corte de 860px do useIsMobile.
 export function MenuToggle() {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile, open, openMobile } = useSidebar();
 
   return (
     <Tooltip>
@@ -27,6 +27,7 @@ export function MenuToggle() {
             variant="surface"
             size="icon-pill"
             aria-label="Alternar menu"
+            aria-expanded={isMobile ? openMobile : open}
             onClick={toggleSidebar}
           />
         }
