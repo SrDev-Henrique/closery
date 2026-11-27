@@ -224,6 +224,20 @@ describe("SpendingRing", () => {
     expect(link).toHaveTextContent("1.540");
   });
 
+  it("o total do cabeçalho tem alvo de toque de 44px no celular, inclusive para o 0, que é curto (P12)", () => {
+    render(<SpendingRing {...ring({ total: 0 })} />);
+
+    const link = screen.getByRole("link", { name: /passagens: ver a lista/ });
+    expect(link).toHaveClass(
+      "max-md:inline-flex",
+      "max-md:min-h-11",
+      "max-md:min-w-11",
+      "max-md:items-center",
+      "max-md:justify-end",
+    );
+    expect(link).toHaveClass("tabular-nums", "hover:underline");
+  });
+
   it("total 0: o 0 também é um link para a lista", () => {
     render(
       <SpendingRing

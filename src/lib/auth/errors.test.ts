@@ -26,6 +26,10 @@ const EXPECTED: ReadonlyArray<readonly [string, string]> = [
   ],
   ["INVALID_EMAIL_OR_PASSWORD", "E-mail ou senha incorretos."],
   ["INVALID_EMAIL", "Informe um e-mail válido."],
+  [
+    "INVALID_TOKEN",
+    "Este link de redefinição venceu ou já foi usado. Peça outro ao administrador.",
+  ],
   ["PASSWORD_TOO_SHORT", "A senha precisa ter pelo menos 8 caracteres."],
   ["PASSWORD_TOO_LONG", "A senha pode ter no máximo 128 caracteres."],
   [
@@ -60,7 +64,7 @@ describe("authErrorMessage", () => {
     );
   });
 
-  it("o mapa tem exatamente os 20 códigos do contrato", () => {
+  it("o mapa tem exatamente os 21 códigos do contrato", () => {
     expect(Object.keys(AUTH_ERROR_MESSAGES).sort()).toEqual(
       EXPECTED.map(([code]) => code).sort(),
     );

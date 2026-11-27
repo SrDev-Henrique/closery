@@ -157,6 +157,16 @@ describe(".context/pendencias.md", () => {
     }
   });
 
+  it("Fase 6: P12 resolvida pelo guarda de alvos de toque", () => {
+    const entry = entries.get("P12");
+    expect(entry?.state, "P12").toBe("Resolvido");
+    expect(entry?.section, "P12").toBe("5");
+    expect(
+      entry?.updates.some((date) => date >= "2026-11-25"),
+      "P12",
+    ).toBe(true);
+  });
+
   it("Fase 4: P44, P46 e P47 entraram como Aberto, não triado", () => {
     for (const id of ["P44", "P46", "P47"]) {
       const entry = entries.get(id);
@@ -181,5 +191,45 @@ describe(".context/pendencias.md", () => {
       expect(entry?.state, id).toBe("Aberto, não triado");
       expect(entry?.section, id).toBe("1");
     }
+  });
+
+  it("Fase 6: P16 e P22 resolvidas", () => {
+    for (const id of ["P16", "P22"]) {
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Resolvido");
+      expect(entry?.section, id).toBe("5");
+      expect(
+        entry?.updates.some((date) => date >= "2026-11-25"),
+        id,
+      ).toBe(true);
+    }
+  });
+
+  it("Fase 6: P8 continua bloqueada no dono e ganhou a Atualização do link do admin", () => {
+    const entry = entries.get("P8");
+    expect(entry?.state).toBe("Bloqueado no dono");
+    expect(entry?.section).toBe("3");
+    expect(entry?.updates.some((date) => date >= "2026-11-25")).toBe(true);
+  });
+  it("Fase 6: P62 a P80 entraram como Aberto, não triado", () => {
+    for (let number = 62; number <= 80; number++) {
+      const id = `P${number}`;
+      const entry = entries.get(id);
+      expect(entry?.state, id).toBe("Aberto, não triado");
+      expect(entry?.section, id).toBe("1");
+      expect(index.get(id), `${id}: índice`).toBe("Aberto, não triado");
+    }
+  });
+
+  it("Fase 6: P1, P6 e P10 ganharam a Atualização da produção", () => {
+    for (const id of ["P1", "P6", "P10"]) {
+      expect(
+        entries.get(id)?.updates.some((date) => date >= "2026-11-25"),
+        id,
+      ).toBe(true);
+    }
+    expect(entries.get("P6")?.state).toBe("Bloqueado no dono");
+    expect(entries.get("P10")?.state).toBe("Bloqueado no dono");
+    expect(entries.get("P1")?.state).toBe("Resolvido");
   });
 });

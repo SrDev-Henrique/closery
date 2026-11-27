@@ -37,6 +37,7 @@ const handoverFiles = sourceFiles(join("src", "components", "passagens"));
 const requestFiles = sourceFiles(join("src", "components", "solicitacoes"));
 const kokonutFiles = sourceFiles(join("src", "components", "kokonutui"));
 const dashboardFiles = sourceFiles(join("src", "components", "dashboard"));
+const privacyFiles = sourceFiles(join("src", "components", "privacy"));
 const primitiveFiles = [
   "toggle",
   "toggle-group",
@@ -56,6 +57,7 @@ describe("ui-registry.md cobre os componentes das Fases 2 a 5", () => {
       ...requestFiles,
       ...kokonutFiles,
       ...dashboardFiles,
+      ...privacyFiles,
       ...primitiveFiles,
     ].map((file) => [file, nameOf(file)]),
   )("%s está no catálogo", (file, name) => {
@@ -78,6 +80,9 @@ describe("ui-registry.md cobre os componentes das Fases 2 a 5", () => {
     "chartColors",
     "usePrefersReducedMotion",
     "StockTrendChart",
+    "PrivacyLink",
+    "ResetPasswordForm",
+    "PasswordResetLinkButton",
   ])("%s tem cabeçalho próprio no catálogo (a menção solta não basta)", (name) => {
     expect(registry).toMatch(new RegExp(`^### ${name}(?![\\w])`, "m"));
   });

@@ -75,27 +75,33 @@ async function signUpWithInviteToken(
 }
 
 // Cadastra um operador do setor pelo convite e deixa a sessão aberta no Início.
+// Devolve o e-mail usado (o teste da redefinição de senha precisa dele).
 export async function signUpOperator(
   page: Page,
   db: Db,
   sectorId: string,
   name: string,
-): Promise<void> {
+): Promise<string> {
   const { token } = await insertInvite(db, { role: "operator", sectorId });
-  await signUpWithInviteToken(page, token, { name, email: uniqueEmail() });
+  const email = uniqueEmail();
+  await signUpWithInviteToken(page, token, { name, email });
   await page.getByRole("link", { name: "Agora não" }).click();
   await expect(page).toHaveURL(/\/$/);
+  return email;
 }
 
+// Cadastra um administrador pelo convite. Devolve o e-mail usado.
 export async function signUpAdmin(
   page: Page,
   db: Db,
   name: string,
-): Promise<void> {
+): Promise<string> {
   const { token } = await insertInvite(db, { role: "admin" });
-  await signUpWithInviteToken(page, token, { name, email: uniqueEmail() });
+  const email = uniqueEmail();
+  await signUpWithInviteToken(page, token, { name, email });
   await page.getByRole("link", { name: "Agora não" }).click();
   await expect(page).toHaveURL(/\/$/);
+  return email;
 }
 
 // Setor com o turno "Turno Dia" 00:00–23:59, um item de estoque (Stretch, em

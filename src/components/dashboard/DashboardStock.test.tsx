@@ -94,6 +94,23 @@ describe("DashboardStock", () => {
     ).toBeInTheDocument();
   });
 
+  it("o link da última contagem tem alvo de toque de 44px no celular e a classe do desktop continua (P12)", async () => {
+    const region = await renderBlock(
+      world.people.ana,
+      worldScope(world, "operator"),
+    );
+
+    const link = within(cardOf(region, "Stretch")).getByRole("link", {
+      name: "12 rolo",
+    });
+    expect(link).toHaveClass(
+      "max-md:inline-flex",
+      "max-md:min-h-11",
+      "max-md:items-center",
+    );
+    expect(link).toHaveClass("w-fit", "text-2xl", "hover:underline");
+  });
+
   it("a evolução do Stretch tem um dia por linha e 'sem contagem' no dia sem contagem (18/11)", async () => {
     const region = await renderBlock(
       world.people.ana,

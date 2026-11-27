@@ -11,10 +11,15 @@ import {
   consumeInvite,
   recordInviteUser,
 } from "@/features/invites/inviteQueries";
+import { logServerError } from "@/lib/logServerError";
 import type { Role } from "@/lib/roles";
 
 import type { AuthEnv } from "./env";
-import { INVITE_COOKIE } from "./inviteCookie";
+import { INVITE_COOKIE, inviteCookieOptions } from "./inviteCookie";
+
+// O identificador que o /reset-password do Better Auth monta (`reset-password:<token>`).
+// A configuração `verification.storeIdentifier` usa o mesmo prefixo para guardar só o hash.
+export const RESET_PASSWORD_PREFIX = "reset-password:";
 
 // Também usado pelo teste guarda de schema (schemaGuard.test.ts).
 export const AUTH_USER_ADDITIONAL_FIELDS = {
@@ -72,8 +77,52 @@ export function createAuth(db: Db, env: AuthEnv) {
     emailAndPassword: {
       enabled: true,
       minPasswordLength: 8,
-      // Sem `sendResetPassword`: ainda não há e-mail transacional (P8). O
-      // endpoint responde RESET_PASSWORD_DISABLED e a tela não oferece o link.
+      // Sem `sendResetPassword` (sem e-mail transacional, P8): o endpoint de
+      // pedido responde RESET_PASSWORD_DISABLED. O link nasce no admin
+      // (features/admin/passwordReset.ts) e só POST /reset-password o consome.
+      // Redefinir a senha derruba todas as sessões da pessoa.
+      revokeSessionsOnPasswordReset: true,
+    },
+
+    // O token de redefinição fica no banco só como hash: vazamento do banco ou
+    // um log "Failed query ... params" nunca expõe o token. O resto (desafio de
+    // passkey, estado de OAuth) segue em texto puro, como o padrão.
+    verification: {
+      storeIdentifier: {
+        default: "plain",
+        overrides: { [RESET_PASSWORD_PREFIX]: "hashed" },
+      },
+    },
+
+    // Por trás da Vercel o x-forwarded-for chega sobrescrito com o IP do
+    // cliente (um valor só, que o Better Auth aceita). Só ele: x-real-ip e
+    // x-vercel-forwarded-for seriam forjáveis fora da Vercel. Explícito para o
+    // rate limit nunca cair no balde global por rota (P22).
+    advanced: { ipAddress: { ipAddressHeaders: ["x-forwarded-for"] } },
+
+    // Erro que não é APIError sobe até o route handler (o embrulho de
+    // app/api/auth/[...all]/route.ts registra por logServerError). Sem isto o
+    // roteador do better-call imprimiria o erro cru com `console.error`, e o
+    // do Drizzle carrega o SQL e os parâmetros. O APIError dos endpoints segue
+    // virando a resposta normal.
+    onAPIError: { throw: true },
+
+    // O logger padrão imprime o erro cru, e o erro do Drizzle carrega o SQL e os
+    // parâmetros (token de sessão, IP, e-mail ou hash). Só o nível `error` e o
+    // aviso de IP desconhecido passam, e passam por logServerError.
+    logger: {
+      log: (level, message, ...args) => {
+        if (level === "error") {
+          logServerError(
+            args.find((arg) => arg instanceof Error) ?? null,
+            "better-auth",
+          );
+        } else if (
+          message.startsWith("Rate limiting could not determine a client IP")
+        ) {
+          logServerError(null, "better-auth:ip-desconhecido");
+        }
+      },
     },
 
     socialProviders: {
@@ -129,6 +178,11 @@ export function createAuth(db: Db, env: AuthEnv) {
             const token = ctx?.getCookie(INVITE_COOKIE);
             if (!token) return;
             await recordInviteUser(db, token, createdUser.id);
+            // O convite já foi gasto: o cookie não tem mais serventia (P16).
+            ctx?.setCookie(INVITE_COOKIE, "", {
+              ...inviteCookieOptions(process.env.NODE_ENV === "production"),
+              maxAge: 0,
+            });
           },
         },
       },

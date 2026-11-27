@@ -6,6 +6,8 @@ import {
   LAST_ADMIN_MESSAGE,
   nameTakenMessage,
   notFoundMessage,
+  PASSWORD_RESET_FORBIDDEN_MESSAGE,
+  PERSON_RESET_INACTIVE_MESSAGE,
   PERSON_SECTOR_INACTIVE_MESSAGE,
   SECTOR_INACTIVE_MESSAGE,
   SECTOR_REQUIRED_MESSAGE,
@@ -119,6 +121,12 @@ describe("mensagens fixas", () => {
     );
     expect(PERSON_SECTOR_INACTIVE_MESSAGE).toBe(
       "O setor desta pessoa está inativo. Edite a pessoa e escolha outro setor antes de reativar.",
+    );
+    expect(PERSON_RESET_INACTIVE_MESSAGE).toBe(
+      "Esta conta está desativada. Reative antes de gerar um link de redefinição.",
+    );
+    expect(PASSWORD_RESET_FORBIDDEN_MESSAGE).toBe(
+      "Só administradores geram links de redefinição.",
     );
   });
 });

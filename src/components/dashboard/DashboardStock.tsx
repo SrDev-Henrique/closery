@@ -67,7 +67,7 @@ export async function DashboardStock({
                     <div className="flex flex-col gap-1">
                       <Link
                         href={lastCountHref(item.last.handoverId)}
-                        className="w-fit text-2xl font-semibold tabular-nums underline-offset-4 hover:underline"
+                        className="w-fit text-2xl font-semibold tabular-nums underline-offset-4 hover:underline max-md:inline-flex max-md:min-h-11 max-md:items-center"
                       >
                         {`${formatInteger(item.last.quantity)} ${item.last.unit}`}
                       </Link>

@@ -103,6 +103,10 @@ apresentação e interação.
 - **Índice** para toda FK e coluna de filtro nova, na mesma migração.
 - **Sem N+1:** use join/`inArray`.
 - **Escrita multi-statement roda em `db.transaction()`** (`library-docs.md §5`, D18).
+- **Erro inesperado só por `logServerError(error, contexto)`** (`src/lib/logServerError.ts`): uma linha
+  JSON com contexto, nome da classe, código (SQLSTATE ou de rede) e digest, **nunca** `message`, pilha
+  nem o objeto do erro (o `DrizzleQueryError` leva o SQL e os parâmetros na mensagem). Em `src/`
+  nenhum outro arquivo chama `console.*` (guarda `test/logGuard.test.ts`).
 - **Corrida é o caso normal** (dois turnos, duas abas): transição de estado com `UPDATE …
   WHERE status = 'esperado'` e conferência de linhas afetadas; unique constraint como guarda;
   reenvio idempotente (chave gerada no client) para não duplicar passagem.

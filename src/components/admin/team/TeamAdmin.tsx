@@ -14,6 +14,7 @@ import {
 import { requireAdmin } from "@/lib/auth/session";
 import { formatDateTimeBR } from "@/lib/dateTime";
 import { InviteForm } from "./InviteForm";
+import { PasswordResetLinkButton } from "./PasswordResetLinkButton";
 import { PendingInviteActions } from "./PendingInviteActions";
 import { PersonRowActions } from "./PersonRowActions";
 import { ROLE_LABELS } from "./roleOptions";
@@ -152,7 +153,12 @@ export async function TeamAdmin({
                     ) : undefined
                   }
                   actions={
-                    isSelf ? undefined : (
+                    isSelf ? (
+                      <PasswordResetLinkButton
+                        personId={person.id}
+                        personName={person.name}
+                      />
+                    ) : (
                       <PersonRowActions person={person} sectors={sectors} />
                     )
                   }

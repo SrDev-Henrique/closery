@@ -19,6 +19,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { template: "%s | Closery", default: "Closery" },
   description: "Passagem de turno simples, detalhada e rastreável.",
+  // Piloto interno: fora dos buscadores (par do robots.ts e do X-Robots-Tag).
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

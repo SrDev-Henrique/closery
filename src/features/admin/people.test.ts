@@ -2,7 +2,7 @@ import type { PGlite } from "@electric-sql/pglite";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
-import { session, user } from "@/db/schema/auth";
+import { session, user, verification } from "@/db/schema/auth";
 import { createTestDb, resetDb, type TestDb } from "../../../test/db";
 import {
   insertSector,
@@ -478,6 +478,80 @@ describe("setPersonActive", () => {
     expect(await countSessions(person.id)).toBe(0);
     expect(await countSessions(bystander.id)).toBe(1);
     expect(await countSessions(admin.id)).toBe(1);
+  });
+
+  it("desativar derruba o link de redefinição da pessoa e só o dela, mantendo as verificações de outro tipo", async () => {
+    const admin = await insertUser(db, { role: "admin", sectorId: null });
+    const setor = await insertSector(db);
+    const person = await insertUser(db, {
+      role: "operator",
+      sectorId: setor.id,
+    });
+    const bystander = await insertUser(db, {
+      role: "operator",
+      sectorId: setor.id,
+    });
+    const expiresAt = new Date(NOW.getTime() + 60 * 60 * 1000);
+    await db.insert(verification).values([
+      { id: "v-pessoa", identifier: "hash-1", value: person.id, expiresAt },
+      { id: "v-outra", identifier: "hash-2", value: bystander.id, expiresAt },
+      {
+        id: "v-json",
+        identifier: "passkey-challenge:x",
+        value: JSON.stringify({ userId: person.id, challenge: "abc" }),
+        expiresAt,
+      },
+    ]);
+
+    await setPersonActive(
+      db,
+      { actorId: admin.id, userId: person.id, active: false },
+      NOW,
+    );
+
+    const ids = (await db.select().from(verification))
+      .map((row) => row.id)
+      .sort();
+    expect(ids).toEqual(["v-json", "v-outra"]);
+  });
+
+  it("reativar não cria link de redefinição", async () => {
+    const admin = await insertUser(db, { role: "admin", sectorId: null });
+    const setor = await insertSector(db);
+    const person = await insertUser(db, {
+      role: "operator",
+      sectorId: setor.id,
+      deactivatedAt: NOW,
+    });
+
+    const result = await setPersonActive(
+      db,
+      { actorId: admin.id, userId: person.id, active: true },
+      NOW,
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(await db.select().from(verification)).toHaveLength(0);
+  });
+
+  it("recusa não apaga o link de redefinição (SELF_CHANGE)", async () => {
+    const me = await insertUser(db, { role: "admin", sectorId: null });
+    await insertUser(db, { role: "admin", sectorId: null });
+    await db.insert(verification).values({
+      id: "v-meu",
+      identifier: "hash-3",
+      value: me.id,
+      expiresAt: new Date(NOW.getTime() + 60 * 60 * 1000),
+    });
+
+    const result = await setPersonActive(
+      db,
+      { actorId: me.id, userId: me.id, active: false },
+      NOW,
+    );
+
+    expect(result).toMatchObject({ ok: false, code: "SELF_CHANGE" });
+    expect(await db.select().from(verification)).toHaveLength(1);
   });
 
   it("recusa não apaga sessões (SELF_CHANGE)", async () => {

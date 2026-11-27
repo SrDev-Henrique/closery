@@ -145,6 +145,28 @@ describe("RequestDetail", () => {
     expect(screen.queryByText("Setor")).toBeNull();
   });
 
+  it("página: 'Ver todas as solicitações' tem alvo de toque de 44px no celular e a classe do desktop continua (P12)", async () => {
+    const { sector, ana, doca } = await seed();
+    const created = await insertRequest(db, {
+      sectorId: sector.id,
+      createdBy: ana.id,
+      destinationId: doca.id,
+    });
+    as("operator", sector.id, ana.id);
+
+    await page(created.id);
+
+    const link = screen.getByRole("link", {
+      name: "Ver todas as solicitações",
+    });
+    expect(link).toHaveClass(
+      "max-md:inline-flex",
+      "max-md:min-h-11",
+      "max-md:items-center",
+    );
+    expect(link).toHaveClass("w-fit", "text-sm", "underline");
+  });
+
   it("página do admin: mostra o setor e o link leva ao setor da solicitação", async () => {
     const { sector, ana } = await seed();
     const created = await insertRequest(db, {

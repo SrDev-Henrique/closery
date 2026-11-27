@@ -32,6 +32,20 @@
   - Guias: `01-app/01-getting-started/08-caching.md`, `09-revalidating.md`,
     `02-guides/authentication-with-cache-components.md`.
 - `LayoutProps<"/">` / `PageProps<"/rota">` são tipos globais gerados pelo Next (typed routes).
+- **Cabeçalhos e robots (Fase 6).** `next.config.ts` envia os seis cabeçalhos de segurança em `/:path*`
+  (`nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `frame-ancestors 'none'`,
+  `X-Frame-Options: DENY`, `Permissions-Policy` sem câmera, microfone e geolocalização, e
+  `X-Robots-Tag: noindex, nofollow`) e `Referrer-Policy: no-referrer` em `/convite/:path*` **e** `/redefinir-senha/:path*`; a regra
+  posterior vence a global, então a ordem importa (`nextConfig.test.ts`). **Sem CSP de scripts** (nonce
+  obriga renderização dinâmica e derruba o shell estático do `cacheComponents`) e **sem HSTS** (a
+  Vercel já envia em `*.vercel.app`). `publickey-credentials-*` ficam fora da `Permissions-Policy` de
+  propósito: o padrão `self` mantém as passkeys. Noindex em três camadas: `src/app/robots.ts`
+  (`Disallow: /`), `metadata.robots` no layout raiz e o `X-Robots-Tag`.
+- **`vercel.json` (Fase 6).** `regions: ["gru1"]`, `installCommand` com `bunx bun@<packageManager>`,
+  `buildCommand: "bun run build"` e `git.deploymentEnabled: { "**": false, "main": true }` (previews
+  desligados; `"**"` e não `"*"`, que não casa `/`). Sem `bunVersion` (é o runtime das funções, que
+  rodam em Node). `engines.node` é `"22.x"`: `>=22.12` faria a Vercel subir para a major mais recente.
+  `test/vercelConfig.test.ts` amarra `vercel.json`, `engines` e o Node do CI.
 
 ## 2. shadcn/ui (`base-nova`) + Base UI
 
@@ -234,10 +248,13 @@
 - **`APIError` com `code`.** Em hook, todo `throw` é `APIError` de `better-auth/api` com `code`; `Error` comum vira 500 sem corpo, e no callback OAuth só `APIError` com `code` vira redirect `?error=<code>`. Na tela, **nunca** renderize `error_description` (texto do servidor na URL): use só `authErrorMessage(code)` (mapa `AUTH_ERROR_MESSAGES`, com fallback).
 - **Sem `cookieCache` e sem `nextCookies()` (T7).** Desativação vale na hora. Cadastro, login e passkey vão pelo `authClient` (HTTP, onde o rate limit atua); nenhum `auth.api.sign*` roda em Server Action.
 - **Rate limit (T8).** Better Auth com `storage: "database"` (tabela `rate_limit`), ligado só em produção: `/sign-in/email` 30 por 60 s e `/sign-up/email` 10 por 60 s (`customRules` da `createAuth`); os demais `/sign-in*` e `/sign-up*` (social) seguem o padrão do Better Auth, 3 por 10 s; os endpoints de passkey ficam em `/passkey/*` e caem no padrão geral de 100 por 10 s. A janela conta a partir da **última** requisição permitida (cada requisição aceita move `lastRequest`). IP: sem `trustedProxies`, o Better Auth só confia em `x-forwarded-for` quando ele tem **um único valor**; com vários valores todos caem num balde compartilhado por caminho (`no-trusted-ip|<path>`); na Vercel o cabeçalho tem um valor só. No bloqueio (429) a tela mostra `Muitas tentativas nesta rede. Espere um minuto e tente de novo.` (código `RATE_LIMITED`, deduzido de `status === 429` em `errorCodeOf`). Atua só no router HTTP (`/api/auth/*`), nunca em `auth.api.*` chamado direto. Uma `customRules` com a mesma path sobrescreve a regra especial padrão.
+- **Endurecimento da Fase 6 (`createAuth.ts`).** (1) `advanced.ipAddress.ipAddressHeaders: ["x-forwarded-for"]`, só ele: a Vercel o sobrescreve com o IP do cliente; `x-real-ip` e `x-vercel-forwarded-for` seriam forjáveis fora dela (P22). (2) `verification.storeIdentifier` com `overrides: { "reset-password:": "hashed" }` (`RESET_PASSWORD_PREFIX`): o banco guarda só o hash do token de redefinição; o resto continua `plain`. (3) `emailAndPassword.revokeSessionsOnPasswordReset: true`; continua **sem** `sendResetPassword` (`POST /request-password-reset` responde `RESET_PASSWORD_DISABLED`). (4) `user.create.after` apaga o cookie `closery_invite` com `setCookie(..., { ...inviteCookieOptions(...), maxAge: 0 })` (P16). (5) `logger: { log }`: o logger padrão imprime o erro cru e o erro do Drizzle carrega o SQL e os parâmetros; só o nível `error` (com o `Error` dos argumentos ou `null`) e o aviso `Rate limiting could not determine a client IP` passam, os dois por `logServerError` (contextos `better-auth` e `better-auth:ip-desconhecido`); os outros avisos são descartados. (6) `onAPIError: { throw: true }` + o embrulho do route handler: sem isso o roteador do `better-call` imprime `# SERVER_ERROR: <erro>` com `console.error` por conta própria quando a exceção não é `APIError` (o erro do Drizzle carrega o SQL e os parâmetros), fora do alcance do logger. Com `throw: true` o `onError` do Better Auth relança; o `catch` do roteador devolve a resposta normal para `APIError` (nada muda para ele: 401 e o código de erro de sempre) e relança o resto, então aquela linha nunca roda. `src/app/api/auth/[...all]/route.ts` embrulha `GET` e `POST` de `toNextJsHandler(auth)` em `try/catch`: `unstable_rethrow(error)`, `logServerError(error, "better-auth")` e `Response` 500 sem corpo (não cria rota nova). **Resíduo (P75):** só o `⨯ Error` que o próprio Next imprime para erro não tratado de Server Component e de rota.
+- **Redefinição pelo admin (Fase 6, T5).** O `POST /reset-password` só procura a `verification` `reset-password:<token>` (hash, por causa do `storeIdentifier`) com `value = userId`; a exigência de `sendResetPassword` existe só no `/request-password-reset`. Quem grava é sempre o `(await auth.$context).internalAdapter.createVerificationValue` (respeita o hash): nunca `db.insert(verification)` com o token cru. O erro de token vencido, usado ou inexistente é `INVALID_TOKEN` (400; mapeado em `AUTH_ERROR_MESSAGES`). Os testes do `createPasswordResetLink` fazem o reset de verdade pelo `auth.handler` (precisa do cabeçalho `origin`) e são o guarda contra mudança do formato interno em upgrade do Better Auth.
+- **Teste de IP (`ipUnknown.test.ts`).** O Better Auth decide "é teste?" quando o módulo carrega (`NODE_ENV=test` ou `TEST` verdadeiro; o Vitest define `TEST=true`) e, sendo teste, devolve `127.0.0.1` em vez de cair no balde `no-trusted-ip`. Para provar o comportamento de produção o teste fixa `NODE_ENV=production` e `TEST` vazio dentro de `vi.hoisted`, em arquivo próprio (o aviso de IP sai uma vez por processo).
 - **Vínculo implícito desligado (T13).** `account.accountLinking.disableImplicitLinking: true`; o código `account_not_linked` está no mapa de mensagens.
 - **Códigos do WebAuthn (T14).** `signIn.passkey` e `addPasskey` devolvem o código cru do `@simplewebauthn/browser` quando a cerimônia falha no navegador; traduza com `passkeyErrorCode(code, "authenticate" | "register")` antes de `authFormError`. Não acrescente esses códigos ao `AUTH_ERROR_MESSAGES` (os testes da Tarefa 6 comparam as chaves por igualdade).
 - **Social (T9).** `disableImplicitSignUp: true`. Em `/entrar` use `requestSignUp: false` (sem conta: `?error=signup_disabled`); no convite use `requestSignUp: true` com o cookie já gravado. Facebook sem e-mail volta `email_not_found`. Apple só na Fase 6 (P6).
-- **Cookie do convite (T10).** `closery_invite`, `httpOnly`, `SameSite=Lax` (Strict não volta no callback OAuth), `Secure` em produção, `path=/`, 1 h; gravado por `armInvite`, nunca por página.
+- **Cookie do convite (T10).** `closery_invite`, `httpOnly`, `SameSite=Lax` (Strict não volta no callback OAuth), `Secure` em produção, `path=/`, 1 h; gravado por `armInvite`, nunca por página; apagado no `user.create.after` depois do cadastro (P16).
 - **Campos adicionais** (`role`, `sectorId`, `deactivatedAt`) com `input: false`: o valor enviado pelo cliente é descartado (ou dá 400); só o hook define `role` e `sectorId`.
 - **Sessão no servidor.** `getAuthz()` (`cache()` do React) dentro de `<Suspense>` (Cache Components); nunca em função `"use cache"`; Server Component não grava cookie: por isso `getAuthz` lê com `query: { disableRefresh: true }` (sem renovar; a checagem de expiração vem antes) e a única renovação é do `SessionKeepAlive` (cliente, no layout `(app)`): `authClient.getSession()` uma vez ao montar, e o `/api/auth/get-session` HTTP regrava banco e cookie juntos quando a sessão passa do `updateAge` (1 dia). Conferido em `better-auth/dist/api/routes/session.mjs`: expiração ~linhas 156-166, `disableRefresh` ~linhas 171-182 e 187, ramo `needsRefresh` → `updateSession` + `setSessionCookie` ~linhas 201-216.
 - **Passkey.** `addPasskey` exige sessão recente (`SESSION_NOT_FRESH`); `rpID` e origem derivam de `BETTER_AUTH_URL`; passkey de `localhost` não vale em produção e o domínio de preview da Vercel é outro. Login: `autoComplete="username webauthn"` + `signIn.passkey({ autoFill: true })` e o botão.
@@ -317,6 +334,12 @@
   para não casar com a barra lateral; o link do convite sai do campo `Link do convite`;
   `countSessionsByEmail` (`e2e/db.ts`) prova que desativar apaga as sessões (P11). Setor, turno, item
   e destino de cada teste têm nome único (sufixo aleatório): o banco só é limpo entre execuções.
+- **`e2e/touch-targets.spec.ts` (Fase 6, P12).** Viewport 390x844 com `hasTouch`; `smallTargets(page)` espera 500 ms (diálogo e menu em
+  animação medem 43 px) e lista todo controle visível com menos de 44 px. Isenta só o link `inline` dentro de `p`/`li`/`label` com mais texto
+  que ele (sem esse ancestral não há isenção: um `<a>` em `div`, `td` ou `span` é medido) e o link esticado (`after:inset-0`). `expect.soft` por
+  tela: o relatório lista todos os achados de uma vez. O operador precisa de uma passagem entregue **ontem** com contagem (sem ela o
+  `/dashboard` mostra o estado vazio e nem o link da última contagem nem o total do anel aparecem) e de uma solicitação; o admin abre o
+  diálogo `Link de nova senha`. Tela nova entra na lista do spec.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
 ## 11. GitHub Actions (CI)
@@ -361,7 +384,7 @@
 - **`runAdminAction`** (`src/features/admin/runAdminAction.ts`, `server-only`) é, desde a Fase 4, um embrulho fino do **runner único `runAction`** (`src/features/admin/runAction.ts`, P33) com `revalidate: "/(app)/admin"`; o fluxo abaixo é o do `runAction`: `schema.safeParse` →
   falha vira `INVALID_INPUT` com `fieldErrors`; `run({ db, now, actor, input })`; `revalidatePath("/(app)/admin",
   "layout")` só quando `ok` (com route group o caminho é o do arquivo, como em `revalidatePath.md`); exceção inesperada passa por `unstable_rethrow` (deixa `redirect` e
-  `notFound` seguirem) e, se for outra, vira `INTERNAL` com `console.error` e texto fixo. Nunca devolve
+  `notFound` seguirem) e, se for outra, vira `INTERNAL` com `logServerError(error, "runAction")` (uma linha JSON sem mensagem; code-standards §6) e texto fixo. Nunca devolve
   texto do banco.
 - **Erro esperado volta como `AdminResult`** (`ok: false`, `code`, `message` pt-BR pronta); `throw` só para
   falha interna. Erro de nome repetido (23505) consulta o registro conflitante para dizer se ele está
@@ -408,6 +431,44 @@
 - **Blocos que não se derrubam:** `<Suspense>` externa na página (sessão e `searchParams`) e, por bloco, `catchError` de `next/error` com `key` do período e do setor no limite e a `<Suspense>` com esqueleto dentro dele (o `catchError` só limpa o erro quando muda o pathname). Carregando é esqueleto, nunca zero.
 - **Teto em toda lista:** 30 cartões por bloco, 8 barras de destino, 12 itens pedidos, 10.000 linhas no CSV, período de até 93 dias; o que passa do teto mostra "Mostrando {n} de {total} …" com o total do SQL.
 - **CSV:** BOM, `;`, CRLF em toda linha (inclusive a última), aspas RFC 4180, neutralização de fórmula (`'` antes de `= + - @`, TAB ou CR) só em texto de pessoa, datas `dd/mm/aaaa`, item que a passagem não tem = célula vazia (não `0`); `Content-Disposition` com `filename` ASCII e `filename*` UTF-8.
+
+## 16. Sentry (`@sentry/nextjs`) · Fase 6
+
+- **Versão exata `11.18.0`** (`bun add --exact`). Antes de mexer, a skill instalada do Sentry (se
+  houver) e a doc atual (context7): a v11 mudou o que a doc antiga ensina. `withSentryConfig`
+  saiu do pacote raiz (`import { withSentryConfig } from "@sentry/nextjs/config"`); `sendDefaultPii`
+  **não existe mais** e o padrão de `dataCollection` coleta **tudo** (cookies, cabeçalhos, corpos,
+  query, variáveis de pilha, usuário); `tunnelRoute` está obsoleto (e criaria um `route.ts`).
+- **Desligado por padrão.** Uma variável só, `NEXT_PUBLIC_SENTRY_DSN` (público por natureza; gravada
+  no build: trocar o DSN exige novo deploy). Sem ela `enabled: false` e nada é iniciado nem enviado
+  (dev, CI e E2E rodam assim; `playwright.config.ts` fixa DSN e `SENTRY_AUTH_TOKEN` vazios).
+- **Opções num lugar só:** `sentryOptions()` em `src/lib/sentry/options.ts` (servidor e navegador):
+  `tracesSampleRate: 0`, `maxBreadcrumbs: 0`, sem Replay, `sendClientReports: false`,
+  `dataCollection` todo desligado, `beforeSend: scrubEvent`. No navegador, `instrumentation-client.ts`
+  tira as integrações `BrowserSession` (manda um envelope de sessão a cada página, com IP e
+  navegador, mesmo sem erro) e `BrowserTracing` (sem ela e sem client reports, uma página sem erro
+  não manda nenhum envelope: só erros saem). `onRouterTransitionStart` fica, inofensivo sem a
+  integração.
+  `register()` só inicia com `NEXT_RUNTIME === "nodejs"` (o `proxy.ts` do Next 16 roda em Node).
+- **Um ponto de captura para erro tratado:** `logServerError` (escreve a linha de log e chama
+  `Sentry.captureException(error, { tags: { context } })`; pula `null`/`undefined` e erro com
+  `digest`). Erro **lançado** no servidor chega pelo `onRequestError` do `instrumentation.ts`.
+  Ninguém mais importa `@sentry/nextjs` (guarda `test/logGuard.test.ts`: só `src/lib/sentry/*`,
+  `src/instrumentation.ts`, `src/instrumentation-client.ts` e `src/lib/logServerError.ts`).
+- **`scrubEvent` é a última barreira, não a primeira:** apaga usuário, `request`, servidor,
+  breadcrumbs, extras, `logentry`, dados do mecanismo, variáveis de pilha, contextos (menos `trace`)
+  e tags com `url` (o valor das demais tags e o `filename`, `abs_path` e `module` de cada frame passam pelo `scrubText`); força `sdk.settings.infer_ip = "never"` (o core mescla a metadata do cliente depois
+  do `beforeSend`: apagar a chave não adianta e o Relay inferiria o IP); higieniza `message`, `transaction` e o valor de **toda** exceção (inclusive as
+  causas do `linkedErrors`): o SQL e os `params` do Drizzle (`Failed query:` / `params:`), o valor que o
+  Postgres repete, token de caminho e de fragmento, query string e e-mail. O que escapar desses
+  padrões sai (P69).
+- **Build:** sem `SENTRY_AUTH_TOKEN` não há upload nem arquivo `.map` (`sourcemaps.disable`);
+  `telemetry: false`; o plugin liga `experimental.clientTraceMetadata` sozinho (aparece em
+  "Experiments" no build). `SENTRY_AUTH_TOKEN` nunca entra no CI nem no `.env.local`. Custo medido:
+  +67 KB gzip de JS no cliente mesmo desligado (P68).
+- **Teste:** nunca fale com o Sentry de verdade. A captura se prova com DSN falso e transporte falso
+  (`options.test.ts`: o envelope vira texto e o teste afirma sobre ele); o resto troca o SDK por espião
+  (`vi.mock("@sentry/nextjs")`). Se um dia houver CSP, liberar `connect-src https://*.ingest.sentry.io`.
 
 ## Como adicionar uma biblioteca nova
 

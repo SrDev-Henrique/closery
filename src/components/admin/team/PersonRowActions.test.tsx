@@ -10,6 +10,7 @@ import { PersonRowActions } from "./PersonRowActions";
 const mocks = vi.hoisted(() => ({
   setPersonActiveAction: vi.fn(),
   updatePersonAction: vi.fn(),
+  createPasswordResetLinkAction: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
 }));
@@ -17,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/app/(app)/admin/equipe/actions", () => ({
   setPersonActiveAction: mocks.setPersonActiveAction,
   updatePersonAction: mocks.updatePersonAction,
+  createPasswordResetLinkAction: mocks.createPasswordResetLinkAction,
 }));
 vi.mock("sonner", () => ({
   toast: { success: mocks.toastSuccess, error: mocks.toastError },
@@ -66,6 +68,54 @@ describe("PersonRowActions", () => {
     expect(
       screen.queryByRole("button", { name: "Reativar Bruno Fictício" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("pessoa ativa tem Nova senha entre Editar e Desativar; inativa não tem", () => {
+    const { unmount } = render(
+      <PersonRowActions person={person()} sectors={[SECTOR]} />,
+    );
+    expect(
+      screen
+        .getAllByRole("button")
+        .map((button) => button.getAttribute("aria-label")),
+    ).toEqual([
+      "Editar Bruno Fictício",
+      "Gerar link de nova senha para Bruno Fictício",
+      "Desativar Bruno Fictício",
+    ]);
+    unmount();
+
+    render(
+      <PersonRowActions
+        person={person({ active: false })}
+        sectors={[SECTOR]}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Gerar link de nova senha/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("Nova senha chama a action com o id da pessoa e mostra o link", async () => {
+    mocks.createPasswordResetLinkAction.mockResolvedValue({
+      ok: true,
+      url: "https://closery.example.test/redefinir-senha#token=abc",
+      expiresAt: new Date("2026-11-26T12:00:00.000Z"),
+    });
+    const { user } = setup();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: "Gerar link de nova senha para Bruno Fictício",
+      }),
+    );
+
+    expect(mocks.createPasswordResetLinkAction).toHaveBeenCalledWith({
+      userId: "pessoa-1",
+    });
+    expect(await screen.findByLabelText("Link para copiar")).toHaveValue(
+      "https://closery.example.test/redefinir-senha#token=abc",
+    );
   });
 
   it("pessoa inativa: Editar e Reativar, sem Desativar", () => {

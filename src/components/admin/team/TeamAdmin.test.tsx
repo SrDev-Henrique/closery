@@ -25,6 +25,7 @@ vi.mock("@/features/admin/sectors", () => ({
 vi.mock("@/app/(app)/admin/equipe/actions", () => ({
   updatePersonAction: vi.fn(),
   setPersonActiveAction: vi.fn(),
+  createPasswordResetLinkAction: vi.fn(),
   createInviteAction: vi.fn(),
   cancelInviteAction: vi.fn(),
 }));
@@ -261,7 +262,7 @@ describe("TeamAdmin", () => {
       expect(within(row).queryByText("Inativo")).not.toBeInTheDocument();
     });
 
-    it("a própria conta mostra Você e o texto de ajuda, sem nenhum botão", async () => {
+    it("a própria conta mostra Você, o texto de ajuda e só o botão de nova senha", async () => {
       mocks.listPeople.mockResolvedValue(
         page([
           person({
@@ -285,7 +286,22 @@ describe("TeamAdmin", () => {
           "Peça a outro administrador para mudar a sua conta.",
         ),
       ).toBeInTheDocument();
-      expect(within(row).queryByRole("button")).not.toBeInTheDocument();
+      expect(
+        within(row)
+          .getAllByRole("button")
+          .map((button) => button.getAttribute("aria-label")),
+      ).toEqual(["Gerar link de nova senha para Carla Admin"]);
+    });
+
+    it("a linha de outra pessoa ativa ganha Nova senha ao lado de Editar e Desativar", async () => {
+      await renderTeam();
+
+      const row = peopleSection().getByRole("listitem");
+      expect(
+        within(row).getByRole("button", {
+          name: "Gerar link de nova senha para Bruno Fictício",
+        }),
+      ).toBeInTheDocument();
     });
 
     it("pessoa inativa mostra o selo e Reativar", async () => {

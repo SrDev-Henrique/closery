@@ -64,3 +64,7 @@ export const INVITE_LABEL_TOO_LONG_MESSAGE =
   "O nome de referência pode ter no máximo 80 caracteres.";
 export const PERSON_SECTOR_INACTIVE_MESSAGE =
   "O setor desta pessoa está inativo. Edite a pessoa e escolha outro setor antes de reativar.";
+export const PERSON_RESET_INACTIVE_MESSAGE =
+  "Esta conta está desativada. Reative antes de gerar um link de redefinição.";
+export const PASSWORD_RESET_FORBIDDEN_MESSAGE =
+  "Só administradores geram links de redefinição.";

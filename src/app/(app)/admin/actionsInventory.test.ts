@@ -17,6 +17,7 @@ const EXPECTED: Record<string, string[]> = {
   "equipe/actions.ts": [
     "cancelInviteAction",
     "createInviteAction",
+    "createPasswordResetLinkAction",
     "setPersonActiveAction",
     "updatePersonAction",
   ],

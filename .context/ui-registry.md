@@ -286,15 +286,23 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
 - **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda).
 
 ### AppError e AppNotFound
 - **Status:** ✅ pronto (2026-11-25)
 - **Local:** `src/app/(app)/error.tsx` (`"use client"`) e `src/app/(app)/not-found.tsx` (arquivos de convenção do Next, não componentes de `src/components`)
 - **Propósito:** o erro e o 404 de uma página de `(app)` aparecem dentro do shell: a barra lateral continua na tela (P19).
-- **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para o `console.error` e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
-- **Usa:** `Button`, `buttonVariants`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19).
+- **Como funciona:** os mesmos textos da raiz, em `<div>` e nunca em `<main>` (o `SidebarInset` já é o `<main>`): `Algo deu errado` com o botão `Tentar de novo` (`retry()`; o erro vai para `logServerError(error, "error-boundary")`, que escreve só o resumo, e a mensagem nunca aparece) e `Página não encontrada` com o link `Voltar ao início` (`buttonVariants`, `href="/"`). O `notFound()` de uma página de `(app)` (inclusive o `requireAdmin` do operador) renderiza aqui. O 404 da raiz já aparecia dentro do shell, mas com o `<main>` dele dentro do `<main>` do `SidebarInset`; agora há um `<main>` só. O erro é o que trocava o shell de verdade: o `error.tsx` da raiz envolve o layout de `(app)` e o de `(app)` envolve só a página. URL sem rota continua no `not-found` da raiz, com status 404. O `error.tsx` de `(app)` também envolve o slot `@detalhe` (o `not-found` só envolve `children`): um erro dentro do Sheet do detalhe rápido mostra o fallback no lugar do slot, fora do Sheet; aceito nesta fase.
+- **Usa:** `Button`, `buttonVariants`, `logServerError`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 3, P19). 2026-11-26 — Fase 6 (Tarefa 2): o `useEffect` deste arquivo e o do `error.tsx` da raiz chamam `logServerError(error, "error-boundary")` no lugar de `console.error(error)`; a tela não muda. 2026-11-26 — Fase 6 (Tarefa 6): a captura no Sentry mora dentro do `logServerError`; este arquivo não muda. 2026-11-26 — revisão final da Fase 6: o `Usa:` passa a citar `logServerError` (o componente já o usava).
+
+### GlobalError
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/app/global-error.tsx` (`"use client"`; arquivo de convenção do Next, não componente de `src/components`)
+- **Propósito:** o último limite de erro: aparece quando o próprio layout raiz quebra (a barra lateral, o tema e o CSS do layout não existem mais).
+- **Como funciona:** substitui o layout raiz, então traz o próprio `<html lang="pt-BR">` e `<body className="flex min-h-full flex-col">` e importa `./globals.css`. O `<title>Algo deu errado</title>` é o do React 19 (limite de erro não aceita `metadata`). `<main>` com o título `Algo deu errado` e o `Button` `Tentar de novo` (`retry()`, o nome da prop no Next 16.4). O `useEffect` chama `logServerError(error, "global-error")` (a linha de log e o Sentry; erro com `digest` não vai de novo ao Sentry); a mensagem do erro nunca aparece. Testado no jsdom: o React 19 renderiza `<html>`/`<body>` nos singletons do `document`, e o único `console.error` aceito é o aviso `In HTML, %s cannot be a child of <%s>`. `bun scripts/rc-check.mjs src/app/global-error.tsx` confere que o React Compiler o compila.
+- **Usa:** `Button`, `logServerError`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 6).
 
 ### AdminOverview
 - **Status:** ✏️ estendido (2026-11-21)
@@ -351,7 +359,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   `message` do `armInvite`; `aria-invalid`/`aria-describedby` no campo; trava duplo clique. Com
   `USER_ALREADY_EXISTS*` mostra o link `Entrar` (para `/entrar`) abaixo da mensagem.
 - **Usa:** `Field*`, `Input`, `Button`, `buttonVariants`, `SocialButtons`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 8): o componente não muda; a página do convite válido (`/convite/[token]`) ganha um `CardFooter` com o `PrivacyLink`.
 
 ### SignInPanel
 - **Status:** ✅ pronto (2026-11-20)
@@ -360,9 +368,17 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Como funciona:** `"use client"`; autofill condicional de passkey no mount (silencioso, não
   trava botões); botão "Entrar com passkey"; social com `requestSignUp: false`; erro inicial de
   `?error=`; erros por `authFormError(errorCodeOf(erro))`/`passkeyErrorCode`. O formulário vem primeiro porque o
-  autofill de passkey vive no campo de e-mail.
-- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+  autofill de passkey vive no campo de e-mail. O rodapé tem dois parágrafos, nesta ordem: "O acesso é só por convite." e (Fase 6) "Esqueceu a senha? Peça ao administrador um link para criar outra." (nunca "Esqueci a senha": não há e-mail, o link vem do admin).
+- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `SocialButtons`, `PrivacyLink`.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 5): aviso de senha esquecida no rodapé. 2026-11-26 — Fase 6 (Tarefa 8): o rodapé termina com o `PrivacyLink` (`Privacidade e seus dados`), depois de `O acesso é só por convite.` e de `Esqueceu a senha? Peça ao administrador um link para criar outra.`. 2026-11-26 — revisão final da Fase 6: o `Usa:` passa a citar o `PrivacyLink`.
+
+### ResetPasswordForm
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/auth/ResetPasswordForm.tsx` (página estática `src/app/(auth)/redefinir-senha/page.tsx`)
+- **Propósito:** a pessoa criar a senha nova com o link que o administrador mandou.
+- **Como funciona:** `"use client"`; `takeTokenFromLocation(location, history)` lê o token do **fragmento** (`#token=`, 16 a 256 caracteres `A-Za-z0-9_-`) e apaga o fragmento da barra com `history.replaceState`; o fragmento nunca chega ao servidor (fora do log e do `Referer`). Fases: lendo (cartão vazio com `aria-busy`), sem token ("Link incompleto" e o link-botão "Ir para a entrada"), formulário ("Criar uma senha nova", campo "Senha nova", `type="password"`, `autoComplete="new-password"`, 8 a 128, botão "Trocar a senha") e feito ("Senha alterada" e o link-botão "Entrar"; não entra sozinho, as sessões foram revogadas). Chama `authClient.resetPassword({ newPassword, token })`; o erro vira `authErrorMessage(errorCodeOf(error))` e a exceção de rede a mensagem genérica. Em StrictMode o segundo efeito não acha o fragmento e não zera o token.
+- **Usa:** `Card*`, `Field*`, `Input`, `Button`, `buttonVariants`, `authClient`, `authErrorMessage`, `errorCodeOf`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 5). 2026-11-26 — revisão final da Fase 6: a lista de `Usa:` passa a citar `errorCodeOf` (o componente já o usava).
 
 ### PasskeyOffer
 - **Status:** ✅ pronto (2026-11-20)
@@ -372,7 +388,23 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
   "Agora não" é `<Link className={buttonVariants()}>` (role link); erros por
   `passkeyErrorCode(…, "register")` + `authFormError`.
 - **Usa:** `Card*`, `Button`, `buttonVariants`, `FieldError`, `sonner`.
-- **Histórico:** 2026-11-20 — criado na Fase 1.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 8): a descrição diz que a passkey é a forma mais rápida de entrar e que a recuperação é pelo administrador (`A passkey é a forma mais rápida de entrar: você usa a digital, o rosto ou o PIN do aparelho, sem digitar senha. Se esquecer a senha, peça ao administrador um link para criar outra.`); botões e comportamento iguais.
+
+### PrivacyLink
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/privacy/PrivacyLink.tsx`
+- **Propósito:** o link `Privacidade e seus dados` para a página pública `/privacidade`.
+- **Como funciona:** Server Component (sem estado); `<Link href="/privacidade">` com `className` opcional (`cn`). Fica sozinho numa linha, então usa o padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:items-center`, ui-rules §1.4). Aparece em três lugares: o rodapé do `SignInPanel` (`/entrar`), o `CardFooter` do convite válido (`/convite/[token]`) e `/conta` (depois de "Sair"). Não aparece no convite inválido nem dentro do shell (`/privacidade` é pública e tem o próprio controle `Voltar`, o `BackLink`).
+- **Usa:** `next/link`, `cn`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 8). 2026-11-26 — revisão final da Fase 6: o `Usa:` do `SignInPanel` passa a citá-lo; o controle de volta da página é o `BackLink`.
+
+### BackLink
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/privacy/BackLink.tsx`
+- **Propósito:** o controle `Voltar` no fim da página pública `/privacidade`; leva a pessoa para onde ela estava (o convite, `/entrar`, `/conta`), sem perder o convite aberto.
+- **Como funciona:** `"use client"`; um `<Link href="/entrar">` sempre presente (funciona sem JavaScript e é o destino de quem abriu a página direto, sem histórico). No clique simples, se `window.history.length > 1`, cancela o link e chama `router.back()`; clique com Ctrl/Cmd/Shift/Alt ou outro botão segue o link (abrir em outra aba), como no `next/link`. Padrão do link solto (`max-md:inline-flex max-md:min-h-11 max-md:min-w-11 max-md:items-center`, ui-rules §1.4; o texto é curto, então também tem largura mínima); só tokens, claro e escuro. A página continua estática (`○ /privacidade`).
+- **Usa:** `next/link`, `useRouter` (`next/navigation`).
+- **Histórico:** 2026-11-26 — criado na revisão final da Fase 6; substitui o link `Voltar para a entrada`, que levava quem veio do convite para `/entrar` (que não cria conta). 2026-11-26 — re-revisão da Fase 6: o clique com modificador não é mais interceptado.
 
 ### PasskeyManager
 - **Status:** ✅ pronto (2026-11-20)
@@ -633,9 +665,9 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/TeamAdmin.tsx` (+ `roleOptions.ts`: `ROLE_LABELS`, `ROLE_OPTIONS`)
 - **Propósito:** conteúdo de `/admin/equipe`: convidar, acompanhar convites pendentes e gerir as pessoas do sistema.
-- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`), `listPendingInvites` (`?convites=`) e `listActiveSectors`. Ordem na tela: `InviteForm`, "Convites pendentes" (só válidos, com `PendingInviteActions`) e "Pessoas". A própria conta mostra o selo "Você" e o texto de ajuda, **sem botões**; pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; duas `Pagination` independentes (cada uma preserva o parâmetro da outra); estados vazios.
-- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `InviteForm`, `PendingInviteActions`, `PersonRowActions`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9, só Pessoas); Tarefa 10 acrescenta convites.
+- **Como funciona:** Server Component async; chama `requireAdmin()` e lê `listPeople` (`?pagina=`), `listPendingInvites` (`?convites=`) e `listActiveSectors`. Ordem na tela: `InviteForm`, "Convites pendentes" (só válidos, com `PendingInviteActions`) e "Pessoas". A própria conta mostra o selo "Você", o texto de ajuda e **só** o `PasswordResetLinkButton` ("Nova senha": é a única ação que vale para si mesmo e dá ao admin sem e-mail um caminho de recuperação); pessoa inativa fica esmaecida (`InactiveBadge`) com "Reativar"; setor inativo aparece como "(inativo)"; duas `Pagination` independentes (cada uma preserva o parâmetro da outra); estados vazios.
+- **Usa:** `AdminPageHeader`, `AdminListRow`, `EmptyState`, `Pagination`, `Badge`, `InviteForm`, `PendingInviteActions`, `PersonRowActions`, `PasswordResetLinkButton`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9, só Pessoas); Tarefa 10 acrescenta convites. 2026-11-26 — Fase 6 (Tarefa 5): a linha da própria conta ganha o botão "Nova senha" (antes ficava sem botões).
 
 ### PersonForm
 - **Status:** ✅ pronto (2026-11-21)
@@ -648,10 +680,18 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 ### PersonRowActions
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/admin/team/PersonRowActions.tsx`
-- **Propósito:** ações de uma linha de pessoa: editar, desativar (com confirmação) e reativar.
-- **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões.
-- **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `useAdminAction`, `Button`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9).
+- **Propósito:** ações de uma linha de pessoa: editar, gerar link de nova senha, desativar (com confirmação) e reativar.
+- **Como funciona:** `"use client"`; `EditDialog` "Editar pessoa" com `PersonForm`; "Desativar" abre `ConfirmDialog` (texto: perde o acesso agora, sessões encerradas, histórico continua) e mostra a recusa do servidor dentro do diálogo; "Reativar" age direto e leva o erro para o toast. `aria-label` com o nome da pessoa em todos os botões. Fase 6: pessoa **ativa** ganha o `PasswordResetLinkButton` entre "Editar" e "Desativar" (a inativa não: o domínio recusaria).
+- **Usa:** `EditDialog`, `ConfirmDialog`, `PersonForm`, `PasswordResetLinkButton`, `useAdminAction`, `Button`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 9). 2026-11-26 — Fase 6 (Tarefa 5): botão "Nova senha".
+
+### PasswordResetLinkButton
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/admin/team/PasswordResetLinkButton.tsx`
+- **Propósito:** o admin gerar o link de nova senha de uma pessoa (sem e-mail, D-F6-2) e mandá-lo como o convite, por cópia ou WhatsApp.
+- **Como funciona:** `"use client"`; botão "Nova senha" (`variant="outline"`, `size="sm"`, `aria-label` `Gerar link de nova senha para {nome}`, desabilitado enquanto a action roda). Um clique chama `createPasswordResetLinkAction({ userId })` por `useAdminAction` (o erro vira toast, nenhum diálogo abre). No sucesso abre um `Dialog` "Link de nova senha" (descrição = o nome) com o campo somente leitura `Link para copiar` (seleciona ao focar), o texto "Válido até {data e hora}, uma vez só…", "Copiar link" e "Compartilhar" (só com `navigator.share`, pelo `useShareLink`). Fechar o diálogo descarta o link: ele aparece uma vez só e gerar outro derruba o anterior.
+- **Usa:** `useAdminAction`, `useShareLink`, `Dialog*`, `Input`, `Button`, `formatDateTimeBR`.
+- **Histórico:** 2026-11-26 — criado na Fase 6 (Tarefa 5).
 
 ### InviteForm
 - **Status:** ✅ pronto (2026-11-21)
@@ -666,8 +706,16 @@ Os 15 abaixo são a base das telas `/admin/setores`, `/turnos`, `/itens`, `/dest
 - **Local:** `src/components/admin/team/InviteLinkCard.tsx`
 - **Propósito:** mostrar o link do convite **uma vez** (só o hash fica no banco) para copiar ou compartilhar.
 - **Como funciona:** `"use client"`; campo somente leitura "Link do convite" (seleciona ao focar); "Copiar link" usa `navigator.clipboard` e avisa por toast (falha ou contexto sem clipboard = toast com instrução de copiar à mão); "Compartilhar" só aparece se `navigator.share` existir (detectado depois de montar, sem divergir do HTML do servidor), `AbortError` é silencioso e qualquer outra falha cai em copiar; mostra a validade em horário de Brasília e o aviso de que o link não volta; "Gerar outro convite" chama `onReset`; ao montar, o foco vai ao título "Convite gerado" (`h3`, `tabIndex={-1}`).
-- **Usa:** `Button`, `Input`, `sonner`, `formatDateTimeBR`.
-- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): foco no título ao montar.
+- **Usa:** `Button`, `Input`, `useShareLink`, `formatDateTimeBR`.
+- **Histórico:** 2026-11-21 — criado na Fase 2 (Tarefa 10). 2026-11-24 — Fase 4 (Tarefa 3, P29): foco no título ao montar. 2026-11-26 — Fase 6 (Tarefa 5): copiar e compartilhar passaram para o `useShareLink` (refatoração, o comportamento e o teste não mudaram).
+
+### useShareLink
+- **Status:** ✅ pronto (2026-11-26)
+- **Local:** `src/components/admin/team/useShareLink.ts`
+- **Propósito:** copiar e compartilhar um link que aparece uma vez só (convite e, a partir da Tarefa 5 da Fase 6, nova senha), sem repetir a lógica em cada cartão.
+- **Como funciona:** `"use client"`; `useShareLink({ url, shareTitle, shareText })` devolve `{ canShare, copy, share }`. `canShare` é falso no servidor e antes de montar e só vira `true` num `useEffect` quando `navigator.share` existe (o HTML do servidor não diverge do cliente). `copy` usa `navigator.clipboard.writeText` e avisa por toast (`Link copiado.`; falha ou contexto sem clipboard = `Não foi possível copiar. Selecione o link e copie.`). `share` chama `navigator.share({ title, text, url })`; `AbortError` (fechar a folha) é silencioso e qualquer outra falha cai em `copy`.
+- **Usa:** `sonner`.
+- **Histórico:** 2026-11-26 — extraído do `InviteLinkCard` na Fase 6 (Tarefa 5, commit de refatoração).
 
 ### PendingInviteActions
 - **Status:** ✅ pronto (2026-11-21)
@@ -1004,7 +1052,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** o detalhe da solicitação: a página completa `/solicitacoes/[id]` e o conteúdo do Sheet do detalhe rápido.
 - **Como funciona:** server component async, `variant="page" | "sheet"`. `page`: título `<h1>` "Solicitação para {destino}", seções `h2`, link "Ver todas as solicitações", `notFound()` para id malformado, inexistente ou de outro setor. `sheet`: título pelo `SheetTitle`, seções `h3`, link `<a href>` "Abrir página completa" (navegação de documento: uma navegação no cliente para a mesma URL seria interceptada de novo), e o estado "Solicitação não encontrada." dentro do Sheet (um `notFound()` no slot derrubaria a tela). Mostra o aviso `ReadOnlySectorNotice` em setor inativo, propriedades (`<dl>`: status e selo de parada, setor só para o admin, destino, quem criou, origem com link para a passagem), itens com quantidade e unidade, "Mudar status" (só com `canMove`), linha do tempo e comentários; "Ver comentários anteriores" é sempre `<a href>` e some no teto de 500.
 - **Usa:** `getRequestDetail`, `RequestStatusBadge`, `StaleBadge`, `RequestStatusActions`, `RequestTimeline`, `RequestComments`, `ReadOnlySectorNotice`, `formatDateAtTimeBR`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-25 — Fase 5 (Tarefa 1, P48): "Criada por {nome} em {data} às {hora}" vem de `formatDateAtTimeBR` (a cópia local `dateAndTime` saiu; o texto é o mesmo).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-25 — Fase 5 (Tarefa 1, P48): "Criada por {nome} em {data} às {hora}" vem de `formatDateAtTimeBR` (a cópia local `dateAndTime` saiu; o texto é o mesmo). 2026-11-26 — Fase 6 (Tarefa 7, P12): "Ver todas as solicitações" ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (era 159x20 no celular).
 
 ### RequestSheet
 - **Status:** ✅ pronto (2026-11-24)
@@ -1129,7 +1177,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Como funciona:** props `title`, `legendLabel`, `total` (do SQL; o anel não soma as fatias), `totalHref` (obrigatório: o total do cabeçalho, e o `0` do vazio, são um `Link` com nome `{n} passagens: ver a lista`), `slices` (`key`, `label`, `value`, `href`, `strokeClass`, `dotClass`, `icon?`), `emptyText`. `ringSpans` (pura) desenha só as fatias com valor, com sweep mínimo de 3° e soma de 360° menos os vãos. O anel é um `slider` (setas, Home, End, arrastar, tocar na fatia; `aria-valuetext` `{rótulo}: {n} ({p}%)`) e o centro mostra o valor, o rótulo e `{p}% do total` da fatia selecionada. A legenda é uma `<ul aria-label={legendLabel}>` com um `Link` por fatia (todas, inclusive as zeradas): ponto, ícone, rótulo, valor e porcentagem; foco ou passagem do mouse numa linha seleciona a fatia. `total` 0 mostra `emptyText` no lugar do anel e mantém a legenda.
 - **Adaptações do original:** só tokens; pt-BR, sem moeda; export nomeado; `legendLabel` e links; vazio e fatia minúscula (sem arco invertido); `motion-reduce:transition-none`; linhas da legenda `max-md:min-h-11`; `touch-none` só no anel. **React Compiler:** o original o fazia desistir em silêncio; corrigido com `turnTo(restAt?)` (padrão resolvido no corpo), `tickRef` (o `tick` se reagenda por ref), `ringSpans` com `reduce` (sem `let` reatribuído) e `transform` inicial calculado dos `spans`; `bun scripts/rc-check.mjs` com `compiled: 3`.
 - **Usa:** `Link`, `sharePercent`, `formatInteger`, `cn`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-26 — Fase 6 (Tarefa 7, P12): o total do cabeçalho (`TOTAL_LINK`) ganha `max-md:min-w-11 max-md:justify-end` (um número curto como `1` ou `0` media 9x44 no celular).
 
 ### chartColors
 - **Status:** ✅ pronto (2026-11-25)
@@ -1209,7 +1257,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 - **Propósito:** o bloco Estoque: a última contagem de cada item e a evolução no período.
 - **Como funciona:** `getStockData`. Um `Card` por item: nome, unidade (e setor em "Todos os setores"), a última contagem como link para a passagem (`/passagens/<id>`, "{n} {unidade}") com "Contado em {dd/mm/aaaa}, {turno}" (+ " · antes do período") ou "Sem contagem"; a evolução é sempre o `StockTrendChart`, que mostra "Sem contagem no período." quando nenhum dia tem contagem (o bloco não repete o texto). Sem item mostra o `EmptyState`; acima de 30 mostra "Mostrando 30 de {total} itens.".
 - **Usa:** `Card`, `StockTrendChart`, `lastCountHref`, `EmptyState`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 11). 2026-11-26 — Fase 6 (Tarefa 7, P12): o link da última contagem ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (era 80x32 no celular).
 
 ### DashboardRequests
 - **Status:** ✅ pronto (2026-11-25)

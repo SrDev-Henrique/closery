@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDateTimeBR } from "@/lib/dateTime";
+import { useShareLink } from "./useShareLink";
 
 export function InviteLinkCard({
   url,
@@ -16,12 +16,11 @@ export function InviteLinkCard({
   expiresAt: Date;
   onReset: () => void;
 }) {
-  // Só depois de montar: no servidor `navigator` não existe e o HTML inicial
-  // precisa ser igual ao do cliente.
-  const [canShare, setCanShare] = useState(false);
-  useEffect(() => {
-    setCanShare(typeof navigator.share === "function");
-  }, []);
+  const { canShare, copy, share } = useShareLink({
+    url,
+    shareTitle: "Convite para o Closery",
+    shareText: "Você foi convidado para o Closery.",
+  });
 
   // O cartão substitui o formulário que tinha o foco: leva o foco ao título
   // (leitor de tela anuncia "Convite gerado" e a pessoa segue dali).
@@ -29,29 +28,6 @@ export function InviteLinkCard({
   useEffect(() => {
     titleRef.current?.focus();
   }, []);
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copiado.");
-    } catch {
-      toast.error("Não foi possível copiar. Selecione o link e copie.");
-    }
-  }
-
-  async function share() {
-    try {
-      await navigator.share({
-        title: "Convite para o Closery",
-        text: "Você foi convidado para o Closery.",
-        url,
-      });
-    } catch (error) {
-      // Fechar a folha de compartilhamento não é erro.
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      await copy();
-    }
-  }
 
   return (
     <section

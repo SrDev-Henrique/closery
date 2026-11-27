@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P62.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P81.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -48,17 +48,17 @@
 | P9 | Paleta de gráficos do klauve não foi validada contra as superfícies do shadcn | ⚪ | Resolvido |
 | P10 | Credenciais OAuth do Google não criadas | 🟡 | Bloqueado no dono |
 | P11 | Sessões abertas de usuário desativado continuam aceitas por /api/auth/* | 🟠 | Resolvido |
-| P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Aberto, não triado |
+| P12 | Tamanhos gerados pelo shadcn abaixo do mínimo de toque | 🟡 | Resolvido |
 | P13 | chart-5 ("Outros") quase invisível no tema escuro | 🟡 | Resolvido |
 | P14 | Destino perdido no login: depois de entrar a pessoa cai em / | 🟡 | Aberto, não triado |
 | P15 | Token bruto do convite gravado em verification.value pelo estado do OAuth | 🟠 | Aberto, não triado |
-| P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Aberto, não triado |
+| P16 | Cookie closery_invite não é limpo depois do cadastro | 🟡 | Resolvido |
 | P17 | Tema escuro nunca é ativado | 🟡 | Aberto, não triado |
 | P18 | user.role e invite.role sem CHECK no banco | 🟡 | Resolvido |
 | P19 | Erro e 404 dentro do app derrubam o shell inteiro | 🟡 | Resolvido |
 | P20 | Login social: ajustes antes de ligar | 🟡 | Aberto, não triado |
 | P21 | Lacunas do E2E de acesso | 🟡 | Aberto, não triado |
-| P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Aberto, não triado |
+| P22 | Limite de tentativas no piloto: confirmar IP e números | 🟡 | Resolvido |
 | P23 | Editar o nome de uma pessoa: falta em /admin/equipe e em /conta | 🟡 | Aberto, não triado |
 | P24 | Ordem alfabética das listas do admin ignora acento | 🟡 | Aberto, não triado |
 | P25 | Corrida entre cadastro por convite e desativação do setor | 🟡 | Aberto, não triado |
@@ -98,17 +98,29 @@
 | P59 | O CSV se monta inteiro em memória | ⚪ | Aberto, não triado |
 | P60 | Duplicações da Fase 5 para um commit só de refatoração | ⚪ | Aberto, não triado |
 | P61 | Ajustes de UX da Fase 5 | ⚪ | Aberto, não triado |
+| P62 | A `main` não tem proteção: push direto vira deploy sem CI | 🟠 | Aberto, não triado |
+| P63 | Comportamento na Vercel só se confirma no primeiro deploy | 🟡 | Aberto, não triado |
+| P64 | Aprovação da empresa (LGPD) pendente e /privacidade em rascunho | 🟠 | Aberto, não triado |
+| P65 | Riscos aceitos do Hobby e do Neon Free no piloto | 🟠 | Aberto, não triado |
+| P66 | Passkeys presas ao host *.vercel.app | 🟡 | Aberto, não triado |
+| P67 | Fechar a aba com o salvamento automático na fila perde o que não foi salvo | 🟡 | Aberto, não triado |
+| P68 | Sentry sem source maps e com +67 KB gzip de JS no cliente | ⚪ | Aberto, não triado |
+| P69 | scrubEvent só limpa padrões conhecidos da mensagem de erro | 🟡 | Aberto, não triado |
+| P70 | Alvos de toque medidos só no Chromium emulado | ⚪ | Aberto, não triado |
+| P71 | Sem instalação como app (manifest e ícones) | ⚪ | Aberto, não triado |
+| P72 | Tempo de preenchimento da passagem sem medição automática | ⚪ | Aberto, não triado |
+| P73 | Suíte do Vitest lenta e teste de migração com timeout sob carga | ⚪ | Aberto, não triado |
+| P74 | admin:invite não mostra quantos administradores ativos existem | ⚪ | Aberto, não triado |
+| P75 | Next imprime o erro não tratado inteiro no log da Vercel | 🟡 | Aberto, não triado |
+| P76 | Gerar link de nova senha não deixa registro de quem gerou | 🟡 | Aberto, não triado |
+| P77 | Redefinição e desativação não apagam passkeys | 🟡 | Aberto, não triado |
+| P78 | createPasswordResetLink não é atômico | ⚪ | Aberto, não triado |
+| P79 | React Compiler desiste do SignInPanel inteiro | ⚪ | Aberto, não triado |
+| P80 | Nenhum guarda impede script de importar logServerError ou Sentry | ⚪ | Aberto, não triado |
 
 ---
 
 ## 1. Aberto, não triado
-
-#### P12 — Tamanhos gerados pelo shadcn abaixo do mínimo de toque 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
-**Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
-**Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
-**Registrado em:** 2026-11-20
 
 #### P14 — Destino perdido no login: depois de entrar a pessoa cai em / 🟡
 **Estado:** Aberto, não triado
@@ -122,13 +134,6 @@
 **Arquivos:** `src/components/auth/InviteSignup.tsx` · `src/lib/auth/createAuth.ts`
 **Impacto:** `errorCallbackURL: /convite/<token>` com `storeStateStrategy` "database" grava o token bruto em `verification.value`; fica até 7 dias se o fluxo for abandonado.
 **Correção:** — (opção: rota de erro sem token ou `account.storeStateStrategy: "cookie"`)
-**Registrado em:** 2026-11-20
-
-#### P16 — Cookie closery_invite não é limpo depois do cadastro 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/inviteCookie.ts`
-**Impacto:** o cookie com o token do convite fica 1 h no navegador depois do cadastro (aparelho compartilhado).
-**Correção:** — (opção: expirar em `user.create.after` com `ctx.setCookie(INVITE_COOKIE, "", { maxAge: 0, path: "/" })`)
 **Registrado em:** 2026-11-20
 
 #### P17 — Tema escuro nunca é ativado 🟡
@@ -150,13 +155,6 @@
 **Arquivos:** `e2e/auth.spec.ts`
 **Impacto:** o cenário "desativado" não afirma a ausência de cookie de sessão; login por passkey depois da desativação não é testado; o caminho do autofill de passkey não tem E2E.
 **Correção:** — (opção: acrescentar as três verificações ao E2E)
-**Registrado em:** 2026-11-20
-
-#### P22 — Limite de tentativas no piloto: confirmar IP e números 🟡
-**Estado:** Aberto, não triado
-**Arquivos:** `src/lib/auth/createAuth.ts` (`rateLimit`)
-**Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
-**Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
 **Registrado em:** 2026-11-20
 
 #### P23 — Editar o nome de uma pessoa: falta em /admin/equipe e em /conta 🟡
@@ -381,6 +379,141 @@
 **Correção:** — (opções: rótulo com o setor nas opções repetidas; unidade no eixo; guardar a chave da fatia; o nome do total por prop, montado com plural pelo `DashboardPassages`)
 **Registrado em:** 2026-11-25
 
+#### P62 — A `main` não tem proteção: push direto vira deploy sem CI 🟠
+**Estado:** Aberto, não triado
+**Arquivos:** `.github/workflows/ci.yml`
+**Impacto:** com a integração Git da Vercel, todo push na `main` publica, inclusive sem o CI verde; "PR só entra com o CI verde" não é imposto pelo GitHub.
+**Correção:** — (opção: proteção da `main` com os checks `Tipos, lint e testes` e `E2E (Playwright)`, passo B1 do runbook, antes de ligar a Vercel)
+**Registrado em:** 2026-11-26
+
+#### P63 — Comportamento na Vercel só se confirma no primeiro deploy 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `vercel.json` · `next.config.ts` · `src/lib/auth/createAuth.ts` · `src/lib/sentry/options.ts`
+**Impacto:** a Fase 6 não fez deploy, então ficou sem prova: `gru1` e o formato do `x-vercel-id`, o HSTS da Vercel, o `deploymentEnabled` ignorando as branches, o `bunx bun@1.3.3` na imagem de build, o `engines` sobre a configuração do painel, o IP do rate limit sem o aviso do Better Auth, o envio real e o flush do Sentry, a passkey com a `Permissions-Policy` em navegador real e o detalhe rápido com `next-url` (P44).
+**Correção:** — (opção: conferir no primeiro deploy, passos B7 e B9 do runbook, e registrar o resultado aqui)
+**Registrado em:** 2026-11-26
+**Atualização (2026-11-26):** a sobrescrita do `x-forwarded-for` pela Vercel se apoia na documentação dela, não num teste: o B7 só prova que chega um IP válido. O `x-vercel-id` cru anotado no B7 confirma o formato `<borda>::<região>::<id>`.
+
+#### P64 — Aprovação da empresa (LGPD) pendente e /privacidade em rascunho 🟠
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/privacy/privacyContent.ts`
+**Impacto:** sem a autorização do controlador dos dados (a empresa) ninguém é convidado; a retenção é "enquanto o uso durar", sem prazo; não existe ação de anonimizar uma pessoa desligada (a conta só se desativa).
+**Correção:** — (opção: passo B12 do runbook, com o texto aprovado por escrito e o PR curto de `PRIVACY_DRAFT = false`; depois, uma ação de anonimizar que mantenha o id)
+**Registrado em:** 2026-11-26
+**Atualização (2026-11-26):** o PR de `PRIVACY_DRAFT = false` leva o que só a empresa pode dizer (B12): quem é a controladora, o contato do encarregado (LGPD art. 41), a base legal (art. 7º) e por quanto tempo ficam as cópias diárias do CSV e os relatórios do Sentry.
+
+#### P65 — Riscos aceitos do Hobby e do Neon Free no piloto 🟠
+**Estado:** Aberto, não triado
+**Arquivos:** —
+**Impacto:** o plano Hobby da Vercel é "personal or non-commercial", guarda logs por 1 hora, só faz rollback para o deploy imediatamente anterior e tem uma região; o Neon Free dá 100 CU-h por mês por projeto, suspende o projeto quando acaba e restaura só até 6 horas atrás.
+**Correção:** — (opção: rever no go/no-go da semana de piloto e decidir entre Pro e Launch)
+**Registrado em:** 2026-11-26
+
+#### P66 — Passkeys presas ao host *.vercel.app 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/lib/auth/createAuth.ts` (`rpID`)
+**Impacto:** o `rpID` das passkeys é o host de `BETTER_AUTH_URL`; trocar para um domínio próprio invalida todas as passkeys (a senha e o link do administrador continuam). Sem domínio próprio também não há e-mail (P8) nem Apple (P6).
+**Correção:** — (opção: comprar o domínio antes de crescer além do piloto e pedir às pessoas que criem a passkey de novo)
+**Registrado em:** 2026-11-26
+
+#### P67 — Fechar a aba com o salvamento automático na fila perde o que não foi salvo 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/useHandoverAutosave.ts` · `src/components/passagens/HandoverForm.tsx`
+**Impacto:** não há guarda `beforeunload`: com sinal fraco no galpão (provável), fechar ou recarregar a aba com salvamentos na fila perde o que ainda não chegou ao servidor.
+**Correção:** — (opção: avisar ao sair com salvamento pendente e mostrar o estado "Salvando…" por mais tempo; observar no piloto)
+**Registrado em:** 2026-11-26
+
+#### P68 — Sentry sem source maps e com +67 KB gzip de JS no cliente ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `next.config.ts` · `src/instrumentation-client.ts`
+**Impacto:** sem `SENTRY_AUTH_TOKEN` não há source maps: a pilha dos erros do navegador chega minificada. O SDK pesa cerca de 67 KB gzip (+11%) no cliente mesmo desligado.
+**Correção:** — (opção: token de upload só na Vercel e `sourcemaps` ligado; avaliar o carregamento tardio do SDK)
+**Registrado em:** 2026-11-26
+
+#### P69 — scrubEvent só limpa padrões conhecidos da mensagem de erro 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/lib/sentry/scrubEvent.ts`
+**Impacto:** um valor de pessoa fora dos sete padrões (SQL do Drizzle, parâmetros, valor de tipo inválido, token de caminho, fragmento `#token=`, query string e e-mail) sairia para o Sentry, fora do país.
+**Correção:** — (opção: revisar os eventos do Sentry na rotina diária do primeiro mês e acrescentar o padrão que aparecer)
+**Registrado em:** 2026-11-26
+
+#### P70 — Alvos de toque medidos só no Chromium emulado ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `e2e/touch-targets.spec.ts`
+**Impacto:** o guarda mede em Chromium emulado a 390×844. iOS e Android reais, o tema escuro e a área do link esticado do cartão da Lista não foram medidos.
+**Correção:** — (opção: conferir no celular dos operadores no primeiro dia do piloto)
+**Registrado em:** 2026-11-26
+
+#### P71 — Sem instalação como app (manifest e ícones) ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/app/`
+**Impacto:** "Adicionar à tela inicial" cria um atalho sem ícone próprio e a barra do navegador não tem `themeColor`.
+**Correção:** — (opção: `manifest.ts` com ícones; testar a passkey no app instalado do iOS antes)
+**Registrado em:** 2026-11-26
+
+#### P72 — Tempo de preenchimento da passagem sem medição automática ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/handovers/deliver.ts`
+**Impacto:** o critério "mais rápida que a planilha" (spec §17) é medido no piloto com cronômetro e observador (C6-6); medir sozinho exigiria gravar o tempo de preenchimento (`fill_ms`), o que pede uma migração.
+**Correção:** — (opção: gravar o tempo na entrega, numa fase com migração)
+**Registrado em:** 2026-11-26
+
+#### P73 — Suíte do Vitest lenta e teste de migração com timeout sob carga ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/db/schema/migration0002.test.ts` · `.github/workflows/ci.yml`
+**Impacto:** a suíte leva cerca de 760 s com a máquina carregada; o `migration0002.test.ts` já estourou o limite de 15 s e o job `checks` do CI tem 15 minutos de teto.
+**Correção:** — (opção: dividir a suíte em dois jobs ou subir o teste de migração para um limite maior)
+**Registrado em:** 2026-11-26
+
+#### P74 — admin:invite não mostra quantos administradores ativos existem ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/adminInvite.ts`
+**Impacto:** um convite de administrador a mais passa despercebido; a trava de host (`--confirmar-host`) cobre o banco errado, não a quantidade de administradores.
+**Correção:** — (opção: imprimir a contagem de administradores ativos junto do alvo, antes da confirmação)
+**Registrado em:** 2026-11-26
+
+#### P75 — Next imprime o erro não tratado inteiro no log da Vercel 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/instrumentation.ts` · os loaders das páginas (`src/features/**/loaders.ts`, `src/app/(app)/**/page.tsx`)
+**Impacto:** um erro não tratado de Server Component ou de rota sai no log do próprio Next como `⨯ Error: Failed query: … params: …`, com o SQL e os parâmetros (e-mail, hash ou texto da passagem); o log da Vercel guarda 1 hora no Hobby. `logServerError` só cobre o erro tratado, o que o `logger` do Better Auth emite e o erro inesperado do `/api/auth` (o embrulho do `route.ts`). A parte do roteador do `better-call` (o `# SERVER_ERROR: <erro>`) foi fechada na rodada da revisão final (`onAPIError: { throw: true }` e o embrulho do `route.ts`); sobra só o log do próprio Next.
+**Correção:** — (opções: (1) aceitar no piloto e rever o log em B7 e B15 sem copiar linhas; (2) capturar nos loaders das páginas, chamar `logServerError` e relançar um `Error` neutro, sem a mensagem do Drizzle)
+**Registrado em:** 2026-11-26
+
+#### P76 — Gerar link de nova senha não deixa registro de quem gerou 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/passwordReset.ts`
+**Impacto:** um administrador pode gerar o link de outro administrador (e assumir a conta) sem rastro de quem gerou, para quem e quando, contra a regra de rastro do projeto.
+**Correção:** — (opção: tabela de auditoria dos links gerados; exige migração, fora da Fase 6)
+**Registrado em:** 2026-11-26
+
+#### P77 — Redefinição e desativação não apagam passkeys 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/passwordReset.ts` · `src/features/admin/people.ts` · `src/lib/auth/createAuth.ts`
+**Impacto:** a redefinição pelo administrador e a desativação não apagam passkeys; o administrador não vê nem remove as passkeys de outra pessoa; `/conta` não encerra as outras sessões. Quem usar um link vazado pode criar uma passkey que sobrevive à troca de senha. Hoje: o procedimento de conta tomada do runbook.
+**Correção:** — (opção: apagar as passkeys na redefinição gerada pelo administrador ou na desativação, e oferecer "sair dos outros aparelhos" em `/conta`)
+**Registrado em:** 2026-11-26
+
+#### P78 — createPasswordResetLink não é atômico ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/features/admin/passwordReset.ts`
+**Impacto:** dois administradores ao mesmo tempo podem deixar dois links válidos, e uma desativação concorrente pode deixar um link para a pessoa desativada (volta a valer se ela for reativada em 24 h). Precisa de dois administradores agindo no mesmo instante: no piloto há um.
+**Correção:** — (opção: depois de criar, apagar as outras linhas da pessoa e reler `deactivatedAt`, falhando fechado)
+**Registrado em:** 2026-11-26
+
+#### P79 — React Compiler desiste do SignInPanel inteiro ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/auth/SignInPanel.tsx`
+**Impacto:** o React Compiler desiste do componente inteiro (`SignInPanel.tsx:52-62`: optional chaining dentro de `try`); anterior à Fase 6.
+**Correção:** — (opção: ler `PublicKeyCredential?.isConditionalMediationAvailable` antes do `try` e conferir com `bun scripts/rc-check.mjs`)
+**Registrado em:** 2026-11-26
+
+#### P80 — Nenhum guarda impede script de importar logServerError ou Sentry ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `test/logGuard.test.ts` · `scripts/`
+**Impacto:** nada impede que um script de `scripts/*.ts` (rodado pelo Bun) passe a importar `logServerError` ou `@sentry/*`, o que quebraria o `admin:invite` só na hora do go-live (o Bun resolve `@sentry/bun`, que não está instalado). Hoje os dois scripts não chegam lá (conferido com `bun build --target bun`).
+**Correção:** — (opção: um caso em `test/logGuard.test.ts` que segue os imports estáticos de `scripts/*.ts`)
+**Registrado em:** 2026-11-26
+
 ## 2. Triado, plano pronto
 
 *(nenhuma)*
@@ -414,6 +547,7 @@ botão não pode ir ao ar.
 e adicionar depois (o resto não depende dela).
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-20):** o Better Auth já está instalado (Fase 1) e o fluxo de convite não depende de Apple. Apple ficou fora da Fase 1 e entra na Fase 6, junto do domínio HTTPS e da conta de desenvolvedor; continua bloqueada.
+**Atualização (2026-11-26):** D-F6-1: o piloto roda só em `*.vercel.app`, sem domínio próprio; "Entrar com Apple" segue bloqueado (precisa do Apple Developer Program e de um domínio verificado, e a troca de domínio invalida as passkeys, P66).
 
 #### P7 — Login com Facebook exige app da Meta publicado 🟡
 **Estado:** Bloqueado no dono
@@ -425,6 +559,7 @@ e-mail — o cadastro precisa tratar e-mail ausente.
 tratar `email` nulo no cadastro.
 **Registrado em:** 2026-11-20
 **Atualização (2026-11-20):** o botão "Continuar com Facebook" já existe e só aparece com `FACEBOOK_CLIENT_ID` e `FACEBOOK_CLIENT_SECRET`; e-mail ausente volta como `email_not_found` ("Essa conta não informou um e-mail. Use outro jeito de entrar."). Falta o app da Meta publicado (privacidade e exclusão de dados); continua bloqueada.
+**Atualização (2026-11-26):** a Fase 6 criou a página pública `/privacidade` (a URL de política de privacidade que a Meta pede), ainda em rascunho até o dono e a empresa aprovarem (`PRIVACY_DRAFT`). Continua bloqueada: faltam a página de instrução de exclusão de dados, o app da Meta publicado e, para ele, um domínio próprio (o piloto roda em `*.vercel.app`, D-F6-1).
 
 #### P8 — Sem provedor de e-mail, "esqueci a senha" não funciona 🟠
 **Estado:** Bloqueado no dono
@@ -437,6 +572,7 @@ e um domínio remetente.
 **Atualização (2026-11-20):** o Better Auth está sem `sendResetPassword` e a tela `/entrar` não oferece "esqueci a senha" (a passkey cobre quem a criou). Continua bloqueada até haver provedor de e-mail.
 **Atualização (2026-11-20):** o hook de cadastro marca `emailVerified: true` sem verificação real do e-mail (o convite não é atrelado a e-mail); rever junto com "esqueci a senha".
 **Atualização (2026-11-20):** corrigido o item acima: o hook deixou de forçar `emailVerified` (`inviteSignupData` em `src/lib/auth/createAuth.ts`); cadastro por e-mail e senha fica `false` e o login social mantém o valor do provedor. Quando houver provedor de e-mail, a verificação de verdade (e o "esqueci a senha") entra por aqui; P8 continua bloqueada.
+**Atualização (2026-11-26):** Fase 6 (D-F6-2): sem provedor de e-mail, a recuperação passou a ser o **link de nova senha gerado pelo administrador** em `/admin/equipe` ("Nova senha", `createPasswordResetLink`, válido por 24 h, uso único, compartilhado como o convite) e a página pública `/redefinir-senha`; o `/entrar` diz "Esqueceu a senha? Peça ao administrador um link para criar outra.". O pedido por e-mail (`/request-password-reset`) continua respondendo `RESET_PASSWORD_DISABLED`. P8 continua **bloqueada no dono**: e-mail transacional exige domínio próprio (D-F6-1, só `*.vercel.app` no piloto), e a verificação de e-mail e o "esqueci a senha" por e-mail seguem para depois.
 
 #### P10 — Credenciais OAuth do Google não criadas 🟡
 **Estado:** Bloqueado no dono
@@ -450,6 +586,7 @@ OAuth do tipo Web com os URIs de redirecionamento `http://localhost:3000/api/aut
 rodar o checklist manual de login social (spec §12), incluindo convite novo, usuário existente e
 usuário sem conta (deve voltar com "Conta não encontrada. Peça um convite.").
 **Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** C6-1: o Google fica desligado no piloto (sem `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` na Vercel o botão não aparece); entrar é por e-mail e senha ou passkey. A pendência continua bloqueada no dono.
 
 ## 4. Teto aceito
 
@@ -470,6 +607,7 @@ connection strings (com e sem pooler) para `.env.local`.
 também com `verify-full`.
 **Atualização (2026-11-20):** o local passou para a branch de **desenvolvimento** do Neon; as URLs de
 produção ficaram comentadas no `.env.local` — mover para a Vercel e apagar de lá.
+**Atualização (2026-11-26):** a produção usa um projeto Neon **novo** (C6-4, região `sa-east-1`, plano Free), não a branch de desenvolvimento deste `.env.local`. Na Vercel entra só `DATABASE_URL_POOLED`; a URL direta fica só no shell da migração (runbook, passo B4). As URLs de produção comentadas do `.env.local` saem por mão do dono (passo B2). O que falta é a Parte B (go-live), fora do código.
 
 #### P3 — Tamanhos do Button abaixo do alvo mínimo de toque 🟡
 **Estado:** Resolvido
@@ -614,3 +752,27 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Correção:** — (opção: o `SectorPicker` repassar os parâmetros atuais da URL, validados, ao `chooseSectorAction`)
 **Registrado em:** 2026-11-24
 **Atualização (2026-11-25):** resolvida na Fase 5 (Tarefa 3). O `SectorPicker` ganhou a prop `query` (o query canônico dos filtros da tela, sem o setor) e o `chooseSectorSchema` a aceita (texto de até 2.000 caracteres). O servidor nunca usa a URL do cliente: `sectorRedirectHref` (`src/features/handovers/sectorRedirect.ts`) reinterpreta o query pelo mesmo parse da tela, que nunca lança, e remonta o href com o setor novo. Em `/passagens` seguem o período e a situação e caem o turno e a página; em `/solicitacoes` seguem a visão, o destino, o período e a busca e caem o criador e a paginação (o item de cada tela, que é do setor antigo, entra nessa lista nas Tarefas 5 e 6); `/` e `/passagens/nova` ignoram o query. Sem `query` o destino é o de sempre.
+
+#### P16 — Cookie closery_invite não é limpo depois do cadastro 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/lib/auth/createAuth.ts` · `src/lib/auth/inviteCookie.ts`
+**Impacto:** o cookie com o token do convite fica 1 h no navegador depois do cadastro (aparelho compartilhado).
+**Correção:** — (opção: expirar em `user.create.after` com `ctx.setCookie(INVITE_COOKIE, "", { maxAge: 0, path: "/" })`)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** resolvida na Fase 6: o hook `user.create.after` apaga o cookie `closery_invite` (`setCookie` com `maxAge: 0` e os mesmos atributos do cookie original, com `Secure` em produção) logo depois de gastar o convite; o cadastro recusado não mexe nele. Teste: `src/lib/auth/hardening.test.ts`.
+
+#### P22 — Limite de tentativas no piloto: confirmar IP e números 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/lib/auth/createAuth.ts` (`rateLimit`)
+**Impacto:** na Vercel o IP do cliente precisa ser lido (sem o aviso de IP não determinado) e 30/10 por minuto podem não bastar na troca de turno com rede única (vários operadores no mesmo IP).
+**Correção:** — (opção: Fase 6: confirmar na Vercel e ajustar os números)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** resolvida no código na Fase 6: `advanced.ipAddress.ipAddressHeaders: ["x-forwarded-for"]`, só ele (a Vercel o sobrescreve com o IP do cliente; `x-real-ip` e `x-vercel-forwarded-for` seriam forjáveis fora dela). Sem IP resolvível o limite cai num balde global por rota, nunca num balde por valor forjado, e o aviso do Better Auth sai pelo `logServerError` como `better-auth:ip-desconhecido`. Os números ficam (30 por minuto no login, 10 no cadastro por IP): vários operadores atrás do mesmo IP do galpão dividem o balde, e se isso atrapalhar no piloto basta subir o número. Testes: `hardening.test.ts` e `ipUnknown.test.ts`. A conferência no primeiro deploy (nenhuma linha `better-auth:ip-desconhecido` no log da Vercel depois de uma tentativa de login) é o passo B7 da Parte B.
+
+#### P12 — Tamanhos gerados pelo shadcn abaixo do mínimo de toque 🟡
+**Estado:** Resolvido
+**Arquivos:** `src/components/ui/sidebar.tsx` · `src/components/ui/input-group.tsx`
+**Impacto:** `SidebarMenuButton` `sm` (h-7) e modo ícone (`size-8!`), `InputGroup` (h-8), `InputGroupButton` `icon-sm` (size-8) e `SidebarInput` (h-8) ficam abaixo de 44px no celular (`ui-rules.md §1.4`); a correção da P3 não os cobriu.
+**Correção:** — (opção: aplicar o mesmo padrão `max-md:` da P3 (44px abaixo de `md`) com teste guarda de classes)
+**Registrado em:** 2026-11-20
+**Atualização (2026-11-26):** resolvida na Fase 6 (Tarefa 7). A pendência estava desatualizada: `Input`, `NativeSelect`, `Button` e o `SidebarMenuButton` padrão já têm `max-md:h-11` (P3), e os primitivos que ela cita (`SidebarMenuButton` `sm` e ícone, `InputGroup`, `InputGroupButton` `icon-sm`, `SidebarInput`) não aparecem em nenhuma tela. Os achados reais eram links soltos de componentes nossos, medidos a 390x844: `Greeting` ("Ver o dashboard", 120x21), `RequestDetail` ("Ver todas as solicitações", 159x20), `DashboardStock` (link da última contagem, 80x32) e o total do `SpendingRing` (9x44); os quatro ganharam o padrão do link solto (`ui-rules.md §1.4`). O guarda permanente `e2e/touch-targets.spec.ts` mede as telas do operador e do admin (e os diálogos) e reprova qualquer controle abaixo de 44 px, inclusive um primitivo da lista acima se um dia aparecer numa tela. Exceções medidas e justificadas: o link `inline` dentro de uma frase e o link esticado do `RequestCard` (`after:inset-0`, cuja área é o cartão inteiro). Não medido: iOS e Android reais, tema escuro e o contêiner do link esticado na Lista (ver P70).

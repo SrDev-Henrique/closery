@@ -13,6 +13,8 @@ export const AUTH_ERROR_MESSAGES: Readonly<Record<string, string>> =
     USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: ALREADY_EXISTS,
     INVALID_EMAIL_OR_PASSWORD: "E-mail ou senha incorretos.",
     INVALID_EMAIL: "Informe um e-mail válido.",
+    INVALID_TOKEN:
+      "Este link de redefinição venceu ou já foi usado. Peça outro ao administrador.",
     PASSWORD_TOO_SHORT: "A senha precisa ter pelo menos 8 caracteres.",
     PASSWORD_TOO_LONG: "A senha pode ter no máximo 128 caracteres.",
     email_not_found:

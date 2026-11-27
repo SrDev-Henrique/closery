@@ -3,10 +3,12 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { InviteSignup } from "@/components/auth/InviteSignup";
 import { InviteUnavailable } from "@/components/auth/InviteUnavailable";
+import { PrivacyLink } from "@/components/privacy/PrivacyLink";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -69,6 +71,9 @@ async function InviteContent({
           }
         />
       </CardContent>
+      <CardFooter>
+        <PrivacyLink />
+      </CardFooter>
     </Card>
   );
 }

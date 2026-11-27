@@ -14,7 +14,7 @@ export async function Greeting() {
       <p className="text-muted-foreground">
         <Link
           href="/dashboard"
-          className="underline underline-offset-4 hover:text-foreground"
+          className="underline underline-offset-4 hover:text-foreground max-md:inline-flex max-md:min-h-11 max-md:items-center"
         >
           Ver o dashboard
         </Link>

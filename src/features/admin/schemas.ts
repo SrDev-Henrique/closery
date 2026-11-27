@@ -131,6 +131,8 @@ export const setPersonActiveSchema = z.object({
   active: activeSchema,
 });
 
+export const createPasswordResetLinkSchema = z.object({ userId: userIdSchema });
+
 const inviteeLabelSchema = z
   .string({ error: INVALID_INPUT_MESSAGE })
   .transform((raw, ctx) => {
@@ -166,6 +168,9 @@ export type CreateItemInput = z.infer<typeof createItemSchema>;
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 export type UpdatePersonInput = z.infer<typeof updatePersonSchema>;
 export type SetPersonActiveInput = z.infer<typeof setPersonActiveSchema>;
+export type CreatePasswordResetLinkInput = z.infer<
+  typeof createPasswordResetLinkSchema
+>;
 export type CreateInviteInput = z.infer<typeof createInviteSchema>;
 export type CancelInviteInput = z.infer<typeof cancelInviteSchema>;
 

@@ -74,6 +74,34 @@ describe("SignInPanel", () => {
     expect(screen.getByText("O acesso é só por convite.")).toBeInTheDocument();
   });
 
+  it("o rodapé diz que a senha esquecida se resolve com o administrador, depois do aviso do convite", () => {
+    setup();
+    const notes = screen
+      .getAllByText(/convite.|Esqueceu a senha?/)
+      .map((node) => node.textContent);
+    expect(notes).toEqual([
+      "O acesso é só por convite.",
+      "Esqueceu a senha? Peça ao administrador um link para criar outra.",
+    ]);
+    expect(screen.queryByText(/Esqueci a senha/)).not.toBeInTheDocument();
+  });
+
+  it("o rodapé tem o link para a página de privacidade, depois dos dois parágrafos", () => {
+    setup();
+    const link = screen.getByRole("link", { name: "Privacidade e seus dados" });
+    expect(link).toHaveAttribute("href", "/privacidade");
+    for (const text of [
+      "O acesso é só por convite.",
+      "Esqueceu a senha? Peça ao administrador um link para criar outra.",
+    ]) {
+      const paragraph = screen.getByText(text);
+      expect(
+        paragraph.compareDocumentPosition(link) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
   it("e-mail aceita autofill de passkey e senha usa o autocomplete certo", () => {
     setup();
     expect(screen.getByLabelText("E-mail")).toHaveAttribute(

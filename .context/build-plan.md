@@ -48,7 +48,7 @@ Detalhe completo na spec: `docs/superpowers/specs/2026-11-20-closery-passagem-de
 | **3 — Passagem** | rascunho, entregar, receber, corrigir, histórico | ✅ |
 | **4 — Solicitações** | quadro · lista · tabela, detalhe, comentários, ligação com a passagem | ✅ |
 | **5 — Dashboard** | consultas, `metric-card` e `spending-ring` adaptados, CSV | ✅ |
-| **6 — Produção** | Vercel, domínio, e-mail (P8), piloto de uma semana com a equipe | ⬜ |
+| **6 — Produção** | código pronto: configuração da Vercel, cabeçalhos de segurança, log sem dado de pessoa, Sentry, redefinição de senha pelo link do administrador, `/privacidade`, smoke e runbook ✅ · go-live (Neon e Vercel de produção, migração, primeiro administrador, aprovação da empresa) e o piloto de uma semana: `.context/runbook-producao.md` ⬜ | 🟡 |
 
 **Metodologia por fase:** schema/servidor → tela → teste. Ao fim de cada fase: atualizar o
 tracker, rodar `check-types` + `lint` + `build` + testes, e registrar achados no `pendencias.md`.

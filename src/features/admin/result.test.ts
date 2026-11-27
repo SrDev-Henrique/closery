@@ -92,6 +92,7 @@ describe("códigos da Fase 4 (aditivos)", () => {
     SECTOR_INACTIVE: true,
     SECTOR_IN_USE: true,
     SELF_CHANGE: true,
+    PERSON_INACTIVE: true,
     LAST_ADMIN: true,
     INVITE_NOT_PENDING: true,
     SHIFT_INACTIVE: true,
@@ -109,8 +110,8 @@ describe("códigos da Fase 4 (aditivos)", () => {
     INTERNAL: true,
   };
 
-  it("a lista do contrato tem os 22 códigos, sem repetição", () => {
-    expect(Object.keys(CONTRACT)).toHaveLength(22);
+  it("a lista do contrato tem os 23 códigos, sem repetição", () => {
+    expect(Object.keys(CONTRACT)).toHaveLength(23);
   });
 
   it("fail aceita os 2 códigos novos e os de antes continuam valendo", () => {

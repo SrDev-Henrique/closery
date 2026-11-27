@@ -11,12 +11,13 @@
 
 ## ▸ Próximo passo
 
-- **2026-11-25 — Fases 0, 1, 2, 3, 4 e 5 concluídas. Próximo: plano de implementação da Fase 6
-  (Produção: Vercel, domínio, e-mail transacional (P8) e o piloto de uma semana com a equipe)** com a
-  skill `writing-plans`, a partir da spec §13 (`docs/superpowers/specs/2026-11-20-closery-passagem-de-turno-design.md`).
-  O produto está completo para o piloto: passagem, solicitações e dashboard com CSV.
+- **2026-11-26 — Fases 0 a 5 concluídas e o código da Fase 6 (Produção) pronto. Próximo: o go-live (Parte B),
+  conduzido pelo controlador com o dono, passo a passo e com confirmação do dono em cada passo voltado para
+  fora, em `.context/runbook-producao.md`:** proteção da `main` (P62), Neon e Vercel de produção, migração,
+  `bun run smoke`, `admin:invite` em produção, aprovação da empresa para `/privacidade` (P64) e só então os
+  convites reais e a semana de piloto.
 - **Neon ligado** (P1 resolvida, 2026-11-20). P6/P7/P8 só travam Apple, Facebook e "esqueci a
-  senha".
+  senha" **por e-mail** (a recuperação é o link do administrador).
 
 ---
 
@@ -96,7 +97,23 @@
 - ✅ Critério de pronto (spec §12): cada número bate com um oráculo independente (JS sobre leitores crus), num mundo com passagens confirmadas, aguardando, não confirmadas, sem passagem e uma correção (2026-11-25)
 - ✅ P13, P19, P45 e P48 resolvidas; pendências novas P53–P61; P24 e P34 ganharam `Atualização` (2026-11-25)
 - ✅ Testes: Vitest (node + dom) com PGlite e Testing Library; E2E com 35 cenários (7 de acesso, 6 de cadastros, 6 de passagem, 9 de solicitações e 7 do dashboard). Verificado: `check-types`, `lint`, `test`, `test:e2e` (35 passed) e `build` verdes (2026-11-25)
-- ⬜ Deploy, domínio, e-mail e piloto: Fase 6
+- ⬜ Deploy e piloto: Fase 6 (o código está pronto; falta o go-live)
+
+## Fase 6 — Produção · 🟡
+
+- ✅ Configuração de produção: `vercel.json` (`gru1`, Bun fixado, previews desligados), `engines.node` `22.x`, cabeçalhos de segurança e noindex em três camadas (2026-11-26)
+- ✅ `logServerError`: erro inesperado sem mensagem, pilha nem parâmetro de SQL, em `runAction`, `/api/health` e nos limites de erro (2026-11-26)
+- ✅ `admin:invite --confirmar-host` e `bun run db:hosts` (a trava de host da migração) (2026-11-26)
+- ✅ Better Auth endurecido: IP do rate limit explícito (P22), cookie do convite apagado no cadastro (P16), identificador da redefinição com hash, sessões revogadas ao redefinir (2026-11-26)
+- ✅ Redefinição de senha por link gerado pelo administrador (24 h, uso único) e a página `/redefinir-senha`; "Esqueceu a senha?" no `/entrar` (2026-11-26)
+- ✅ Sentry só com DSN, `scrubEvent` e `global-error.tsx` (2026-11-26)
+- ✅ Alvos de toque de 44 px e o guarda E2E `touch-targets` (P12) (2026-11-26)
+- ✅ `/privacidade` (rascunho até a empresa aprovar) e os textos do primeiro acesso (2026-11-26)
+- ✅ `scripts/smoke.mjs` (`bun run smoke`) e `.context/runbook-producao.md` (2026-11-26)
+- ✅ P16, P22 e P12 resolvidas; pendências novas P62–P76; P1, P6, P7, P8 e P10 ganharam `Atualização` (2026-11-26)
+- ✅ Revisão final (três lentes) e a rodada de correções: o erro inesperado do Better Auth sai só pelo `logServerError` (`onAPIError.throw` + embrulho do `route.ts`), o `logServerError` nunca lança, o Sentry sem `BrowserTracing` nem client reports, o smoke com timeout, `--local` só em localhost e robots por linha, o `Voltar` de `/privacidade` (`BackLink`) e três textos da página mais fiéis à configuração, o guarda de 44 px medindo o convite e o `/bem-vindo`; o runbook ganhou o procedimento de conta tomada (P77) e outros acertos; pendências novas P77 a P80 (2026-11-26)
+- ✅ Testes: Vitest 4488 testes em 324 arquivos; E2E com 44 cenários (os 35 de antes, 2 de alvos de toque, 3 da redefinição de senha e 4 das páginas públicas). Verificado: `check-types`, `lint`, `test`, `test:e2e` (44 passed), `build` e o smoke local (7 OK, 1 FALHOU esperado, 2 PULADO) verdes (2026-11-27)
+- ⬜ Go-live (Parte B): proteção da `main`, Neon e Vercel de produção, migração, primeiro administrador, aprovação da empresa (P64), convites e a semana de piloto
 
 ## Histórico
 
@@ -108,3 +125,4 @@
 - **2026-11-21** — Fase 3 concluída: passagem de turno de ponta a ponta (rascunho com salvamento automático, entregar, receber, corrigir com motivo e histórico), P26 e P27 resolvidas. Plano em `docs/superpowers/plans/2026-11-21-fase-3-passagem.md`.
 - **2026-11-24** — Fase 4 concluída: solicitações de ponta a ponta (Quadro, Lista e Tabela, detalhe rápido em Sheet, cancelar com motivo, comentários, ligação com a passagem e o Início), P29, P33, P37 e P40 resolvidas. Plano em `docs/superpowers/plans/2026-11-23-fase-4-solicitacoes.md`.
 - **2026-11-25** — Fase 5 concluída: dashboard de ponta a ponta (passagens, controles, estoque e solicitações, com período, comparação e todo número como link para a lista filtrada) e exportação CSV; P13, P19, P45 e P48 resolvidas. Plano em `docs/superpowers/plans/2026-11-24-fase-5-dashboard.md`.
+- **2026-11-26** — Fase 6 (código) concluída: configuração de produção, log sanitizado, trava de host, Better Auth endurecido, redefinição de senha pelo link do administrador, Sentry, alvos de toque, `/privacidade`, smoke e runbook; P16, P22 e P12 resolvidas. Falta o go-live (Parte B). Plano em `docs/superpowers/plans/2026-11-25-fase-6-producao.md`.
