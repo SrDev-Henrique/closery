@@ -36,16 +36,26 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (scaffold, 2026-11-20)
 - **Local:** `src/components/ui/button.tsx`
 - **Propósito:** toda ação clicável.
-- **Como funciona:** `@base-ui/react/button` + `cva`. Variantes `default`, `outline`, `secondary`,
-  `ghost`, `destructive`, `link`; tamanhos `default`, `xs`, `sm`, `lg` (h-11), `icon`, `icon-xs`,
-  `icon-sm`, `icon-lg`. Composição com `render`, não `asChild`.
+- **Como funciona:** `@base-ui/react/button` + `cva`. Pílula (`rounded-full`) em todas as variantes e
+  tamanhos (C-V2, 2026-11-27). Variantes `default`, `outline`, `secondary`, `ghost`, `destructive`,
+  `link`, mais `surface` (`bg-card`, hover `bg-accent`: botão sobre o fundo da página),
+  `on-pastel` (`bg-on-pastel text-on-pastel-ink`, `active:scale-[.97]`: primário dentro de card
+  colorido) e `on-pastel-secondary` (`bg-on-pastel-secondary`, hover `-hover`: secundário dentro de
+  card colorido). Tamanhos `default`, `xs`, `sm`, `lg` (h-11), `icon`, `icon-xs`, `icon-sm`,
+  `icon-lg`, `pill` (48px, `font-heading` 16px/700, `px-[22px]`, `gap-2.5`, ícone 18px) e
+  `icon-pill` (44px redondo). Composição com `render`, não `asChild`. O tamanho do texto fica em
+  cada `size` (não na base) para `buttonVariants` usado cru em `<Link>` não ter dois `font-size`.
+  Padding do `pill` (protótipo): 22px nos primários `on-pastel`; 20px no `surface` ("Ver o
+  dashboard"), no `default` ("Ver solicitações") e nos secundários `on-pastel-secondary`, sempre por
+  `cn(buttonVariants({ variant, size: "pill" }), "px-5")` (o `cn` resolve o conflito com o
+  `px-[22px]`; nunca concatene as duas classes sem ele).
 - **Atenção:** todo tamanho tem h-9 / size-9 no desktop e `max-md:h-11` / `max-md:size-11` no
-  celular (`lg` e `icon-lg` são 44px sempre). Teste: `button.test.ts`. Para navegação use
+  celular (`lg`, `icon-lg` e `icon-pill` são 44px sempre; `pill` é 48px sempre). Teste: `button.test.ts`. Para navegação use
   `<Link className={buttonVariants()}>` (continua role link); `render={<Link />}` (com
   `nativeButton={false}`) vira role=button e só serve quando o papel de botão é o desejado.
 - **Usa:** tokens `primary`, `border`, `muted`, `ring`, `destructive`.
 - **Histórico:** 2026-11-20 — gerado pelo `shadcn init` (sem alteração). 2026-11-20 — P3: alvos de
-  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24).
+  toque (h-9 desktop, 44px no celular). 2026-11-21 — Fase 2: `shadcn add dialog` sobrescreve o arquivo; restaurado com `git checkout` (F2-24). 2026-11-27 — Visual do Início (Task 4): `rounded-full` em tudo (sai o `rounded-lg` e os `rounded-[min(...)]`, e o `in-data-[slot=button-group]:rounded-lg`); variantes `surface`, `on-pastel`, `on-pastel-secondary`; tamanhos `pill` e `icon-pill`; `text-sm font-medium` saiu da base para cada `size`.
 
 ### Input
 - **Status:** ✏️ estendido
@@ -99,9 +109,12 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/ui/card.tsx`
 - **Propósito:** superfície que agrupa um bloco de conteúdo.
 - **Como funciona:** `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardAction`,
-  `CardContent`, `CardFooter`; HTML puro.
+  `CardContent`, `CardFooter`; HTML puro. `Card` aceita `variant="default" | "feature"` (escreve
+  `data-variant`). `feature` = raio 32px, padding 32px (22px abaixo de 860px, via `--card-spacing`),
+  `gap-0`, sem `ring`, sem borda e sem sombra; o fundo vem do `className` (`bg-highlight`, etc.).
+  Num `feature` o conteúdo vai direto nos filhos: `CardHeader`/`CardContent` somariam o `px` deles.
 - **Usa:** tokens `card`, `card-foreground`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): variante `feature`; o `default` não mudou.
 
 ### Separator
 - **Status:** ✅ pronto (2026-11-20)
@@ -193,10 +206,13 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/ui/badge.tsx`
 - **Propósito:** etiqueta curta de estado ou papel.
-- **Como funciona:** variantes `default`, `secondary`, `destructive`, `outline`, `ghost`, `link`;
-  aceita `render`.
-- **Usa:** tokens `primary`, `secondary`, `destructive`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Como funciona:** pílula (`rounded-full`, `whitespace-nowrap`). Variantes `default`, `secondary`,
+  `destructive`, `outline`, `ghost`, `link`, mais `warning`, `info`, `success` (tokens de estado),
+  `neutral` (`bg-accent text-foreground`), `pastel-pending` e `pastel-confirmed` (claros nos dois
+  temas, para o cartão de turno). `size`: `default` (h-5, `font-medium`) e `md` (h-6, `px-2.5`,
+  `font-semibold`). Aceita `render`.
+- **Usa:** tokens `primary`, `secondary`, `destructive`, `warning`, `info`, `success`, `accent`, `pastel-pending`, `pastel-confirmed`.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Visual do Início (Task 4): `rounded-full` (era `rounded-4xl`), `whitespace-nowrap` já existia; variantes e `size="md"` novos.
 
 ### Toggle / ToggleGroup
 - **Status:** ✅ pronto (2026-11-21)

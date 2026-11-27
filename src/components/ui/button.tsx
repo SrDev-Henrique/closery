@@ -2,8 +2,11 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
+// Pílula em todo o app (C-V2). O tamanho do texto fica em cada `size` (não na
+// base): `buttonVariants` também é usado cru em <Link className={...}>, sem
+// twMerge, e duas classes de font-size na mesma string dependeriam da ordem do CSS.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -17,19 +20,31 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        // Sobre o fundo da página (ex.: "Ver o dashboard"): card, hover accent.
+        surface: "bg-card text-card-foreground hover:bg-accent",
+        // Primário dentro de card colorido: tinta fixa, afunda ao apertar.
+        "on-pastel":
+          "bg-on-pastel text-on-pastel-ink active:scale-[.97] [transition-property:background-color,color,scale]",
+        // Secundário dentro de card colorido: fundo translúcido sobre o pastel.
+        "on-pastel-secondary":
+          "bg-on-pastel-secondary text-on-pastel hover:bg-on-pastel-secondary-hover",
       },
       size: {
         default:
-          "h-9 gap-1.5 px-3 max-md:h-11 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
-        xs: "h-9 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs max-md:h-11 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-9 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] max-md:h-11 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-11 gap-2 px-4 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
-        icon: "size-9 max-md:size-11",
+          "h-9 gap-1.5 px-3 text-sm font-medium max-md:h-11 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5",
+        xs: "h-9 gap-1 px-2 text-xs font-medium max-md:h-11 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-9 gap-1 px-2.5 text-[0.8rem] font-medium max-md:h-11 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-11 gap-2 px-4 text-sm font-medium has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        icon: "size-9 text-sm font-medium max-md:size-11",
         "icon-xs":
-          "size-9 rounded-[min(var(--radius-md),10px)] max-md:size-11 in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm":
-          "size-9 rounded-[min(var(--radius-md),12px)] max-md:size-11 in-data-[slot=button-group]:rounded-lg",
-        "icon-lg": "size-11",
+          "size-9 text-sm font-medium max-md:size-11 [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm": "size-9 text-sm font-medium max-md:size-11",
+        "icon-lg": "size-11 text-sm font-medium",
+        // 48px, Satoshi 16px/700 (Início e shell). Já acima do alvo de toque.
+        pill: "h-12 gap-2.5 px-[22px] font-heading text-base font-bold [&_svg:not([class*='size-'])]:size-[18px]",
+        // Controle redondo de 44px (botão do menu, etc.).
+        "icon-pill":
+          "size-11 text-sm font-medium [&_svg:not([class*='size-'])]:size-[18px]",
       },
     },
     defaultVariants: {

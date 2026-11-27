@@ -1,17 +1,36 @@
 import { cn } from "cn";
 import type * as React from "react";
 
+const CARD_SHARED =
+  "group/card flex flex-col overflow-hidden bg-card text-sm text-card-foreground";
+
+// Card das telas de hoje: não muda.
+const CARD_DEFAULT =
+  "gap-(--card-spacing) rounded-xl py-(--card-spacing) ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl";
+
+// Cards grandes do Início: raio 32px, padding 32px (22px abaixo de 860px), sem
+// anel, sem borda e sem sombra (separam-se pela cor). O conteúdo vai direto nos
+// filhos; CardHeader/CardContent somariam o próprio px e não são usados aqui.
+const CARD_FEATURE =
+  "gap-0 rounded-[32px] p-(--card-spacing) [--card-spacing:--spacing(8)] max-md:[--card-spacing:--spacing(5.5)]";
+
 function Card({
   className,
   size = "default",
+  variant = "default",
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & {
+  size?: "default" | "sm";
+  variant?: "default" | "feature";
+}) {
   return (
     <div
       data-slot="card"
       data-size={size}
+      data-variant={variant}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground ring-1 ring-foreground/10 [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        CARD_SHARED,
+        variant === "feature" ? CARD_FEATURE : CARD_DEFAULT,
         className,
       )}
       {...props}
