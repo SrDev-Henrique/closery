@@ -346,6 +346,72 @@ describe("SectorPicker", () => {
     expect(radio("Todos os setores")).toHaveAttribute("aria-checked", "true");
   });
 
+  it("o texto visível do 'Todos os setores' é 'Todos', o nome acessível segue inteiro", () => {
+    render(
+      <SectorPicker
+        sectors={[ULD]}
+        selectedId="todos"
+        path="/passagens"
+        allowAll
+      />,
+    );
+
+    const item = radio("Todos os setores");
+    expect(item).toHaveAttribute("aria-label", "Todos os setores");
+    expect(within(item).getByText("Todos")).toBeInTheDocument();
+    expect(item).not.toHaveTextContent("Todos os setores");
+  });
+
+  it("com o trilho rolando, a opção marcada entra na tela ao montar e a cada troca", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    const sectors = [ULD, CARGA, OPERACOES, ECO, GELO];
+    const { rerender } = render(
+      <SectorPicker sectors={sectors} selectedId={GELO.id} path="/" allowAll />,
+    );
+
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(scrollIntoView.mock.contexts[0]).toBe(radio("Gelo"));
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ block: "nearest", inline: "nearest" }),
+    );
+
+    rerender(
+      <SectorPicker sectors={sectors} selectedId={ULD.id} path="/" allowAll />,
+    );
+    expect(scrollIntoView).toHaveBeenCalledTimes(2);
+    expect(scrollIntoView.mock.contexts[1]).toBe(radio("ULD"));
+  });
+
+  it("para quem pede menos movimento a rolagem não é suave", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: true }));
+    render(
+      <SectorPicker
+        sectors={[ULD, CARGA, OPERACOES, ECO]}
+        selectedId={ULD.id}
+        path="/"
+        allowAll
+      />,
+    );
+    vi.unstubAllGlobals();
+
+    expect(scrollIntoView).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: "auto" }),
+    );
+  });
+
+  it("até 4 opções não há rolagem para acompanhar", () => {
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    expect(scrollIntoView).not.toHaveBeenCalled();
+  });
+
   it("sem allowAll não há 'Todos os setores'", () => {
     render(<SectorPicker sectors={[ULD]} selectedId={ULD.id} path="/" />);
 

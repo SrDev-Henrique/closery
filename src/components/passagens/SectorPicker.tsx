@@ -4,7 +4,13 @@ import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
 import { cn } from "cn";
 import { unstable_rethrow } from "next/navigation";
-import { type CSSProperties, useOptimistic, useTransition } from "react";
+import {
+  type CSSProperties,
+  useEffect,
+  useOptimistic,
+  useRef,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 
 import { chooseSectorAction } from "@/app/(app)/actions";
@@ -15,7 +21,13 @@ import type { SectorPickerPath } from "@/features/handovers/urls";
 import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
 
 // "Todos os setores" não é um setor: não tem cor, então não tem bolinha.
-type PickerOption = { id: string; name: string; color: SectorColor | null };
+type PickerOption = {
+  id: string;
+  name: string;
+  // Texto visível; o nome acessível (aria-label) segue sendo `name`.
+  label: string;
+  color: SectorColor | null;
+};
 
 // Largura mínima do segmento, só com mais de 4 opções (o protótipo foi feito
 // para 4: até 4, os segmentos dividem o trilho e, no celular, cabem nos 100%):
@@ -48,11 +60,41 @@ export function SectorPicker({
   // o valor volta sozinho ao `selectedId` que o servidor mandou.
   const [shownId, setShownId] = useOptimistic<string>(selectedId);
   const options: readonly PickerOption[] = allowAll
-    ? [...sectors, { id: ALL_SECTORS, name: "Todos os setores", color: null }]
-    : sectors;
+    ? [
+        ...sectors.map((sector) => ({ ...sector, label: sector.name })),
+        // Visível "Todos" (o grupo já se chama "Setor"; "Todos os setores"
+        // truncava). O aria-label mantém "Todos os setores" e contém o texto
+        // visível (WCAG 2.5.3), então o leitor de tela não perde o contexto.
+        {
+          id: ALL_SECTORS,
+          name: "Todos os setores",
+          label: "Todos",
+          color: null,
+        },
+      ]
+    : sectors.map((sector) => ({ ...sector, label: sector.name }));
   const count = options.length;
   const scrolls = count > MAX_WITHOUT_SCROLL;
   const index = options.findIndex((option) => option.id === shownId);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  // Com o trilho rolando (celular), a opção marcada entra na tela ao montar e a
+  // cada troca; sem animação para quem pede menos movimento.
+  useEffect(() => {
+    if (!scrolls || index < 0) return;
+    const checked = trackRef.current?.querySelector<HTMLElement>(
+      '[role="radio"][aria-checked="true"]',
+    );
+    if (!checked) return;
+    const reduce =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    checked.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [index, scrolls]);
 
   function choose(sectorId: string) {
     if (sectorId === selectedId) return;
@@ -81,8 +123,9 @@ export function SectorPicker({
       className="flex h-12 w-[min(100%,max(30rem,calc(var(--n)*6.5rem+0.5rem)))] overflow-x-auto rounded-full bg-seg p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       <div
+        ref={trackRef}
         className={cn(
-          "relative flex flex-1",
+          "relative flex flex-1 shrink-0",
           scrolls ? "min-w-[max(100%,calc(var(--n)*6.5rem))]" : "min-w-0",
         )}
       >
@@ -116,7 +159,7 @@ export function SectorPicker({
                 )}
               />
             )}
-            <span className="truncate">{option.name}</span>
+            <span className="truncate">{option.label}</span>
           </Radio.Root>
         ))}
       </div>
