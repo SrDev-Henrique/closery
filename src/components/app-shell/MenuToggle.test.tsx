@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { MenuToggle } from "@/components/app-shell/MenuToggle";
 import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
@@ -50,6 +50,45 @@ describe("MenuToggle", () => {
     expect(button).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(button);
     expect(button).toHaveAttribute("aria-expanded", "false");
+  });
+
+  describe("no celular (abaixo de 860px)", () => {
+    // O useIsMobile lê window.innerWidth (o matchMedia do setup só avisa a
+    // troca). 390px é o celular dos E2E.
+    const desktopWidth = window.innerWidth;
+    const setWidth = (width: number) =>
+      Object.defineProperty(window, "innerWidth", {
+        configurable: true,
+        writable: true,
+        value: width,
+      });
+
+    afterEach(() => {
+      setWidth(desktopWidth);
+    });
+
+    it("aria-expanded segue a gaveta (openMobile), não a barra do desktop", async () => {
+      setWidth(390);
+      setup();
+      const button = screen.getByRole("button", { name: "Alternar menu" });
+      // A barra do desktop nasce aberta (`open` = true); a gaveta, fechada.
+      await waitFor(() =>
+        expect(button).toHaveAttribute("aria-expanded", "false"),
+      );
+      expect(screen.getByLabelText("estado da barra")).toHaveTextContent(
+        "expanded",
+      );
+
+      await userEvent.click(button);
+      expect(button).toHaveAttribute("aria-expanded", "true");
+
+      await userEvent.click(button);
+      expect(button).toHaveAttribute("aria-expanded", "false");
+      // Abrir e fechar a gaveta não recolhe a barra do desktop.
+      expect(screen.getByLabelText("estado da barra")).toHaveTextContent(
+        "expanded",
+      );
+    });
   });
 
   it("clicar alterna a barra lateral", async () => {
