@@ -140,10 +140,10 @@ export function AppSidebar({
         <div className="flex items-center gap-3 rounded-[24px] bg-card p-3">
           <UserAvatar src={avatarSrc} size={44} tilt={-4} />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="truncate font-heading text-[15px] font-bold">
+            <span className="truncate font-heading text-[15px] leading-[normal] font-bold">
               {userName}
             </span>
-            <span className="truncate text-[12.5px] text-muted-foreground">
+            <span className="truncate text-[12.5px] leading-[normal] text-muted-foreground">
               {userEmail}
             </span>
           </div>
