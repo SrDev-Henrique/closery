@@ -489,6 +489,7 @@
 - **`next/font/local`:** `localFont` em `src/app/layout.tsx` com os 3 pesos (`src` em array, `path` **literal** e relativo ao
   `layout.tsx`), `variable: "--font-satoshi"`, `display: "swap"`, `fallback: ["Geist", "system-ui", "sans-serif"]`. O Next gera o
   ajuste de fallback (Arial) sozinho (`adjustFontFallback`). `globals.css`: `--font-heading: var(--font-satoshi)`; o utilitário é `font-heading`.
+- **Artefato público:** o trace do Playwright guarda os recursos da página (a fonte entra) nos snapshots do DOM. Por isso, no CI, `playwright.config.ts` grava o trace com `snapshots: false` e `sources: false` (ficam prints, passos e console); nada de `.woff2` em artefato público. Travado em `test/playwrightTrace.test.ts`.
 - **Glifos:** `ª` e `º` **não existem** na Satoshi e caem na próxima fonte da pilha (Geist). Nada a fazer; só não conte com eles no display.
 
 ## 18. Tema (próprio, sem next-themes) · visual novo

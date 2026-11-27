@@ -4,6 +4,18 @@ import { E2E_APP_PORT, E2E_DATABASE_URL, E2E_DB_PORT } from "./e2e/db";
 
 const APP_URL = `http://localhost:${E2E_APP_PORT}`;
 
+// No CI o trace (que vai no artefato do relatório) fica com prints, passos e console, sem
+// snapshots do DOM nem fontes do código: os snapshots guardam os recursos da página, e o
+// .woff2 da Satoshi não pode ir para artefato público (licença ITF FFL). Fora do CI, completo.
+const TRACE = process.env.CI
+  ? ({
+      mode: "retain-on-failure",
+      snapshots: false,
+      screenshots: true,
+      sources: false,
+    } as const)
+  : ("retain-on-failure" as const);
+
 export default defineConfig({
   testDir: "./e2e",
   // Um único PGlite serializa tudo: testes em paralelo só se atrapalhariam.
@@ -12,7 +24,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
-  use: { baseURL: APP_URL, trace: "retain-on-failure" },
+  use: { baseURL: APP_URL, trace: TRACE },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   // Em array os servidores sobem em ordem e cada um espera o anterior ficar
   // pronto: primeiro o banco, depois o app (o build já precisa do banco).
