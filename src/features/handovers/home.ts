@@ -170,7 +170,7 @@ async function loadMine(
     handoverId: row.id,
     ref,
     shift: chosen,
-    // O check handover_status_consistent garante quem entregou (e quem
+    // O check handover_state_consistent garante quem entregou (e quem
     // confirmou, na confirmada). O "" é o mesmo fallback do nome, para uma
     // linha fora do check; o HomeCards não gera avatar com id vazio.
     deliveredById: row.deliveredBy ?? "",

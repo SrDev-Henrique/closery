@@ -68,11 +68,13 @@ async function expectPastelFocusRing(
   await expect(target).toHaveCSS("outline-offset", "2px");
   await expect(target).toHaveCSS("outline-color", ink);
   // Toda sombra do box-shadow com espalhamento 0: o anel de 3px não sobra.
-  await expect
-    .poll(() =>
-      target.evaluate((element) => getComputedStyle(element).boxShadow),
-    )
-    .not.toMatch(/0px 0px 0px [1-9]/);
+  // Espera as transições do foco terminarem e só então lê uma vez: um
+  // `expect.poll(...).not` passaria na primeira leitura do meio da transição.
+  const boxShadow = await target.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((a) => a.finished));
+    return getComputedStyle(element).boxShadow;
+  });
+  expect(boxShadow).not.toMatch(/0px 0px 0px [1-9]/);
 }
 
 test("primeiro acesso: o cartão aparece, 'Agora não' o esconde e a dispensa sobrevive ao recarregar", async ({

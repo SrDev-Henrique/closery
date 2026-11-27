@@ -417,7 +417,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 **4. Dados.** Nenhuma consulta nova; só campos a mais.
 - **`MyShiftState`:** os estados `delivered` e `confirmed` ganham `deliveredById: string` e `confirmedById: string | null`.
   - O `loadMine` (`src/features/handovers/home.ts`) preenche os dois com `row.deliveredBy` e `row.confirmedBy`.
-  - O check `handover_status_consistent` garante os dois numa passagem confirmada.
+  - O check `handover_state_consistent` garante os dois numa passagem confirmada.
   - Se a linha escapar do check, o `deliveredById` cai em `""`, como o nome já cai.
 - **`HomeCards` (servidor):** gera os data URIs com `avatarDataUri` e os passa ao `MyShiftCard` nas props novas `deliveredAvatarSrc` e `confirmedAvatarSrc` (`string | null`, padrão `null`).
   - Id vazio ou nulo não vira avatar, porque o `avatarDataUri` recusa semente vazia.

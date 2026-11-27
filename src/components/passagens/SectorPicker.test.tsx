@@ -411,6 +411,9 @@ describe("SectorPicker", () => {
       }
       saved.clear();
       vi.unstubAllGlobals();
+      // `unstubAllGlobals` não desfaz `spyOn`: restaura os espiões da janela.
+      for (const spy of windowScrolls) spy.mockRestore();
+      windowScrolls = [];
     });
 
     function overflow(scroll: number, client: number) {

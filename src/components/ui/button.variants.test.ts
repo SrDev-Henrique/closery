@@ -186,7 +186,8 @@ describe("buttonVariants — foco visível nos cartões coloridos (F1, G1)", () 
   // Sem o `focus-visible:outline-solid` o contorno resolve para `none`.
   // O `ring-0!` (importante) apaga o anel da base nos dois caminhos: cru num
   // <Link> (as duas classes ficam e o `.ring-3` venceria pela ordem do CSS) e
-  // pelo `cn` (o twMerge só descarta o `ring-3`, que é o que se quer).
+  // pelo `cn` (o twMerge trata `ring-0!` e `ring-3` como grupos diferentes e
+  // mantém os dois; quem apaga o anel é o `!important` do `ring-0!`).
   it.each([
     "on-pastel",
     "on-pastel-secondary",
