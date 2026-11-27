@@ -1153,7 +1153,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** o Sheet do detalhe rápido (rota interceptada `@detalhe/(.)solicitacoes/[id]`).
 - **Como funciona:** `"use client"`. `open` é constante: o slot só existe enquanto a URL é a do detalhe, e estado local não reabriria sob a Activity. Fechar (Escape, fundo ou o botão com texto "Fechar") chama `router.back()` uma vez só: a trava `closing` (um `ref` liberado no efeito de montagem) impede dois `back()` antes de a navegação terminar. O X só com ícone do primitivo fica desligado (`showCloseButton={false}`): o botão "Fechar" tem texto.
 - **Usa:** `Sheet`, `SheetContent`, `SheetClose`, `Button`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: o teste da trava usa `Activity` com a mesma instância; Escape num diálogo de dentro do Sheet (cancelar, apagar comentário) fecha só o diálogo, coberto pelo E2E (b), sem mudança no código. O fallback de carregamento do slot `@detalhe/(.)solicitacoes/[id]` ganha `SheetTitle` `sr-only` "Carregando solicitação".
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 12). 2026-11-24 — revisão final: o teste da trava usa `Activity` com a mesma instância; Escape num diálogo de dentro do Sheet (cancelar, apagar comentário) fecha só o diálogo, coberto pelo E2E (b), sem mudança no código. O fallback de carregamento do slot `@detalhe/(.)solicitacoes/[id]` ganha `SheetTitle` `sr-only` "Carregando solicitação". 2026-11-27 — Task 15 (legibilidade): `data-[side=right]:w-full` no `SheetContent` (o `w-3/4` do Sheet vencia o `w-full`; em 390px o painel tinha 290px e "Mover para Em separação / Trânsito" ficava cortado na borda).
 
 ### RequestDetailSkeleton
 - **Status:** ✅ pronto (2026-11-24)

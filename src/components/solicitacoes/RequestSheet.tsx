@@ -31,7 +31,10 @@ export function RequestSheet({ children }: { children: ReactNode }) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full overflow-y-auto p-4 sm:max-w-xl"
+        // `data-[side=right]:w-full` troca o `w-3/4` do Sheet (o `w-full`
+        // sozinho perde para o seletor de atributo): no celular o painel ocupa
+        // a tela e os botões de status não ficam cortados na borda.
+        className="w-full overflow-y-auto p-4 data-[side=right]:w-full sm:max-w-xl"
       >
         <div className="flex justify-end">
           <SheetClose

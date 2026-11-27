@@ -36,6 +36,14 @@ describe("RequestSheet", () => {
     ).toBeInTheDocument();
   });
 
+  it("ocupa a largura toda no celular: o w-3/4 do Sheet deixava o botão de mudar status cortado na borda em 390px", () => {
+    setup();
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveClass("data-[side=right]:w-full");
+    expect(dialog).not.toHaveClass("data-[side=right]:w-3/4");
+  });
+
   it("o botão de fechar tem texto e é o único (sem o X só com ícone)", () => {
     setup();
 
