@@ -263,6 +263,8 @@ describe("MyShiftCard", () => {
     const icon = block.querySelector("svg");
     expect(icon).toHaveAttribute("aria-hidden", "true");
     expect(icon).toHaveClass("size-[18px]", "shrink-0");
+    // Traço do protótipo (2.2), o mesmo dos outros ícones do cartão.
+    expect(icon).toHaveAttribute("stroke-width", "2.2");
   });
 
   it("delivered: linha de entrega com o avatar de quem entregou (36px, +3°) e a frase em 15px/1.5", () => {
@@ -354,7 +356,10 @@ describe("MyShiftCard", () => {
     expect(block).not.toHaveClass("bg-on-pastel/10");
     expect(block).not.toHaveClass("h-7");
     expect(container.querySelector('[data-slot="badge"]')).toBeNull();
-    expect(block.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+    const icon = block.querySelector("svg");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveClass("size-[18px]", "shrink-0");
+    expect(icon).toHaveAttribute("stroke-width", "2.2");
   });
 
   it("confirmed: pilha com quem entregou por cima (+3°) e quem confirmou 8px por baixo (−4°), com nomes e horas", () => {
@@ -404,6 +409,28 @@ describe("MyShiftCard", () => {
     expect(only).toHaveAttribute("src", DELIVERED_AVATAR);
     expect(parentOf(only)).toHaveClass("relative", "z-1");
     expect(parentOf(only)).not.toHaveClass("-ml-2");
+  });
+
+  // Linha fora do check do banco: sem quem entregou (id vazio, então sem
+  // avatar) e com quem confirmou. A pilha fica só com quem confirmou: ele vira
+  // o primeiro (por cima, `z-1`, sem recuo) e mantém a própria inclinação.
+  it("confirmed só com o avatar de quem confirmou: ele fica sozinho, por cima, sem recuo e a −4°", () => {
+    const { container } = renderCard(
+      { ...CONFIRMED, deliveredById: "" },
+      { confirmedAvatarSrc: CONFIRMED_AVATAR },
+    );
+
+    const [only, ...rest] = avatarsIn(container);
+    expect(rest).toHaveLength(0);
+    expect(only).toHaveAttribute("src", CONFIRMED_AVATAR);
+    expect(parentOf(only)).toHaveClass("relative", "z-1");
+    expect(parentOf(only)).not.toHaveClass("-ml-2");
+    expect(parentOf(only).style.transform).toBe("rotate(-4deg)");
+    expect(
+      screen.getByText(
+        "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("confirmed sem avatares: a frase inteira e nenhuma imagem", () => {

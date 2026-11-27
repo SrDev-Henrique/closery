@@ -29,11 +29,13 @@ const SECONDARY = cn(
 // §6.4.1): largura inteira, no estilo do bloco "Fica para o próximo turno"
 // (raio 22px, padding 18px 22px), Satoshi 700/16px e ícone de 18px. O tom
 // escurece (`on-pastel/10`) ou esverdeia (`on-pastel-success-soft`) a cor do
-// setor por cima, então serve para qualquer setor.
+// setor por cima, então serve para qualquer setor. O `STATUS_TONE` é exportado
+// para o guarda de contraste (`themeContrast.test.ts`) ler o fundo dos blocos
+// daqui: o par medido é o mesmo que o cartão desenha.
 const STATUS_BLOCK =
   "flex items-center gap-2.5 self-stretch rounded-[22px] px-[22px] py-[18px] font-heading text-base leading-[normal] font-bold";
 
-const STATUS_TONE = {
+export const STATUS_TONE = {
   pending: { className: "bg-on-pastel/10 text-on-pastel", Icon: Clock },
   confirmed: {
     className: "bg-on-pastel-success-soft text-on-pastel-success",

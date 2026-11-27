@@ -17,6 +17,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { STATUS_TONE } from "@/components/passagens/MyShiftCard";
 import { buttonVariants } from "@/components/ui/button";
 
 /** Texto normal (WCAG AA). */
@@ -363,11 +364,26 @@ const SPEC_FIXED: Record<string, string> = {
   "on-pastel-success-soft": "rgba(46, 125, 79, 0.22)",
 };
 
+/** Valores do contrato que não são os do handoff: o título do teste diz qual é e por quê. */
+const NOT_FROM_HANDOFF: Record<string, (value: string) => string> = {
+  destructive: (value) =>
+    `valor ajustado para AA (${value}; decisão do dono, 2026-11-27)`,
+  "on-pastel-success": (value) =>
+    `valor corrigido (${value}; o do handoff, #14402a, dá 4,41:1 no lilás)`,
+};
+
+/** `[título, token, valor]` para o `it.each` da tabela do §4.1. */
+function specCases(spec: Record<string, string>): [string, string, string][] {
+  return Object.entries(spec).map(([name, value]) => [
+    `--${name} tem o ${NOT_FROM_HANDOFF[name]?.(value) ?? `valor do handoff (${value})`}`,
+    name,
+    value,
+  ]);
+}
+
 for (const [theme, selector] of THEMES) {
   describe(`tabela do §4.1 — tema ${theme}`, () => {
-    it.each(
-      Object.entries(SPEC[selector] ?? {}),
-    )("--%s tem o valor do handoff (%s)", (name, expected) => {
+    it.each(specCases(SPEC[selector] ?? {}))("%s", (_title, name, expected) => {
       expect(readToken(css, selector, name)).toEqual(parseColor(expected));
     });
 
@@ -404,9 +420,7 @@ for (const [theme, selector] of THEMES) {
 }
 
 describe("tabela do §4.1 — cores fixas", () => {
-  it.each(
-    Object.entries(SPEC_FIXED),
-  )("--%s tem o valor do handoff (%s)", (name, expected) => {
+  it.each(specCases(SPEC_FIXED))("%s", (_title, name, expected) => {
     expect(fixed(name)).toEqual(parseColor(expected));
   });
 });
@@ -708,11 +722,41 @@ describe("o validador reprova o que deve reprovar", () => {
 
 // ---------------------------------------------------------------- contraste: bloco "Aguardando recebimento"
 /**
- * O bloco "Aguardando recebimento" do cartão de turno (spec §6.4.1) é `bg-on-pastel/10`: o token
- * `on-pastel` com 10% de opacidade, sem token próprio. O guarda compõe essa mistura sobre a cor de
- * cada setor e mede a tinta `on-pastel`. O "Confirmada" está em OVERLAY_CASES, com os tokens dele.
+ * O bloco "Aguardando recebimento" do cartão de turno (spec §6.4.1) é `bg-on-pastel/N`: o token
+ * `on-pastel` com N% de opacidade, sem token próprio. O N vem da classe do próprio componente
+ * (`STATUS_TONE` do `MyShiftCard`), uma fonte só. O guarda compõe essa mistura sobre a cor de cada
+ * setor e mede a tinta `on-pastel`. O "Confirmada" está em OVERLAY_CASES, com os tokens dele; um
+ * teste abaixo confere que o componente usa esses tokens.
  */
-const PENDING_BLOCK_ALPHA = 0.1;
+function pendingBlockAlpha(): number {
+  const names = STATUS_TONE.pending.className.split(/\s+/);
+  const hits = names.flatMap(
+    (name) => /^bg-on-pastel\/(\d+)$/.exec(name)?.[1] ?? [],
+  );
+  if (hits.length !== 1 || !names.includes("text-on-pastel")) {
+    throw new Error(
+      `o bloco pendente deveria ser bg-on-pastel/N com text-on-pastel: "${STATUS_TONE.pending.className}"`,
+    );
+  }
+  return Number(hits[0]) / 100;
+}
+
+const PENDING_BLOCK_ALPHA = pendingBlockAlpha();
+const PENDING_BLOCK = `on-pastel/${Math.round(PENDING_BLOCK_ALPHA * 100)}`;
+
+describe("blocos de status do cartão de turno: o guarda mede o que o componente desenha", () => {
+  it("o pendente é bg-on-pastel/N + text-on-pastel, com N entre 1 e 99", () => {
+    expect(PENDING_BLOCK_ALPHA).toBeGreaterThan(0);
+    expect(PENDING_BLOCK_ALPHA).toBeLessThan(1);
+  });
+
+  it("o 'Confirmada' usa os tokens on-pastel-success-soft e on-pastel-success (os de OVERLAY_CASES)", () => {
+    expect(STATUS_TONE.confirmed.className.split(/\s+/).sort()).toEqual([
+      "bg-on-pastel-success-soft",
+      "text-on-pastel-success",
+    ]);
+  });
+});
 
 function pendingBlockRatio(base: string): number {
   const ink = solid(fixed("on-pastel"), "on-pastel");
@@ -723,12 +767,12 @@ function pendingBlockRatio(base: string): number {
   return contrast(ink, block);
 }
 
-describe("contraste do bloco 'Aguardando recebimento' (on-pastel/10 sobre a cor do setor)", () => {
+describe(`contraste do bloco 'Aguardando recebimento' (${PENDING_BLOCK} sobre a cor do setor)`, () => {
   if (process.env.VITEST_PRINT_THEME_CONTRAST) {
     it("imprime a matriz medida", () => {
       const lines = SECTOR_TOKENS.map(
         (base) =>
-          `on-pastel sobre on-pastel/10 em ${base}: ${pendingBlockRatio(base).toFixed(2)}:1`,
+          `on-pastel sobre ${PENDING_BLOCK} em ${base}: ${pendingBlockRatio(base).toFixed(2)}:1`,
       );
       console.log(`\n[bloco Aguardando recebimento]\n${lines.join("\n")}`);
       expect(lines).toHaveLength(SECTOR_TOKENS.length);
@@ -737,11 +781,11 @@ describe("contraste do bloco 'Aguardando recebimento' (on-pastel/10 sobre a cor 
 
   it.each(
     SECTOR_TOKENS,
-  )("on-pastel sobre on-pastel/10 em cima de %s (≥4,5:1)", (base) => {
+  )(`on-pastel sobre ${PENDING_BLOCK} em cima de %s (≥4,5:1)`, (base) => {
     const ratio = pendingBlockRatio(base);
     expect(
       ratio,
-      `on-pastel sobre on-pastel/10 em ${base}: ${ratio.toFixed(2)}:1`,
+      `on-pastel sobre ${PENDING_BLOCK} em ${base}: ${ratio.toFixed(2)}:1`,
     ).toBeGreaterThanOrEqual(TEXT_MIN);
   });
 });

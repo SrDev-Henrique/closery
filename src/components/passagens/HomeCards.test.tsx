@@ -296,6 +296,32 @@ describe("HomeCards", () => {
       expect(shiftCardAvatars()).toEqual(["data:image/svg+xml,u-ana"]);
     });
 
+    it("confirmada com id vazio de quem entregou e o id de quem confirmou: só o avatar de quem confirmou", () => {
+      renderCards({
+        home: home({ mine: { ...CONFIRMED, deliveredById: "" } }),
+      });
+
+      expect(shiftCardAvatars()).toEqual(["data:image/svg+xml,u-bruno"]);
+    });
+
+    // Comportamento aceito e documentado (revisão do pack, Minor 2): o avatar
+    // é decorativo (`alt=""`) e nasce do id, então aparece mesmo quando o nome
+    // de quem confirmou não foi achado e a frase diz "outra pessoa". Se o dono
+    // decidir esconder o avatar nesse caso, este teste muda junto.
+    it("confirmada com o id de quem confirmou mas sem o nome: a frase diz 'outra pessoa' e o avatar dela aparece", () => {
+      renderCards({
+        home: home({ mine: { ...CONFIRMED, confirmedByName: null } }),
+      });
+
+      expect(
+        screen.getByText(/Confirmada por outra pessoa às/),
+      ).toBeInTheDocument();
+      expect(shiftCardAvatars()).toEqual([
+        "data:image/svg+xml,u-ana",
+        "data:image/svg+xml,u-bruno",
+      ]);
+    });
+
     it("id vazio de quem entregou (linha fora do check do banco): sem avatar, e a frase continua", () => {
       renderCards({
         home: home({ mine: { ...DELIVERED, deliveredById: "" } }),
