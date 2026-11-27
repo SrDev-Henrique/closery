@@ -1216,7 +1216,7 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Propósito:** uma solicitação aberta nas seções da passagem e no cartão do Início.
 - **Como funciona:** `<li class="border-t">` com uma linha (`data-slot="open-request-row"`, raio 18, margem lateral −10 px, `hover:bg-accent` em 150 ms) inteira clicável: o `<Link href={requestHref(id)} scroll={false}>` com a prévia (`requestPreview`, Geist 600/15 px) é esticado por `after:inset-0` (o nome acessível continua sendo a prévia; o foco desenha o anel no `::after`). Abaixo, "Para {destino}" (13 px), `RequestStatusBadge`, `StaleBadge` e, com `statusNow` diferente, "Agora: {status}". Fecha com o `ChevronRight` de 18 px. A divisória é o `border-t` da `<li>` (as seções não usam mais `divide-y`).
 - **Usa:** `RequestStatusBadge`, `StaleBadge`, `requestPreview`, `requestHref`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): linha inteira clicável com chevron; vale também para as seções da passagem.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): linha inteira clicável com chevron; vale também para as seções da passagem. 2026-11-27 — Task 16 (pixel): "Para {destino}" com `leading-[normal]` (a linha de 18,6px deixava cada linha 1,6px mais alta que a do protótipo).
 
 ### OpenRequestsNowSection
 - **Status:** ✅ pronto (2026-11-24)

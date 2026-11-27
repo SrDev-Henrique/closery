@@ -36,7 +36,7 @@ export function OpenRequestItem({
           >
             {requestPreview(request.description)}
           </Link>
-          <p className="text-[13px] break-words text-muted-foreground">
+          <p className="text-[13px] leading-[normal] break-words text-muted-foreground">
             Para {request.destinationName}
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
