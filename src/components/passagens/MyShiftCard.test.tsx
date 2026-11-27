@@ -427,6 +427,34 @@ describe("MyShiftCard", () => {
     ).toBeInTheDocument();
   });
 
+  // Pixel perfect do pack de correção: com a frase partida em vários nós (e os
+  // comentários que o SSR põe entre eles), o Chromium posiciona alguns glifos
+  // diferente do protótipo, que tem a frase num nó só.
+  it.each<[string, MyShiftState, string]>([
+    [
+      "delivered",
+      DELIVERED,
+      "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+    ],
+    [
+      "confirmed",
+      CONFIRMED,
+      "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
+    ],
+    [
+      "confirmed sem quem confirmou nem hora",
+      { ...CONFIRMED, confirmedByName: null, confirmedAt: null },
+      "Entregue por Ana Teste às 14:05. Confirmada por outra pessoa.",
+    ],
+  ])("%s: a frase da linha de entrega é um nó de texto só", (_name, state, text) => {
+    renderCard(state, { deliveredAvatarSrc: DELIVERED_AVATAR });
+
+    const sentence = screen.getByText(text);
+    expect(Array.from(sentence.childNodes, (node) => node.nodeType)).toEqual([
+      Node.TEXT_NODE,
+    ]);
+  });
+
   it.each([
     ["start", START],
     ["continue", CONTINUE],

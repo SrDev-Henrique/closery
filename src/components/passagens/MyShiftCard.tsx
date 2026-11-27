@@ -131,18 +131,20 @@ function StatusBlock({
 }
 
 // Linha de entrega: o avatar (ou a pilha) à esquerda e a frase à direita, em
-// 15px/1.5. Sem avatar, a frase aparece sozinha.
+// 15px/1.5. Sem avatar, a frase aparece sozinha. A frase chega pronta, numa
+// string só: partida em vários nós de texto (com os comentários que o SSR põe
+// entre eles), o Chromium posiciona alguns glifos diferente do protótipo.
 function DeliveryLine({
   avatars,
-  children,
+  sentence,
 }: {
   avatars: readonly StackedAvatar[];
-  children: ReactNode;
+  sentence: string;
 }) {
   return (
     <div className="flex items-center gap-2.5">
       <AvatarStack avatars={avatars} size={36} frame="on-pastel" />
-      <p className="text-[15px] leading-normal">{children}</p>
+      <p className="text-[15px] leading-normal">{sentence}</p>
     </div>
   );
 }
@@ -251,22 +253,20 @@ export function MyShiftCard({
       {state.kind === "delivered" && (
         <div className="flex flex-col items-start gap-3">
           <StatusBlock tone="pending">Aguardando recebimento</StatusBlock>
-          <DeliveryLine avatars={present([deliverer])}>
-            Entregue às {formatTimeBR(state.deliveredAt)} por{" "}
-            {state.deliveredByName}. Aguardando recebimento.
-          </DeliveryLine>
+          <DeliveryLine
+            avatars={present([deliverer])}
+            sentence={`Entregue às ${formatTimeBR(state.deliveredAt)} por ${state.deliveredByName}. Aguardando recebimento.`}
+          />
         </div>
       )}
 
       {state.kind === "confirmed" && (
         <div className="flex flex-col items-start gap-3">
           <StatusBlock tone="confirmed">Confirmada</StatusBlock>
-          <DeliveryLine avatars={present([deliverer, confirmer])}>
-            Entregue por {state.deliveredByName} às{" "}
-            {formatTimeBR(state.deliveredAt)}. Confirmada por{" "}
-            {state.confirmedByName ?? "outra pessoa"}
-            {state.confirmedAt ? ` às ${formatTimeBR(state.confirmedAt)}` : ""}.
-          </DeliveryLine>
+          <DeliveryLine
+            avatars={present([deliverer, confirmer])}
+            sentence={`Entregue por ${state.deliveredByName} às ${formatTimeBR(state.deliveredAt)}. Confirmada por ${state.confirmedByName ?? "outra pessoa"}${state.confirmedAt ? ` às ${formatTimeBR(state.confirmedAt)}` : ""}.`}
+          />
         </div>
       )}
 
