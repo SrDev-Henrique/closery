@@ -111,4 +111,34 @@ describe("SectorColorChoice", () => {
       checked.querySelector("[data-slot=sector-color-swatch]"),
     ).toBeInTheDocument();
   });
+
+  // No escuro a pílula marcada é creme (`primary`) e as amostras pastel ficam
+  // entre 1,46 e 1,92:1 sobre ela; a borda `foreground/20` (creme a 20%) não
+  // separava nada. Na marcada a borda vira `primary-foreground`, a tinta da
+  // própria pílula: o `themeContrast.test.ts` mede esse par (≥3:1, nos dois
+  // temas) no `globals.css`.
+  it("na opção marcada a amostra ganha borda primary-foreground, que contrasta com o fundo marcado", () => {
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio).toHaveClass("group/color");
+      const swatch = radio.querySelector("[data-slot=sector-color-swatch]");
+      expect(swatch).toHaveClass(
+        "border-foreground/20",
+        "group-data-checked/color:border-primary-foreground",
+      );
+    }
+  });
+
+  it("a borda da amostra segue a marcação: só a opção marcada tem data-checked", async () => {
+    const user = userEvent.setup();
+    render(<SectorColorChoice defaultValue="lilac" />);
+
+    await user.click(screen.getByRole("radio", { name: "Verde" }));
+
+    const checked = screen
+      .getAllByRole("radio")
+      .filter((radio) => radio.hasAttribute("data-checked"));
+    expect(checked).toEqual([screen.getByRole("radio", { name: "Verde" })]);
+  });
 });

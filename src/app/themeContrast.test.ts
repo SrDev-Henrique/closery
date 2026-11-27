@@ -21,6 +21,8 @@ import { buttonVariants } from "@/components/ui/button";
 
 /** Texto normal (WCAG AA). */
 const TEXT_MIN = 4.5;
+/** Componente de interface e objeto gráfico (WCAG 1.4.11). */
+const NON_TEXT_MIN = 3;
 
 // ---------------------------------------------------------------- cor
 /** sRGB codificado (gama aplicada), cada canal em 0..1. */
@@ -462,6 +464,42 @@ for (const [theme, selector] of THEMES) {
         ratio,
         `${fg} sobre ${bg}: ${ratio.toFixed(2)}:1`,
       ).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
+  });
+}
+
+// ---------------------------------------------------------------- contraste: amostra da cor marcada
+/**
+ * `SectorColorChoice`: a opção marcada é uma pílula `bg-primary`; a amostra da cor (16px) leva
+ * `group-data-checked/color:border-primary-foreground`. A borda tem de separar a amostra do fundo
+ * marcado (≥3:1, objeto gráfico): no escuro a pílula é creme e as amostras pastel ficam entre 1,46 e
+ * 1,92:1 sobre ela. O teste do componente afirma a classe; aqui mede o par no CSS.
+ */
+for (const [theme, selector] of THEMES) {
+  describe(`borda da amostra marcada do SectorColorChoice — tema ${theme}`, () => {
+    it("primary-foreground sobre primary (≥3:1)", () => {
+      const ratio = contrast(
+        solid(
+          readToken(css, selector, "primary-foreground"),
+          "primary-foreground",
+        ),
+        solid(readToken(css, selector, "primary"), "primary"),
+      );
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+        NON_TEXT_MIN,
+      );
+    });
+
+    it("a borda antiga (foreground/20 sobre primary) reprovaria: por isso a troca", () => {
+      const primary = solid(readToken(css, selector, "primary"), "primary");
+      const old = over(
+        {
+          rgb: solid(readToken(css, selector, "foreground"), "foreground"),
+          alpha: 0.2,
+        },
+        primary,
+      );
+      expect(contrast(old, primary)).toBeLessThan(NON_TEXT_MIN);
     });
   });
 }

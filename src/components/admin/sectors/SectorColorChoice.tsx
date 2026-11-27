@@ -51,18 +51,20 @@ export function SectorColorChoice({
             key={color}
             value={color}
             className={cn(
-              "inline-flex h-9 items-center gap-2 rounded-full border border-input bg-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none max-md:h-11",
+              "group/color inline-flex h-9 items-center gap-2 rounded-full border border-input bg-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none max-md:h-11",
               "hover:bg-accent focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
               // Marcada = primary, como o Toggle (muted = card na paleta nova e a borda de 1px não bastava).
               "data-checked:border-primary data-checked:bg-primary data-checked:text-primary-foreground data-checked:hover:bg-primary",
               "data-disabled:pointer-events-none data-disabled:opacity-50",
             )}
           >
+            {/* Na marcada a borda da amostra é a tinta da pílula (primary-foreground): no escuro
+                a pílula é creme e a borda foreground/20 (creme) sumia com a amostra pastel. */}
             <span
               data-slot="sector-color-swatch"
               aria-hidden="true"
               className={cn(
-                "size-4 shrink-0 rounded-full border border-foreground/20",
+                "size-4 shrink-0 rounded-full border border-foreground/20 group-data-checked/color:border-primary-foreground",
                 SECTOR_COLOR_BG[color],
               )}
             />
