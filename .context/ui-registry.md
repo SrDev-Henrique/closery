@@ -337,11 +337,11 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 ### Greeting
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/Greeting.tsx`
-- **Propósito:** título "Olá, {primeiro nome}" e o link para o dashboard.
+- **Propósito:** o topo do hero do Início: eyebrow com a data por extenso (São Paulo, caixa alta) e o título "Olá, {primeiro nome}".
 - **Como funciona:** Server Component assíncrono (`requireUser`); usa `greetingTitle` de
   `src/lib/names.ts`. Dentro de `<Suspense>` na página.
-- **Usa:** `requireUser`, `greetingTitle`.
-- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda).
+- **Usa:** `requireUser`, `greetingTitle`, `formatEyebrowDateBR`.
+- **Histórico:** 2026-11-20 — criado na Fase 1 (substitui o texto provisório do scaffold). 2026-11-21 — Fase 3: o segundo parágrafo passa a "Em breve: solicitações e dashboard." (a passagem deixou de ser "em breve"); a página `/` ganha os cartões de `HomeHandovers`. 2026-11-24 — Fase 4 (Tarefa 13): o segundo parágrafo passa a "Em breve: dashboard." (as solicitações chegaram) e o esqueleto de `/` ganha o terceiro cartão. 2026-11-25 — Fase 5 (Tarefa 12): o segundo parágrafo vira o link "Ver o dashboard" (`/dashboard`); o "Em breve" saiu. 2026-11-26 — Fase 6 (Tarefa 7, P12): o link ganha `max-md:inline-flex max-md:min-h-11 max-md:items-center` (alvo de toque de 44 px no celular; o desktop não muda). 2026-11-27 — visual novo do Início (Tarefa 11): eyebrow mono 13px com a data e `h1` Satoshi 900 de 72px (60px com área útil abaixo de 900px, 44px no celular); o link "Ver o dashboard" saiu daqui e virou o botão `surface` da linha do hero no `HomeHandovers`; topo do hero `pt-7` (`max-md:pt-3`), gap de 14px entre eyebrow e título.
 
 ### UserAvatar
 - **Status:** ✅ pronto (2026-11-27)
@@ -825,8 +825,16 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Como funciona:** Server-safe. Mostra `{turno} · {dd/mm/aaaa}`, "Entregue às {HH:mm} por {nome}", o bloco "Fica para o próximo turno" em destaque (trecho do texto ou "Nada registrado para o próximo turno.") e o link-botão "Ver passagem" (`/passagens/{id}`). Não confirma aqui: a confirmação é no resumo.
 - **Usa:** `Card`, `buttonVariants`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
 - **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7).
+- **Usa:** `Card` (`feature`), `buttonVariants` (`on-pastel`, `pill`), `UserAvatar`, `formatDateBR`, `formatTimeBR`, `handoverHref`.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-27 — visual novo (Tarefa 11): prop nova `avatarSrc` (data URI de quem entregou, gerado por quem chama: o cartão só desenha); `Card feature` em `--highlight` com tinta `--on-pastel`, grid `minmax(0,1fr) minmax(0,1.2fr)` só com área útil ≥ 1040px, avatar de 36px (inclinado 3°) de quem entregou, bloco `--on-pastel-soft` "Fica para o próximo turno" e botão `on-pastel` "Ver passagem" com `ArrowRight` no fim da coluna; sem mudança de regra.
 
-### MyShiftCard
+### SectorPill
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/passagens/SectorPill.tsx`
+- **Propósito:** o setor do operador no hero do Início, só para leitura (o admin troca pelo `SectorPicker`).
+- **Como funciona:** Server-safe. Pílula de 48px em `bg-card`: bolinha de 10px na cor do setor (`SECTOR_COLOR_BG`, `aria-hidden`), "Setor" em mono 12px `text-muted-foreground` e o nome em Satoshi 700/16px com reticências. Não é botão nem link.
+- **Usa:** `SECTOR_COLOR_BG`.
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Tarefa 11).
 - **Status:** ✅ pronto (2026-11-21)
 - **Local:** `src/components/passagens/MyShiftCard.tsx`
 - **Propósito:** cartão "Passagem do meu turno" do Início, nos cinco estados.
@@ -839,8 +847,8 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Local:** `src/components/passagens/HomeHandovers.tsx`
 - **Propósito:** os cartões de passagem do Início.
 - **Como funciona:** Server Component assíncrono, dentro de `<Suspense>` (lê sessão, `searchParams` e o cookie). Operador: setor próprio. Admin: `resolveScreenSector` (URL → cookie → primeiro ativo) e `SectorPicker`; sem setor ativo, estado vazio com link para Setores. Setor inativo do operador: "Seu setor está inativo.". Ordem: `PendingHandoverCard` (se houver) e `MyShiftCard`. Depois deles vem o `RequestsHomeCard` (Fase 4: `getHomeRequests` com o mesmo `now` do `getHomeHandovers`; o link "Ver solicitações" leva `?setor=` para o admin). Setor inativo e admin sem setor ativo: só o estado vazio, sem o cartão.
-- **Usa:** `getHomeHandovers`, `resolveScreenSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento).
+- **Usa:** `getHomeHandovers`, `resolveScreenSector`, `EmptyState`, `SectorPicker`. Também: `getHomeRequests`, `RequestsHomeCard`, `requestsHref`, `SectorPill`, `buttonVariants`, `avatarDataUri` (avatar de quem entregou o pendente).
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-24 — Fase 4 (Tarefa 13): cartão de solicitações depois de "Passagem do meu turno". 2026-11-25 — Fase 5 (Tarefa 1, P48): a resolução do setor vem de `resolveScreenSector` (sem mudar o comportamento). 2026-11-27 — visual novo (Tarefa 11): devolve a linha do hero (`data-slot="home-hero-row"`: o seletor do admin ou o `SectorPill` do operador, e o botão "Ver o dashboard") e, depois, os cartões em `data-slot="home-cards"` (`gap-4`, ponto de extensão do convite e do grid). Os ramos de erro (setor inativo, sem setor ativo) também levam a linha, só com o botão do dashboard. Espaçamento do hero: `pt-8 pb-10` (`max-md:pt-6 max-md:pb-7`).
 
 ### QuantityCounter
 - **Status:** ✅ pronto (2026-11-21)

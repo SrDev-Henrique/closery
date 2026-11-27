@@ -94,6 +94,151 @@ describe("HomeHandovers", () => {
     ).rejects.toBe(redirectError);
   });
 
+  describe("hero (linha do seletor/pílula e do dashboard)", () => {
+    it("operador: pílula do setor (só leitura) e o botão 'Ver o dashboard'", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      const row = document.querySelector('[data-slot="home-hero-row"]');
+      const pill = row?.querySelector('[data-slot="sector-pill"]');
+      expect(pill).toHaveTextContent("Setor");
+      expect(pill).toHaveTextContent("ULD");
+      expect(
+        screen.queryByRole("radiogroup", { name: "Setor" }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(row as HTMLElement).getByRole("link", {
+          name: "Ver o dashboard",
+        }),
+      ).toHaveAttribute("href", "/dashboard");
+    });
+
+    it("admin: o seletor de setor fica na linha, sem a pílula, e o botão do dashboard também", async () => {
+      await insertSector(db, "Carga");
+      await insertSector(db, "ULD");
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+
+      await renderHome();
+
+      const row = document.querySelector(
+        '[data-slot="home-hero-row"]',
+      ) as HTMLElement;
+      expect(
+        within(row).getByRole("radiogroup", { name: "Setor" }),
+      ).toBeInTheDocument();
+      expect(row.querySelector('[data-slot="sector-pill"]')).toBeNull();
+      expect(
+        within(row).getByRole("link", { name: "Ver o dashboard" }),
+      ).toHaveAttribute("href", "/dashboard");
+    });
+
+    it("a linha tem o espaçamento do protótipo: 32px em cima e 40px embaixo (24 e 28 no celular), quebrando linha no celular", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      expect(document.querySelector('[data-slot="home-hero-row"]')).toHaveClass(
+        "flex",
+        "flex-wrap",
+        "items-center",
+        "justify-between",
+        "gap-4",
+        "pt-8",
+        "pb-10",
+        "max-md:pt-6",
+        "max-md:pb-7",
+      );
+    });
+
+    it("a linha vem antes dos cartões, que ficam no ponto de extensão 'home-cards' com 16px de gap", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      const row = document.querySelector('[data-slot="home-hero-row"]');
+      const cards = document.querySelector('[data-slot="home-cards"]');
+      expect(cards).toHaveClass("flex", "flex-col", "gap-4");
+      expect(
+        (row as Node).compareDocumentPosition(cards as Node) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        within(cards as HTMLElement).getByRole("heading", {
+          name: "Passagem do meu turno",
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("o botão do dashboard é pílula 'surface' de 48px com o ícone decorativo", async () => {
+      const { uld, ana } = await setup();
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+      );
+
+      await renderHome();
+
+      const link = screen.getByRole("link", { name: "Ver o dashboard" });
+      expect(link.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+      expect(link).toHaveClass("bg-card", "rounded-full", "h-12", "px-5");
+      // 20px de padding (protótipo), não os 22px do `pill`: o `cn` tira o outro.
+      expect(link).not.toHaveClass("px-[22px]");
+    });
+
+    it("sem setor ativo (admin) e setor inativo (operador): sem seletor nem pílula, mas o dashboard continua à mão", async () => {
+      await insertSector(db, "Parado", { active: false });
+      mocks.requireUser.mockResolvedValue(authzOf({ role: "admin" }));
+      await renderHome();
+      expect(
+        screen.getByRole("link", { name: "Ver o dashboard" }),
+      ).toHaveAttribute("href", "/dashboard");
+      expect(document.querySelector('[data-slot="sector-pill"]')).toBeNull();
+      cleanup();
+
+      const parado = await insertSector(db, "Inativo operador", {
+        active: false,
+      });
+      const ana = await insertUser(db, {
+        role: "operator",
+        sectorId: parado.id,
+      });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: parado.id }),
+      );
+      await renderHome();
+      expect(
+        screen.getByRole("link", { name: "Ver o dashboard" }),
+      ).toHaveAttribute("href", "/dashboard");
+      expect(screen.getByText("Seu setor está inativo.")).toBeInTheDocument();
+    });
+
+    it("a pílula usa a cor do setor escolhida na tela Setores", async () => {
+      const verde = await insertSector(db, "Carga", { color: "green" });
+      const ana = await insertUser(db, {
+        role: "operator",
+        sectorId: verde.id,
+      });
+      mocks.requireUser.mockResolvedValue(
+        authzOf({ role: "operator", userId: ana.id, sectorId: verde.id }),
+      );
+
+      await renderHome();
+
+      expect(
+        document.querySelector('[data-slot="sector-pill"] .bg-sector-green'),
+      ).not.toBeNull();
+    });
+  });
+
   it("operador sem passagem: só o cartão do turno, 'Começar passagem', sem seletor", async () => {
     const { uld, shiftRow, ana } = await setup();
     mocks.requireUser.mockResolvedValue(
@@ -329,6 +474,9 @@ describe("HomeHandovers", () => {
       "Solicitações",
     ]);
     expect(screen.getByText("Conferir a rede do box 4.")).toBeInTheDocument();
+    expect(
+      document.querySelector('[data-slot="pending-handover"] img'),
+    ).toHaveAttribute("src", expect.stringContaining("data:image/svg+xml"));
     expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
       "href",
       `/passagens/${delivered.id}`,
