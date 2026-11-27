@@ -814,7 +814,7 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Propósito:** mostrar a situação da passagem (aguardando, confirmada, não confirmada, sem passagem) e o selo "Corrigida".
 - **Como funciona:** Server-safe. `Badge` com ícone e texto: `awaiting` (`Clock`, `bg-info`), `confirmed` (`CircleCheck`, `bg-success`; com `confirmedByName` diz "Confirmada por {nome}"), `unconfirmed` (`TriangleAlert`, `bg-warning`), `missing` (`CircleSlash`, `bg-muted`). `corrected` acrescenta `Badge variant="outline"` com `PencilLine` e "Corrigida". Textos vêm de `situationLabel` e `CORRECTED_LABEL`.
 - **Usa:** `Badge`, tokens `info`, `success`, `warning`, `muted`.
-- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 11): exporta `SITUATION_STYLE` (ícone e classe de cada situação), que o anel do dashboard reusa para o ícone das fatias; nada mais muda.
+- **Histórico:** 2026-11-21 — criado na Fase 3 (Tarefa 7). 2026-11-25 — Fase 5 (Tarefa 11): exporta `SITUATION_STYLE` (ícone e classe de cada situação), que o anel do dashboard reusa para o ícone das fatias; nada mais muda. 2026-11-27 — Task 15 (legibilidade): "Sem passagem" com `bg-accent` (era `bg-muted`, igual ao card na paleta nova: a pílula sumia na linha do histórico); teste novo recusa fundo igual ao do card.
 
 ### PendingHandoverCard
 - **Status:** ✅ pronto (2026-11-21)

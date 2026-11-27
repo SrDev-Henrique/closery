@@ -23,9 +23,11 @@ export const SITUATION_STYLE = {
     icon: TriangleAlert,
     className: "bg-warning text-warning-foreground",
   },
+  // `accent`, não `muted`: na paleta nova muted = card, e a pílula sumia na
+  // linha do histórico (mesmo motivo da "Cancelada" das solicitações).
   missing: {
     icon: CircleSlash,
-    className: "bg-muted text-muted-foreground",
+    className: "bg-accent text-muted-foreground",
   },
 } as const satisfies Record<
   HistorySituation,

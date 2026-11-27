@@ -62,12 +62,20 @@ describe("SITUATION_STYLE", () => {
       awaiting: "bg-info text-info-foreground",
       confirmed: "bg-success text-success-foreground",
       unconfirmed: "bg-warning text-warning-foreground",
-      missing: "bg-muted text-muted-foreground",
+      missing: "bg-accent text-muted-foreground",
     });
     for (const { icon: Icon } of Object.values(SITUATION_STYLE)) {
       const { container, unmount } = render(<Icon aria-hidden="true" />);
       expect(container.querySelector("svg")).not.toBeNull();
       unmount();
+    }
+  });
+
+  it("nenhuma situação usa o fundo do próprio card (no tema novo muted = secondary = card, e o selo sumia na linha)", () => {
+    for (const style of Object.values(SITUATION_STYLE)) {
+      expect(style.className).not.toMatch(
+        /(?:^|\s)bg-(?:muted|secondary|card|background)(?:\s|$)/,
+      );
     }
   });
 });
