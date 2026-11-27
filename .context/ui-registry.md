@@ -1002,25 +1002,25 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/statusStyle.ts` (server-safe)
 - **Propósito:** o ícone e as classes de cor de cada status de solicitação, num lugar só.
-- **Como funciona:** `REQUEST_STATUS_STYLE[status]` devolve `{ icon, badgeClass, buttonClass }`. Solicitada `CircleDot` + `bg-info text-info-foreground`; Em separação / Trânsito `Truck` + `bg-warning text-warning-foreground`; Entregue `CircleCheck` + `bg-success text-success-foreground`; Cancelada `CircleX` + `bg-muted text-muted-foreground`. `buttonClass` = `badgeClass` + `border-transparent hover:bg-{token}/80`: é a cor do botão "Mover para {status}" (o de cancelar usa `variant="destructive"`). Classes sempre inteiras no texto, para o Tailwind enxergá-las.
-- **Usa:** tokens `info`, `warning`, `success`, `muted`; ícones do lucide.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Como funciona:** `REQUEST_STATUS_STYLE[status]` devolve `{ icon, badgeClass, buttonClass }`. Solicitada `CircleDot` + `bg-accent text-foreground` (neutro); Em separação / Trânsito `Truck` + `bg-info text-info-foreground`; Entregue `CircleCheck` + `bg-success text-success-foreground`; Cancelada `CircleX` + `bg-accent text-muted-foreground` (`bg-muted` some no tema novo, onde `--muted` = `--card`). `buttonClass` = `badgeClass` + `border-transparent hover:bg-{token}/80`: é a cor do botão "Mover para {status}" (o de cancelar usa `variant="destructive"`). Classes sempre inteiras no texto, para o Tailwind enxergá-las.
+- **Usa:** tokens `accent`, `info`, `success`; ícones do lucide.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo do Início (Task 13): Solicitada passa a neutra, Em separação / Trânsito a azul (`info`) e Cancelada a `bg-accent`; a parada continua em `warning`, só no `StaleBadge`. Vale para o botão "Mover para …", a Timeline e os grupos da Lista.
 
 ### RequestStatusBadge
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestStatusBadge.tsx` (server-safe)
 - **Propósito:** selo do status da solicitação (cartão, linha, tabela, detalhe, passagem).
-- **Como funciona:** `<Badge variant="secondary" className="h-6 …">` com o ícone (`aria-hidden`) e o rótulo (`Solicitada`, `Em separação / Trânsito`, `Entregue`, `Cancelada`) do `REQUEST_STATUS_STYLE`. Nunca só cor.
+- **Como funciona:** `<Badge variant="secondary" size="md" className="…">` (pílula de 24 px, `whitespace-nowrap`, vindo do `Badge`) com o ícone (`aria-hidden`) e o rótulo do `REQUEST_STATUS_STYLE`. Nunca só cor.
 - **Usa:** `Badge`, `statusStyle`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): pílula `size="md"`; as cores de Solicitada, Em separação / Trânsito e Cancelada mudam (ver `statusStyle`).
 
 ### StaleBadge
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/StaleBadge.tsx` (server-safe)
 - **Propósito:** selo "Parada há N dias" das solicitações abertas há mais de 72 h no mesmo status.
-- **Como funciona:** `<Badge variant="secondary" className="h-6 bg-warning text-warning-foreground">` com `ClockAlert` (`aria-hidden`) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
+- **Como funciona:** `<Badge variant="warning" size="md">` com `ClockAlert` (`aria-hidden`) e `staleLabel(days)` (`Parada há 1 dia`, `Parada há 5 dias`). Quem decide se a solicitação está parada é o SQL (`stale`); o selo só mostra.
 - **Usa:** `Badge`, `staleLabel`, token `warning`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 10). 2026-11-27 — visual novo (Task 13): usa a variante `warning` e `size="md"` do `Badge` (mesma cor de antes, agora em pílula).
 
 ### RequestForm
 - **Status:** ✅ pronto (2026-11-24)
@@ -1208,9 +1208,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/OpenRequestItem.tsx` (server-safe)
 - **Propósito:** uma solicitação aberta nas seções da passagem e no cartão do Início.
-- **Como funciona:** `<li>` com a prévia da descrição (`requestPreview`: 1ª linha, até 60 pontos de código) num `<Link href={requestHref(id)} scroll={false}>` (abre o detalhe rápido no Sheet), "Para {destino}", `RequestStatusBadge` e, se parada, `StaleBadge`. Com `statusNow` diferente do status mostra "Agora: {status}" (só o resumo da entrega passa a prop). O link tem alvo ≥ 44px no celular.
+- **Como funciona:** `<li class="border-t">` com uma linha (`data-slot="open-request-row"`, raio 18, margem lateral −10 px, `hover:bg-accent` em 150 ms) inteira clicável: o `<Link href={requestHref(id)} scroll={false}>` com a prévia (`requestPreview`, Geist 600/15 px) é esticado por `after:inset-0` (o nome acessível continua sendo a prévia; o foco desenha o anel no `::after`). Abaixo, "Para {destino}" (13 px), `RequestStatusBadge`, `StaleBadge` e, com `statusNow` diferente, "Agora: {status}". Fecha com o `ChevronRight` de 18 px. A divisória é o `border-t` da `<li>` (as seções não usam mais `divide-y`).
 - **Usa:** `RequestStatusBadge`, `StaleBadge`, `requestPreview`, `requestHref`, `REQUEST_STATUS_LABEL`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): linha inteira clicável com chevron; vale também para as seções da passagem.
 
 ### OpenRequestsNowSection
 - **Status:** ✅ pronto (2026-11-24)
@@ -1232,9 +1232,9 @@ Selos, formulário de criação, quadro, lista, tabela e detalhe das solicitaç�
 - **Status:** ✅ pronto (2026-11-24)
 - **Local:** `src/components/solicitacoes/RequestsHomeCard.tsx` (server-safe)
 - **Propósito:** cartão "Solicitações" do Início, depois de "Passagem do meu turno".
-- **Como funciona:** `Card` com `<h2>` "Solicitações"; linha "{n abertas} · {m paradas}" (`tabular-nums`, singular em 1) ou "Nenhuma solicitação aberta."; havendo paradas, o rótulo `<h3>` "Paradas há mais tempo" e até 5 `OpenRequestItem` (as mais antigas no status); link-botão "Ver solicitações" (`allHref`; o admin leva `?setor=`).
-- **Usa:** `Card`, `OpenRequestItem`, `openCountLabel`, `staleCountLabel`, `buttonVariants`.
-- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13).
+- **Como funciona:** `Card variant="feature"` com `<h2>` "Solicitações" (Satoshi 700/18 px). Com abertas: o contador `{openCount}` (Satoshi 900, `tabular-nums`, 76 px; 60 px em 2 colunas com área útil < 1240 px; 52 px no celular), ao lado "aberta"/"abertas" e o `Badge warning` com `TriangleAlert` "{n} paradas" (some sem paradas); com paradas, o `<h3>` "Paradas há mais tempo" (mono, caixa alta) e até 5 `OpenRequestItem`. Vazio: `UserAvatar` de 84 px (`avatarSrc`, quem está logado) e "Nenhuma solicitação aberta."; com `firstAccess`, a linha "Os pedidos da equipe aparecem aqui assim que alguém registrar o primeiro.". Rodapé: link `default` `pill` "Ver solicitações" com `ArrowRight` e 20px de padding (`cn(..., "px-5")`, como no protótipo) (`allHref`; o admin leva `?setor=`).
+- **Usa:** `Card`, `Badge`, `UserAvatar`, `OpenRequestItem`, `staleCountLabel`, `buttonVariants`.
+- **Histórico:** 2026-11-24 — criado na Fase 4 (Tarefa 13). 2026-11-27 — visual novo do Início (Task 13): contador grande + selo de paradas no lugar da linha "{n abertas} · {m paradas}"; props novas `avatarSrc` e `firstAccess`.
 
 ### RequestGroupSection
 - **Status:** ✅ pronto (2026-11-25)

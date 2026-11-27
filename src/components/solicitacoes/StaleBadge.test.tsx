@@ -14,6 +14,16 @@ describe("StaleBadge", () => {
     expect(icon).toHaveAttribute("aria-hidden", "true");
   });
 
+  it("é pílula de 24px e nunca quebra linha", () => {
+    render(<StaleBadge days={12} />);
+
+    expect(screen.getByText("Parada há 12 dias")).toHaveClass(
+      "h-6",
+      "rounded-full",
+      "whitespace-nowrap",
+    );
+  });
+
   it("singular: 'Parada há 1 dia'", () => {
     render(<StaleBadge days={1} />);
 

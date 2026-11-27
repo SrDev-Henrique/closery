@@ -13,6 +13,7 @@ import type { RequestStatus } from "@/lib/requestStatuses";
 // mais borda transparente e o hover do próprio token. Classes sempre inteiras
 // no texto, para o Tailwind enxergá-las. O botão de cancelar usa
 // variant="destructive", não este mapa.
+// Visual novo (2026-11-27): Solicitada é neutra e Em separação / Trânsito é azul; a parada continua em warning (StaleBadge). Cancelada usa bg-accent porque no tema novo --muted é igual a --card.
 export const REQUEST_STATUS_STYLE: Readonly<
   Record<
     RequestStatus,
@@ -21,15 +22,15 @@ export const REQUEST_STATUS_STYLE: Readonly<
 > = {
   requested: {
     icon: CircleDot,
-    badgeClass: "bg-info text-info-foreground",
+    badgeClass: "bg-accent text-foreground",
     buttonClass:
-      "bg-info text-info-foreground border-transparent hover:bg-info/80",
+      "bg-accent text-foreground border-transparent hover:bg-accent/80",
   },
   in_transit: {
     icon: Truck,
-    badgeClass: "bg-warning text-warning-foreground",
+    badgeClass: "bg-info text-info-foreground",
     buttonClass:
-      "bg-warning text-warning-foreground border-transparent hover:bg-warning/80",
+      "bg-info text-info-foreground border-transparent hover:bg-info/80",
   },
   delivered: {
     icon: CircleCheck,
@@ -39,8 +40,8 @@ export const REQUEST_STATUS_STYLE: Readonly<
   },
   cancelled: {
     icon: CircleX,
-    badgeClass: "bg-muted text-muted-foreground",
+    badgeClass: "bg-accent text-muted-foreground",
     buttonClass:
-      "bg-muted text-muted-foreground border-transparent hover:bg-muted/80",
+      "bg-accent text-muted-foreground border-transparent hover:bg-accent/80",
   },
 };

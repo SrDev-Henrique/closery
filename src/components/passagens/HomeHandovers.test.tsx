@@ -54,6 +54,23 @@ async function renderHome(search: Record<string, string> = {}) {
   render(await HomeHandovers({ searchParams: Promise.resolve(search) }));
 }
 
+function requestsCard(): HTMLElement {
+  const card = screen
+    .getByRole("heading", { name: "Solicitações" })
+    .closest('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) {
+    throw new Error("cartão Solicitações não encontrado");
+  }
+  return card;
+}
+
+// O contador e a palavra são dois elementos (o número é grande).
+function expectOpenCount(count: string, word: "aberta" | "abertas") {
+  const card = within(requestsCard());
+  expect(card.getByText(count)).toBeInTheDocument();
+  expect(card.getByText(word)).toBeInTheDocument();
+}
+
 async function setup() {
   const uld = await insertSector(db, "ULD");
   const shiftRow = await insertShift(db, {
@@ -301,6 +318,10 @@ describe("HomeHandovers", () => {
       expect(
         screen.getByText("Nenhuma solicitação aberta."),
       ).toBeInTheDocument();
+      expect(requestsCard().querySelector("img")).toHaveAttribute(
+        "src",
+        `data:image/svg+xml,${world.ana.id}`,
+      );
       expect(
         screen.getByRole("link", { name: "Ver solicitações" }),
       ).toHaveAttribute("href", "/solicitacoes");
@@ -342,7 +363,8 @@ describe("HomeHandovers", () => {
 
       await renderHome();
 
-      expect(screen.getByText("3 abertas · 1 parada")).toBeInTheDocument();
+      expectOpenCount("3", "abertas");
+      expect(within(requestsCard()).getByText("1 parada")).toBeInTheDocument();
       expect(screen.getByText("Paradas há mais tempo")).toBeInTheDocument();
       expect(
         screen.getByRole("link", { name: "Trocar as redes" }),
@@ -363,7 +385,10 @@ describe("HomeHandovers", () => {
       asAna(world);
 
       await renderHome();
-      expect(screen.getByText("1 aberta · 0 paradas")).toBeInTheDocument();
+      expectOpenCount("1", "aberta");
+      expect(
+        within(requestsCard()).queryByText(/\d+ paradas?$/),
+      ).not.toBeInTheDocument();
       cleanup();
 
       await insertRequest(db, {
@@ -374,7 +399,8 @@ describe("HomeHandovers", () => {
       });
       await renderHome();
 
-      expect(screen.getByText("2 abertas · 1 parada")).toBeInTheDocument();
+      expectOpenCount("2", "abertas");
+      expect(within(requestsCard()).getByText("1 parada")).toBeInTheDocument();
       expect(screen.getByText("Parada há 3 dias")).toBeInTheDocument();
     });
 
@@ -392,7 +418,8 @@ describe("HomeHandovers", () => {
 
       await renderHome();
 
-      expect(screen.getByText("7 abertas · 7 paradas")).toBeInTheDocument();
+      expectOpenCount("7", "abertas");
+      expect(within(requestsCard()).getByText("7 paradas")).toBeInTheDocument();
       const items = within(
         screen.getByRole("heading", { name: "Paradas há mais tempo" })
           .parentElement as HTMLElement,
@@ -432,7 +459,7 @@ describe("HomeHandovers", () => {
 
       await renderHome({ setor: world.uld.id });
 
-      expect(screen.getByText("1 aberta · 0 paradas")).toBeInTheDocument();
+      expectOpenCount("1", "aberta");
       expect(
         screen.getByRole("link", { name: "Ver solicitações" }),
       ).toHaveAttribute("href", `/solicitacoes?setor=${world.uld.id}`);

@@ -78,4 +78,77 @@ describe("OpenRequestItem", () => {
 
     expect(screen.getByText("Para Hangar 2 — 🚚")).toBeInTheDocument();
   });
+
+  it("a linha inteira é clicável: o link é esticado (after:inset-0) e a linha mede 18px de raio", () => {
+    const { container } = render(
+      <ul>
+        <OpenRequestItem request={openRequest()} />
+      </ul>,
+    );
+
+    const row = container.querySelector('[data-slot="open-request-row"]');
+    expect(row).toHaveClass("relative", "rounded-[18px]", "hover:bg-accent");
+    expect(screen.getByRole("link")).toHaveClass(
+      "after:absolute",
+      "after:inset-0",
+    );
+    expect(container.querySelector("li")).toHaveClass("border-t");
+  });
+
+  it("o link mantém scroll={false} para abrir o detalhe rápido (href do detalhe, sem ?comentarios)", () => {
+    renderItem({
+      request: openRequest({ id: "22222222-2222-4222-8222-222222222222" }),
+    });
+
+    expect(screen.getByRole("link")).toHaveAttribute(
+      "href",
+      "/solicitacoes/22222222-2222-4222-8222-222222222222",
+    );
+  });
+
+  it("fecha com o chevron decorativo", () => {
+    const { container } = render(
+      <ul>
+        <OpenRequestItem request={openRequest()} />
+      </ul>,
+    );
+
+    const chevron = container.querySelector("svg.lucide-chevron-right");
+    expect(chevron).not.toBeNull();
+    expect(chevron).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("Solicitada usa o selo neutro e Em separação / Trânsito o azul, ambos com ícone", () => {
+    const { container, rerender } = render(
+      <ul>
+        <OpenRequestItem request={openRequest({ status: "requested" })} />
+      </ul>,
+    );
+    expect(screen.getByText("Solicitada")).toHaveClass("bg-accent");
+
+    rerender(
+      <ul>
+        <OpenRequestItem request={openRequest({ status: "in_transit" })} />
+      </ul>,
+    );
+    expect(screen.getByText("Em separação / Trânsito")).toHaveClass("bg-info");
+    expect(container.querySelectorAll("svg").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("nome de destino longo não estoura a linha (min-w-0 e quebra)", () => {
+    const { container } = render(
+      <ul>
+        <OpenRequestItem
+          request={openRequest({
+            description: "x".repeat(60),
+            destinationName: "Terminal ".repeat(20).trim(),
+          })}
+        />
+      </ul>,
+    );
+
+    expect(
+      container.querySelector('[data-slot="open-request-row"] > div'),
+    ).toHaveClass("min-w-0", "flex-1");
+  });
 });

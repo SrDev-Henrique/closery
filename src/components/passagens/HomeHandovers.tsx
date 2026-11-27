@@ -160,7 +160,11 @@ export async function HomeHandovers({ searchParams }: HomeHandoversProps) {
               : null
           }
         />
-        <RequestsHomeCard home={requests} allHref={requestsHref(sectorParam)} />
+        <RequestsHomeCard
+          home={requests}
+          allHref={requestsHref(sectorParam)}
+          avatarSrc={avatarDataUri(actor.userId)}
+        />
       </div>
     </HomeFrame>
   );

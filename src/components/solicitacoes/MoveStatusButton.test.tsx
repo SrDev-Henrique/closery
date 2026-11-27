@@ -6,9 +6,9 @@ import { MoveStatusButton } from "./MoveStatusButton";
 
 describe("MoveStatusButton", () => {
   it.each([
-    ["in_transit", "Mover para Em separação / Trânsito", "bg-warning"],
+    ["in_transit", "Mover para Em separação / Trânsito", "bg-info"],
     ["delivered", "Mover para Entregue", "bg-success"],
-    ["requested", "Mover para Solicitada", "bg-info"],
+    ["requested", "Mover para Solicitada", "bg-accent"],
   ] as const)("destino %s: texto e cor do status de destino", (to, name, token) => {
     render(<MoveStatusButton to={to} onClick={() => {}} />);
 

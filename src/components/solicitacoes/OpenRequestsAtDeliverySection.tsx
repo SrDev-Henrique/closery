@@ -42,7 +42,7 @@ export function OpenRequestsAtDeliverySection({
           Nenhuma solicitação aberta na entrega.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y">
+        <ul className="flex flex-col">
           {data.rows.map((request) => (
             <OpenRequestItem
               key={request.id}
