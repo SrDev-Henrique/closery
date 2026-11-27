@@ -191,7 +191,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Propósito:** estado de carregamento (fallback de `Suspense`).
 - **Como funciona:** `div` pulsante; dê o tamanho por `className`.
 - **Usa:** token `muted`.
-- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+- **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Task 15 (legibilidade): fundo `bg-accent` (era `bg-muted`, igual ao card na paleta nova: o esqueleto sumia dentro dos cards e do Sheet do detalhe); quem precisa de outro fundo troca pelo `className` (o Início usa `bg-card`). Teste novo.
 
 ### Alert
 - **Status:** ✅ pronto (2026-11-20)
