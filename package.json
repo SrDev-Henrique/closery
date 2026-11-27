@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "fonts": "bun scripts/fetchFonts.mjs",
+    "predev": "bun run fonts",
     "dev": "next dev",
+    "prebuild": "bun run fonts",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",

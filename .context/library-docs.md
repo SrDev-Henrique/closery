@@ -470,6 +470,27 @@
   (`options.test.ts`: o envelope vira texto e o teste afirma sobre ele); o resto troca o SDK por espião
   (`vi.mock("@sentry/nextjs")`). Se um dia houver CSP, liberar `connect-src https://*.ingest.sentry.io`.
 
+## 17. Satoshi (fonte de display) · visual novo
+
+- **Licença (ITF Free Font License, §01 e §02):** servir a fonte no próprio site é permitido; **disponibilizar os arquivos
+  num repositório publicamente acessível é proibido** (o repositório é público). Por isso o `.woff2` **nunca** entra no git
+  (`/src/fonts/satoshi/` no `.gitignore`). Também é proibido **subset e conversão**: o script grava os bytes como vieram.
+- **Como chega ao app:** `bun run fonts` (`scripts/fetchFonts.mjs`) lê o CSS de
+  `https://api.fontshare.com/v2/css?f[]=satoshi@500,700,900&display=swap`, pega a URL do `woff2` de cada peso (só
+  `cdn.fontshare.com`), baixa, **confere o SHA-256** contra `SATOSHI_SHA256` em `scripts/fontsCheck.mjs`, e só então grava
+  `src/fonts/satoshi/Satoshi-{500,700,900}.woff2`. Pula o download quando os 3 arquivos já estão lá com o hash certo.
+  Hash diferente ou sem rede: código 1 e uma mensagem que diz o que fazer. As regras puras são testadas em
+  `test/fontsCheck.test.ts` e a orquestração (com `fetch` e disco falsos) em `test/fetchFonts.test.ts`.
+- **Ganchos:** `predev` e `prebuild` chamam `bun run fonts` (o Bun roda os scripts `pre*`, conferido em 2026-11-27). Na Vercel o
+  `bun run build` roda o `prebuild`. No CI o job do E2E guarda `src/fonts/satoshi` em cache (`satoshi-<hash de scripts/fontsCheck.mjs>`),
+  porque o E2E faz `bun run build`; o job `checks` não precisa da fonte (nenhum teste importa o `RootLayout`).
+- **Mudou o hash?** Não aceite no automático. A Fontshare pode ter trocado o arquivo: confira a licença da versão nova, baixe,
+  calcule o SHA-256 (`sha256sum`) e atualize `SATOSHI_SHA256` num commit só dele (a chave do cache do CI muda junto).
+- **`next/font/local`:** `localFont` em `src/app/layout.tsx` com os 3 pesos (`src` em array, `path` **literal** e relativo ao
+  `layout.tsx`), `variable: "--font-satoshi"`, `display: "swap"`, `fallback: ["Geist", "system-ui", "sans-serif"]`. O Next gera o
+  ajuste de fallback (Arial) sozinho (`adjustFontFallback`). `globals.css`: `--font-heading: var(--font-satoshi)`; o utilitário é `font-heading`.
+- **Glifos:** `ª` e `º` **não existem** na Satoshi e caem na próxima fonte da pilha (Geist). Nada a fazer; só não conte com eles no display.
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.

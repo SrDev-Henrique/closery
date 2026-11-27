@@ -42,6 +42,7 @@ Leia nesta ordem antes de qualquer implementação:
 | `bun run test:e2e` | Playwright com banco efêmero (pglite-socket) e build de produção; cerca de 1 min |
 | `bun run smoke <https://<projeto>.vercel.app> [--local]` | confere uma produção (ou o `next start` local, com `--local`) só com `GET`: saúde do banco, região, cabeçalhos de segurança, noindex, redirecionamento e `/privacidade`; código de saída 1 se algo falhar |
 | `bun run build` | build de produção (exige `BETTER_AUTH_URL` e `BETTER_AUTH_SECRET` no `.env.local`) |
+| `bun run fonts` | baixa a Satoshi (Fontshare) para `src/fonts/satoshi/`, pasta fora do git (licença), e confere o SHA-256; pula se já está certa; roda sozinho no `predev` e no `prebuild`; código de saída 1 sem rede ou com hash diferente |
 | `bun run db:generate` → revisar → `bun run db:migrate` | migração versionada do Drizzle |
 | `bun run admin:invite --confirmar-host=<host>` | gera o link de convite do primeiro administrador; sem a flag, mostra o banco de destino e recusa |
 | `bun run db:hosts` | mostra só o host do banco da aplicação e o das migrações (conferir antes do `db:migrate`) |
