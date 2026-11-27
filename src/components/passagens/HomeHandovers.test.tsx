@@ -115,7 +115,7 @@ describe("HomeHandovers", () => {
       `/passagens/nova?turno=${shiftRow.id}&data=${TODAY}`,
     );
     expect(
-      screen.queryByRole("group", { name: "Setor" }),
+      screen.queryByRole("radiogroup", { name: "Setor" }),
     ).not.toBeInTheDocument();
   });
 
@@ -435,9 +435,11 @@ describe("HomeHandovers", () => {
 
     await renderHome();
 
-    expect(screen.getByRole("group", { name: "Setor" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Carga" })).toHaveAttribute(
-      "aria-pressed",
+    expect(
+      screen.getByRole("radiogroup", { name: "Setor" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Carga" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     expect(
@@ -454,8 +456,8 @@ describe("HomeHandovers", () => {
 
     await renderHome({ setor: uld.id });
 
-    expect(screen.getByRole("button", { name: "ULD" })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("radio", { name: "ULD" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
     expect(
@@ -474,8 +476,8 @@ describe("HomeHandovers", () => {
 
     await renderHome();
 
-    expect(screen.getByRole("button", { name: "ULD" })).toHaveAttribute(
-      "aria-pressed",
+    expect(screen.getByRole("radio", { name: "ULD" })).toHaveAttribute(
+      "aria-checked",
       "true",
     );
   });

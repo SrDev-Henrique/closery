@@ -146,7 +146,7 @@ describe("HandoverHistory", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("group", { name: "Setor" }),
+      screen.queryByRole("radiogroup", { name: "Setor" }),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Turno Outro")).not.toBeInTheDocument();
     expect(screen.getByText(/Período:/)).toHaveTextContent(
@@ -188,13 +188,13 @@ describe("HandoverHistory", () => {
 
     await renderHistory({ setor: "todos", situacao: "aguardando" });
 
-    const picker = screen.getByRole("group", { name: "Setor" });
+    const picker = screen.getByRole("radiogroup", { name: "Setor" });
     expect(
-      within(picker).getByRole("button", { name: "Todos os setores" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      within(picker).getByRole("radio", { name: "Todos os setores" }),
+    ).toHaveAttribute("aria-checked", "true");
     expect(
-      within(picker).getByRole("button", { name: sector.name }),
-    ).toHaveAttribute("aria-pressed", "false");
+      within(picker).getByRole("radio", { name: sector.name }),
+    ).toHaveAttribute("aria-checked", "false");
     // Em "todos os setores" não há filtro de turno.
     expect(screen.queryByLabelText("Turno")).not.toBeInTheDocument();
     expect(screen.getByRole("listitem")).toHaveTextContent(
@@ -210,10 +210,11 @@ describe("HandoverHistory", () => {
     await renderHistory({ situacao: "sem-passagem" });
 
     expect(
-      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
-        name: other.name,
-      }),
-    ).toHaveAttribute("aria-pressed", "true");
+      within(screen.getByRole("radiogroup", { name: "Setor" })).getByRole(
+        "radio",
+        { name: other.name },
+      ),
+    ).toHaveAttribute("aria-checked", "true");
     expect(screen.getByLabelText("Turno")).toBeInTheDocument();
     expect(
       within(screen.getByLabelText("Turno")).getByRole("option", {
@@ -302,9 +303,10 @@ describe("HandoverHistory", () => {
       foo: "bar",
     });
     await userEvent.click(
-      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
-        name: other.name,
-      }),
+      within(screen.getByRole("radiogroup", { name: "Setor" })).getByRole(
+        "radio",
+        { name: other.name },
+      ),
     );
 
     expect(chooseSectorAction).toHaveBeenCalledTimes(1);
@@ -323,9 +325,10 @@ describe("HandoverHistory", () => {
 
     await renderHistory({ setor: sector.id });
     await userEvent.click(
-      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
-        name: other.name,
-      }),
+      within(screen.getByRole("radiogroup", { name: "Setor" })).getByRole(
+        "radio",
+        { name: other.name },
+      ),
     );
 
     expect(chooseSectorAction).toHaveBeenCalledWith({

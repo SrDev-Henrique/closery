@@ -146,7 +146,7 @@ describe("RequestsScreen", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.queryByText("Do outro setor")).toBeNull();
-    expect(screen.queryByRole("group", { name: "Setor" })).toBeNull();
+    expect(screen.queryByRole("radiogroup", { name: "Setor" })).toBeNull();
     expect(screen.queryByText("Setor Teste")).toBeNull();
   });
 
@@ -166,10 +166,10 @@ describe("RequestsScreen", () => {
 
     await renderScreen({ visao: "quadro", setor: "todos" });
 
-    const picker = screen.getByRole("group", { name: "Setor" });
+    const picker = screen.getByRole("radiogroup", { name: "Setor" });
     expect(
-      within(picker).getByRole("button", { name: "Todos os setores" }),
-    ).toHaveAttribute("aria-pressed", "true");
+      within(picker).getByRole("radio", { name: "Todos os setores" }),
+    ).toHaveAttribute("aria-checked", "true");
     const requested = column("Solicitada");
     expect(within(requested).getByText("Do setor teste")).toBeInTheDocument();
     expect(within(requested).getByText("Do setor outro")).toBeInTheDocument();
@@ -192,9 +192,10 @@ describe("RequestsScreen", () => {
       foo: "bar",
     });
     await userEvent.click(
-      within(screen.getByRole("group", { name: "Setor" })).getByRole("button", {
-        name: other.name,
-      }),
+      within(screen.getByRole("radiogroup", { name: "Setor" })).getByRole(
+        "radio",
+        { name: other.name },
+      ),
     );
 
     expect(chooseSectorAction).toHaveBeenCalledTimes(1);

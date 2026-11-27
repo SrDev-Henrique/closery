@@ -101,6 +101,20 @@ describe("resolveScreenSector — admin", () => {
     });
   });
 
+  it("as escolhas do admin levam a cor de cada setor ativo", async () => {
+    const uld = await insertSector(db, "ULD Teste", { color: "sky" });
+
+    const result = await resolveScreenSector(db, admin, {
+      url: uld.id,
+      allowAll: false,
+    });
+
+    expect(result).toMatchObject({
+      kind: "sector",
+      sectors: [{ id: uld.id, name: "ULD Teste", color: "sky" }],
+    });
+  });
+
   it("?setor=todos sem allowAll cai no cookie e depois no primeiro", async () => {
     const camara = await insertSector(db, "Câmara Teste");
     const uld = await insertSector(db, "ULD Teste");
