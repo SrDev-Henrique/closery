@@ -127,7 +127,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 
 ### 4.2 Tema
 
-- `ThemeProvider` do `next-themes` no `RootLayout`, com `attribute="class"`, `defaultTheme="dark"`, `enableSystem={false}` e `disableTransitionOnChange`.
+- `ThemeProvider` do `next-themes` no `RootLayout`, com `attribute="class"`, `defaultTheme="dark"`, `enableSystem={false}`, sem `disableTransitionOnChange` (o dono preferiu o deslize do knob; as cores com transição também mudam suavemente na troca).
 - O `<html>` recebe `suppressHydrationWarning`.
 - O `@custom-variant dark` atual continua.
 - **Switch de tema** (`ThemeSwitch`, client):

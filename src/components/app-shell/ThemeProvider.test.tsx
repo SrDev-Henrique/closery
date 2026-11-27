@@ -1,13 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useTheme } from "next-themes";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/components/app-shell/ThemeProvider";
+import { guardConsoleError } from "../../../test/consoleErrorGuard";
 
-// O `<script>` anti-flash do next-themes, renderizado no cliente (o React 19 avisa no console; no app real
-// ele vem do HTML do servidor). O aviso não é falha, só ruído.
-vi.spyOn(console, "error").mockImplementation(() => {});
+let guard: ReturnType<typeof guardConsoleError>;
 
 function Probe() {
   const { theme, resolvedTheme, setTheme } = useTheme();
@@ -48,6 +47,7 @@ function prefersDark(matches: boolean) {
 }
 
 beforeEach(() => {
+  guard = guardConsoleError();
   localStorage.clear();
   document.documentElement.className = "";
   document.documentElement.removeAttribute("style");
@@ -55,6 +55,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  expect(guard.unexpected).toEqual([]);
+  guard.restore();
   prefersDark(false);
 });
 

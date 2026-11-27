@@ -1,13 +1,15 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ThemeProvider } from "@/components/app-shell/ThemeProvider";
 import { ThemeSwitch } from "@/components/app-shell/ThemeSwitch";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { guardConsoleError } from "../../../test/consoleErrorGuard";
 
-vi.spyOn(console, "error").mockImplementation(() => {});
+let guard: ReturnType<typeof guardConsoleError>;
 
 function tree() {
   return (
@@ -29,9 +31,15 @@ function hover(element: HTMLElement) {
 }
 
 beforeEach(() => {
+  guard = guardConsoleError();
   localStorage.clear();
   document.documentElement.className = "";
   document.documentElement.removeAttribute("style");
+});
+
+afterEach(() => {
+  expect(guard.unexpected).toEqual([]);
+  guard.restore();
 });
 
 describe("ThemeSwitch", () => {
@@ -108,10 +116,32 @@ describe("ThemeSwitch", () => {
     expect(getSwitch()).toBeInTheDocument();
   });
 
-  it("hidratação: o HTML do servidor é sempre o escuro, mesmo com o claro guardado", () => {
-    localStorage.setItem("closery-tema", "light");
+  it("hidratação: o HTML do servidor é o escuro e, com o claro guardado, hidrata sem divergência e vira claro ao montar", async () => {
+    // "Servidor": sem localStorage, o HTML sai no escuro.
     const html = renderToString(tree());
     expect(html).toContain('aria-checked="true"');
     expect(html).toContain('role="switch"');
+
+    // Cliente: o claro está guardado e o HTML do servidor entra no contêiner.
+    localStorage.setItem("closery-tema", "light");
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    let root: ReturnType<typeof hydrateRoot> | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, tree());
+    });
+
+    // Sem erro de hidratação (o afterEach exige zero console.error), e o estado do navegador vale depois de montar.
+    const toggle = screen.getByRole("switch", { name: "Tema escuro" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    hover(toggle);
+    expect(
+      await screen.findByText("Mudar para o tema escuro"),
+    ).toBeInTheDocument();
+
+    await act(async () => root?.unmount());
+    container.remove();
   });
 });

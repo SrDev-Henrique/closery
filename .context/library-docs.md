@@ -495,7 +495,7 @@
 
 - **Já estava instalado** (veio com o `sonner` do shadcn). O `ThemeProvider` do app é o `src/components/app-shell/ThemeProvider.tsx`
   (componente próprio, `"use client"`): `attribute="class"`, `defaultTheme="dark"`, `enableSystem={false}`,
-  `disableTransitionOnChange`, `storageKey="closery-tema"`. **Escuro padrão e sem seguir o sistema** (C-V4); a escolha fica no
+  `storageKey="closery-tema"`; sem `disableTransitionOnChange` (o deslize do knob do `ThemeSwitch` precisa da transição). **Escuro padrão e sem seguir o sistema** (C-V4); a escolha fica no
   navegador, nunca no banco.
 - **`<html suppressHydrationWarning>`** no `RootLayout`: o script do provider põe a classe `dark` ou `light` antes da hidratação.
   O `@custom-variant dark (&:is(.dark *))` do `globals.css` continua. A CSP do projeto é só `frame-ancestors 'none'`, então o

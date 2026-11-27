@@ -284,7 +284,7 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/app-shell/ThemeProvider.tsx`
 - **Propósito:** liga o tema claro/escuro do app inteiro; o escuro é o padrão.
 - **Como funciona:** `"use client"`; envolve o `ThemeProvider` do `next-themes` com `attribute="class"`, `defaultTheme="dark"`,
-  `enableSystem={false}` (não segue o sistema), `disableTransitionOnChange` e `storageKey="closery-tema"`. Fica no `RootLayout`,
+  `enableSystem={false}` (não segue o sistema) e `storageKey="closery-tema"`. Fica no `RootLayout`,
   em volta do `TooltipProvider` e do `Toaster` (o `sonner.tsx` lê o tema daqui). O `<html>` leva `suppressHydrationWarning`.
 - **Usa:** `next-themes`; tokens claro/escuro do `globals.css`.
 - **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3).
