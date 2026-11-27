@@ -178,13 +178,33 @@ describe("buttonVariants — borda transparente só onde não há borda", () => 
   });
 });
 
-describe("buttonVariants — foco visível nos cartões coloridos (F1)", () => {
+describe("buttonVariants — foco visível nos cartões coloridos (F1, G1)", () => {
+  // Isto só confere as classes. A prova de que o contorno é desenhado é o E2E
+  // (`e2e/inicio.spec.ts`, estilo calculado no Chromium), porque a string certa
+  // não basta: a base tem `outline-none`, que grava `--tw-outline-style: none`,
+  // e o `focus-visible:outline-2` usa `outline-style: var(--tw-outline-style)`.
+  // Sem o `focus-visible:outline-solid` o contorno resolve para `none`.
+  // O `ring-0!` (importante) apaga o anel da base nos dois caminhos: cru num
+  // <Link> (as duas classes ficam e o `.ring-3` venceria pela ordem do CSS) e
+  // pelo `cn` (o twMerge só descarta o `ring-3`, que é o que se quer).
   it.each([
     "on-pastel",
     "on-pastel-secondary",
-  ] as const)("variant=%s usa contorno com a tinta do pastel, não o anel ring/50", (variant) => {
+  ] as const)("variant=%s usa contorno sólido de 2px com a tinta do pastel, sem o anel ring/50", (variant) => {
     const names = classesOf({ variant });
+    expect(names).toContain("focus-visible:outline-solid");
+    expect(names).toContain("focus-visible:outline-2");
+    expect(names).toContain("focus-visible:outline-offset-2");
     expect(names).toContain("focus-visible:outline-on-pastel");
-    expect(names).toContain("focus-visible:ring-0");
+    expect(names).toContain("focus-visible:ring-0!");
+  });
+
+  it.each([
+    "on-pastel",
+    "on-pastel-secondary",
+  ] as const)("variant=%s pelo cn mantém o contorno sólido e o anel apagado", (variant) => {
+    const names = cn(buttonVariants({ variant, size: "pill" })).split(/\s+/);
+    expect(names).toContain("focus-visible:outline-solid");
+    expect(names).toContain("focus-visible:ring-0!");
   });
 });

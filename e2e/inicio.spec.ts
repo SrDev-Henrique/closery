@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import type { Pool } from "pg";
 
 import type { Db } from "@/db/types";
@@ -30,6 +30,51 @@ test.afterAll(async () => {
   await pool.end();
 });
 
+// Tab até o alvo (foco por teclado, então `:focus-visible` vale de verdade).
+async function tabTo(page: Page, target: Locator): Promise<void> {
+  for (let step = 0; step < 60; step++) {
+    await page.keyboard.press("Tab");
+    if (await target.evaluate((element) => element === document.activeElement))
+      return;
+  }
+  throw new Error("o Tab não chegou ao alvo em 60 passos");
+}
+
+// Prova do foco visível nos botões dos cartões coloridos (G1) pelo estilo
+// calculado no Chromium, não pela string de classe: contorno sólido de 2px,
+// 2px para fora, na tinta `--on-pastel`, e sem o anel `ring/50` da base. A
+// tinta é lida do próprio CSS (um elemento com `color: var(--on-pastel)`). O
+// `toHaveCSS` repete até passar: o secundário tem `transition-all`.
+async function expectPastelFocusRing(
+  page: Page,
+  target: Locator,
+): Promise<void> {
+  await tabTo(page, target);
+  await expect(target).toBeFocused();
+  expect(
+    await target.evaluate((element) => element.matches(":focus-visible")),
+  ).toBe(true);
+  const ink = await page.evaluate(() => {
+    const probe = document.createElement("span");
+    probe.style.color = "var(--on-pastel)";
+    document.body.append(probe);
+    const color = getComputedStyle(probe).color;
+    probe.remove();
+    return color;
+  });
+  expect(ink).toBe("rgb(28, 27, 25)");
+  await expect(target).toHaveCSS("outline-style", "solid");
+  await expect(target).toHaveCSS("outline-width", "2px");
+  await expect(target).toHaveCSS("outline-offset", "2px");
+  await expect(target).toHaveCSS("outline-color", ink);
+  // Toda sombra do box-shadow com espalhamento 0: o anel de 3px não sobra.
+  await expect
+    .poll(() =>
+      target.evaluate((element) => getComputedStyle(element).boxShadow),
+    )
+    .not.toMatch(/0px 0px 0px [1-9]/);
+}
+
 test("primeiro acesso: o cartão aparece, 'Agora não' o esconde e a dispensa sobrevive ao recarregar", async ({
   page,
   context,
@@ -57,6 +102,12 @@ test("primeiro acesso: o cartão aparece, 'Agora não' o esconde e a dispensa so
     page.getByRole("heading", { name: "Passagem do meu turno" }),
   ).toBeVisible();
 
+  // "Agora não" é `<Button variant="on-pastel-secondary">`: passa pelo `cn`,
+  // que antes da G1 apagava o anel e deixava o botão sem foco nenhum.
+  await expectPastelFocusRing(
+    page,
+    page.getByRole("button", { name: "Agora não" }),
+  );
   await page.getByRole("button", { name: "Agora não" }).click();
   await expect(invite).toHaveCount(0);
 
@@ -140,4 +191,22 @@ test("tema: escuro por padrão, o switch troca e a escolha sobrevive ao recarreg
   await expect(
     page.getByRole("switch", { name: "Tema escuro" }),
   ).toHaveAttribute("aria-checked", "true");
+});
+
+test("foco por teclado no cartão do turno: o primário e o secundário ganham contorno sólido na tinta on-pastel", async ({
+  page,
+}) => {
+  const world = await seedSector(db);
+  await signUpOperator(page, db, world.sector.id, "Davi Teste");
+  await page.goto("/");
+
+  // "Começar passagem": `buttonVariants` cru num <Link> (sem twMerge, as
+  // classes da base e da variante ficam juntas). "Ver todas as passagens":
+  // `cn(buttonVariants(…), "px-5")` num <Link>.
+  const primary = page.getByRole("link", { name: "Começar passagem" });
+  const secondary = page.getByRole("link", { name: "Ver todas as passagens" });
+  await expect(primary).toBeVisible();
+
+  await expectPastelFocusRing(page, primary);
+  await expectPastelFocusRing(page, secondary);
 });

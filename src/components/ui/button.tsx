@@ -30,12 +30,19 @@ const buttonVariants = cva(
         // Sobre o fundo da página (ex.: "Ver o dashboard"): card, hover accent.
         surface:
           "border-transparent bg-card text-card-foreground hover:bg-accent",
+        // Foco nas duas variantes de card colorido: contorno sólido de 2px na
+        // tinta `on-pastel` no lugar do anel `ring/50` (invisível no pastel).
+        // O `outline-solid` é obrigatório: o `outline-none` da base grava
+        // `--tw-outline-style: none` e o `outline-2` usa essa variável. O
+        // `ring-0!` apaga o anel da base também no `buttonVariants` cru num
+        // <Link> (sem twMerge, o `.ring-3` venceria pela ordem do CSS). Prova
+        // pelo estilo calculado: `e2e/inicio.spec.ts`.
         // Primário dentro de card colorido: tinta fixa, afunda ao apertar.
         "on-pastel":
-          "border-transparent bg-on-pastel text-on-pastel-ink focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-pastel active:scale-[.97] [transition-property:background-color,color,scale]",
+          "border-transparent bg-on-pastel text-on-pastel-ink focus-visible:ring-0! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-on-pastel active:scale-[.97] [transition-property:background-color,color,scale]",
         // Secundário dentro de card colorido: fundo translúcido sobre o pastel.
         "on-pastel-secondary":
-          "border-transparent bg-on-pastel-secondary text-on-pastel hover:bg-on-pastel-secondary-hover focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-pastel",
+          "border-transparent bg-on-pastel-secondary text-on-pastel hover:bg-on-pastel-secondary-hover focus-visible:ring-0! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-on-pastel",
       },
       size: {
         default:
