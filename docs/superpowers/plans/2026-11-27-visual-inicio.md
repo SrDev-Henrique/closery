@@ -14357,3 +14357,1838 @@ estado da obra.
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 ```
+
+### Task 18: Pack de correção do Início (cartão "Passagem do meu turno")
+
+> **Spec:** §6.4.1. **Base:** `5bedc84` (Tasks 1–16 e a rodada de correções da revisão final). **Escopo:** os itens 1 a 4 do README do pack (`.git/sdd/visual/handoff-correcoes/README.md`; o protótipo `Inicio.dc.html` dele é lido como TEXTO). O item 5 (`HandoverDetail`) **não entra**: ele fica para o handoff "Passagem de turno", e a Task 17 o registra nas pendências, junto do grupo Passagens. Um implementador e uma revisão. Nada do pack com cara de pessoa real entra no repositório: nos testes, "Ana Teste", "Bia Teste" e "Bruno Teste".
+>
+> **Código conferido** em 2026-11-27, num worktree descartável sobre `5bedc84`. Com os Steps aplicados em sequência, ficam verdes o `check-types`, o Biome (`src` e `.context`) e os 14 arquivos de teste do Step 27. Os estados vermelhos dos Steps 6, 14 e 18 batem com os `Expected` (12, 7 e 5 falhas). Os contrastes impressos no Step 8 são os da lista.
+>
+> **Desvio de valor (spec §6.4.1):** a tinta do bloco "Confirmada" é `#123b27`, não o `#14402a` do handoff. O valor do handoff dá 4,41:1 no lilás e reprovaria o guarda de contraste.
+
+**Files:**
+- Create: `src/components/app-shell/AvatarStack.tsx` (pilha de avatares sobrepostos)
+- Create: `src/components/app-shell/AvatarStack.test.tsx`
+- Modify: `src/features/handovers/home.ts` (`MyShiftState` `delivered`/`confirmed` ganha `deliveredById`/`confirmedById`; o `loadMine` preenche os dois)
+- Modify: `src/features/handovers/home.test.ts` (os ids nos testes `delivered` e `confirmed`)
+- Modify: `src/app/globals.css` (tokens `--on-pastel-success*` no `:root` e no `@theme inline`; saem os `--pastel-*`)
+- Modify: `src/app/themeContrast.test.ts` (tokens novos, os dois blocos de status sobre cada setor, caso negativo do `#14402a`; saem os pares `pastel-*`)
+- Modify: `src/components/passagens/MyShiftCard.tsx` (reescrito: blocos de status e linha de entrega com avatar)
+- Modify: `src/components/passagens/MyShiftCard.test.tsx` (fixtures com ids; testes novos de `delivered` e `confirmed`)
+- Modify: `src/components/passagens/HomeCards.tsx` (gera os avatares de quem entregou e de quem confirmou)
+- Modify: `src/components/passagens/HomeCards.test.tsx` (sementes dos avatares)
+- Modify: `src/components/passagens/HomeHandovers.test.tsx` (integração: avatares da entregue e da confirmada)
+- Modify: `src/components/ui/badge.tsx` (saem as variantes `pastel-pending` e `pastel-confirmed`)
+- Modify: `src/components/ui/badge.test.tsx`
+- Modify: `.context/ui-tokens.md` (tokens e contraste)
+- Modify: `.context/ui-registry.md` (`AvatarStack` novo; `Badge`, `UserAvatar`, `MyShiftCard` e `HomeCards` mudam)
+
+**Interfaces:**
+- Consumes:
+  - `UserAvatar` e `type UserAvatarSize` (`@/components/app-shell/UserAvatar`, Task 8): `{ src: string; size: 34 | 36 | 44 | 52 | 84; tilt?: number; frame?: "default" | "on-pastel"; className?: string }`. A inclinação vai em `style.transform`, e o `className` entra na moldura.
+  - `avatarDataUri(seed: string): string` (`@/lib/avatar`, Task 8). Lança erro com semente vazia.
+  - `MyShiftState` e `loadMine` (`@/features/handovers/home`, Task 10).
+  - `MyShiftCard` (Task 12), `HomeCards` (Task 14) e o token `--on-pastel` (Task 1).
+- Produces:
+  - `MyShiftState`, estados `delivered`/`confirmed`: ganham `deliveredById: string` e `confirmedById: string | null`.
+  - `export type StackedAvatar = { id: string; src: string; tilt?: number };`
+  - `export function AvatarStack(props: { avatars: readonly StackedAvatar[]; size: UserAvatarSize; frame?: "default" | "on-pastel"; className?: string })`.
+  - `MyShiftCard` ganha `deliveredAvatarSrc?: string | null` e `confirmedAvatarSrc?: string | null` (padrão `null`).
+  - Tokens `--on-pastel-success-soft` e `--on-pastel-success`, com os utilitários `bg-on-pastel-success-soft` e `text-on-pastel-success`.
+  - Remove: as variantes `pastel-pending` e `pastel-confirmed` do `Badge`; os tokens `--pastel-pending`, `--pastel-pending-foreground`, `--pastel-confirmed` e `--pastel-confirmed-foreground`, com os `--color-*` deles.
+
+Testes existentes que mencionam o que esta task toca: o `grep -rlE "MyShiftCard|HomeCards|AvatarStack|UserAvatar|features/handovers/home\"|globals\.css|ui/badge\"" src test e2e` lista estes.
+- **Mudam nos Steps abaixo:** `MyShiftCard.test.tsx`, `HomeCards.test.tsx`, `HomeHandovers.test.tsx`, `badge.test.tsx`, `home.test.ts` e `themeContrast.test.ts`.
+- **Só rodam no Step 27:** `UserAvatar.test.tsx`, `PendingHandoverCard.test.tsx`, `chartPalette.test.ts`, `colors.test.ts`, `test/fontsConfig.test.ts`, `rawColors.test.ts` e `test/uiRegistryDoc.test.ts`.
+- **Nenhum E2E depende do selo antigo.** O `e2e/passagem.spec.ts` procura "Aguardando recebimento" e "Confirmada por …" no resumo da passagem, não no Início. A âncora `^Entregue às \d{2}:\d{2} por Ana Teste$` dele é a do `PendingHandoverCard`, que não muda.
+
+- [ ] **Step 1: Dados — escrever o teste que falha**
+
+Edit em `src/features/handovers/home.test.ts`, no teste "delivered: traz id, quem entregou e quando":
+
+old_string:
+```ts
+      expect(mine).toMatchObject({
+        kind: "delivered",
+        handoverId: passagem.id,
+        deliveredByName: "Ana Teste",
+        deliveredAt: spDate("2026-11-21", "14:02"),
+        confirmedByName: null,
+        confirmedAt: null,
+      });
+```
+new_string:
+```ts
+      expect(mine).toMatchObject({
+        kind: "delivered",
+        handoverId: passagem.id,
+        // Semente do avatar da linha de entrega (spec §6.4.1).
+        deliveredById: ana,
+        deliveredByName: "Ana Teste",
+        deliveredAt: spDate("2026-11-21", "14:02"),
+        confirmedById: null,
+        confirmedByName: null,
+        confirmedAt: null,
+      });
+```
+
+Edit no mesmo arquivo, no teste "confirmed: traz quem confirmou e quando":
+
+old_string:
+```ts
+      expect(mine).toMatchObject({
+        kind: "confirmed",
+        confirmedByName: "Bia Teste",
+        confirmedAt: spDate("2026-11-21", "14:04"),
+      });
+```
+new_string:
+```ts
+      expect(mine).toMatchObject({
+        kind: "confirmed",
+        // As duas sementes da pilha de avatares (spec §6.4.1).
+        deliveredById: ana,
+        deliveredByName: "Ana Teste",
+        confirmedById: bia,
+        confirmedByName: "Bia Teste",
+        confirmedAt: spDate("2026-11-21", "14:04"),
+      });
+```
+
+- [ ] **Step 2: Rodar e ver falhar**
+
+Run: `bunx vitest run src/features/handovers/home.test.ts`
+Expected: FAIL em "delivered: traz id, quem entregou e quando" e em "confirmed: traz quem confirmou e quando" (`expected { … } to match object { … }`, porque faltam `deliveredById` e `confirmedById`). Os outros testes passam.
+
+- [ ] **Step 3: Implementar os ids no `MyShiftState` e no `loadMine`**
+
+Edit em `src/features/handovers/home.ts` (o tipo):
+
+old_string:
+```ts
+  | {
+      kind: "delivered" | "confirmed";
+      handoverId: string;
+      ref: HandoverRef;
+      shift: ShiftChoice;
+      deliveredByName: string;
+      deliveredAt: Date;
+      confirmedByName: string | null;
+      confirmedAt: Date | null;
+    };
+```
+new_string:
+```ts
+  | {
+      kind: "delivered" | "confirmed";
+      handoverId: string;
+      ref: HandoverRef;
+      shift: ShiftChoice;
+      // Ids para o avatar da linha de entrega (semente estável, spec §6.4.1).
+      deliveredById: string;
+      deliveredByName: string;
+      deliveredAt: Date;
+      confirmedById: string | null;
+      confirmedByName: string | null;
+      confirmedAt: Date | null;
+    };
+```
+
+Edit no mesmo arquivo (o retorno do `loadMine`):
+
+old_string:
+```ts
+    shift: chosen,
+    deliveredByName:
+      (row.deliveredBy === null ? undefined : people.get(row.deliveredBy)) ??
+      "",
+    deliveredAt: row.deliveredAt ?? row.updatedAt,
+    confirmedByName:
+```
+new_string:
+```ts
+    shift: chosen,
+    // O check handover_status_consistent garante quem entregou (e quem
+    // confirmou, na confirmada). O "" é o mesmo fallback do nome, para uma
+    // linha fora do check; o HomeCards não gera avatar com id vazio.
+    deliveredById: row.deliveredBy ?? "",
+    deliveredByName:
+      (row.deliveredBy === null ? undefined : people.get(row.deliveredBy)) ??
+      "",
+    deliveredAt: row.deliveredAt ?? row.updatedAt,
+    confirmedById: row.confirmedBy,
+    confirmedByName:
+```
+
+- [ ] **Step 4: Rodar e ver passar**
+
+Run: `bunx vitest run src/features/handovers/home.test.ts`
+Expected: PASS (o arquivo inteiro).
+
+- [ ] **Step 5: Tokens — escrever o teste de contraste que falha**
+
+São cinco Edits em `src/app/themeContrast.test.ts`.
+
+a) Tokens do contrato. old_string:
+```ts
+  ...SECTOR_TOKENS,
+  "pastel-pending",
+  "pastel-pending-foreground",
+  "pastel-confirmed",
+  "pastel-confirmed-foreground",
+];
+```
+new_string:
+```ts
+  ...SECTOR_TOKENS,
+  "on-pastel-success",
+  "on-pastel-success-soft",
+];
+```
+
+b) Valores fixos. old_string:
+```ts
+  "sector-pink": "#f2a7c6",
+  "pastel-pending": "#cbe4f6",
+  "pastel-pending-foreground": "#1d4a72",
+  "pastel-confirmed": "#d3eedd",
+  "pastel-confirmed-foreground": "#1f5131",
+};
+```
+new_string:
+```ts
+  "sector-pink": "#f2a7c6",
+  // Bloco "Confirmada" do cartão de turno (spec §6.4.1). A tinta do handoff
+  // (#14402a) dava 4,41:1 no lilás; o token é ela escurecida até passar.
+  "on-pastel-success": "#123b27",
+  "on-pastel-success-soft": "rgba(46, 125, 79, 0.22)",
+};
+```
+
+c) Pares opacos. old_string:
+```ts
+  ["on-pastel-ink", "on-pastel"],
+  ["pastel-pending-foreground", "pastel-pending"],
+  ["pastel-confirmed-foreground", "pastel-confirmed"],
+];
+```
+new_string:
+```ts
+  ["on-pastel-ink", "on-pastel"],
+];
+```
+
+d) Blocos translúcidos: o "Confirmada" sobre cada setor. old_string:
+```ts
+  ["on-invite-soft", "on-pastel-soft", "invite"],
+];
+```
+new_string:
+```ts
+  ["on-invite-soft", "on-pastel-soft", "invite"],
+  // Bloco "Confirmada" do cartão de turno (§6.4.1), sobre a cor de cada setor.
+  ...SECTOR_TOKENS.map((base): [string, string, string] => [
+    "on-pastel-success",
+    "on-pastel-success-soft",
+    base,
+  ]),
+];
+```
+
+e) O bloco "Aguardando recebimento" (`on-pastel/10`, sem token próprio) e o caso negativo do verde do handoff. old_string:
+```ts
+  it("o bloco translúcido muda o fundo medido (compor não é no-op)", () => {
+    const base = solid(fixed("sector-lilac"), "sector-lilac");
+    expect(over(fixed("on-pastel-soft"), base)).not.toEqual(base);
+  });
+});
+```
+new_string:
+```ts
+  it("o bloco translúcido muda o fundo medido (compor não é no-op)", () => {
+    const base = solid(fixed("sector-lilac"), "sector-lilac");
+    expect(over(fixed("on-pastel-soft"), base)).not.toEqual(base);
+  });
+
+  it("a tinta verde do handoff (#14402a) no bloco 'Confirmada' em cima do lilás reprova: por isso o token é mais escuro", () => {
+    const ratio = contrast(
+      parseColor("#14402a").rgb,
+      over(
+        fixed("on-pastel-success-soft"),
+        solid(fixed("sector-lilac"), "sector-lilac"),
+      ),
+    );
+    expect(ratio, `${ratio.toFixed(2)}:1`).toBeLessThan(TEXT_MIN);
+  });
+});
+
+// ---------------------------------------------------------------- contraste: bloco "Aguardando recebimento"
+/**
+ * O bloco "Aguardando recebimento" do cartão de turno (spec §6.4.1) é `bg-on-pastel/10`: o token
+ * `on-pastel` com 10% de opacidade, sem token próprio. O guarda compõe essa mistura sobre a cor de
+ * cada setor e mede a tinta `on-pastel`. O "Confirmada" está em OVERLAY_CASES, com os tokens dele.
+ */
+const PENDING_BLOCK_ALPHA = 0.1;
+
+function pendingBlockRatio(base: string): number {
+  const ink = solid(fixed("on-pastel"), "on-pastel");
+  const block = over(
+    { rgb: ink, alpha: PENDING_BLOCK_ALPHA },
+    solid(fixed(base), base),
+  );
+  return contrast(ink, block);
+}
+
+describe("contraste do bloco 'Aguardando recebimento' (on-pastel/10 sobre a cor do setor)", () => {
+  if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+    it("imprime a matriz medida", () => {
+      const lines = SECTOR_TOKENS.map(
+        (base) =>
+          `on-pastel sobre on-pastel/10 em ${base}: ${pendingBlockRatio(base).toFixed(2)}:1`,
+      );
+      console.log(`\n[bloco Aguardando recebimento]\n${lines.join("\n")}`);
+      expect(lines).toHaveLength(SECTOR_TOKENS.length);
+    });
+  }
+
+  it.each(
+    SECTOR_TOKENS,
+  )("on-pastel sobre on-pastel/10 em cima de %s (≥4,5:1)", (base) => {
+    const ratio = pendingBlockRatio(base);
+    expect(
+      ratio,
+      `on-pastel sobre on-pastel/10 em ${base}: ${ratio.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(TEXT_MIN);
+  });
+});
+```
+
+- [ ] **Step 6: Rodar e ver falhar**
+
+Run: `bunx vitest run src/app/themeContrast.test.ts`
+Expected: `12 failed`.
+- Com "--on-pastel-success ausente em :root" e "--on-pastel-success-soft ausente em :root": estrutura, tabela das cores fixas, OVERLAY_CASES e o caso negativo.
+- Também falham "a ponte --color-on-pastel-success existe no @theme inline" e "a ponte --color-on-pastel-success-soft existe no @theme inline".
+- O bloco "Aguardando recebimento" já passa, porque usa o `--on-pastel` de hoje.
+
+- [ ] **Step 7: Implementar os tokens**
+
+Edit em `src/app/globals.css` (`@theme inline`):
+
+old_string:
+```css
+  --color-sector-pink: var(--sector-pink);
+  --color-pastel-pending: var(--pastel-pending);
+  --color-pastel-pending-foreground: var(--pastel-pending-foreground);
+  --color-pastel-confirmed: var(--pastel-confirmed);
+  --color-pastel-confirmed-foreground: var(--pastel-confirmed-foreground);
+```
+new_string:
+```css
+  --color-sector-pink: var(--sector-pink);
+  --color-on-pastel-success: var(--on-pastel-success);
+  --color-on-pastel-success-soft: var(--on-pastel-success-soft);
+```
+
+Edit em `src/app/globals.css` (`:root`, no fim das cores fixas):
+
+old_string:
+```css
+  --sector-pink: #f2a7c6;
+  --pastel-pending: #cbe4f6;
+  --pastel-pending-foreground: #1d4a72;
+  --pastel-confirmed: #d3eedd;
+  --pastel-confirmed-foreground: #1f5131;
+}
+```
+new_string:
+```css
+  --sector-pink: #f2a7c6;
+  /*
+   * Bloco "Confirmada" do cartão de turno (spec §6.4.1): verde translúcido por cima da cor do
+   * setor e a tinta verde-escura. A tinta do handoff dava 4,41:1 no lilás; esta passa (AA) nos
+   * cinco setores. O "Aguardando recebimento" não tem token: é `bg-on-pastel/10`.
+   */
+  --on-pastel-success-soft: rgba(46, 125, 79, 0.22);
+  --on-pastel-success: #123b27;
+}
+```
+
+- [ ] **Step 8: Rodar e ver passar (e conferir os números)**
+
+Run: `bunx vitest run src/app/themeContrast.test.ts src/app/chartPalette.test.ts src/features/sectors/colors.test.ts`
+Expected: PASS nos três arquivos.
+
+Run: `VITEST_PRINT_THEME_CONTRAST=1 bunx vitest run src/app/themeContrast.test.ts`
+Expected: PASS, e o console imprime estes valores, que o Step 25 copia para o `ui-tokens.md`:
+- `on-pastel sobre on-pastel/10 em sector-lilac|peach|sky|green|pink`: 6.56 · 8.08 · 8.02 · 8.54 · 7.61;
+- `on-pastel-success sobre on-pastel-success-soft em sector-lilac|peach|sky|green|pink`: 4.71 · 5.61 · 5.69 · 6.01 · 5.29.
+
+Se algum número sair diferente, use o impresso, nunca o desta lista.
+
+- [ ] **Step 9: `AvatarStack` — escrever o teste que falha**
+
+Write `src/components/app-shell/AvatarStack.test.tsx`:
+
+```tsx
+import { render } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import { AvatarStack, type StackedAvatar } from "./AvatarStack";
+
+const ENTREGOU: StackedAvatar = {
+  id: "entregou",
+  src: "data:image/svg+xml,ana",
+  tilt: 3,
+};
+const CONFIRMOU: StackedAvatar = {
+  id: "confirmou",
+  src: "data:image/svg+xml,bruno",
+  tilt: -4,
+};
+const TERCEIRA: StackedAvatar = {
+  id: "terceira",
+  src: "data:image/svg+xml,carla",
+};
+
+/** As molduras (o `div` do `UserAvatar`), na ordem do DOM. */
+function framesOf(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll("img")).map((img) => {
+    const frame = img.parentElement;
+    if (!(frame instanceof HTMLElement)) throw new Error("moldura ausente");
+    return frame;
+  });
+}
+
+describe("AvatarStack", () => {
+  it("lista vazia não desenha nada", () => {
+    const { container } = render(<AvatarStack avatars={[]} size={36} />);
+
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("um avatar: o invólucro não encolhe e centra, e o avatar fica por cima, sem recuo", () => {
+    const { container } = render(
+      <AvatarStack avatars={[ENTREGOU]} size={36} frame="on-pastel" />,
+    );
+
+    const stack = container.firstElementChild;
+    expect(stack).toHaveAttribute("data-slot", "avatar-stack");
+    expect(stack).toHaveClass("flex", "flex-none", "items-center");
+    const [only, ...rest] = framesOf(container);
+    expect(rest).toHaveLength(0);
+    expect(only).toHaveClass("relative", "z-1", "size-[36px]", "bg-on-pastel");
+    expect(only).not.toHaveClass("-ml-2");
+    expect(only?.style.transform).toBe("rotate(3deg)");
+  });
+
+  it("dois avatares, na ordem recebida: o primeiro por cima (z-index 1) e o segundo 8px sobreposto, cada um com a sua inclinação", () => {
+    const { container } = render(
+      <AvatarStack
+        avatars={[ENTREGOU, CONFIRMOU]}
+        size={36}
+        frame="on-pastel"
+      />,
+    );
+
+    expect(
+      Array.from(container.querySelectorAll("img")).map((img) =>
+        img.getAttribute("src"),
+      ),
+    ).toEqual([ENTREGOU.src, CONFIRMOU.src]);
+    const [first, second] = framesOf(container);
+    expect(first).toHaveClass("relative", "z-1");
+    expect(first).not.toHaveClass("-ml-2");
+    expect(second).toHaveClass("-ml-2");
+    expect(second).not.toHaveClass("z-1");
+    expect(first?.style.transform).toBe("rotate(3deg)");
+    expect(second?.style.transform).toBe("rotate(-4deg)");
+  });
+
+  it("três ou mais: o primeiro continua por cima e todos depois dele recuam 8px; sem tilt, sem transform", () => {
+    const { container } = render(
+      <AvatarStack avatars={[ENTREGOU, CONFIRMOU, TERCEIRA]} size={34} />,
+    );
+
+    const frames = framesOf(container);
+    expect(frames).toHaveLength(3);
+    expect(frames[0]).toHaveClass("relative", "z-1");
+    expect(frames[1]).toHaveClass("-ml-2");
+    expect(frames[2]).toHaveClass("-ml-2");
+    expect(frames[2]?.style.transform).toBe("");
+  });
+
+  it("sem frame, a moldura é a padrão (bg-frame); o tamanho chega a todos", () => {
+    const { container } = render(
+      <AvatarStack avatars={[ENTREGOU, CONFIRMOU]} size={44} />,
+    );
+
+    for (const frame of framesOf(container)) {
+      expect(frame).toHaveClass("bg-frame", "size-[44px]");
+      expect(frame).not.toHaveClass("bg-on-pastel");
+    }
+  });
+
+  it("className de quem usa entra no invólucro sem perder as classes fixas", () => {
+    const { container } = render(
+      <AvatarStack avatars={[ENTREGOU]} size={36} className="mt-1" />,
+    );
+
+    expect(container.firstElementChild).toHaveClass(
+      "mt-1",
+      "flex",
+      "flex-none",
+      "items-center",
+    );
+  });
+
+  it("é decorativa: nenhuma imagem na árvore de acessibilidade (o nome está no texto ao lado)", () => {
+    const { container, queryByRole } = render(
+      <AvatarStack avatars={[ENTREGOU, CONFIRMOU]} size={36} />,
+    );
+
+    expect(queryByRole("img")).toBeNull();
+    for (const img of Array.from(container.querySelectorAll("img"))) {
+      expect(img).toHaveAttribute("alt", "");
+    }
+  });
+});
+```
+
+- [ ] **Step 10: Rodar e ver falhar**
+
+Run: `bunx vitest run src/components/app-shell/AvatarStack.test.tsx`
+Expected: FAIL com `Failed to resolve import "./AvatarStack"`.
+
+- [ ] **Step 11: Implementar o `AvatarStack`**
+
+Write `src/components/app-shell/AvatarStack.tsx`:
+
+```tsx
+import { cn } from "cn";
+
+import { UserAvatar, type UserAvatarSize } from "./UserAvatar";
+
+export type StackedAvatar = {
+  // Chave React: estável e única na pilha (o papel da pessoa ou o id dela).
+  id: string;
+  // Data URI de `avatarDataUri(userId)` (src/lib/avatar.ts), gerado no servidor.
+  src: string;
+  // Inclinação em graus; sem ela, o avatar fica reto.
+  tilt?: number;
+};
+
+// Avatares sobrepostos numa linha de texto (pack de correção do Início, spec
+// §6.4.1). Na ordem recebida: o primeiro fica por cima de todos (`relative
+// z-1`, o `z-index: 1` do protótipo) e cada um depois dele entra 8px por baixo
+// do anterior (`-ml-2`). Decorativo como o `UserAvatar`: o nome das pessoas
+// está no texto ao lado. Lista vazia não desenha nada.
+export function AvatarStack({
+  avatars,
+  size,
+  frame = "default",
+  className,
+}: {
+  avatars: readonly StackedAvatar[];
+  size: UserAvatarSize;
+  frame?: "default" | "on-pastel";
+  className?: string;
+}) {
+  if (avatars.length === 0) return null;
+  return (
+    <div
+      data-slot="avatar-stack"
+      className={cn("flex flex-none items-center", className)}
+    >
+      {avatars.map((avatar, index) => (
+        <UserAvatar
+          key={avatar.id}
+          src={avatar.src}
+          size={size}
+          tilt={avatar.tilt}
+          frame={frame}
+          className={index === 0 ? "relative z-1" : "-ml-2"}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+- [ ] **Step 12: Rodar e ver passar**
+
+Run: `bunx vitest run src/components/app-shell/AvatarStack.test.tsx src/components/app-shell/UserAvatar.test.tsx`
+Expected: PASS (7 testes do `AvatarStack`; o `UserAvatar` sem mudança).
+
+- [ ] **Step 13: `MyShiftCard` — escrever os testes que falham**
+
+São seis Edits em `src/components/passagens/MyShiftCard.test.tsx`.
+
+a) Os avatares de entrega. old_string:
+```tsx
+const AVATAR = "data:image/svg+xml,rascunho";
+```
+new_string:
+```tsx
+const AVATAR = "data:image/svg+xml,rascunho";
+const DELIVERED_AVATAR = "data:image/svg+xml,entregou";
+const CONFIRMED_AVATAR = "data:image/svg+xml,confirmou";
+```
+
+b) As fixtures ganham os ids. old_string:
+```tsx
+const DELIVERED: MyShiftState = {
+  kind: "delivered",
+  handoverId: "h1",
+  ref: REF,
+  shift: SHIFT,
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "14:05"),
+  confirmedByName: null,
+  confirmedAt: null,
+};
+const CONFIRMED: MyShiftState = {
+  kind: "confirmed",
+  handoverId: "h1",
+  ref: REF,
+  shift: SHIFT,
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "14:05"),
+  confirmedByName: "Bia Teste",
+  confirmedAt: spDate("2026-11-20", "14:20"),
+};
+```
+new_string:
+```tsx
+const DELIVERED: MyShiftState = {
+  kind: "delivered",
+  handoverId: "h1",
+  ref: REF,
+  shift: SHIFT,
+  deliveredById: "u-ana",
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "14:05"),
+  confirmedById: null,
+  confirmedByName: null,
+  confirmedAt: null,
+};
+const CONFIRMED: MyShiftState = {
+  kind: "confirmed",
+  handoverId: "h1",
+  ref: REF,
+  shift: SHIFT,
+  deliveredById: "u-ana",
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "14:05"),
+  confirmedById: "u-bia",
+  confirmedByName: "Bia Teste",
+  confirmedAt: spDate("2026-11-20", "14:20"),
+};
+```
+
+c) O `renderCard` passa as props novas (padrão sem avatar). old_string:
+```tsx
+      sectorParam={null}
+      avatarSrc={null}
+      {...props}
+```
+new_string:
+```tsx
+      sectorParam={null}
+      avatarSrc={null}
+      deliveredAvatarSrc={null}
+      confirmedAvatarSrc={null}
+      {...props}
+```
+
+d) Helpers, logo depois do `cardOf`. old_string:
+```tsx
+function cardOf(container: HTMLElement): HTMLElement {
+  const card = container.querySelector('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) throw new Error("cartão ausente");
+  return card;
+}
+```
+new_string:
+```tsx
+function cardOf(container: HTMLElement): HTMLElement {
+  const card = container.querySelector('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) throw new Error("cartão ausente");
+  return card;
+}
+
+function parentOf(element: Element | undefined): HTMLElement {
+  const parent = element?.parentElement;
+  if (!(parent instanceof HTMLElement)) throw new Error("elemento sem pai");
+  return parent;
+}
+
+function avatarsIn(element: Element): HTMLImageElement[] {
+  return Array.from(element.querySelectorAll("img"));
+}
+
+/** `later` vem depois de `earlier` na ordem do documento (sem ser filho dele). */
+function follows(earlier: Node, later: Node): boolean {
+  return (
+    earlier.compareDocumentPosition(later) === Node.DOCUMENT_POSITION_FOLLOWING
+  );
+}
+```
+
+e) Os testes de `delivered` e `confirmed` (selo) viram os do bloco e do avatar. old_string: os dois testes inteiros, do `it(` do primeiro até o `});` do segundo, logo antes de `it("confirmed sem quem confirmou nem hora: 'outra pessoa', sem inventar a hora"`:
+```tsx
+  it("delivered: selo 'Aguardando recebimento', quem entregou, link para a passagem e sem barra", () => {
+    renderCard(DELIVERED);
+
+    // Selo pastel no tamanho do protótipo (28px, 12px de padding, 13px).
+    expect(screen.getByText("Aguardando recebimento")).toHaveClass(
+      "bg-pastel-pending",
+      "text-pastel-pending-foreground",
+      "h-7",
+      "px-3",
+      "text-[13px]",
+    );
+    expect(screen.getByText("Aguardando recebimento")).not.toHaveClass("h-6");
+    expect(
+      screen.getByText(
+        "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
+      "href",
+      "/passagens/h1",
+    );
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Turno sugerido pelo horário de agora."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Começar passagem" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("confirmed: selo 'Confirmada', entrega e confirmação com nomes e horas", () => {
+    renderCard(CONFIRMED);
+
+    expect(screen.getByText("Confirmada")).toHaveClass(
+      "bg-pastel-confirmed",
+      "text-pastel-confirmed-foreground",
+      "h-7",
+    );
+    expect(
+      screen.getByText(
+        "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
+      "href",
+      "/passagens/h1",
+    );
+  });
+```
+new_string:
+```tsx
+  it("delivered: bloco 'Aguardando recebimento' de largura inteira, sem selo, com ícone decorativo", () => {
+    const { container } = renderCard(DELIVERED);
+
+    // Pack de correção (spec §6.4.1): bloco, não mais o selo em pílula.
+    const block = screen.getByText("Aguardando recebimento");
+    expect(block.tagName).toBe("P");
+    expect(block).toHaveClass(
+      "flex",
+      "items-center",
+      "gap-2.5",
+      "self-stretch",
+      "rounded-[22px]",
+      "px-[22px]",
+      "py-[18px]",
+      "font-heading",
+      "text-base",
+      "leading-[normal]",
+      "font-bold",
+      "bg-on-pastel/10",
+      "text-on-pastel",
+    );
+    expect(block).not.toHaveClass("h-7");
+    expect(block).not.toHaveClass("rounded-full");
+    expect(container.querySelector('[data-slot="badge"]')).toBeNull();
+    const icon = block.querySelector("svg");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveClass("size-[18px]", "shrink-0");
+  });
+
+  it("delivered: linha de entrega com o avatar de quem entregou (36px, +3°) e a frase em 15px/1.5", () => {
+    renderCard(DELIVERED, { deliveredAvatarSrc: DELIVERED_AVATAR });
+
+    const sentence = screen.getByText(
+      "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+    );
+    expect(sentence).toHaveClass("text-[15px]", "leading-normal");
+    const line = parentOf(sentence);
+    expect(line).toHaveClass("flex", "items-center", "gap-2.5");
+    const [avatar, ...rest] = avatarsIn(line);
+    expect(rest).toHaveLength(0);
+    expect(avatar).toHaveAttribute("src", DELIVERED_AVATAR);
+    expect(avatar).toHaveAttribute("alt", "");
+    const frame = parentOf(avatar);
+    expect(frame).toHaveClass("size-[36px]", "bg-on-pastel");
+    expect(frame.style.transform).toBe("rotate(3deg)");
+  });
+
+  it("delivered: bloco, linha de entrega e ações nessa ordem; 12px entre o bloco e a linha; sem barra", () => {
+    renderCard(DELIVERED, { deliveredAvatarSrc: DELIVERED_AVATAR });
+
+    const block = screen.getByText("Aguardando recebimento");
+    const line = parentOf(
+      screen.getByText(
+        "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+      ),
+    );
+    const group = parentOf(block);
+    expect(parentOf(line)).toBe(group);
+    expect(group).toHaveClass("flex", "flex-col", "items-start", "gap-3");
+    const primary = screen.getByRole("link", { name: "Ver passagem" });
+    expect(follows(block, line)).toBe(true);
+    expect(follows(line, primary)).toBe(true);
+    expect(primary).toHaveAttribute("href", "/passagens/h1");
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Turno sugerido pelo horário de agora."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Começar passagem" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("delivered sem avatar: a frase aparece sozinha, sem imagem nem pilha", () => {
+    const { container } = renderCard(DELIVERED);
+
+    expect(
+      screen.getByText(
+        "Entregue às 14:05 por Ana Teste. Aguardando recebimento.",
+      ),
+    ).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector('[data-slot="avatar-stack"]')).toBeNull();
+  });
+
+  it("delivered ignora o avatar de quem confirmou (ainda não houve confirmação)", () => {
+    const { container } = renderCard(DELIVERED, {
+      deliveredAvatarSrc: DELIVERED_AVATAR,
+      confirmedAvatarSrc: CONFIRMED_AVATAR,
+    });
+
+    expect(avatarsIn(container).map((img) => img.getAttribute("src"))).toEqual([
+      DELIVERED_AVATAR,
+    ]);
+  });
+
+  it("confirmed: bloco verde 'Confirmada' de largura inteira, sem selo, com ícone decorativo", () => {
+    const { container } = renderCard(CONFIRMED);
+
+    const block = screen.getByText("Confirmada");
+    expect(block.tagName).toBe("P");
+    expect(block).toHaveClass(
+      "flex",
+      "items-center",
+      "gap-2.5",
+      "self-stretch",
+      "rounded-[22px]",
+      "px-[22px]",
+      "py-[18px]",
+      "font-heading",
+      "text-base",
+      "leading-[normal]",
+      "font-bold",
+      "bg-on-pastel-success-soft",
+      "text-on-pastel-success",
+    );
+    expect(block).not.toHaveClass("bg-on-pastel/10");
+    expect(block).not.toHaveClass("h-7");
+    expect(container.querySelector('[data-slot="badge"]')).toBeNull();
+    expect(block.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("confirmed: pilha com quem entregou por cima (+3°) e quem confirmou 8px por baixo (−4°), com nomes e horas", () => {
+    renderCard(CONFIRMED, {
+      deliveredAvatarSrc: DELIVERED_AVATAR,
+      confirmedAvatarSrc: CONFIRMED_AVATAR,
+    });
+
+    const sentence = screen.getByText(
+      "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
+    );
+    expect(sentence).toHaveClass("text-[15px]", "leading-normal");
+    const line = parentOf(sentence);
+    expect(line).toHaveClass("flex", "items-center", "gap-2.5");
+    expect(line.querySelector('[data-slot="avatar-stack"]')).not.toBeNull();
+    const [delivered, confirmed, ...rest] = avatarsIn(line);
+    expect(rest).toHaveLength(0);
+    expect(delivered).toHaveAttribute("src", DELIVERED_AVATAR);
+    expect(confirmed).toHaveAttribute("src", CONFIRMED_AVATAR);
+    expect(parentOf(delivered)).toHaveClass(
+      "relative",
+      "z-1",
+      "size-[36px]",
+      "bg-on-pastel",
+    );
+    expect(parentOf(delivered).style.transform).toBe("rotate(3deg)");
+    expect(parentOf(confirmed)).toHaveClass("-ml-2", "size-[36px]");
+    expect(parentOf(confirmed).style.transform).toBe("rotate(-4deg)");
+
+    const block = screen.getByText("Confirmada");
+    expect(parentOf(line)).toBe(parentOf(block));
+    expect(parentOf(block)).toHaveClass("flex-col", "items-start", "gap-3");
+    expect(follows(block, line)).toBe(true);
+    expect(screen.getByRole("link", { name: "Ver passagem" })).toHaveAttribute(
+      "href",
+      "/passagens/h1",
+    );
+  });
+
+  it("confirmed sem o avatar de quem confirmou: só o de quem entregou, por cima e sem recuo", () => {
+    const { container } = renderCard(CONFIRMED, {
+      deliveredAvatarSrc: DELIVERED_AVATAR,
+    });
+
+    const [only, ...rest] = avatarsIn(container);
+    expect(rest).toHaveLength(0);
+    expect(only).toHaveAttribute("src", DELIVERED_AVATAR);
+    expect(parentOf(only)).toHaveClass("relative", "z-1");
+    expect(parentOf(only)).not.toHaveClass("-ml-2");
+  });
+
+  it("confirmed sem avatares: a frase inteira e nenhuma imagem", () => {
+    const { container } = renderCard(CONFIRMED);
+
+    expect(
+      screen.getByText(
+        "Entregue por Ana Teste às 14:05. Confirmada por Bia Teste às 14:20.",
+      ),
+    ).toBeInTheDocument();
+    expect(container.querySelector("img")).toBeNull();
+  });
+```
+
+f) O guarda de cor do arquivo passa todos os avatares. old_string:
+```tsx
+      const { container, unmount } = renderCard(state, { avatarSrc: AVATAR });
+```
+new_string:
+```tsx
+      const { container, unmount } = renderCard(state, {
+        avatarSrc: AVATAR,
+        deliveredAvatarSrc: DELIVERED_AVATAR,
+        confirmedAvatarSrc: CONFIRMED_AVATAR,
+      });
+```
+
+O teste "confirmed sem quem confirmou nem hora: 'outra pessoa', sem inventar a hora" continua como está.
+
+- [ ] **Step 14: Rodar e ver falhar**
+
+Run: `bunx vitest run src/components/passagens/MyShiftCard.test.tsx`
+Expected: `7 failed`.
+- Os dois testes de bloco, "delivered: bloco 'Aguardando recebimento'…" e "confirmed: bloco verde 'Confirmada'…": as classes ainda são as do `Badge`.
+- "delivered: linha de entrega com o avatar…", "delivered: bloco, linha de entrega e ações nessa ordem…", "delivered ignora o avatar de quem confirmou…", "confirmed: pilha com quem entregou por cima…" e "confirmed sem o avatar de quem confirmou…": nenhum `img`, e a frase ainda está no grupo, não numa linha própria.
+- "delivered sem avatar" e "confirmed sem avatares" já passam, porque hoje não há avatar. Os outros 24 testes do arquivo também passam.
+
+- [ ] **Step 15: Implementar o `MyShiftCard`**
+
+Write `src/components/passagens/MyShiftCard.tsx` (arquivo inteiro):
+
+```tsx
+import { cn } from "cn";
+import { ArrowRight, CircleCheck, Clock } from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+import {
+  AvatarStack,
+  type StackedAvatar,
+} from "@/components/app-shell/AvatarStack";
+import { UserAvatar } from "@/components/app-shell/UserAvatar";
+import { buttonVariants } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import type { MyShiftState } from "@/features/handovers/home";
+import { formatDateBR, formatTimeBR } from "@/features/handovers/saoPaulo";
+import { handoverHref, newHandoverHref } from "@/features/handovers/urls";
+import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
+
+import { ShiftProgressBar } from "./ShiftProgressBar";
+
+// Protótipo: o primário dentro do card colorido tem 22px de padding (o do
+// `pill`); o secundário, 20px (o `cn` troca o `px-[22px]` pelo `px-5`).
+const PRIMARY = buttonVariants({ variant: "on-pastel", size: "pill" });
+const SECONDARY = cn(
+  buttonVariants({ variant: "on-pastel-secondary", size: "pill" }),
+  "px-5",
+);
+
+// Bloco de status de `delivered` e `confirmed` (pack de correção, spec
+// §6.4.1): largura inteira, no estilo do bloco "Fica para o próximo turno"
+// (raio 22px, padding 18px 22px), Satoshi 700/16px e ícone de 18px. O tom
+// escurece (`on-pastel/10`) ou esverdeia (`on-pastel-success-soft`) a cor do
+// setor por cima, então serve para qualquer setor.
+const STATUS_BLOCK =
+  "flex items-center gap-2.5 self-stretch rounded-[22px] px-[22px] py-[18px] font-heading text-base leading-[normal] font-bold";
+
+const STATUS_TONE = {
+  pending: { className: "bg-on-pastel/10 text-on-pastel", Icon: Clock },
+  confirmed: {
+    className: "bg-on-pastel-success-soft text-on-pastel-success",
+    Icon: CircleCheck,
+  },
+} as const;
+
+// Inclinação dos avatares da linha de entrega (protótipo): +3° quem entregou,
+// −4° quem confirmou.
+const DELIVERED_TILT = 3;
+const CONFIRMED_TILT = -4;
+
+// 64px; 52px quando o cartão divide a linha com Solicitações e a área útil é
+// menor que 1240px (container query do contêiner principal); 44px no celular.
+const TIME_CLASS =
+  "font-heading text-[64px] leading-none font-black tracking-[-0.035em] tabular-nums max-md:text-[44px] @min-[1040px]/main:@max-[1239px]/main:text-[52px]";
+
+function Shell({
+  color,
+  sectorName,
+  children,
+}: {
+  color: SectorColor;
+  sectorName: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card
+      variant="feature"
+      className={cn(
+        "gap-[22px] text-on-pastel transition-colors duration-[450ms] motion-reduce:transition-none",
+        SECTOR_COLOR_BG[color],
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="min-w-0 font-heading text-lg leading-[normal] font-bold">
+          Passagem do meu turno
+        </h2>
+        <span
+          title={sectorName}
+          className="h-7 max-w-[55%] min-w-0 truncate rounded-full bg-on-pastel px-3 font-mono text-xs leading-7 font-medium tracking-[.04em] whitespace-nowrap text-on-pastel-ink"
+        >
+          {sectorName}
+        </span>
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function PrimaryLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: ReactNode;
+}) {
+  return (
+    <Link href={href} className={PRIMARY}>
+      {children}
+      <ArrowRight aria-hidden="true" strokeWidth={2.2} />
+    </Link>
+  );
+}
+
+function Actions({ primary }: { primary: ReactNode }) {
+  return (
+    <div className="mt-auto flex flex-wrap gap-2.5">
+      {primary}
+      <Link href="/passagens" className={SECONDARY}>
+        Ver todas as passagens
+      </Link>
+    </div>
+  );
+}
+
+function StatusBlock({
+  tone,
+  children,
+}: {
+  tone: keyof typeof STATUS_TONE;
+  children: ReactNode;
+}) {
+  const { className, Icon } = STATUS_TONE[tone];
+  return (
+    <p className={cn(STATUS_BLOCK, className)}>
+      <Icon
+        aria-hidden="true"
+        strokeWidth={2.2}
+        className="size-[18px] shrink-0"
+      />
+      {children}
+    </p>
+  );
+}
+
+// Linha de entrega: o avatar (ou a pilha) à esquerda e a frase à direita, em
+// 15px/1.5. Sem avatar, a frase aparece sozinha.
+function DeliveryLine({
+  avatars,
+  children,
+}: {
+  avatars: readonly StackedAvatar[];
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <AvatarStack avatars={avatars} size={36} frame="on-pastel" />
+      <p className="text-[15px] leading-normal">{children}</p>
+    </div>
+  );
+}
+
+// Os avatares que existem, na ordem da pilha (quem entregou por cima).
+function present(avatars: readonly (StackedAvatar | null)[]): StackedAvatar[] {
+  return avatars.filter((avatar): avatar is StackedAvatar => avatar !== null);
+}
+
+export function MyShiftCard({
+  state,
+  sectorId,
+  sectorName,
+  sectorColor,
+  canManageCatalog,
+  sectorParam,
+  avatarSrc = null,
+  deliveredAvatarSrc = null,
+  confirmedAvatarSrc = null,
+}: {
+  state: MyShiftState;
+  sectorId: string;
+  sectorName: string;
+  sectorColor: SectorColor;
+  canManageCatalog: boolean;
+  sectorParam: string | null;
+  // Avatar de quem salvou o rascunho (estado `continue`).
+  avatarSrc?: string | null;
+  // Avatares da linha de entrega (`delivered` e `confirmed`): quem entregou e
+  // quem confirmou, data URIs gerados no servidor pelo `HomeCards`.
+  deliveredAvatarSrc?: string | null;
+  confirmedAvatarSrc?: string | null;
+}) {
+  if (state.kind === "no-shifts") {
+    return (
+      <Shell color={sectorColor} sectorName={sectorName}>
+        <div className="flex flex-col gap-1.5">
+          <p className="font-heading text-[32px] leading-[1.05] font-black tracking-[-0.02em]">
+            Nenhum turno neste setor.
+          </p>
+          <p className="text-[15px] leading-[normal] text-on-pastel-muted">
+            {canManageCatalog
+              ? "Cadastre os turnos do setor para começar a passagem."
+              : "Peça a um administrador para cadastrar os turnos do setor."}
+          </p>
+        </div>
+        <Actions
+          primary={
+            canManageCatalog ? (
+              <PrimaryLink href={`/admin/turnos?setor=${sectorId}`}>
+                Ir para Turnos
+              </PrimaryLink>
+            ) : null
+          }
+        />
+      </Shell>
+    );
+  }
+
+  const { shift, ref } = state;
+  const newHref = newHandoverHref(ref, sectorParam ?? undefined);
+  const deliverer: StackedAvatar | null =
+    deliveredAvatarSrc === null
+      ? null
+      : { id: "delivered", src: deliveredAvatarSrc, tilt: DELIVERED_TILT };
+  const confirmer: StackedAvatar | null =
+    confirmedAvatarSrc === null
+      ? null
+      : { id: "confirmed", src: confirmedAvatarSrc, tilt: CONFIRMED_TILT };
+
+  return (
+    <Shell color={sectorColor} sectorName={sectorName}>
+      <div className="flex flex-col gap-1.5">
+        <span className="font-heading text-xl leading-[normal] font-bold break-words">
+          {shift.name}
+        </span>
+        <span className={TIME_CLASS}>
+          {shift.startsAt}–{shift.endsAt}
+        </span>
+        <span className="mt-1 font-mono text-sm leading-[normal] font-medium text-on-pastel-muted">
+          {formatDateBR(ref.operationalDate)}
+        </span>
+      </div>
+
+      {(state.kind === "start" || state.kind === "continue") && (
+        <div className="flex flex-col gap-2">
+          <ShiftProgressBar progress={state.progress} />
+          <p className="mt-0.5 text-[15px] leading-[normal] text-on-pastel-muted">
+            Turno sugerido pelo horário de agora.
+          </p>
+        </div>
+      )}
+
+      {state.kind === "continue" && state.saved && (
+        <div className="flex w-fit max-w-full items-center gap-2.5 rounded-[18px] bg-on-pastel-soft py-2.5 pr-3.5 pl-2.5">
+          {avatarSrc !== null && (
+            <UserAvatar src={avatarSrc} size={34} tilt={-3} frame="on-pastel" />
+          )}
+          <span className="text-[15px] leading-[normal]">
+            Rascunho salvo às {formatTimeBR(state.saved.at)} por{" "}
+            {state.saved.byName}
+          </span>
+        </div>
+      )}
+
+      {state.kind === "delivered" && (
+        <div className="flex flex-col items-start gap-3">
+          <StatusBlock tone="pending">Aguardando recebimento</StatusBlock>
+          <DeliveryLine avatars={present([deliverer])}>
+            Entregue às {formatTimeBR(state.deliveredAt)} por{" "}
+            {state.deliveredByName}. Aguardando recebimento.
+          </DeliveryLine>
+        </div>
+      )}
+
+      {state.kind === "confirmed" && (
+        <div className="flex flex-col items-start gap-3">
+          <StatusBlock tone="confirmed">Confirmada</StatusBlock>
+          <DeliveryLine avatars={present([deliverer, confirmer])}>
+            Entregue por {state.deliveredByName} às{" "}
+            {formatTimeBR(state.deliveredAt)}. Confirmada por{" "}
+            {state.confirmedByName ?? "outra pessoa"}
+            {state.confirmedAt ? ` às ${formatTimeBR(state.confirmedAt)}` : ""}.
+          </DeliveryLine>
+        </div>
+      )}
+
+      <Actions
+        primary={
+          state.kind === "start" ? (
+            <PrimaryLink href={newHref}>Começar passagem</PrimaryLink>
+          ) : state.kind === "continue" ? (
+            <PrimaryLink href={newHref}>Continuar passagem</PrimaryLink>
+          ) : state.kind === "delivered" || state.kind === "confirmed" ? (
+            <PrimaryLink href={handoverHref(state.handoverId)}>
+              Ver passagem
+            </PrimaryLink>
+          ) : null
+        }
+      />
+    </Shell>
+  );
+}
+```
+
+O que mudou em relação ao arquivo da Task 12/16:
+- sai o import do `Badge` e a constante `STATE_BADGE`;
+- entram `STATUS_BLOCK`, `STATUS_TONE`, as duas inclinações e os componentes `StatusBlock`, `DeliveryLine` e `present`;
+- entram as duas props novas;
+- os ramos `delivered` e `confirmed` foram reescritos.
+
+O resto é o mesmo texto de hoje.
+
+- [ ] **Step 16: Rodar e ver passar**
+
+Run: `bunx vitest run src/components/passagens/MyShiftCard.test.tsx src/components/app-shell/AvatarStack.test.tsx`
+Expected: PASS (os dois arquivos inteiros).
+
+- [ ] **Step 17: `HomeCards` e integração — escrever os testes que falham**
+
+Edit em `src/components/passagens/HomeCards.test.tsx` (as fixtures de entrega, antes do `PENDING`):
+
+old_string:
+```tsx
+const PENDING: PendingHandover = {
+```
+new_string:
+```tsx
+const DELIVERED: MyShiftState = {
+  kind: "delivered",
+  handoverId: "h2",
+  ref: REF,
+  shift: SHIFT,
+  deliveredById: "u-ana",
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "13:52"),
+  confirmedById: null,
+  confirmedByName: null,
+  confirmedAt: null,
+};
+const CONFIRMED: MyShiftState = {
+  kind: "confirmed",
+  handoverId: "h2",
+  ref: REF,
+  shift: SHIFT,
+  deliveredById: "u-ana",
+  deliveredByName: "Ana Teste",
+  deliveredAt: spDate("2026-11-20", "13:52"),
+  confirmedById: "u-bruno",
+  confirmedByName: "Bruno Teste",
+  confirmedAt: spDate("2026-11-20", "14:06"),
+};
+const PENDING: PendingHandover = {
+```
+
+Edit no mesmo arquivo (testes novos no fim do `describe`):
+
+old_string:
+```tsx
+    expect(
+      screen.getByRole("link", { name: "Ver solicitações" }),
+    ).toHaveAttribute("href", `/solicitacoes?setor=${SECTOR_ID}`);
+  });
+});
+```
+new_string:
+```tsx
+    expect(
+      screen.getByRole("link", { name: "Ver solicitações" }),
+    ).toHaveAttribute("href", `/solicitacoes?setor=${SECTOR_ID}`);
+  });
+
+  describe("avatares da linha de entrega do meu turno (spec §6.4.1)", () => {
+    // As sementes (o mock devolve `data:image/svg+xml,<id>`), na ordem do DOM.
+    function shiftCardAvatars(): (string | null)[] {
+      const card = screen
+        .getByRole("heading", { name: "Passagem do meu turno" })
+        .closest('[data-slot="card"]');
+      if (!(card instanceof HTMLElement)) {
+        throw new Error("cartão do turno ausente");
+      }
+      return Array.from(card.querySelectorAll("img")).map((img) =>
+        img.getAttribute("src"),
+      );
+    }
+
+    it("entregue: o avatar usa o id de quem entregou", () => {
+      renderCards({ home: home({ mine: DELIVERED }) });
+
+      expect(shiftCardAvatars()).toEqual(["data:image/svg+xml,u-ana"]);
+    });
+
+    it("confirmada: a pilha traz quem entregou e depois quem confirmou, pelos ids", () => {
+      renderCards({ home: home({ mine: CONFIRMED }) });
+
+      expect(shiftCardAvatars()).toEqual([
+        "data:image/svg+xml,u-ana",
+        "data:image/svg+xml,u-bruno",
+      ]);
+    });
+
+    it("confirmada sem o id de quem confirmou: só o avatar de quem entregou", () => {
+      renderCards({
+        home: home({ mine: { ...CONFIRMED, confirmedById: null } }),
+      });
+
+      expect(shiftCardAvatars()).toEqual(["data:image/svg+xml,u-ana"]);
+    });
+
+    it("id vazio de quem entregou (linha fora do check do banco): sem avatar, e a frase continua", () => {
+      renderCards({
+        home: home({ mine: { ...DELIVERED, deliveredById: "" } }),
+      });
+
+      expect(shiftCardAvatars()).toEqual([]);
+      expect(
+        screen.getByText(
+          "Entregue às 13:52 por Ana Teste. Aguardando recebimento.",
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("começar passagem não tem linha de entrega nem avatar no cartão do turno", () => {
+      renderCards();
+
+      expect(shiftCardAvatars()).toEqual([]);
+    });
+  });
+});
+```
+
+Edit em `src/components/passagens/HomeHandovers.test.tsx` (helper, antes do comentário do contador):
+
+old_string:
+```tsx
+// O contador e a palavra são dois elementos (o número é grande).
+```
+new_string:
+```tsx
+// As sementes dos avatares do cartão "Passagem do meu turno", na ordem do DOM.
+function shiftCardAvatars(): (string | null)[] {
+  const card = screen
+    .getByRole("heading", { name: "Passagem do meu turno" })
+    .closest('[data-slot="card"]');
+  if (!(card instanceof HTMLElement)) {
+    throw new Error("cartão do turno não encontrado");
+  }
+  return Array.from(card.querySelectorAll("img")).map((img) =>
+    img.getAttribute("src"),
+  );
+}
+
+// O contador e a palavra são dois elementos (o número é grande).
+```
+
+Edit no mesmo arquivo (fim do teste "quem entregou não vê o cartão de confirmar, só o próprio turno aguardando", mais um teste novo da confirmada):
+
+old_string:
+```tsx
+    expect(
+      screen.getByText(
+        "Entregue às 09:30 por Ana Teste. Aguardando recebimento.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("passagem entregue de outro setor não vaza para o cartão", async () => {
+```
+new_string:
+```tsx
+    expect(
+      screen.getByText(
+        "Entregue às 09:30 por Ana Teste. Aguardando recebimento.",
+      ),
+    ).toBeInTheDocument();
+    // A linha de entrega leva o avatar de quem entregou (spec §6.4.1).
+    expect(shiftCardAvatars()).toEqual([`data:image/svg+xml,${ana.id}`]);
+  });
+
+  it("confirmada: a linha do meu turno traz o avatar de quem entregou e depois o de quem confirmou", async () => {
+    const { uld, shiftRow, ana, bia } = await setup();
+    await insertHandover(db, {
+      sectorId: uld.id,
+      shiftId: shiftRow.id,
+      operationalDate: TODAY,
+      status: "confirmed",
+      deliveredBy: ana.id,
+      deliveredAt: spDate(TODAY, "09:30"),
+      confirmedBy: bia.id,
+      confirmedAt: spDate(TODAY, "09:45"),
+    });
+    mocks.requireUser.mockResolvedValue(
+      authzOf({ role: "operator", userId: ana.id, sectorId: uld.id }),
+    );
+
+    await renderHome();
+
+    expect(shiftCardAvatars()).toEqual([
+      `data:image/svg+xml,${ana.id}`,
+      `data:image/svg+xml,${bia.id}`,
+    ]);
+    expect(
+      screen.getByText(
+        "Entregue por Ana Teste às 09:30. Confirmada por Bia Teste às 09:45.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Confirmada")).toHaveClass(
+      "bg-on-pastel-success-soft",
+      "text-on-pastel-success",
+    );
+  });
+
+  it("passagem entregue de outro setor não vaza para o cartão", async () => {
+```
+
+- [ ] **Step 18: Rodar e ver falhar**
+
+Run: `bunx vitest run src/components/passagens/HomeCards.test.tsx src/components/passagens/HomeHandovers.test.tsx`
+Expected: `5 failed`.
+- No `HomeCards`: "entregue: o avatar usa o id de quem entregou", "confirmada: a pilha traz…" e "confirmada sem o id de quem confirmou…" (`expected [] to deeply equal [ … ]`).
+- No `HomeHandovers`: "quem entregou não vê o cartão de confirmar…" e "confirmada: a linha do meu turno traz…".
+- O motivo é um só: o `HomeCards` ainda não passa os avatares. "id vazio…" e "começar passagem…" já passam.
+
+- [ ] **Step 19: Implementar o `HomeCards`**
+
+Write `src/components/passagens/HomeCards.tsx` (arquivo inteiro):
+
+```tsx
+import {
+  type InviteCounts,
+  InviteTeamCard,
+} from "@/components/app-shell/InviteTeamCard";
+import { RequestsHomeCard } from "@/components/solicitacoes/RequestsHomeCard";
+import type { HomeHandovers as HomeHandoversData } from "@/features/handovers/home";
+import type { HomeRequests } from "@/features/requests/types";
+import { requestsHref } from "@/features/requests/urls";
+import { avatarDataUri } from "@/lib/avatar";
+
+import { MyShiftCard } from "./MyShiftCard";
+import { PendingHandoverCard } from "./PendingHandoverCard";
+
+// O `avatarDataUri` recusa semente vazia. Quem entregou só vem vazio se a
+// linha da passagem escapar do check do banco (spec §6.4.1); aí a frase
+// aparece sem avatar.
+function avatarOf(userId: string | null): string | null {
+  return userId === null || userId === "" ? null : avatarDataUri(userId);
+}
+
+// Os cartões do Início, depois do hero. Em coluna, na ordem: convite (primeiro
+// acesso do admin), pendente (se houver) e, na linha de baixo, turno e
+// solicitações. Esta linha é 1 coluna e vira `minmax(0,1.3fr) minmax(0,1fr)` a
+// partir de 1040px de ÁREA ÚTIL (container query do `@container/main`, não a
+// largura da janela). Os avatares nascem aqui, no servidor, com o id da pessoa;
+// os cartões só desenham o data URI que recebem. O `data-slot="home-cards"` é o
+// ponto de extensão que a Task 11 criou (e testa) no `HomeHandovers`.
+export function HomeCards({
+  home,
+  requests,
+  sectorParam,
+  canManageCatalog,
+  actorId,
+  inviteCounts,
+  firstAccess,
+}: {
+  home: HomeHandoversData;
+  requests: HomeRequests;
+  sectorParam: string | null;
+  canManageCatalog: boolean;
+  actorId: string;
+  // Não nulo = mostrar "Convide sua equipe" (admin, sozinho, não dispensado).
+  inviteCounts: InviteCounts | null;
+  // Primeiro acesso do admin (mesmo depois de dispensar o convite).
+  firstAccess: boolean;
+}) {
+  const savedAvatar =
+    home.mine.kind === "continue" && home.mine.saved
+      ? avatarDataUri(home.mine.saved.byId)
+      : null;
+  // Linha de entrega do meu turno: quem entregou e, na confirmada, quem
+  // confirmou (a pilha do `MyShiftCard`).
+  const deliveredAvatar =
+    home.mine.kind === "delivered" || home.mine.kind === "confirmed"
+      ? avatarOf(home.mine.deliveredById)
+      : null;
+  const confirmedAvatar =
+    home.mine.kind === "confirmed" ? avatarOf(home.mine.confirmedById) : null;
+
+  return (
+    <div data-slot="home-cards" className="flex flex-col gap-4">
+      {inviteCounts && (
+        <InviteTeamCard
+          counts={inviteCounts}
+          avatarSrc={avatarDataUri(actorId)}
+        />
+      )}
+      {home.pending && (
+        <PendingHandoverCard
+          pending={home.pending}
+          avatarSrc={avatarDataUri(home.pending.deliveredById)}
+        />
+      )}
+      <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-4 @min-[1040px]/main:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+        <MyShiftCard
+          state={home.mine}
+          sectorId={home.sector.id}
+          sectorName={home.sector.name}
+          sectorColor={home.sector.color}
+          canManageCatalog={canManageCatalog}
+          sectorParam={sectorParam}
+          avatarSrc={savedAvatar}
+          deliveredAvatarSrc={deliveredAvatar}
+          confirmedAvatarSrc={confirmedAvatar}
+        />
+        <RequestsHomeCard
+          home={requests}
+          allHref={requestsHref(sectorParam)}
+          avatarSrc={avatarDataUri(actorId)}
+          firstAccess={firstAccess}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 20: Rodar e ver passar**
+
+Run: `bunx vitest run src/components/passagens/HomeCards.test.tsx src/components/passagens/HomeHandovers.test.tsx src/components/passagens/PendingHandoverCard.test.tsx`
+Expected: PASS (os três arquivos inteiros).
+
+- [ ] **Step 21: `Badge` — escrever o teste que falha**
+
+São três Edits em `src/components/ui/badge.test.tsx`.
+
+a) old_string:
+```tsx
+    ["neutral", "bg-accent", "text-foreground"],
+    ["pastel-pending", "bg-pastel-pending", "text-pastel-pending-foreground"],
+    [
+      "pastel-confirmed",
+      "bg-pastel-confirmed",
+      "text-pastel-confirmed-foreground",
+    ],
+  ] as const)("variant=%s usa %s e %s", (variant, background, foreground) => {
+```
+new_string:
+```tsx
+    ["neutral", "bg-accent", "text-foreground"],
+  ] as const)("variant=%s usa %s e %s", (variant, background, foreground) => {
+```
+
+b) old_string:
+```tsx
+    for (const variant of [
+      "warning",
+      "info",
+      "success",
+      "neutral",
+      "pastel-pending",
+      "pastel-confirmed",
+    ] as const) {
+```
+new_string:
+```tsx
+    for (const variant of ["warning", "info", "success", "neutral"] as const) {
+```
+
+c) Teste novo, antes de "nenhuma variante usa hex cru…". old_string:
+```tsx
+  it("nenhuma variante usa hex cru nem cor crua do Tailwind", () => {
+```
+new_string:
+```tsx
+  it("as variantes pastel-pending e pastel-confirmed saíram (o cartão de turno usa blocos, spec §6.4.1)", () => {
+    // @ts-expect-error variante removida no pack de correção do Início
+    const pending = badgeVariants({ variant: "pastel-pending" });
+    // @ts-expect-error variante removida no pack de correção do Início
+    const confirmed = badgeVariants({ variant: "pastel-confirmed" });
+    expect(pending).not.toMatch(/pastel/);
+    expect(confirmed).not.toMatch(/pastel/);
+  });
+
+  it("nenhuma variante usa hex cru nem cor crua do Tailwind", () => {
+```
+
+O `@ts-expect-error` também é guarda no `check-types`: se alguém devolver a variante, o comentário fica sem erro e o `tsc` falha.
+
+- [ ] **Step 22: Rodar e ver falhar**
+
+Run: `bunx vitest run src/components/ui/badge.test.tsx`
+Expected: FAIL em "as variantes pastel-pending e pastel-confirmed saíram…" (`expected '… bg-pastel-pending …' not to match /pastel/`).
+
+- [ ] **Step 23: Remover as variantes**
+
+Edit em `src/components/ui/badge.tsx`:
+
+old_string:
+```tsx
+        neutral: "bg-accent text-foreground",
+        // Sempre claros nos dois temas: ficam sobre o pastel do cartão de turno.
+        "pastel-pending": "bg-pastel-pending text-pastel-pending-foreground",
+        "pastel-confirmed":
+          "bg-pastel-confirmed text-pastel-confirmed-foreground",
+      },
+```
+new_string:
+```tsx
+        neutral: "bg-accent text-foreground",
+      },
+```
+
+- [ ] **Step 24: Rodar, ver passar e conferir que nada mais usa os nomes antigos**
+
+Run: `bunx vitest run src/components/ui/badge.test.tsx`
+Expected: PASS.
+
+Run: `grep -rn "pastel-pending\|pastel-confirmed\|pastel-pending-foreground\|pastel-confirmed-foreground" src test e2e`
+Expected: só as 3 linhas do teste novo em `src/components/ui/badge.test.tsx` (o título e as duas chamadas). Nada em `globals.css`, `themeContrast.test.ts`, `badge.tsx` ou `MyShiftCard*`.
+
+- [ ] **Step 25: Atualizar `.context/ui-tokens.md`**
+
+Edit (seção "3. Cores fixas"):
+
+old_string:
+```markdown
+| `pastel-pending` / `-foreground` | `#cbe4f6` / `#1d4a72` | badge "Aguardando recebimento" no cartão de turno |
+| `pastel-confirmed` / `-foreground` | `#d3eedd` / `#1f5131` | badge "Confirmada" no cartão de turno |
+```
+new_string:
+```markdown
+| `on-pastel-success-soft` / `on-pastel-success` | `rgba(46,125,79,.22)` / `#123b27` | bloco "Confirmada" do cartão de turno (spec §6.4.1). O `#14402a` do handoff dava 4,41:1 no lilás e foi escurecido até passar |
+
+**Bloco "Aguardando recebimento"** (spec §6.4.1): `bg-on-pastel/10`, o `on-pastel` com 10% de opacidade (= `rgba(28,27,25,.10)`), sem token próprio; o texto é `text-on-pastel`.
+```
+
+Edit (tabela "Par fixo"):
+
+old_string:
+```markdown
+| `pastel-pending-foreground` · `pastel-confirmed-foreground` | 7,02 · 7,48 |
+| o menor par sobre bloco translúcido (`on-pastel-muted` sobre `on-pastel-soft` em lilás) | 5,19 |
+```
+new_string:
+```markdown
+| `on-pastel` sobre `on-pastel/10` (bloco "Aguardando recebimento") em lilás · pêssego · azul · verde · rosa | 6,56 · 8,08 · 8,02 · 8,54 · 7,61 |
+| `on-pastel-success` sobre `on-pastel-success-soft` (bloco "Confirmada") em lilás · pêssego · azul · verde · rosa | 4,71 · 5,61 · 5,69 · 6,01 · 5,29 |
+| o menor par sobre bloco translúcido (`on-pastel-success` sobre `on-pastel-success-soft` em lilás) | 4,71 |
+```
+
+Os números são os do Step 8. Se o impresso diferir, use o impresso.
+
+Run: `grep -n "pastel-pending\|pastel-confirmed" .context/ui-tokens.md`
+Expected: nenhuma linha.
+
+- [ ] **Step 26: Atualizar `.context/ui-registry.md`**
+
+Antes de editar, anote a contagem de cabeçalhos:
+
+Run: `grep -c "^### " .context/ui-registry.md`
+Expected: `158`.
+
+a) `Badge`, "Como funciona". old_string:
+```markdown
+  `neutral` (`bg-accent text-foreground`), `pastel-pending` e `pastel-confirmed` (claros nos dois
+  temas, para o cartão de turno). `size`:
+```
+new_string:
+```markdown
+  `neutral` (`bg-accent text-foreground`). `size`:
+```
+
+b) `Badge`, "Usa". old_string:
+```markdown
+- **Usa:** tokens `primary`, `secondary`, `destructive`, `warning`, `info`, `success`, `accent`, `pastel-pending`, `pastel-confirmed`.
+```
+new_string:
+```markdown
+- **Usa:** tokens `primary`, `secondary`, `destructive`, `warning`, `info`, `success`, `accent`.
+```
+
+c) `Badge`, "Histórico" (fim da linha). old_string:
+```markdown
+e `leading-[normal]` (o texto ficava até 0,8px acima do centro do protótipo).
+```
+new_string:
+```markdown
+e `leading-[normal]` (o texto ficava até 0,8px acima do centro do protótipo). 2026-11-27 — Pack de correção do Início (Task 18, spec §6.4.1): saem as variantes `pastel-pending` e `pastel-confirmed` e os tokens delas (o cartão de turno passou a usar blocos de largura inteira).
+```
+
+d) `UserAvatar`, "Histórico", e a entrada nova `AvatarStack` logo depois. old_string:
+```markdown
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 8).
+
+### InviteTeamCard
+```
+new_string:
+```markdown
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 8). 2026-11-27 — Pack de correção (Task 18): também na linha de entrega do `MyShiftCard` (36 px, +3° quem entregou, −4° quem confirmou), pelo `AvatarStack`.
+
+### AvatarStack
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/app-shell/AvatarStack.tsx` (sem `"use client"`, sem `server-only`: só desenha)
+- **Propósito:** avatares sobrepostos de mais de uma pessoa numa linha de texto (hoje, quem entregou e quem confirmou, no `MyShiftCard`).
+- **Como funciona:** props `{ avatars: { id, src, tilt? }[], size: UserAvatarSize, frame?: "default" | "on-pastel", className? }`. Invólucro `flex flex-none items-center` (`data-slot="avatar-stack"`) com um `UserAvatar` por item, na ordem recebida: o primeiro com `relative z-1` (fica por cima, como o `z-index: 1` do protótipo) e cada um depois dele com `-ml-2` (8 px por baixo do anterior). `id` é a chave React (estável e única na pilha: o papel ou o id da pessoa). Lista vazia não desenha nada. Decorativo: as imagens têm `alt=""` e o nome das pessoas está no texto ao lado.
+- **Usa:** `UserAvatar`.
+- **Histórico:** 2026-11-27 — criado no pack de correção do Início (Task 18).
+
+### InviteTeamCard
+```
+
+e) `MyShiftCard`, "Como funciona" (só o trecho dos estados `delivered` e `confirmed`). old_string:
+```markdown
+; os selos pastel ficam no tamanho do protótipo (`h-7 px-3 text-[13px]`, ícone de 14px, por `className` sobre o `size="md"`); `delivered` → `Badge pastel-pending` (`Clock`) "Aguardando recebimento" e "Entregue às … Aguardando recebimento." + "Ver passagem"; `confirmed` → `Badge pastel-confirmed` (`CircleCheck`) "Confirmada" e "Entregue por … Confirmada por …" + "Ver passagem"; `no-shifts`
+```
+new_string:
+```markdown
+; `delivered` → bloco de largura inteira "Aguardando recebimento" (`<p>` `self-stretch`, raio 22 px, padding 18/22 px, Satoshi 700/16 px, `Clock` de 18 px `aria-hidden`, `bg-on-pastel/10` e `text-on-pastel`) e, 12 px abaixo, a linha de entrega (`flex items-center gap-2.5`: `AvatarStack` de 36 px com quem entregou a +3°, de `deliveredAvatarSrc`, e "Entregue às … Aguardando recebimento." em 15 px/1,5) + "Ver passagem"; `confirmed` → o mesmo bloco em verde, "Confirmada" com `CircleCheck` (`bg-on-pastel-success-soft` e `text-on-pastel-success`), e a linha com a pilha (quem entregou a +3°, por cima; quem confirmou a −4°, de `confirmedAvatarSrc`, 8 px sobreposto) e "Entregue por … Confirmada por …" + "Ver passagem"; sem avatar, a frase aparece sozinha; `no-shifts`
+```
+
+f) `MyShiftCard`, "Usa". old_string:
+```markdown
+- **Usa:** `Card`, `Badge`, `buttonVariants`, `UserAvatar`, `ShiftProgressBar`, `SECTOR_COLOR_BG`, `newHandoverHref`, `handoverHref`.
+```
+new_string:
+```markdown
+- **Usa:** `Card`, `buttonVariants`, `UserAvatar`, `AvatarStack`, `ShiftProgressBar`, `SECTOR_COLOR_BG`, `newHandoverHref`, `handoverHref`; tokens `on-pastel`, `on-pastel-success`, `on-pastel-success-soft`.
+```
+
+g) `MyShiftCard`, "Histórico" (fim da linha). old_string:
+```markdown
+selos de estado com `leading-[normal]` depois do `text-[13px]` (o twMerge do Badge descarta o `leading` que vem antes).
+```
+new_string:
+```markdown
+selos de estado com `leading-[normal]` depois do `text-[13px]` (o twMerge do Badge descarta o `leading` que vem antes). 2026-11-27 — Pack de correção do Início (Task 18, spec §6.4.1): `delivered` e `confirmed` trocam o selo pastel por um bloco de largura inteira (neutro `on-pastel/10` e verde `on-pastel-success*`) e ganham avatar na linha de entrega (pilha de dois no `confirmed`); props novas `deliveredAvatarSrc` e `confirmedAvatarSrc`.
+```
+
+h) `HomeCards`, "Como funciona". old_string:
+```markdown
+Gera no servidor os avatares (`avatarDataUri`): quem entregou (`deliveredById`), quem salvou o rascunho (`saved.byId`) e quem está logado (`actorId`: convite e solicitações vazias).
+```
+new_string:
+```markdown
+Gera no servidor os avatares (`avatarDataUri`): quem entregou a passagem pendente (`pending.deliveredById`), quem salvou o rascunho (`saved.byId`), quem entregou e quem confirmou a passagem do meu turno (`mine.deliveredById`, `mine.confirmedById`; id vazio ou nulo não vira avatar) e quem está logado (`actorId`: convite e solicitações vazias).
+```
+
+i) `HomeCards`, "Histórico". old_string:
+```markdown
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 14).
+
+### HomeHandovers
+```
+new_string:
+```markdown
+- **Histórico:** 2026-11-27 — criado no visual novo do Início (Task 14). 2026-11-27 — Pack de correção (Task 18): avatares de quem entregou e de quem confirmou para o `MyShiftCard` (`deliveredAvatarSrc`, `confirmedAvatarSrc`).
+
+### HomeHandovers
+```
+
+Run: `grep -c "^### " .context/ui-registry.md`
+Expected: `159` (os 158 de antes mais o `AvatarStack`; nenhum cabeçalho sumiu). Se der outro número, compare `git diff .context/ui-registry.md | grep "^[-+]### "` e restaure o que sumiu.
+
+- [ ] **Step 27: Conferir tipos, lint e os testes tocados**
+
+Run: `bun run check-types && bun run lint`
+Expected: sem erros. Se o Biome reclamar só de formatação, rode `bun run format` e confira o `git diff`.
+
+Run: `bunx vitest run src/features/handovers/home.test.ts src/app/themeContrast.test.ts src/app/rawColors.test.ts src/app/chartPalette.test.ts src/features/sectors/colors.test.ts test/fontsConfig.test.ts test/uiRegistryDoc.test.ts`
+Expected: PASS.
+
+Run: `bunx vitest run src/components/app-shell/AvatarStack.test.tsx src/components/app-shell/UserAvatar.test.tsx src/components/passagens/MyShiftCard.test.tsx src/components/passagens/HomeCards.test.tsx src/components/passagens/HomeHandovers.test.tsx src/components/passagens/PendingHandoverCard.test.tsx src/components/ui/badge.test.tsx`
+Expected: PASS.
+
+Nunca `bun test` nem a suíte inteira.
+
+- [ ] **Step 28: Commit**
+
+Escreva a mensagem com a ferramenta Write em `.git/sdd/visual/msg-task-18.txt`:
+
+```
+feat(inicio): pack de correção do cartão do meu turno
+
+Entregue e confirmada trocam o selo em pílula por um bloco de largura
+inteira (on-pastel/10 e o verde on-pastel-success) e ganham avatar na
+linha de entrega: quem entregou e, na confirmada, a pilha com quem
+confirmou (AvatarStack novo). O MyShiftState traz deliveredById e
+confirmedById, e o HomeCards gera os avatares no servidor. Saem as
+variantes pastel do Badge e os tokens delas. A tinta verde do handoff
+dava 4,41:1 no lilás e foi escurecida para #123b27 (spec §6.4.1).
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+```
+
+Run: `git add src/features/handovers/home.ts src/features/handovers/home.test.ts src/app/globals.css src/app/themeContrast.test.ts src/components/app-shell/AvatarStack.tsx src/components/app-shell/AvatarStack.test.tsx src/components/passagens/MyShiftCard.tsx src/components/passagens/MyShiftCard.test.tsx src/components/passagens/HomeCards.tsx src/components/passagens/HomeCards.test.tsx src/components/passagens/HomeHandovers.test.tsx src/components/ui/badge.tsx src/components/ui/badge.test.tsx .context/ui-tokens.md .context/ui-registry.md && git commit -F .git/sdd/visual/msg-task-18.txt`
+
+Expected: um commit com os 15 arquivos. `git status` limpo, a não ser pelo `AGENTS.md` regravado pelo `next dev`, se ele tiver rodado.
+
+- [ ] **Step 29: Conferência visual contra o protótipo atualizado (controlador)**
+
+Use as ferramentas da Task 16 (`.git/sdd/visual/tools/`, fora do git).
+1. **Cópia do protótipo.** Copie `.git/sdd/visual/handoff-correcoes/Inicio.dc.html` e `support.js` para `.git/sdd/visual/proto/`, como `proto-entregue-v2.html` e `proto-confirmada-v2.html`.
+   - Na cópia, troque **todos** os nomes de exemplo por fictícios, inclusive as sementes do DiceBear na URL: quem entrega vira "Bruno Teste" e quem confirma vira "Diego Teste", com os ids do banco de teste, como no Step 1 da Task 16. Use `grep -n "por \|seed=" .git/sdd/visual/proto/proto-*-v2.html`.
+   - Troque o `default` da prop `turno` para "Entregue" ou "Confirmada".
+2. **Banco de teste.** Semeie a passagem do Turno 1 de hoje, entregue (e depois confirmada), no setor de cada screenshot: ULD (lilás) no escuro; Carga (pêssego) e Operações (azul) no claro.
+3. **Pares.** Capture os pares em 1440×900 e 390×844, nos dois temas.
+   - Mascare a hora e a barra, que dependem do "agora", e a arte dos avatares (a semente do protótipo não é a do app).
+   - Registre a diferença no `.git/sdd/visual/pixel.md`, numa seção "Pack de correção".
+4. **Correções.** O que não bater no bloco, na linha ou nos espaçamentos é corrigido no `MyShiftCard`, com teste antes, num commit `fix(visual): …` por ajuste.
+   - O bloco verde sobre o setor Eco entra na conferência como observação para o dono (spec §6.4.1). Não é defeito.

@@ -119,8 +119,9 @@ Alguns valores não estão no handoff:
 | `--highlight` | `#ffd23f` | só o "Passagem para confirmar" (amarelo = precisa de atenção) |
 | `--invite` | `#f2a7c6` | só o "Convide sua equipe" |
 | `--sector-lilac`, `--sector-peach`, `--sector-sky`, `--sector-green`, `--sector-pink` | `#b3a6e6`, `#f6b48f`, `#8ecae6`, `#a7d49b`, `#f2a7c6` | cor do setor (`§5.1`) |
-| `--pastel-pending` / `-foreground` | `#cbe4f6` / `#1d4a72` | badge "Aguardando recebimento" no cartão de turno |
-| `--pastel-confirmed` / `-foreground` | `#d3eedd` / `#1f5131` | badge "Confirmada" no cartão de turno |
+| `--pastel-pending` / `-foreground` | `#cbe4f6` / `#1d4a72` | badge "Aguardando recebimento" no cartão de turno. **Removido no §6.4.1** |
+| `--pastel-confirmed` / `-foreground` | `#d3eedd` / `#1f5131` | badge "Confirmada" no cartão de turno. **Removido no §6.4.1** |
+| `--on-pastel-success-soft` / `--on-pastel-success` | `rgba(46,125,79,.22)` / `#123b27` | bloco "Confirmada" do cartão de turno (**novo no §6.4.1**) |
 
 `--destructive` ajustado para AA nas superfícies novas (decisão do dono, 2026-11-27): `#d60000` no claro e `#ff8a8a` no escuro, medidos em `themeContrast.test.ts`.
 
@@ -250,10 +251,12 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
   | card do usuário na sidebar | quem está logado | 44px, −4° |
   | "Passagem para confirmar" | quem entregou | 36px, 3° |
   | estado `continue` | quem salvou | 34px |
+  | estado `delivered` (§6.4.1) | quem entregou | 36px, 3° |
+  | estado `confirmed` (§6.4.1) | quem entregou e quem confirmou, em pilha | 36px, 3° e −4° |
   | "Solicitações" vazio | quem está logado | 84px, −5° |
   | "Convide sua equipe" | o admin | 52px, −5° |
 
-- Para isso, as consultas do Início passam a levar `deliveredById` e o id de quem salvou. O `AppSidebar` (client) recebe o data URI pronto do `AuthedSidebar` (servidor).
+- Para isso, as consultas do Início passam a levar `deliveredById` e o id de quem salvou (o §6.4.1 acrescenta `deliveredById` e `confirmedById` ao `MyShiftState`). O `AppSidebar` (client) recebe o data URI pronto do `AuthedSidebar` (servidor).
 
 ## 6. Telas e componentes
 
@@ -337,10 +340,121 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 - **Estados** (`MyShiftState.kind`):
   - `start`: a barra e o primário "Começar passagem".
   - `continue`: a barra, uma pílula `--on-pastel-soft` (raio 18) com avatar de 34px e "Rascunho salvo às {HH:MM} por {nome}", e o primário "Continuar passagem".
-  - `delivered`: badge `pastel-pending` com `Clock`, "Aguardando recebimento", o texto "Entregue às {HH:MM} por {nome}. Aguardando recebimento." e o primário "Ver passagem".
-  - `confirmed`: badge `pastel-confirmed` com `CircleCheck`, "Confirmada", o texto "Entregue por {nome} às {HH:MM}. Confirmada por {nome} às {HH:MM}." e o primário "Ver passagem".
+  - `delivered`: badge `pastel-pending` com `Clock`, "Aguardando recebimento", o texto "Entregue às {HH:MM} por {nome}. Aguardando recebimento." e o primário "Ver passagem". **Substituído pelo §6.4.1** (bloco de largura inteira e avatar na linha de entrega).
+  - `confirmed`: badge `pastel-confirmed` com `CircleCheck`, "Confirmada", o texto "Entregue por {nome} às {HH:MM}. Confirmada por {nome} às {HH:MM}." e o primário "Ver passagem". **Substituído pelo §6.4.1** (bloco verde de largura inteira e pilha de dois avatares).
   - `no-shifts`: "Nenhum turno neste setor." (Satoshi 900/32px, line-height 1.05, `-0.02em`) e o texto de hoje para cada papel. Só o admin vê "Ir para Turnos", que leva a `/admin/turnos?setor=…`.
 - **Rodapé** (`margin-top: auto`, gap 10, `wrap`): o primário (`on-pastel`) e o secundário "Ver todas as passagens" (`on-pastel-secondary`, que leva a `/passagens`).
+
+### 6.4.1 Pack de correção (2026-11-27)
+
+- **Origem:** o pack de correção do cartão "Passagem do meu turno", feito depois da revisão por comentários. A cópia local, fora do git, está em `.git/sdd/visual/handoff-correcoes/`: `README.md`, o protótipo atualizado `Inicio.dc.html` (estados pela prop `turno` = "Entregue" ou "Confirmada") e 8 screenshots. Fidelidade hi-fi.
+  - Como no handoff original, o protótipo e as screenshots usam nomes que parecem de pessoa real. **Nada disso entra no repositório:** os testes usam "Ana Teste", "Bruno Teste" etc.
+- **O que muda:** só os estados `delivered` e `confirmed` do `MyShiftCard`. Nesses dois estados, esta seção substitui os bullets do §6.4 e os tokens `--pastel-pending*` e `--pastel-confirmed*` do §4.1. O resto do Início continua como no §6.
+- **Escopo desta branch:** os itens 1 a 4 do README do pack.
+  - **Fora:** o item 5, que leva a mesma linguagem ao resumo da passagem (`HandoverDetail`): o status vira bloco de largura inteira abaixo da data, e o "Fica para o próximo turno" vai para um bloco interno `rgba(28,27,25,.08)`. Ele fica para o handoff **"Passagem de turno"**, que redesenha essa tela inteira, e entra nas pendências junto do grupo Passagens (Task 17, Step 3).
+
+**1. Bloco de status.** Largura inteira, no mesmo estilo do bloco "Fica para o próximo turno" do cartão amarelo. Substitui o selo em pílula de 28px.
+
+| Propriedade | `delivered`: "Aguardando recebimento" | `confirmed`: "Confirmada" |
+|---|---|---|
+| Elemento | `<p>` (texto de estado: nem controle, nem região viva) | igual |
+| Largura | 100% do cartão (`align-self: stretch`; o pai é `flex-col items-start`) | igual |
+| Layout | `flex`, `items-center`, gap 10px | igual |
+| Padding e raio | `18px 22px`, raio 22px | igual |
+| Tipografia | Satoshi 700, 16px, line-height `normal` | igual |
+| Ícone | lucide `Clock`, 18px, stroke 2.2, `aria-hidden` | lucide `CircleCheck`, 18px, stroke 2.2, `aria-hidden` |
+| Fundo | `rgba(28,27,25,.10)` = `bg-on-pastel/10` (o `--on-pastel` com 10% de opacidade, **sem token novo**) | `--on-pastel-success-soft` = `rgba(46,125,79,.22)` |
+| Texto e ícone | `--on-pastel` (`#1c1b19`) | `--on-pastel-success` = `#123b27` (veja o contraste abaixo) |
+
+- Tailwind: `flex items-center gap-2.5 self-stretch rounded-[22px] px-[22px] py-[18px] font-heading text-base leading-[normal] font-bold`, mais o tom (`bg-on-pastel/10 text-on-pastel` ou `bg-on-pastel-success-soft text-on-pastel-success`).
+- O ícone tem `size-[18px] shrink-0`, para não encolher quando a linha aperta.
+- O fundo escurece ou esverdeia a cor do setor por cima, então funciona em qualquer setor.
+- Como os cards coloridos, as cores são fixas: o bloco é igual nos temas claro e escuro.
+
+**2. Tokens novos.** São cores fixas, iguais nos dois temas, então ficam só em `:root`. Entram no `@theme inline` como `--color-on-pastel-success` e `--color-on-pastel-success-soft`.
+
+| Token | Valor | Uso |
+|---|---|---|
+| `--on-pastel-success-soft` | `rgba(46,125,79,.22)` | fundo do bloco "Confirmada" |
+| `--on-pastel-success` | `#123b27` | texto e ícone do bloco "Confirmada" |
+
+**Contraste: o valor do handoff foi corrigido.** O README do pack diz que `#14402a` passa de 4,5:1 "nos quatro pastéis". Só que o app tem cinco cores de setor, e no **lilás** (a cor do ULD) essa tinta mede **4,41:1** sobre o bloco composto.
+- A regra do guarda é "reprovou, ajuste o token; o piso nunca se afrouxa". Por isso a tinta vira `#123b27`: o mesmo verde, cerca de 7% mais escuro, que a olho fica igual.
+- Valores medidos com a composição `over()` do `themeContrast.test.ts`:
+
+| Par (texto sobre o bloco, em cima do setor) | lilás | pêssego | azul | verde | rosa |
+|---|---|---|---|---|---|
+| `on-pastel` sobre `on-pastel/10` | 6,56 | 8,08 | 8,02 | 8,54 | 7,61 |
+| `on-pastel-success` (`#123b27`) sobre `on-pastel-success-soft` | 4,71 | 5,61 | 5,69 | 6,01 | 5,29 |
+| referência: `#14402a` do handoff sobre `on-pastel-success-soft` | **4,41** (reprova) | 5,24 | 5,32 | 5,63 | 4,95 |
+
+- O `themeContrast.test.ts` mede as duas primeiras linhas em todos os setores.
+- Ele também ganha um caso negativo: o `#14402a` no lilás tem de reprovar.
+
+**Setor Eco (verde, `--sector-green`).** Sobre o setor verde, o bloco verde se destaca menos.
+- Ele segue a regra geral: o mesmo bloco em todo setor.
+- A alternativa do README fica registrada aqui como observação e **não é implementada**: fundo `#1f5131` com texto `#d3eedd` só quando o setor é verde. Se o dono achar o bloco fraco na conferência visual, isso vira uma decisão nova.
+
+**3. Linha de entrega com avatar.** Segue o padrão do "Entregue às … por …" do `PendingHandoverCard`.
+- **Estrutura:** `flex items-center gap-2.5`, com o avatar (ou a pilha) à esquerda e o texto à direita.
+  - O texto é Geist 15px, line-height 1.5 (`text-[15px] leading-normal`), na cor `--on-pastel`.
+- **Avatar:** o `UserAvatar` que já existe, com `size={36}` e `frame="on-pastel"`.
+  - Medidas: 36×36, padding 2,5px, raio 12px; a imagem tem raio 10px.
+  - Inclinação: **+3°** para quem entregou e **−4°** para quem confirmou.
+  - A semente é o id do usuário (`avatarDataUri`).
+  - O `PersonAvatar` que o README sugere não é criado, porque o `UserAvatar` já é esse componente.
+- **`delivered`:** um avatar, o de quem entregou, e "Entregue às {HH:MM} por {nome}. Aguardando recebimento." (copy de hoje).
+- **`confirmed`:** a pilha com quem entregou e depois quem confirmou, e "Entregue por {nome} às {HH:MM}. Confirmada por {nome} às {HH:MM}." (copy de hoje, inclusive o "outra pessoa" quando falta o nome).
+- **Sem avatar** (id ausente): a frase aparece sozinha, como no `continue` sem avatar.
+- **`AvatarStack`** (novo, `src/components/app-shell/AvatarStack.tsx`, só desenha):
+  - Props: `{ avatars: { id, src, tilt? }[], size, frame?, className? }`. O `id` é a chave React, estável e única na pilha.
+  - Invólucro `flex flex-none items-center` com `data-slot="avatar-stack"`.
+  - Os avatares saem na ordem recebida. O primeiro tem `relative z-1` e fica por cima, como o `z-index: 1` do protótipo. Cada um depois dele tem `-ml-2`, ou seja, entra 8px por baixo do anterior.
+  - Lista vazia não desenha nada.
+  - É decorativo (`alt=""`): o nome das pessoas está no texto ao lado.
+  - O `MyShiftCard` usa o `AvatarStack` nos dois estados: com um item no `delivered` e com até dois no `confirmed`.
+
+**4. Dados.** Nenhuma consulta nova; só campos a mais.
+- **`MyShiftState`:** os estados `delivered` e `confirmed` ganham `deliveredById: string` e `confirmedById: string | null`.
+  - O `loadMine` (`src/features/handovers/home.ts`) preenche os dois com `row.deliveredBy` e `row.confirmedBy`.
+  - O check `handover_status_consistent` garante os dois numa passagem confirmada.
+  - Se a linha escapar do check, o `deliveredById` cai em `""`, como o nome já cai.
+- **`HomeCards` (servidor):** gera os data URIs com `avatarDataUri` e os passa ao `MyShiftCard` nas props novas `deliveredAvatarSrc` e `confirmedAvatarSrc` (`string | null`, padrão `null`).
+  - Id vazio ou nulo não vira avatar, porque o `avatarDataUri` recusa semente vazia.
+
+**5. Ordem e espaçamento** (estados `delivered` e `confirmed`):
+1. Topo: título e chip do setor, sem mudança.
+2. Bloco do turno: nome, horário e data, sem mudança.
+3. **Bloco de status** (item 1).
+4. **Linha de entrega com avatar** (item 3).
+5. Ações: "Ver passagem" (primário) e "Ver todas as passagens", sem mudança.
+
+- Os itens 3 e 4 ficam num grupo `flex flex-col items-start`, com gap de **12px** (`gap-3`).
+- Entre os grupos do cartão continua o gap de 22px.
+
+**6. O que sai.** Nada mais usa estas peças (conferido com `grep` em 2026-11-27), então elas são removidas:
+- as variantes `pastel-pending` e `pastel-confirmed` do `Badge`;
+- os tokens `--pastel-pending`, `--pastel-pending-foreground`, `--pastel-confirmed` e `--pastel-confirmed-foreground`, com os `--color-*` deles no `@theme inline`;
+- os pares desses tokens no `themeContrast.test.ts`;
+- as linhas deles no `ui-tokens.md`.
+
+**7. Testes.**
+- **`MyShiftCard`:**
+  - o bloco de status: classes, ícone `aria-hidden` e nenhum `Badge`;
+  - a linha com 1 avatar e com a pilha de 2, na ordem;
+  - a linha sem avatar;
+  - o `delivered` ignora o avatar de quem confirmou;
+  - a ordem bloco → linha e o gap de 12px.
+- **`AvatarStack`:** vazio, 1, 2 e 3 avatares, moldura, inclinação e o fato de ser decorativo.
+- **`HomeCards`:** as sementes pelos ids, quem confirmou nulo e o id vazio.
+- **`home.test.ts`:** `deliveredById` e `confirmedById`.
+- **`HomeHandovers`:** integração com PGlite, com os dois avatares da confirmada.
+- **`badge.test.tsx`:** as variantes pastel não existem mais.
+- **Guarda de contraste:** como descrito acima.
+
+**8. Conferência visual.** Feita com as ferramentas da Task 16, contra uma cópia do protótipo atualizado com nomes fictícios.
+- Estados "Entregue" e "Confirmada".
+- Nos dois temas, em desktop e celular, com os setores das screenshots: ULD, Carga e Operações.
 
 ### 6.5 "Solicitações" (`RequestsHomeCard`, `OpenRequestItem`)
 
