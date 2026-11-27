@@ -107,14 +107,16 @@ export function InviteTeamCard({
         <p className="mb-2 font-mono text-xs leading-none font-medium tracking-[.06em] text-on-invite-soft uppercase">
           Cadastros
         </p>
-        {/* Protótipo: 4px entre as linhas (o `gap` do bloco), mais a divisória. */}
+        {/* Protótipo: 4px entre as linhas (o `gap` do bloco), mais a divisória.
+            `box-content`: os 44px mínimos são do conteúdo e a divisória de 1px
+            soma por fora (45px), como no protótipo (sem o border-box do reset). */}
         <ul className="flex flex-col gap-1">
           {setupSteps(counts).map((step, index) => (
             <li
               key={step.name}
               data-done={step.done}
               className={cn(
-                "flex min-h-11 items-center gap-3",
+                "box-content flex min-h-11 items-center gap-3",
                 index > 0 && "border-t border-on-pastel-line",
               )}
             >

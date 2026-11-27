@@ -125,6 +125,14 @@ describe("InviteTeamCard", () => {
     expect(rows[1]).toHaveClass("border-t", "border-on-pastel-line");
   });
 
+  it("a divisória soma 1px aos 44px da linha (box-content), como no protótipo", () => {
+    renderCard();
+
+    for (const row of screen.getAllByRole("listitem")) {
+      expect(row).toHaveClass("box-content");
+    }
+  });
+
   it("é um card feature rosa com tinta de pastel e grid de 2 colunas só a partir de 1040px", () => {
     const { container } = renderCard();
 
