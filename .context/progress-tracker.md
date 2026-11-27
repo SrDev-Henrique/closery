@@ -139,7 +139,7 @@ Spec em `docs/superpowers/specs/2026-11-27-visual-inicio-design.md`, plano em `d
 - ✅ Revisões: a final em 3 lentes, a re-revisão em 3 lentes e a revisão do delta em 2 lentes, com duas rodadas de correção (foco dos cartões coloridos provado por E2E, `--destructive` com AA, rolagem do seletor, trace do CI sem a fonte); sem Critical e sem Important aberto (2026-11-27)
 - ✅ Documentos: ADR, `ui-rules.md §6`, `library-docs.md` (§3 e §17 a §20), runbook (a Satoshi em todo build e a `0005` antes do deploy), pendências novas P81 a P108, P17 resolvida e P67 e P70 com `Atualização` (2026-11-27)
 - ✅ Migração `0005` no banco de dev, com o host conferido pelo `db:hosts` antes do `db:migrate` (2026-11-27)
-- ⬜ Testes: TOTAIS DO PORTÃO
+- ✅ Testes: Vitest 5248 testes em 352 arquivos; E2E com 49 cenários (os 44 de antes, 4 do Início novo e 1 de toque). Verificado: `check-types`, `lint`, `test`, `build` e `test:e2e` (49 passed) verdes (2026-11-27)
 - ⬜ PR da `feat/visual-inicio` e o merge pelo dono
 - ⬜ Os próximos handoffs, na fila do roteiro (`.git/sdd/roadmap/roteiro.md`, fora do git): B processo, C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação, G Dashboard
 
