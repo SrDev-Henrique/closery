@@ -43,7 +43,7 @@ Restrições que valem sempre:
 | `thumb` / `thumbInk` | `thumb` / `thumb-foreground`: o botão que desliza | `#ffffff` / `#1c1b19` | `#f2efe8` / `#1c1b19` |
 | `frame` | `frame`: moldura dos avatares | `#1c1b19` | `#0f0e0d` |
 | `warn`, `info`, `succ` | `warning`, `info`, `success` e os `*-foreground` | sem mudança | sem mudança |
-| (erro) | `destructive` | `#d60000` | `#ff8a8a` |
+| (erro) | `destructive` | `#b80000` | `#ff9393` |
 
 | Token de status | Claro | Escuro |
 |---|---|---|
@@ -53,7 +53,7 @@ Restrições que valem sempre:
 
 Uso do status: estados de solicitação e de passagem, sempre com texto; o ícone acompanha o selo em todas as telas, menos no cartão de Solicitações do Início (`showIcon`/`badgeIcons` desligados, decisão do dono de 2026-11-27).
 
-`destructive` foi ajustado para AA nas superfícies novas (decisão do dono, 2026-11-27): o `oklch` antigo dava menos de 4,5:1 para `text-destructive`. Os hex acima medem a partir de 4,5:1 sobre `background`, `card`, `popover` e sobre o fundo do botão `destructive` (`/10` no claro, `/20` no escuro, compostos sobre `card`); o guarda cobre esses pares.
+`destructive` foi ajustado para AA (decisão do dono, 2026-11-27): o `oklch` antigo dava menos de 4,5:1 para `text-destructive`, e o primeiro ajuste (`#d60000` / `#ff8a8a`) ainda reprovava o botão sobre o fundo da página no claro (4,04:1, o "Cancelar solicitação" de `/solicitacoes/[id]`) e os hovers (3,36–4,18:1). Os hex acima, com o fundo do botão `destructive` em `/10` → hover `/15` no claro e `/15` → hover `/20` no escuro, passam 4,5:1 em `text-destructive` sobre `background`, `card` e `popover` e sobre o fundo do botão em repouso **e** no hover, composto sobre `background` e sobre `card`, nos dois temas. O guarda lê os percentuais da própria classe da variante (`buttonVariants`) e mede todos esses pares (tabela abaixo).
 
 ## 3. Cores fixas (iguais nos dois temas)
 
@@ -100,6 +100,9 @@ para reimprimir). Piso nunca se afrouxa: reprovou, ajuste o token.
 | `primary-foreground` / `primary` | 15,26 | 14,99 |
 | `thumb-foreground` / `thumb` | 17,21 | 14,99 |
 | `success` · `warning` · `info` (`-foreground` sobre o fundo) | 7,48 · 6,56 · 7,02 | 7,51 · 7,47 · 6,41 |
+| `destructive` / `background` · `card` · `popover` | 6,13 · 6,91 · 6,91 | 8,07 · 7,00 · 7,00 |
+| `destructive` sobre o fundo do botão em repouso (`/10` claro, `/15` escuro), composto em `background` · `card` | 5,10 · 5,72 | 6,09 · 5,24 |
+| `destructive` sobre o fundo do botão no hover (`/15` claro, `/20` escuro), composto em `background` · `card` | 4,63 · 5,19 | 5,46 · 4,72 |
 
 | Par fixo (iguais nos dois temas) | Contraste |
 |---|---|

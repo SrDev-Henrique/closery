@@ -17,6 +17,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { buttonVariants } from "@/components/ui/button";
+
 /** Texto normal (WCAG AA). */
 const TEXT_MIN = 4.5;
 
@@ -308,7 +310,7 @@ const SPEC: Record<string, Record<string, string>> = {
     input: "rgba(28, 27, 25, 0.15)",
     primary: "#1c1b19",
     "primary-foreground": "#f4f1ea",
-    destructive: "#d60000",
+    destructive: "#b80000",
     seg: "#e4e0d6",
     thumb: "#ffffff",
     "thumb-foreground": "#1c1b19",
@@ -324,7 +326,7 @@ const SPEC: Record<string, Record<string, string>> = {
     input: "rgba(255, 255, 255, 0.15)",
     primary: "#f2efe8",
     "primary-foreground": "#1c1b19",
-    destructive: "#ff8a8a",
+    destructive: "#ff9393",
     seg: "#282724",
     thumb: "#f2efe8",
     "thumb-foreground": "#1c1b19",
@@ -464,17 +466,79 @@ for (const [theme, selector] of THEMES) {
   });
 }
 
-/** Botão destructive: bg-destructive/10 (claro) ou /20 (escuro) composto sobre o card. */
-for (const [theme, selector, alpha] of [
-  ["claro", ":root", 0.1],
-  ["escuro", ".dark", 0.2],
-] as const) {
+// ---------------------------------------------------------------- contraste: botão destructive
+/**
+ * O fundo do botão `destructive` é o próprio `--destructive` translúcido (`bg-destructive/N`, que o
+ * Tailwind gera como `color-mix(in oklab, var(--destructive) N%, transparent)`: a mesma cor com alfa
+ * N%). Os percentuais vêm da classe da própria variante (`buttonVariants`), em repouso e no hover,
+ * nos dois temas: mudar o botão sem passar aqui não é possível. O botão aparece sobre o fundo da
+ * página (`/solicitacoes/[id]`, "Cancelar solicitação" direto no `SidebarInset`) e sobre o card ou o
+ * diálogo (`popover`/`muted` têm o valor do card).
+ */
+function destructiveButtonAlphas() {
+  const names = buttonVariants({ variant: "destructive" }).split(/\s+/);
+  const pick = (prefix: string) => {
+    const pattern = new RegExp(`^${prefix}bg-destructive/(\\d+)$`);
+    const hits = names.flatMap((name) => pattern.exec(name)?.[1] ?? []);
+    if (hits.length !== 1) {
+      throw new Error(
+        `esperava uma classe ${prefix}bg-destructive/N no botão, achei ${hits.length}`,
+      );
+    }
+    return Number(hits[0]) / 100;
+  };
+  return {
+    ":root": { repouso: pick(""), hover: pick("hover:") },
+    ".dark": { repouso: pick("dark:"), hover: pick("dark:hover:") },
+  } as const;
+}
+
+const DESTRUCTIVE_BUTTON_SURFACES = ["background", "card"] as const;
+type ButtonState = "repouso" | "hover";
+
+describe("botão destructive — os percentuais lidos da variante", () => {
+  it("acha repouso e hover nos dois temas, e o hover muda o fundo (alfa maior)", () => {
+    const alphas = destructiveButtonAlphas();
+    for (const selector of [":root", ".dark"] as const) {
+      const { repouso, hover } = alphas[selector];
+      expect(repouso, selector).toBeGreaterThan(0);
+      expect(hover, selector).toBeGreaterThan(repouso);
+      expect(hover, selector).toBeLessThan(1);
+    }
+  });
+});
+
+for (const [theme, selector] of THEMES) {
   describe(`contraste do botão destructive — tema ${theme}`, () => {
-    it("text-destructive sobre bg-destructive translúcido em cima do card (≥4,5:1)", () => {
+    const cases = (["repouso", "hover"] as const).flatMap((state) =>
+      DESTRUCTIVE_BUTTON_SURFACES.map((surface): [ButtonState, string] => [
+        state,
+        surface,
+      ]),
+    );
+    const measure = (state: ButtonState, surface: string) => {
       const destructive = readToken(css, selector, "destructive");
-      const card = solid(readToken(css, selector, "card"), "card");
-      const fill = over({ rgb: destructive.rgb, alpha }, card);
-      const ratio = contrast(solid(destructive, "destructive"), fill);
+      const alpha = destructiveButtonAlphas()[selector][state];
+      const base = solid(readToken(css, selector, surface), surface);
+      const fill = over({ rgb: destructive.rgb, alpha }, base);
+      return contrast(solid(destructive, "destructive"), fill);
+    };
+
+    if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+      it("imprime a matriz medida", () => {
+        const lines = cases.map(
+          ([state, surface]) =>
+            `botão destructive (${state}) sobre ${surface}: ${measure(state, surface).toFixed(2)}:1`,
+        );
+        console.log(`\n[botão destructive · ${theme}]\n${lines.join("\n")}`);
+        expect(lines).toHaveLength(cases.length);
+      });
+    }
+
+    it.each(
+      cases,
+    )("text-destructive sobre o fundo do botão (%s) composto em cima de --%s (≥4,5:1)", (state, surface) => {
+      const ratio = measure(state, surface);
       expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
     });
   });

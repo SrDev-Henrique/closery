@@ -123,7 +123,7 @@ Alguns valores não estão no handoff:
 | `--pastel-confirmed` / `-foreground` | `#d3eedd` / `#1f5131` | badge "Confirmada" no cartão de turno. **Removido no §6.4.1** |
 | `--on-pastel-success-soft` / `--on-pastel-success` | `rgba(46,125,79,.22)` / `#123b27` | bloco "Confirmada" do cartão de turno (**novo no §6.4.1**) |
 
-`--destructive` ajustado para AA nas superfícies novas (decisão do dono, 2026-11-27): `#d60000` no claro e `#ff8a8a` no escuro, medidos em `themeContrast.test.ts`.
+`--destructive` ajustado para AA (decisão do dono, 2026-11-27): `#b80000` no claro e `#ff9393` no escuro, com o fundo do botão `destructive` em `/10` → hover `/15` (claro) e `/15` → hover `/20` (escuro). `text-destructive` passa 4,5:1 sobre `--background`, `--card` e `--popover` e sobre o fundo do botão em repouso e no hover, composto sobre `--background` e `--card`, medidos em `themeContrast.test.ts` (o primeiro ajuste, `#d60000` / `#ff8a8a`, dava 4,04:1 no botão sobre o fundo da página no claro e 3,36–4,18:1 nos hovers).
 
 Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2730`/`#4a2c3a`. Eles entram como `--on-highlight-muted`, `--on-highlight-soft`, `--on-invite-muted` e `--on-invite-soft`, com os valores na ordem do handoff.
 
