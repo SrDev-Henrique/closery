@@ -32,7 +32,7 @@ O tema escuro passa a ser o padrão, com um switch para o claro. A regra de ouro
   - O setor ganha a coluna `color`, com uma paleta fechada de 5 cores, escolhida na criação e editável na tela Setores.
   - A alternativa de derivar a cor da ordem foi descartada: a cor mudaria com a lista e ficaria ciclada, contrariando `ui-rules.md §4`.
 - **D-V4, "Todos" no seletor de setor (2026-11-27).** O rótulo visível da última opção do admin é "Todos" (com 5 opções cada segmento tem 104px e "Todos os setores" truncava); o `aria-label` segue "Todos os setores" (contém o texto visível, WCAG 2.5.3).
-- **D-V5, ícones dos selos só no Início (2026-11-27).** Os selos de status e de parada do cartão de Solicitações do Início saem sem ícone (`showIcon={false}` / `badgeIcons={false}`, como no protótipo); as outras telas e as seções da passagem mantêm o ícone. O status continua sempre com texto.
+- **D-V5, selos sem ícone só no cartão de Solicitações do Início (2026-11-27).** Os selos de status e de parada do cartão de Solicitações do Início saem sem ícone (`showIcon={false}` / `badgeIcons={false}`, como no protótipo); as outras telas e as seções da passagem mantêm o ícone. O status continua sempre com texto.
 - **D-V6, hover da linha como no protótipo (2026-11-27).** No hover da linha de solicitação o selo neutro ("Solicitada") se funde ao fundo da linha; é o comportamento do protótipo e fica assim.
 
 **Do controlador (aceitas no desenho):**
@@ -103,7 +103,7 @@ A coluna "Protótipo" usa os nomes do handoff. O escuro vai em `.dark`; o claro,
 Alguns valores não estão no handoff:
 - `--input` fica em `rgba(255,255,255,.15)` no escuro e `rgba(28,27,25,.15)` no claro, para os campos das outras telas continuarem visíveis.
 - `--ring` recebe o valor de `muted`.
-- `--destructive` fica como está.
+- `--destructive` ganha valor novo para passar no AA (decisão do dono, 2026-11-27): `#b80000` no claro e `#ff9393` no escuro, com o fundo do botão `destructive` em `/10` → hover `/15` (claro) e `/15` → hover `/20` (escuro). Os pares estão no parágrafo depois da tabela das cores fixas e no `ui-tokens.md`.
 
 **Cores fixas, iguais nos dois temas.** Viram tokens com estes nomes:
 
@@ -177,10 +177,10 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
   - `rounded-full` em todas as variantes, no app inteiro;
   - tamanho novo `pill`: 48px de altura, Satoshi 16px/700, `padding 0 22px`, `gap 10px`, ícone de 18px. Como no protótipo, os botões neutros ("Ver o dashboard" em `--card` e "Ver solicitações" em `--primary`) usam `padding 0 20px`;
   - variantes novas: `surface` (fundo `--card`, hover `--accent`), `on-pastel` (fundo `--on-pastel`, texto `--on-pastel-ink`, `active:scale-[.97]`) e `on-pastel-secondary` (fundo e hover `--on-pastel-secondary`/`-hover`);
-  - o `focus-visible:ring` atual continua em todas.
+  - o `focus-visible:ring` atual continua em todas, menos `on-pastel` e `on-pastel-secondary`: sobre o pastel o anel `ring/50` some, e elas usam contorno sólido de 2px na tinta `--on-pastel`, 2px para fora (`focus-visible:outline-solid outline-2 outline-offset-2 outline-on-pastel`, com `ring-0!`; revisão final F1 e segunda rodada G1).
 - **`Badge`:**
   - `rounded-full` e `whitespace-nowrap` no app inteiro;
-  - variantes `warning`, `info`, `success`, `neutral` (`--accent`/`--foreground`), `pastel-pending` e `pastel-confirmed`;
+  - variantes `warning`, `info`, `success`, `neutral` (`--accent`/`--foreground`), `pastel-pending` e `pastel-confirmed` (as duas últimas **removidas no §6.4.1**);
   - Geist 12–13px/600, altura 24px.
 - **`Card`:** variante `feature`, com raio 32px, padding 32px (22px no celular), sem borda, sem ring e sem sombra. Os cards se separam pela cor. O `Card` padrão das outras telas não muda.
 - **Raios:**
