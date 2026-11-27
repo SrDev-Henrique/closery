@@ -4,7 +4,7 @@
 // faltar, confere o hash e só então grava (nada é gravado se algum peso reprovar). Qualquer erro sai
 // com código 1 e uma mensagem que diz o que fazer. Só built-ins do Node/Bun: Windows e Linux (CI, Vercel).
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -152,5 +152,15 @@ async function main() {
   }
 }
 
-// Só roda como script (`bun scripts/fetchFonts.mjs`); importado pelo teste, não faz nada.
-if (import.meta.main) await main();
+/**
+ * Só roda como script (`bun scripts/fetchFonts.mjs` ou `node scripts/fetchFonts.mjs`); importado pelo
+ * teste, não faz nada. `import.meta.main` é do Bun (no Node 22 é `undefined`, e o script sairia 0 sem
+ * baixar nada), então sem ele compara o arquivo de entrada com o deste módulo.
+ */
+export function isMainModule(meta, argv1) {
+  if (meta.main !== undefined) return meta.main;
+  if (!argv1) return false;
+  return resolve(argv1) === resolve(fileURLToPath(meta.url));
+}
+
+if (isMainModule(import.meta, process.argv[1])) await main();

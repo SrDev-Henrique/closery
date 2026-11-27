@@ -1,6 +1,9 @@
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+
 import { describe, expect, it, vi } from "vitest";
 
-import { ensureSatoshi } from "../scripts/fetchFonts.mjs";
+import { ensureSatoshi, isMainModule } from "../scripts/fetchFonts.mjs";
 import { FONTSHARE_CSS_URL, sha256Hex } from "../scripts/fontsCheck.mjs";
 import {
   FONT_WEIGHTS,
@@ -164,5 +167,26 @@ describe("ensureSatoshi", () => {
       "respondeu 404",
     );
     expect(disk.writes).toEqual([]);
+  });
+});
+
+describe("isMainModule (o script também roda pelo Node)", () => {
+  const script = resolve("scripts/fetchFonts.mjs");
+  const url = pathToFileURL(script).href;
+
+  it("no Bun, import.meta.main manda", () => {
+    expect(isMainModule({ main: true, url }, "/outro")).toBe(true);
+    expect(isMainModule({ main: false, url }, script)).toBe(false);
+  });
+
+  it("no Node (main indefinido), compara process.argv[1] com o arquivo do módulo", () => {
+    expect(isMainModule({ url }, script)).toBe(true);
+  });
+
+  it("importado por outro programa (argv[1] é outro arquivo ou falta), não roda", () => {
+    expect(
+      isMainModule({ url }, resolve("node_modules/vitest/vitest.mjs")),
+    ).toBe(false);
+    expect(isMainModule({ url }, undefined)).toBe(false);
   });
 });
