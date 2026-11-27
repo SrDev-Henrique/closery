@@ -491,23 +491,27 @@
   ajuste de fallback (Arial) sozinho (`adjustFontFallback`). `globals.css`: `--font-heading: var(--font-satoshi)`; o utilitário é `font-heading`.
 - **Glifos:** `ª` e `º` **não existem** na Satoshi e caem na próxima fonte da pilha (Geist). Nada a fazer; só não conte com eles no display.
 
-## 18. next-themes 0.4.6 · visual novo
+## 18. Tema (próprio, sem next-themes) · visual novo
 
-- **Já estava instalado** (veio com o `sonner` do shadcn). O `ThemeProvider` do app é o `src/components/app-shell/ThemeProvider.tsx`
-  (componente próprio, `"use client"`): `attribute="class"`, `defaultTheme="dark"`, `enableSystem={false}`,
-  `storageKey="closery-tema"`; sem `disableTransitionOnChange` (o deslize do knob do `ThemeSwitch` precisa da transição). **Escuro padrão e sem seguir o sistema** (C-V4); a escolha fica no
-  navegador, nunca no banco.
-- **`<html suppressHydrationWarning>`** no `RootLayout`: o script do provider põe a classe `dark` ou `light` antes da hidratação.
-  O `@custom-variant dark (&:is(.dark *))` do `globals.css` continua. A CSP do projeto é só `frame-ancestors 'none'`, então o
-  `<script>` inline não é bloqueado (se um dia houver `script-src`, passe `nonce` ao provider).
-- **O que ler do tema:** `useTheme()` devolve `theme`, `resolvedTheme` e `setTheme`. Com `enableSystem` desligado os dois primeiros
-  são iguais. Sem `ThemeProvider` o hook devolve `setTheme` vazio e `resolvedTheme` indefinido (não lança).
-- **Não leia o tema no render sem esperar montar:** no servidor não existe `localStorage`. O visual que depende do tema usa as
-  variantes `dark:` do Tailwind (o script decide a classe antes da pintura); só o que precisa do valor em JS (`aria-checked`,
-  texto de tooltip) espera `useSyncExternalStore(subscribe, () => true, () => false)`, como o `ThemeSwitch`.
-- **Teste:** o `<script>` do provider, renderizado no cliente, faz o React 19 avisar no console (ruído, não falha): os testes
-  silenciam `console.error`. jsdom não tem `matchMedia`; o `test/setup-dom.ts` já fornece um (o provider chama no efeito).
-  Limpe `localStorage` e `document.documentElement.className` em `beforeEach`.
+- **Por que não `next-themes`:** o `<script>` anti-flash que ele renderiza dentro de um componente client, acima dos `<Suspense>`,
+  faz o React 19 (com Cache Components) refazer no cliente os trechos dinâmicos da página; a cópia do servidor, que chega depois
+  pelo streaming, sobra e o conteúdo aparece duplicado (provado no E2E: dois "Nome" em `/convite/<token>`, ids `_r_` e `_R_`).
+  O `next-themes` não tem opção para não renderizar o script. O pacote foi removido.
+- **Módulo próprio:** `src/lib/theme.ts` (puro) tem `THEME_STORAGE_KEY = "closery-tema"`, `THEME_INIT_SCRIPT`, `readTheme`, `setTheme`
+  e `subscribeTheme` (inscritos locais + evento `storage` da chave, que sincroniza abas); `src/lib/useTheme.ts` (`"use client"`) tem o
+  hook `useTheme()` -> `{ theme, setTheme }` sobre `useSyncExternalStore` (snapshot do servidor = `"dark"`). **Escuro padrão e sem
+  seguir o sistema** (C-V4): só o valor exato `"light"` guardado vale como claro; a escolha fica no navegador, nunca no banco.
+- **O script mora no `<head>` do `RootLayout`** (Server Component), via `<script dangerouslySetInnerHTML>`, como o guia
+  "Preventing flash before hydration" do Next 16 manda. Ele roda antes da pintura: alterna a classe `dark` do `<html>` e põe o
+  `colorScheme`. O `<html>` leva `suppressHydrationWarning`. O `@custom-variant dark (&:is(.dark *))` do `globals.css` continua; o
+  claro é a ausência da classe `dark` (não existe classe `light`). A CSP do projeto é só `frame-ancestors 'none'`; se um dia houver
+  `script-src`, o script precisa de `nonce`.
+- **Não leia o tema no render sem o hook:** no servidor não existe `localStorage`. O visual que depende do tema usa as variantes
+  `dark:` do Tailwind (o script decide a classe antes da pintura); o que precisa do valor em JS (`aria-checked`, texto de tooltip,
+  tema do Sonner) usa `useTheme()`, que hidrata como `"dark"` e relê o `<html>` logo depois.
+- **Dev (Strict Mode):** o React pode limpar a classe do `<html>` na remontagem de desenvolvimento; em produção isso não acontece.
+- **Teste:** `src/lib/theme.test.ts` executa o script num jsdom. Nos testes de componente, `new Function(THEME_INIT_SCRIPT)()` faz o
+  papel do script do `<head>`; limpe `localStorage` e `document.documentElement.className` em `beforeEach`.
 
 ## 19. DiceBear (`@dicebear/core` 10.7.0 + `@dicebear/styles` 10.6.0) · visual novo
 

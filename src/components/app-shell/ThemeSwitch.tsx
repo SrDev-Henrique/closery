@@ -1,36 +1,22 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useSyncExternalStore } from "react";
 
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-const subscribe = () => () => {};
-
-// `false` no servidor e na hidratação, `true` depois de montar: o estado lido do navegador (localStorage)
-// só vale depois disso, senão o HTML do servidor e o do cliente divergem.
-function useMounted() {
-  return useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false,
-  );
-}
+import { useTheme } from "@/lib/useTheme";
 
 // Switch estilo Apple (spec §4.2): trilho 76x44 em `card`, knob de 36px em `primary` com ícone de 16px.
 // No escuro o knob fica à direita com a Lua; no claro, à esquerda com o Sol. A posição e o ícone vêm do
-// CSS (`dark:`), que o script do next-themes decide ANTES da primeira pintura: quem usa o claro não vê
-// o knob deslizar a cada carga. Só o `aria-checked` e o rótulo do tooltip esperam o estado do navegador
-// (até lá, "escuro", igual ao HTML do servidor).
+// CSS (`dark:`), que o script do <head> (src/lib/theme.ts) decide ANTES da primeira pintura: quem usa o claro não vê
+// o knob deslizar a cada carga. O `aria-checked` e o rótulo do tooltip vêm do `useTheme`, cujo snapshot do
+// servidor é "escuro" (igual ao HTML) e que relê o navegador logo depois de hidratar.
 export function ThemeSwitch() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const mounted = useMounted();
-  const isDark = !mounted || resolvedTheme !== "light";
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
 
   return (
     <Tooltip>

@@ -43,7 +43,7 @@ O tema escuro passa a ser o padrão, com um switch para o claro. A regra de ouro
   - Os tamanhos grandes (48px), os cards de raio 32px e a tipografia display ficam só no Início e no shell por enquanto.
 - **C-V3, "celular" é abaixo de 860px no app inteiro.** Vale para o `md` do Tailwind e para o `MOBILE_BREAKPOINT` da sidebar.
 - **C-V4, tema.**
-  - Usa `next-themes`, que já está instalado e é usado pelo `sonner`.
+  - Tema próprio (`src/lib/theme.ts` + `useTheme`), sem `next-themes`: o script dele, dentro de componente client, duplicava o conteúdo dinâmico da página (trocado em 2026-11-27).
   - Escuro é o padrão, e o tema não segue o sistema.
   - A escolha fica no navegador.
 - **C-V5, avatares DiceBear `notionists` gerados no servidor.**
@@ -127,7 +127,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 
 ### 4.2 Tema
 
-- `ThemeProvider` do `next-themes` no `RootLayout`, com `attribute="class"`, `defaultTheme="dark"`, `enableSystem={false}`, sem `disableTransitionOnChange` (o dono preferiu o deslize do knob; as cores com transição também mudam suavemente na troca).
+- Tema próprio (2026-11-27, no lugar do `next-themes`, cujo script dentro de componente client duplicava o conteúdo dinâmico): script inline no `<head>` do `RootLayout` que alterna a classe `dark` (escuro padrão, sem seguir o sistema) e hook `useTheme`; sem `disableTransitionOnChange` (o dono preferiu o deslize do knob; as cores com transição também mudam suavemente na troca).
 - O `<html>` recebe `suppressHydrationWarning`.
 - O `@custom-variant dark` atual continua.
 - **Switch de tema** (`ThemeSwitch`, client):
@@ -152,7 +152,7 @@ Os textos secundários dos cards amarelo e rosa são `#3b3628`/`#4a4332` e `#3a2
 - **Ganchos:** `predev` e `prebuild` no `package.json`. O Bun roda os scripts `pre*`; isso foi conferido em 2026-11-27.
 - **No CI**, o job do E2E guarda a pasta em cache, com uma chave tirada do hash do script.
 - **Na Vercel**, o `bun run build` roda o `prebuild`.
-- **No Vitest**, nenhum teste importa o `RootLayout` hoje, que é onde as fontes são carregadas. O provider de tema fica num componente próprio (`src/components/app-shell/ThemeProvider.tsx`), testável sem a fonte.
+- **No Vitest**, nenhum teste importa o `RootLayout` hoje, que é onde as fontes são carregadas. O tema fica em módulo próprio (`src/lib/theme.ts`), testável sem a fonte.
 - O texto da `/privacidade` não muda: a fonte é servida pelo próprio app.
 
 ### 4.4 Breakpoints

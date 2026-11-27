@@ -163,9 +163,9 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/ui/sonner.tsx`
 - **Propósito:** toasts de confirmação ("Passkey criada.").
 - **Como funciona:** um `<Toaster />` no layout raiz; dispare com `toast.success(...)` de
-  `sonner`. Lê o tema via `next-themes` (sem `ThemeProvider` cai em `system`).
+  `sonner`. Lê o tema via `useTheme` (`src/lib/useTheme.ts`).
 - **Usa:** tokens `popover`, `border`.
-- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`). 2026-11-27 — visual novo (Tarefa 3): agora existe `ThemeProvider` no layout raiz e o toast segue o tema do app (escuro padrão), não mais "system".
+- **Histórico:** 2026-11-20 — `shadcn add` (traz `sonner` e `next-themes`). 2026-11-27 — visual novo (Tarefa 3): agora existe `ThemeProvider` no layout raiz e o toast segue o tema do app (escuro padrão), não mais "system". 2026-11-27 — fix(tema): o tema vem do `useTheme` próprio (sem `next-themes`).
 
 ### Avatar
 - **Status:** ✅ pronto (2026-11-20)
@@ -311,28 +311,18 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Usa:** `MenuToggle`, `ThemeSwitch`.
 - **Histórico:** 2026-11-27 — criado no visual novo (Task 9); substitui o `<header>` com `border-b` do layout.
 
-### ThemeProvider
-- **Status:** ✅ pronto (2026-11-27)
-- **Local:** `src/components/app-shell/ThemeProvider.tsx`
-- **Propósito:** liga o tema claro/escuro do app inteiro; o escuro é o padrão.
-- **Como funciona:** `"use client"`; envolve o `ThemeProvider` do `next-themes` com `attribute="class"`, `defaultTheme="dark"`,
-  `enableSystem={false}` (não segue o sistema) e `storageKey="closery-tema"`. Fica no `RootLayout`,
-  em volta do `TooltipProvider` e do `Toaster` (o `sonner.tsx` lê o tema daqui). O `<html>` leva `suppressHydrationWarning`.
-- **Usa:** `next-themes`; tokens claro/escuro do `globals.css`.
-- **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3).
-
 ### ThemeSwitch
 - **Status:** ✅ pronto (2026-11-27)
 - **Local:** `src/components/app-shell/ThemeSwitch.tsx`
 - **Propósito:** switch estilo Apple que alterna entre o tema escuro e o claro (vai no cabeçalho).
 - **Como funciona:** `"use client"`; `<button role="switch" aria-checked aria-label="Tema escuro">` em `TooltipTrigger render`, com
   tooltip "Mudar para o tema claro" / "Mudar para o tema escuro". Trilho 76x44 em `card`, knob de 36px em `primary` com `Moon` (escuro,
-  à direita) ou `Sun` (claro, à esquerda); a posição e o ícone saem do CSS (`dark:`), que o script do `next-themes` resolve antes da
+  à direita) ou `Sun` (claro, à esquerda); a posição e o ícone saem do CSS (`dark:`), que o script do `<head>` (`src/lib/theme.ts`) resolve antes da
   pintura (sem piscar), e `transition: left .3s cubic-bezier(.2,.8,.2,1)` (desligada em `motion-reduce`). O `aria-checked` e o texto
-  do tooltip esperam montar no cliente (`useSyncExternalStore`) e antes disso mostram o escuro, igual ao HTML do servidor. Testado
+  do tooltip vêm do `useTheme` (`useSyncExternalStore`, snapshot do servidor "escuro", igual ao HTML). Testado
   com `renderToString` (hidratação), teclado e tooltip com `fireEvent` como o `MenuToggle`.
-- **Usa:** `ThemeProvider`, `Tooltip*`; tokens `card`, `primary`, `primary-foreground`, `ring`.
-- **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3).
+- **Usa:** `useTheme` (`src/lib/useTheme.ts`), `Tooltip*`; tokens `card`, `primary`, `primary-foreground`, `ring`.
+- **Histórico:** 2026-11-27 — criado no visual novo (Tarefa 3). 2026-11-27 — fix(tema): saiu do `next-themes` para o módulo de tema próprio; o `ThemeProvider` foi removido (o script do `next-themes` duplicava conteúdo).
 
 ### Greeting
 - **Status:** ✅ pronto (2026-11-20)

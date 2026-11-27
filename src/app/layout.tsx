@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 
-import { ThemeProvider } from "@/components/app-shell/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 // A variável precisa ser --font-sans: é o nome que o globals.css (shadcn) lê.
@@ -57,11 +57,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${satoshi.variable} h-full antialiased`}
     >
+      <head>
+        {/* Tema antes da pintura. Fica aqui, num Server Component, e não num provider client: o script do
+            next-themes dentro de componente client fazia o React refazer no cliente os trechos dinâmicos
+            e a cópia do servidor sobrava (conteúdo duplicado). */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: constante do projeto, sem entrada de usuário */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col">
-        <ThemeProvider>
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster />
-        </ThemeProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
       </body>
     </html>
   );
