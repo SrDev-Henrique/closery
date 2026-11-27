@@ -154,3 +154,11 @@ describe("buttonVariants — tamanhos novos", () => {
     expect(classesOf({ size: "lg" })).toContain("text-sm");
   });
 });
+
+describe("buttonVariants — outline legível nos dois temas", () => {
+  it("a borda do outline é o token dos campos (--input), não o --border: no claro o --border some no fundo da página", () => {
+    const classes = classesOf({ variant: "outline" });
+    expect(classes).toContain("border-input");
+    expect(classes).not.toContain("border-border");
+  });
+});
