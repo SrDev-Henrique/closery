@@ -368,6 +368,18 @@
   tela: o relatório lista todos os achados de uma vez. O operador precisa de uma passagem entregue **ontem** com contagem (sem ela o
   `/dashboard` mostra o estado vazio e nem o link da última contagem nem o total do anel aparecem) e de uma solicitação; o admin abre o
   diálogo `Link de nova senha`. Tela nova entra na lista do spec.
+- **`e2e/hydration.spec.ts` (PR B, guarda de hidratação).** No `next start`, antes de qualquer interação: cada página abre
+  com `page.goto` (documento novo: depois de uma navegação no cliente a `Activity` deixa a página anterior escondida no
+  DOM, e tudo pareceria duplicado), espera o título de nível 1 e o `networkidle`, tira o instantâneo com `snapshotDom` e
+  reprova pelo `hydrationProblems` (os dois em `test/hydrationCheck.ts`, testados em `test/hydrationCheck.test.ts`):
+  nenhum ou mais de um `main`, número de `h1` por `main` diferente do esperado, id repetido, id ou referência (`for`,
+  `aria-labelledby`, `aria-describedby`, `aria-controls`) no formato do cliente (`_r_…_`; o do servidor é `_R_…_`) e erro
+  de hidratação. `snapshotDom` vai como texto para o navegador: não pode usar nada de fora da função. Na produção o
+  React 19 minifica o erro, e o Next o manda ao `reportError`: ele chega como `pageerror` com `react.dev/errors/418` (ou
+  419, 422, 423, 424), não como `console.error` com "hydrat"; o spec escuta os dois e o verificador casa os dois. Nas
+  telas de auth o título é o `CardTitle` com `role="heading"` (0 `h1`). Componente que só existe no cliente de propósito
+  e gera `_r_` entra na lista fechada `CLIENT_ONLY_IDS` do spec (página, seletor, motivo), nunca num filtro genérico.
+  Página principal nova entra na tabela do spec, com o `h1` conferido no código.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
 ## 11. GitHub Actions (CI)
