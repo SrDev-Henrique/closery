@@ -528,7 +528,7 @@ for (const [theme, selector] of THEMES) {
  * N%). Os percentuais vêm da classe da própria variante (`buttonVariants`), em repouso e no hover,
  * nos dois temas: mudar o botão sem passar aqui não é possível. O botão aparece sobre o fundo da
  * página (`/solicitacoes/[id]`, "Cancelar solicitação" direto no `SidebarInset`) e sobre o card ou o
- * diálogo (`popover`/`muted` têm o valor do card).
+ * diálogo (`popover` tem o valor do card) e, no `DialogFooter`/`CardFooter`, sobre `accent/50` composto no popover.
  */
 function destructiveButtonAlphas() {
   const names = buttonVariants({ variant: "destructive" }).split(/\s+/);
@@ -548,7 +548,7 @@ function destructiveButtonAlphas() {
   } as const;
 }
 
-const DESTRUCTIVE_BUTTON_SURFACES = ["background", "card"] as const;
+const DESTRUCTIVE_BUTTON_SURFACES = ["background", "card", "rodape"] as const;
 type ButtonState = "repouso" | "hover";
 
 describe("botão destructive — os percentuais lidos da variante", () => {
@@ -574,7 +574,17 @@ for (const [theme, selector] of THEMES) {
     const measure = (state: ButtonState, surface: string) => {
       const destructive = readToken(css, selector, "destructive");
       const alpha = destructiveButtonAlphas()[selector][state];
-      const base = solid(readToken(css, selector, surface), surface);
+      // "rodape": o fundo do DialogFooter/CardFooter, `bg-accent/50` sobre o popover.
+      const base =
+        surface === "rodape"
+          ? over(
+              {
+                rgb: solid(readToken(css, selector, "accent"), "accent"),
+                alpha: 0.5,
+              },
+              solid(readToken(css, selector, "popover"), "popover"),
+            )
+          : solid(readToken(css, selector, surface), surface);
       const fill = over({ rgb: destructive.rgb, alpha }, base);
       return contrast(solid(destructive, "destructive"), fill);
     };

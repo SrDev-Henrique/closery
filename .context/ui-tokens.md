@@ -101,8 +101,10 @@ para reimprimir). Piso nunca se afrouxa: reprovou, ajuste o token.
 | `thumb-foreground` / `thumb` | 17,21 | 14,99 |
 | `success` · `warning` · `info` (`-foreground` sobre o fundo) | 7,48 · 6,56 · 7,02 | 7,51 · 7,47 · 6,41 |
 | `destructive` / `background` · `card` · `popover` | 6,13 · 6,91 · 6,91 | 8,07 · 7,00 · 7,00 |
-| `destructive` sobre o fundo do botão em repouso (`/10` claro, `/15` escuro), composto em `background` · `card` | 5,10 · 5,72 | 6,09 · 5,24 |
-| `destructive` sobre o fundo do botão no hover (`/15` claro, `/20` escuro), composto em `background` · `card` | 4,63 · 5,19 | 5,46 · 4,72 |
+| `destructive` sobre o fundo do botão em repouso (`/10` claro, `/15` escuro), composto em `background` · `card` · rodapé | 5,10 · 5,72 · 5,18 | 6,09 · 5,24 · 4,85 |
+| `destructive` sobre o fundo do botão no hover (`/15` claro, `/18` escuro), composto em `background` · `card` · rodapé | 4,63 · 5,19 · 4,71 | 5,71 · 4,92 · 4,56 |
+
+Rodapé = `bg-accent/50` do `DialogFooter` e do `CardFooter` composto no popover; o hover escuro do botão `destructive` caiu de `/20` para `/18` porque sobre o rodapé o `/20` media 4,38:1 (T3 do processo visual, 2026-11-27).
 
 | Par fixo (iguais nos dois temas) | Contraste |
 |---|---|
