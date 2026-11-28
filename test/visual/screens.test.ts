@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import { validateScreen } from "../../scripts/visual/screen.mjs";
 import inicio from "../../scripts/visual/screens/inicio.mjs";
+import legibilidade from "../../scripts/visual/screens/legibilidade.mjs";
+import provas from "../../scripts/visual/screens/provas.mjs";
 import { STATES } from "../../scripts/visual/seed/states/index";
 
 // As configurações de tela versionadas (spec §5.5) são válidas, e cada semente existe.
@@ -107,5 +109,132 @@ describe("screens/inicio.mjs", () => {
     expect(
       parses(inicio.states["entregue-escuro-uld"]?.regions?.cartao ?? ""),
     ).toBe(true);
+  });
+});
+
+describe("screens/legibilidade.mjs", () => {
+  const audit = legibilidade.audit ?? [];
+
+  it("é válida e só tem audit (nenhum par)", () => {
+    expect(validateScreen(legibilidade)).toEqual([]);
+    expect(Object.keys(legibilidade.states)).toEqual([]);
+  });
+
+  it("tem as 27 telas do passe do PR A, sem repetir", () => {
+    expect(audit).toHaveLength(27);
+    expect(new Set(audit.map((entry) => entry.name)).size).toBe(27);
+  });
+
+  it("as quatro de fora do (app) vão sem sessão; o resto, com a Ana ou a Carla", () => {
+    expect(
+      audit.filter((entry) => entry.person === null).map((entry) => entry.name),
+    ).toEqual(["entrar", "convite-invalido", "redefinir-senha", "privacidade"]);
+    for (const entry of audit) {
+      expect([null, "ana", "carla"]).toContain(entry.person);
+    }
+  });
+
+  it("820 onde há tabela ou lista", () => {
+    expect(
+      audit
+        .filter((entry) => entry.extraWidths?.includes(820))
+        .map((entry) => entry.name),
+    ).toEqual([
+      "passagens",
+      "passagens-operador",
+      "nova-passagem",
+      "solicitacoes-quadro",
+      "solicitacoes-lista",
+      "solicitacoes-tabela",
+      "solicitacoes-operador",
+      "dashboard",
+      "admin-setores",
+      "admin-turnos",
+      "admin-itens",
+      "admin-destinos",
+      "admin-equipe",
+    ]);
+  });
+
+  it("só usa os marcadores que o audit.mjs resolve", () => {
+    const used = new Set(
+      audit.flatMap((entry) =>
+        [...entry.path.matchAll(/\{([a-z]+)\}/g)].map((m) => m[1]),
+      ),
+    );
+    expect([...used].sort()).toEqual([
+      "corrigida",
+      "pendente",
+      "setor",
+      "solicitacao",
+    ]);
+  });
+
+  it("o Sheet do detalhe é só a janela, aberto pelos passos", () => {
+    const sheet = audit.find((entry) => entry.name === "solicitacao-sheet");
+    expect(sheet?.viewportOnly).toBe(true);
+    expect(sheet?.steps?.map((step) => step.kind)).toEqual([
+      "click",
+      "waitFor",
+    ]);
+  });
+});
+
+describe("screens/provas.mjs", () => {
+  const states = Object.entries(provas.states);
+
+  it("é válida", () => {
+    expect(validateScreen(provas)).toEqual([]);
+  });
+
+  it("os quatro estados da prova, todos só do app e com semente existente", () => {
+    expect(Object.keys(provas.states)).toEqual([
+      "falha-de-rede",
+      "hover-outline-em-cartao",
+      "hover-ghost-em-cartao",
+      "hover-statlink",
+    ]);
+    for (const [name, state] of states) {
+      expect(state.proto, name).toBeNull();
+      expect(Object.keys(STATES), name).toContain(state.seed);
+    }
+  });
+
+  it("a falha de rede aborta uma Server Action do 'Agora não' e exige o registro dela", () => {
+    const state = provas.states["falha-de-rede"];
+    expect(state).toMatchObject({
+      seed: "inicio:primeiro",
+      person: "ana",
+      theme: "dark",
+      path: "/",
+    });
+    expect(state?.steps?.app).toEqual([
+      {
+        kind: "failRequests",
+        match: { method: "POST", header: "next-action" },
+        times: 1,
+      },
+      { kind: "click", target: { role: "button", name: "Agora não" } },
+      { kind: "wait", ms: 1500 },
+    ]);
+    expect(state?.expect).toEqual({ failedRequests: 1 });
+  });
+
+  it("os três hovers passam o mouse num alvo e esperam, no estado rico", () => {
+    for (const name of [
+      "hover-outline-em-cartao",
+      "hover-ghost-em-cartao",
+      "hover-statlink",
+    ]) {
+      const state = provas.states[name];
+      expect(state?.seed, name).toBe("geral:rico");
+      expect(
+        state?.steps?.app?.map((step) => step.kind),
+        name,
+      ).toEqual(["hover", "wait"]);
+    }
+    // No claro o hover do outline e do ghost é bg-accent opaco: a sonda distingue o antes do depois.
+    expect(provas.states["hover-outline-em-cartao"]?.theme).toBe("light");
+    expect(provas.states["hover-ghost-em-cartao"]?.theme).toBe("light");
   });
 });
