@@ -274,4 +274,20 @@ describe(".context/pendencias.md", () => {
     expect(p83?.section, "P83").toBe("5");
     expect(p83?.updates, "P83").toContain("2026-11-27");
   });
+
+  it("Processo visual: P62 ganhou a Atualização de 2026-11-28 e continua aberta", () => {
+    const entry = entries.get("P62");
+    expect(entry?.state).toBe("Aberto, não triado");
+    expect(entry?.section).toBe("1");
+    expect(entry?.updates).toContain("2026-11-28");
+  });
+
+  it("Processo visual: P109 a P118 entraram como Aberto, não triado", () => {
+    for (let number = 109; number <= 118; number++) {
+      const id = `P${number}`;
+      expect(entries.get(id)?.state, id).toBe("Aberto, não triado");
+      expect(entries.get(id)?.section, id).toBe("1");
+      expect(index.get(id), `${id}: índice`).toBe("Aberto, não triado");
+    }
+  });
 });

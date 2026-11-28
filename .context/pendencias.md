@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P109.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P119.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -145,6 +145,16 @@
 | P106 | Sobras de código do visual novo: "use client" sem hook, valores repetidos e mensagens | ⚪ | Aberto, não triado |
 | P107 | Mapas do roteiro citam o --destructive de antes do ajuste AA | ⚪ | Aberto, não triado |
 | P108 | Setor rosa tem a mesma cor do cartão "Convide sua equipe" | ⚪ | Aberto, não triado |
+| P109 | Estado accent sobre fundo accent: o trilho do BarList some no hover da linha e o hover do "Agora não" do PasskeyOffer quase não se vê no escuro | 🟡 | Aberto, não triado |
+| P110 | visual:pairs semeia uma vez por estado e guarda o número velho do par que falha | 🟡 | Aberto, não triado |
+| P111 | Ferramentas visuais com diagnóstico enganoso e recusas que faltam | ⚪ | Aberto, não triado |
+| P112 | check-names --range confere só o diff líquido da branch, não cada commit | 🟡 | Aberto, não triado |
+| P113 | Um termo da lista de nomes já está na main, em cinco arquivos do PR A | ⚪ | Aberto, não triado |
+| P114 | As cópias do protótipo baixam as fontes da rede a cada captura | ⚪ | Aberto, não triado |
+| P115 | Os guardas dos documentos não recusam uma cerca de código solta | ⚪ | Aberto, não triado |
+| P116 | A memória de 2 s do SectorColorFade se arma em qualquer desmontagem | ⚪ | Aberto, não triado |
+| P117 | Testes e sondas do PR B que provam menos do que dizem | ⚪ | Aberto, não triado |
+| P118 | A skill handoff-visual, os modelos e o library-docs §23 divergem das regras em pontos de texto | ⚪ | Aberto, não triado |
 
 ---
 
@@ -407,6 +417,7 @@
 **Impacto:** com a integração Git da Vercel, todo push na `main` publica, inclusive sem o CI verde; "PR só entra com o CI verde" não é imposto pelo GitHub.
 **Correção:** — (opção: proteção da `main` com os checks `Tipos, lint e testes` e `E2E (Playwright)`, passo B1 do runbook, antes de ligar a Vercel)
 **Registrado em:** 2026-11-26
+**Atualização (2026-11-28):** o processo das telas (skill `handoff-visual`, Etapa 11) manda o controlador conferir o CI verde do PR antes de pedir o merge, e o `pre-commit` local do `check-names` (PR B) só cuida de nomes. A proteção da `main` continua decisão do dono.
 
 #### P63 — Comportamento na Vercel só se confirma no primeiro deploy 🟡
 **Estado:** Aberto, não triado
@@ -711,7 +722,7 @@
 #### P107 — Mapas do roteiro citam o --destructive de antes do ajuste AA ⚪
 **Estado:** Aberto, não triado
 **Arquivos:** `.git/sdd/roadmap/map-passagem-de-turno.md` · `.git/sdd/roadmap/map-solicitacao-completa.md` · `.git/sdd/roadmap/map-solicitacoes.md` (fora do git)
-**Impacto:** os três mapas dos handoffs das branches D, E e F dizem que o `--destructive` é `#d60000` no claro e `#ff8a8a` no escuro. O valor atual é `#b80000` e `#ff9393`, com o fundo do botão em `/10` e hover `/15` no claro e em `/15` e hover `/20` no escuro (`architecture.md §10`, 2026-11-27, desvio f; o hover escuro hoje é `/18`, ver a Atualização). Quem planejar essas branches pelos mapas compara os tons de erro dos handoffs (`--err`, `--dang`) com um valor que não existe mais. A revisão do delta apontou; o `memory.md` também avisa.
+**Impacto:** os três mapas dos handoffs das branches D, E e F dizem que o `--destructive` é `#d60000` no claro e `#ff8a8a` no escuro. O valor do ajuste AA (`architecture.md §10`, 2026-11-27, desvio f) é `#b80000` e `#ff9393`, com o fundo do botão em `/10` e hover `/15` no claro e em `/15` e hover `/20` no escuro; no PR B o hover escuro passou a `/18` (ver a Atualização). Quem planejar essas branches pelos mapas compara os tons de erro dos handoffs (`--err`, `--dang`) com um valor que não existe mais. A revisão do delta apontou; o `memory.md` também avisa.
 **Correção:** — (opção: trocar os valores nos três mapas antes de planejar a branch D)
 **Registrado em:** 2026-11-27
 **Atualização (2026-11-27):** no PR B (P83) o hover escuro do `destructive` passou de `/20` para `/18` (`dark:hover:bg-destructive/18`): sobre o rodapé `accent/50` o `/20` media 4,38:1. O valor atual a gravar nos mapas é `#b80000` / `#ff9393`, fundo `/10` e hover `/15` no claro, `/15` e hover `/18` no escuro.
@@ -722,6 +733,76 @@
 **Impacto:** a spec deu o mesmo valor aos dois tokens. No primeiro acesso do admin, com o setor escolhido em rosa, o "Convide sua equipe" fica logo acima do "Passagem do meu turno", e os dois têm o mesmo rosa. Sem borda nem sombra, os cartões coloridos se separam pela cor (`ui-rules.md §6`), e a regra "rosa só para o convite" não vale nesse caso. O rosa é a última cor da sugestão: só aparece a partir do 5º setor ativo ou por escolha do admin.
 **Correção:** — (decisão do dono. Opções: outro tom para o `--invite`, outro rosa na paleta do setor, ou aceitar)
 **Registrado em:** 2026-11-27
+
+#### P109 — Estado accent sobre fundo accent: o trilho do BarList some no hover da linha e o hover do "Agora não" do PasskeyOffer quase não se vê no escuro 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/dashboard/BarList.tsx` (a linha com `hover:bg-accent`, o trilho com `bg-accent`) · `src/components/auth/PasskeyOffer.tsx` ("Agora não", `ghost` dentro do `CardFooter`) · `src/components/ui/card.tsx` (`CardFooter` com `bg-accent/50`) · `src/components/ui/button.tsx` (`ghost`, `dark:hover:bg-accent/50`) · `src/app/themeContrast.test.ts` (`STATE_CASES` e o caso do rodapé do `destructive`)
+**Impacto:** é o caso que a spec do PR B (§14) previa, o `accent` que some onde o fundo já é `accent`, em três pontos que a revisão final achou. (1) No `BarList` com barras (o `DashboardRequests` usa), a parte vazia da barra é `bg-accent` opaco, e no hover a linha vira o mesmo `bg-accent`, nos dois temas: o trilho some, e a referência do 100% desaparece justo quando a pessoa aponta. Antes do PR B o hover não mudava nada (P83) e o trilho continuava visível. (2) O "Agora não" do `PasskeyOffer` é `ghost` dentro do rodapé `accent/50`: no escuro o hover põe outro `accent/50` por cima e vai de `rgb(46,45,41)` a `rgb(49,48,44)`, 1,04:1 (no claro, 1,11:1). Não é regressão (antes era 0), e a tela aparece uma vez. (3) O guarda dos fundos de estado aceita qualquer diferença de 1 nível de 8 bits: os `/50` no escuro dentro de cartão (`ghost`, `Badge` `ghost`, linha de tabela, `FieldLabel`) passam com 1,08:1, que mal se vê, e nenhuma prova por estilo calculado cobre o escuro (as sondas do C1 rodaram o `ghost` no claro de propósito). Os alfas dos `STATE_CASES` e do rodapé do `destructive` estão escritos à mão (não saem das classes, como os do `destructiveButtonAlphas()`), e o título do caso do rodapé cita "rodape", um token que não existe.
+**Correção:** — (opção: o trilho com outro fundo no hover da linha, por exemplo `group-hover:bg-background`, medido nos dois temas; um hover local no "Agora não" (`dark:hover:bg-accent` opaco, 1,12:1 sobre o rodapé), registrado no `ui-registry.md`; no guarda, os alfas lidos das classes, os casos "ghost sobre o rodapé" e "trilho no hover da linha" e um piso de perceptibilidade para fundo de estado (por exemplo 1,1:1 contra o repouso, o critério que escolheu o opaco da `AdminOverview`). O piso é escolha de desenho)
+**Registrado em:** 2026-11-28
+
+#### P110 — visual:pairs semeia uma vez por estado e guarda o número velho do par que falha 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/visual/pairs.mjs` (o laço dos estados, `seeded`, e o `results[tag]` no `catch`)
+**Impacto:** o `pairs.mjs` semeia o estado uma vez e mede todas as larguras em seguida, e pula a semente quando dois estados seguidos têm a mesma; a spec do PR B (§5.3) diz que ele semeia cada estado. No Início só há leitura, e os 19 pares do C1 foram reprodutíveis. Com passos que gravam (o salvamento automático da branch D, mover cartão na E), a segunda largura captura o banco já mudado, e o par deixa de ser reprodutível. Um par que falha deixa no `results.json` o número da rodada anterior, que parece atual. O código veio do plano (Task 7).
+**Correção:** — (opção: semear por largura quando o estado tem passo que não é só leitura, ou sempre; gravar `{ error, at }` no par que falha. Antes dos pares da branch D)
+**Registrado em:** 2026-11-28
+
+#### P111 — Ferramentas visuais com diagnóstico enganoso e recusas que faltam ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/visual/config.mjs` (`assertVisualDbUrl`) · `scripts/visual/interact.mjs` · `scripts/visual/install-hooks.mjs` · `scripts/visual/paths.mjs` · `scripts/visual/capture.mjs` · `scripts/visual/pairs.mjs` · `scripts/visual/probe.mjs` · `scripts/visual/env.sh` · `scripts/visual/db.ts` · `scripts/visual/seed/` · `test/visual/envScript.test.ts`
+**Impacto:** nenhum dado se perde e o C1 rodou tudo sem corrigir ferramenta; são lacunas que custam tempo a quem diagnostica, ou recusas que os chamadores de hoje não precisam. A revisão final listou: o `assertVisualDbUrl` aceita query string, e o `pg` deixa o `?host=` trocar o host (`postgres://…@127.0.0.1:54332/postgres?host=ep-exemplo.neon.tech` passa, e o `pg-connection-string` lê o host `ep-exemplo.neon.tech`; os quatro chamadores de hoje usam a constante `VISUAL_DB_URL`); a prova de falha de rede do `interact.mjs` conta qualquer `requestfailed` (um `ERR_ABORTED` de prefetch passaria o `expect.failedRequests`), e não só os que o `failRequests` abortou; o `install-hooks.mjs` sai com 1 no uso errado, e o contrato diz 2; o `readJsonInsideSdd` chama todo erro de "arquivo ausente", e o `git()` diz "não é repositório" quando o git não está instalado; o `capture.mjs` aceita um caminho com `//host` e não pega o erro do `evaluate`; o `pairs.mjs` não recusa uma caixa de região com tamanho zero, máscaras sem formato nem `--sizes` fora da faixa; o `probe.mjs` recusa o `--out` só depois de semear, aceita `--width` com lista e fora da faixa e `--only` vazio, e a lógica pura dele não tem teste pelo CLI; o `env.sh` não confere o `node -e` que gera o segredo nem usa `umask 077`; o `db.ts` derruba pelo PID (frágil no Windows) e aceita qualquer Postgres na 54332; o `envScript.test.ts` roda um comando na coleta; o caminho feliz do `inicio:entregue`, a atomicidade do `seedState` e o `reopen-invites` não têm teste.
+**Correção:** — (opção: o `?host=` primeiro (recusar `search` não vazio, com um caso de teste) e a contagem do `interact.mjs` pelas requisições abortadas; o resto num commit por ferramenta, com o teste puro de cada recusa)
+**Registrado em:** 2026-11-28
+
+#### P112 — check-names --range confere só o diff líquido da branch, não cada commit 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/visual/check-names.mjs` (`collect()`, modo `range`)
+**Impacto:** o portão (`--range=main...HEAD`) lê o `git diff main...HEAD` e as mensagens do `git log main..HEAD`. Um termo que entra num commit intermediário e sai depois não aparece no diff líquido, passa no portão e fica no histórico da branch publicada (a aba de commits do PR guarda os commits mesmo com squash). Acontece com um commit feito com `--no-verify` ou antes de o termo entrar na lista, que cresce a cada branch. No PR B não houve vazamento: a revisão final rodou o `--range=<c>^...<c>` em cada um dos 24 commits, todos com código 0.
+**Correção:** — (opção: o `--range` conferir commit a commit, com o `git rev-list` e o diff de cada commit contra o pai, ou um `--per-commit` usado pelo portão da skill)
+**Registrado em:** 2026-11-28
+
+#### P113 — Um termo da lista de nomes já está na main, em cinco arquivos do PR A ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `.context/pendencias.md` (o título da P100, no índice e na seção) · `memory.md` · `src/components/passagens/SectorPicker.test.tsx` · `docs/superpowers/specs/2026-11-27-visual-inicio-design.md` · `docs/superpowers/plans/2026-11-27-visual-inicio.md`
+**Impacto:** a abertura do PR B (C0) achou o termo da linha 23 da lista (fora do git; vem dos protótipos) nesses cinco arquivos, todos do PR A e já na `main`, fora do diff desta branch. O hook e o `--range` só olham o que muda, então ele fica onde está, e quem editar uma dessas linhas é recusado pelo hook (por exemplo, o título da P100).
+**Correção:** — (decisão do dono: trocar o texto nos cinco arquivos por um inventado do `scripts/visual/vocabulary.mjs`, sabendo que a história do git continua com ele; ou, se for palavra genérica do domínio, uma linha `!` na lista, pela regra da spec do PR B §5.4)
+**Registrado em:** 2026-11-28
+
+#### P114 — As cópias do protótipo baixam as fontes da rede a cada captura ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/visual/capture.mjs` (`openProto`) · as cópias do protótipo em `.git/sdd/` (fora do git)
+**Impacto:** a cópia do protótipo carrega a Geist do Google Fonts e a Satoshi do Fontshare a cada captura. Na primeira rodada completa do C1, o par sem-turnos-390 deu 0,129% (fora da faixa): o lado do app saiu idêntico (0 px de diferença entre as rodadas) e o do protótipo diferiu em 140 px, só nas três linhas de solicitação; seis repetições deram 0,101%. A causa provável, não provada, é a fonte vinda da rede. Cada oscilação custa uma investigação, e sem rede as capturas do protótipo não saem. É a mesma dependência do build na P102, do lado do protótipo.
+**Correção:** — (opção: servir as fontes do protótipo localmente, com uma rota no `openProto` que entrega as do `src/fonts/` e do `node_modules`, para tirar a rede das capturas)
+**Registrado em:** 2026-11-28
+
+#### P115 — Os guardas dos documentos não recusam uma cerca de código solta ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `test/uiRegistryDoc.test.ts` · `test/pendenciasDoc.test.ts`
+**Impacto:** os dois guardas alternam o estado "dentro de código" a cada linha que começa com três crases. Com uma cerca solta (número ímpar), o resto do documento vira código e os cabeçalhos dali em diante somem da leitura. Foi o defeito do `4d5f3bf` no `ui-registry.md`, achado pelo `registry-diff` e pela revisão, depois do commit.
+**Correção:** — (opção: um caso em cada guarda que conta as linhas de cerca e exige número par)
+**Registrado em:** 2026-11-28
+
+#### P116 — A memória de 2 s do SectorColorFade se arma em qualquer desmontagem ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `src/components/passagens/SectorColorFade.tsx` (a cor guardada na limpeza do efeito)
+**Impacto:** plausível, não medido. A cor do último cartão fica guardada por 2 s em toda limpeza do efeito: desmontar ou esconder na `Activity`, não só trocar de setor. No Início com um setor, a pessoa abre Passagens e, em menos de 2 s, volta ao Início por um link que abre outro setor: o cartão novo monta e faz o fade de uma cor para a outra depois de uma navegação, contra a regra "nada anima na carga" do `ui-rules.md §9`. A volta para a mesma instância escondida na `Activity` está certa (nada anima).
+**Correção:** — (opção: armar a memória só pela troca no `SectorPicker`, com um sinal explícito, ou guardar o caminho junto da cor; ou aceitar e escrever o caso no comentário e no registro)
+**Registrado em:** 2026-11-28
+
+#### P117 — Testes e sondas do PR B que provam menos do que dizem ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `scripts/visual/screens/provas.mjs` (`hover-statlink`) · `src/components/auth/PasskeyManager.test.tsx` · `src/components/ui/sheet.test.tsx` · `src/components/ui/tooltip.test.tsx` · `src/components/ui/button.test.tsx` · `test/visual/settle.test.ts` · `test/visual/contrast.test.ts` · `src/app/motionUsage.test.ts` · `e2e/solicitacoes.spec.ts` (cenário i) · `test/visual/installHooks.test.ts` · `test/visual/steps.test.ts` · `test/visual/paths.test.ts`
+**Impacto:** sem defeito conhecido no app. A revisão final listou: a sonda `hover-statlink` compara o fundo do hover com o do pai opaco (a página), e não com o repouso do próprio `StatLink` (`bg-card`), então daria "diferente" também com o `hover:bg-muted` antigo (só as sondas do `outline` e do `ghost`, no claro, distinguem o antes do depois); o `PasskeyManager.test.tsx` trocou `toBeVisible()` por `toBeInTheDocument()` na M2, sem dizer no commit; os testes do Motion do `Sheet`, do `Tooltip` e do `Button` olham o primeiro quadro e o fim, sem o valor no meio que o `ui-rules.md §9` pede (uma duração 0 passaria); o `settle.test.ts` usa o relógio real e roda no CI (uma pausa de 60 ms no laço de eventos daria "quiet" em vez de "timeout"); dois testes do `contrast.test.ts` conferem string (`toContain("skipped")` passa sem a contagem), e o matiz do `oklch` não tem vetor; o `motionUsage.test.ts` só reconhece `motion/react` e `motion/react-m` (`import { animate } from "motion"`, `motion/react-mini`, `framer-motion/…` e `import * as X from "motion/react"` escapam); o E2E do 404 só confere URL desconhecida no primeiro nível (`/admin/nao-existe` e `/passagens/a/b` deram 404 numa medida do build, sem teste); o `installHooks.test.ts` prova o "regrava" só com conteúdo idêntico, o `sample` do `steps.test.ts` usa uma caixa constante, e o `paths.test.ts` prova o `repoRoot` só como "diferente" e "dentro".
+**Correção:** — (um commit só de testes, com o vermelho conferido em cada caso: a sonda lê o fundo do mesmo elemento antes e depois do `hover`; a `MotionTree` com `waitFor(… toBeVisible())`; o `recordStyle` com um valor no meio; o relógio falso; o `auditScript()` com `lab(50 0 0)` esperando 1 pulado e o vetor `oklch(0.627955 0.257683 29.2339)` perto de `[255, 0, 0]`; o guarda do Motion recusando os outros pontos de entrada; `/admin/nao-existe` e `/passagens/a/b` no cenário i)
+**Registrado em:** 2026-11-28
+
+#### P118 — A skill handoff-visual, os modelos e o library-docs §23 divergem das regras em pontos de texto ⚪
+**Estado:** Aberto, não triado
+**Arquivos:** `.claude/skills/handoff-visual/SKILL.md` · `.claude/skills/handoff-visual/templates/review-brief.md` · `templates/global-constraints.md` · `templates/task-brief.md` · `templates/plan-contract.md` · `.context/library-docs.md` (§22 e §23) · `test/visual/screens.test.ts`
+**Impacto:** quem planejar a branch C pelos modelos copia o erro. O `review-brief.md` sugere que os guardas moram em `src/app/` ("`bunx vitest run src/app/rawColors.test.ts` etc.", mas o `uiRegistryDoc` e o `pendenciasDoc` moram em `test/`) e não lista o `motionUsage.test.ts` nem as conferências do Motion (ramo reduzido testado, nada na carga, só tokens). O `global-constraints.md` diz que o movimento reduzido "desliga as animações", contra o `ui-rules.md §9` (no máximo um fade curto). O `task-brief.md` e o `plan-contract.md` fixam o trailer de um modelo, e a Global Constraint diz "o modelo que implementou". O `plan-contract.md` tem um E2E só, no fim das tarefas, e a legibilidade antes do pixel, contra a ordem da skill (E2E depois da fundação, na metade e antes dos passes; pixel na Etapa 5, legibilidade na 6). A skill põe o rascunho da configuração de tela em `.git/sdd/visual-<slug>/screen.mjs` e a versão em `scripts/visual/screens/<slug>.mjs` sem o passo que promove um no outro nem o registro do `seed/states/<tela>.ts` no `index.ts`; o `screens.test.ts` importa as três configurações pelo nome, e o `library-docs.md §22` diz que ele valida todas. No `library-docs.md §23`, o `useReducedMotion` do Motion não lê "uma vez por módulo" (também assina o `change`; a conclusão sobre o stub continua certa), e falta dizer o que o `whileTap` muda no teclado (a revisão da M2 apontou; conferir na fonte antes de escrever).
+**Correção:** — (opção: um commit de texto antes da branch C, com o `skillHandoffVisual.test.ts` verde, e o `screens.test.ts` lendo a pasta `scripts/visual/screens/`)
+**Registrado em:** 2026-11-28
 
 ## 2. Triado, plano pronto
 
@@ -1009,4 +1090,4 @@ medido e some no tema escuro (1,19:1 sobre o card).
 **Impacto:** na paleta nova, `--muted` tem o mesmo valor de `--card` e `--popover`. Dentro de cartão, diálogo ou Sheet, o hover do botão contornado ou fantasma (por exemplo "Tentar de novo" e o menu "…" do `RequestCard`), o da linha de tabela, o das linhas do `BarList` e do `StatLink` e o do cartão da Administração não mudam de cor. O rodapé do `Card` e o do `Dialog` também não se separam do corpo. O passe de legibilidade (Task 15) corrigiu os casos de estado (escolha marcada, selo, esqueleto e destaques do dashboard), mas não os de hover.
 **Correção:** — (opção: trocar por `accent` nos primitivos, num commit `fix(visual)` com prova por estilo calculado; o roteiro planeja um guarda que recusa `bg-muted` nos `.tsx` no PR B, `.git/sdd/roadmap/roteiro.md` §7)
 **Registrado em:** 2026-11-27
-**Atualização (2026-11-27):** resolvida no PR B (`chore/processo-visual`, spec §9). Os estados e rodapés trocaram `bg-muted` por `bg-accent` com a mesma opacidade e a mesma variante (PB-D8): `Button` `outline` e `ghost` (hover e `aria-expanded`; `dark:hover:bg-accent/50` no `ghost`), `Badge` `outline` e `ghost`, `Table` (rodapé, hover, linha aberta e selecionada), `CardFooter`, `DialogFooter`, o hover do `FieldLabel` com campo, o `Avatar` (fallback e contador), `BarList` e `StatLink`. Desvio: o cartão da `AdminOverview` usa `group-hover:bg-accent` opaco, porque `accent/50` sobre a página escura dá exatamente o `--card` (caso negativo no `themeContrast.test.ts`). Os consumidores de `Button` e `Badge` `outline`/`ghost` foram conferidos: nenhum fica sobre fundo `accent`. Guarda: `src/app/mutedBackground.test.ts` recusa `bg-muted` (com opacidade e variantes, nunca `bg-muted-foreground`) nos `.ts` e `.tsx` de `src/`, com uma exceção fechada (`RequestColumn`, `bg-muted/30`, sobre a página; a branch E a troca pelo token `--column`). O `themeContrast.test.ts` mede o texto sobre `accent` e `accent/50` e confere que cada fundo de estado muda a cor de repouso. A prova por estilo calculado (hover de um `outline` e de um `ghost` dentro de cartão e de um `StatLink`) fica na prova do PR (C1). Efeito colateral: o `Button` `destructive` passou de hover `dark:/20` para `/18` no escuro, porque sobre o rodapé `accent/50` o `/20` media 4,38:1 (o `themeContrast.test.ts` agora mede o rodapé).
+**Atualização (2026-11-27):** resolvida no PR B (`chore/processo-visual`, spec §9). Os estados e rodapés trocaram `bg-muted` por `bg-accent` com a mesma opacidade e a mesma variante (PB-D8): `Button` `outline` e `ghost` (hover e `aria-expanded`; `dark:hover:bg-accent/50` no `ghost`), `Badge` `outline` e `ghost`, `Table` (rodapé, hover, linha aberta e selecionada), `CardFooter`, `DialogFooter`, o hover do `FieldLabel` com campo, o `Avatar` (fallback e contador), `BarList` e `StatLink`. Desvio: o cartão da `AdminOverview` usa `group-hover:bg-accent` opaco, porque `accent/50` sobre a página escura dá exatamente o `--card` (caso negativo no `themeContrast.test.ts`). Os consumidores de `Button` e `Badge` `outline`/`ghost` foram conferidos contra fundo `accent` opaco; a revisão final achou dois casos de `accent` sobre `accent` que a conferência não cruzou, o trilho do `BarList` no hover da linha e o "Agora não" fantasma do `PasskeyOffer` sobre o rodapé `accent/50` (P109). Guarda: `src/app/mutedBackground.test.ts` recusa `bg-muted` (com opacidade e variantes, nunca `bg-muted-foreground`) nos `.ts` e `.tsx` de `src/`, com uma exceção fechada (`RequestColumn`, `bg-muted/30`, sobre a página; a branch E a troca pelo token `--column`). O `themeContrast.test.ts` mede o texto sobre `accent` e `accent/50` e confere que cada fundo de estado muda a cor de repouso. A prova por estilo calculado (hover de um `outline` e de um `ghost` dentro de cartão e de um `StatLink`) fica na prova do PR (C1); a do `StatLink` não distingue o antes do depois (P117). Efeito colateral: o `Button` `destructive` passou de `dark:hover:bg-destructive/20` para `dark:hover:bg-destructive/18`, porque sobre o rodapé `accent/50` o `/20` media 4,38:1 (o `themeContrast.test.ts` agora mede o rodapé).
