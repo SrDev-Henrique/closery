@@ -6,6 +6,7 @@ import {
   type DomSnapshot,
   hydrationProblems,
   snapshotDom,
+  withoutIds,
 } from "./hydrationCheck";
 
 // O verificador do e2e/hydration.spec.ts com instantâneos sintéticos (sem
@@ -136,6 +137,57 @@ describe("hydrationProblems", () => {
     expect(() => hydrationProblems(snapshot(), value, [])).toThrow(
       "expectedH1 inválido",
     );
+  });
+});
+
+describe("withoutIds (as exceções do CLIENT_ONLY_IDS)", () => {
+  it("sem exceção: o mesmo instantâneo, e o _r_ continua apontado", () => {
+    const page = snapshot({ ids: ["_r_0_"] });
+    expect(withoutIds(page, [])).toBe(page);
+    expect(hydrationProblems(withoutIds(page, []), 1, [])).toEqual([
+      "id gerado no cliente: _r_0_",
+    ]);
+  });
+
+  it("tira o id da exceção de ids e de refs, e a página fica limpa", () => {
+    const page = snapshot({
+      ids: ["_R_1a_-senha", "recharts-line-_r_0_"],
+      refs: ["_R_1a_-senha", "recharts-line-_r_0_"],
+    });
+    const filtered = withoutIds(page, ["recharts-line-_r_0_"]);
+    expect(filtered.ids).toEqual(["_R_1a_-senha"]);
+    expect(filtered.refs).toEqual(["_R_1a_-senha"]);
+    expect(hydrationProblems(filtered, 1, [])).toEqual([]);
+  });
+
+  it("só o valor exato: outro _r_, o mesmo id dentro de outro e a referência a outro continuam", () => {
+    const filtered = withoutIds(
+      snapshot({
+        ids: [
+          "recharts-line-_r_0_",
+          "recharts-line-_r_1_",
+          "clipPath-recharts-line-_r_0_",
+        ],
+        refs: ["base-ui-_r_2_"],
+      }),
+      ["recharts-line-_r_0_"],
+    );
+    expect(hydrationProblems(filtered, 1, [])).toEqual([
+      "id gerado no cliente: recharts-line-_r_1_",
+      "id gerado no cliente: clipPath-recharts-line-_r_0_",
+      "referência a id gerado no cliente: base-ui-_r_2_",
+    ]);
+  });
+
+  it("não esconde o resto: dois <main> e o h1 errado continuam", () => {
+    const filtered = withoutIds(
+      snapshot({ mains: 2, h1PerMain: [1, 0], ids: ["recharts-line-_r_0_"] }),
+      ["recharts-line-_r_0_"],
+    );
+    expect(hydrationProblems(filtered, 1, [])).toEqual([
+      "2 elementos <main> (esperado 1): conteúdo duplicado",
+      "<main> 2 com 0 <h1> (esperado 1)",
+    ]);
   });
 });
 

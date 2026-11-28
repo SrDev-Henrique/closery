@@ -5,9 +5,9 @@ import type { Db } from "@/db/types";
 
 import {
   CLIENT_ID_PATTERN,
-  type DomSnapshot,
   hydrationProblems,
   snapshotDom,
+  withoutIds,
 } from "../test/hydrationCheck";
 import { buildInviteUrl, E2E_BASE_URL, insertInvite, openE2eDb } from "./db";
 import { seedSector, signUpAdmin, signUpOperator, test } from "./helpers";
@@ -59,19 +59,6 @@ async function clientOnlyIds(page: Page, label: string): Promise<string[]> {
     ids.push(id);
   }
   return ids;
-}
-
-function withoutIds(
-  snapshot: DomSnapshot,
-  allowed: readonly string[],
-): DomSnapshot {
-  if (allowed.length === 0) return snapshot;
-  const keep = (value: string) => !allowed.includes(value);
-  return {
-    ...snapshot,
-    ids: snapshot.ids.filter(keep),
-    refs: snapshot.refs.filter(keep),
-  };
 }
 
 // Abre cada página, espera o título e a rede parar e confere o instantâneo.

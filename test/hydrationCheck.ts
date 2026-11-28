@@ -3,8 +3,8 @@
 // O PR A perdeu horas com conteúdo duplicado: um <script> num componente client acima
 // dos <Suspense> fazia o React refazer a página no cliente, com o console vazio. O que
 // denunciou foram os ids de `useId`: `_R_…_` (do servidor, que a hidratação preserva)
-// contra `_r_…_` (gerados no cliente). `snapshotDom` roda na página; `hydrationProblems`
-// é puro e testado em test/hydrationCheck.test.ts.
+// contra `_r_…_` (gerados no cliente). `snapshotDom` roda na página; `withoutIds` e
+// `hydrationProblems` são puros e testados em test/hydrationCheck.test.ts.
 
 export type DomSnapshot = {
   mains: number;
@@ -54,6 +54,24 @@ export function snapshotDom(): DomSnapshot {
     h1PerMain: mains.map((main) => main.querySelectorAll("h1").length),
     ids,
     refs,
+  };
+}
+
+/**
+ * O instantâneo sem os ids que a lista de exceções do spec (`CLIENT_ONLY_IDS`) leu na página:
+ * cada um sai de `ids` e de `refs`, pelo valor exato. Qualquer outro id `_r_` fica, e o
+ * `hydrationProblems` o aponta.
+ */
+export function withoutIds(
+  snapshot: DomSnapshot,
+  allowed: readonly string[],
+): DomSnapshot {
+  if (allowed.length === 0) return snapshot;
+  const keep = (value: string) => !allowed.includes(value);
+  return {
+    ...snapshot,
+    ids: snapshot.ids.filter(keep),
+    refs: snapshot.refs.filter(keep),
   };
 }
 
