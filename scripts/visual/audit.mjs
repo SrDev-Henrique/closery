@@ -256,7 +256,7 @@ async function main() {
               (i) => i.border < 1.3 && i.fill < 1.1,
             ).length;
             console.log(
-              `${tag}: contraste ${found.contrast.length}, alvos ${found.targets.length}, campos ${weakFields}, some ${found.sameBg.length}${found.overflow ? `, ROLA ${found.overflow}px` : ""}`,
+              `${tag}: contraste ${found.contrast.length}, alvos ${found.targets.length}, campos ${weakFields}, some ${found.sameBg.length}${found.skipped ? `, cor não lida ${found.skipped}` : ""}${found.overflow ? `, ROLA ${found.overflow}px` : ""}`,
             );
           } catch (error) {
             failures += 1;

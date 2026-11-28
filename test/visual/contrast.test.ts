@@ -23,8 +23,30 @@ describe("parseColor", () => {
     expect(parseColor("transparent")).toEqual([0, 0, 0, 0]);
   });
 
-  it("o que não é sRGB, fora da faixa ou lixo vira null", () => {
-    expect(parseColor("oklch(0.5 0.1 200)")).toBeNull();
+  it("converte oklab, oklch e color(srgb) (o color-mix do Tailwind 4) para sRGB", () => {
+    const near = (css: string, want: number[]) => {
+      const got = parseColor(css);
+      expect(got).not.toBeNull();
+      for (let i = 0; i < 3; i++) {
+        expect(Math.abs((got as number[])[i] - want[i])).toBeLessThan(1.5);
+      }
+      expect((got as number[])[3]).toBeCloseTo(want[3], 5);
+    };
+    near("oklab(0.222465 0.000398837 0.00410654 / 0.7)", [28, 27, 25, 0.7]);
+    near("oklab(0.320692 -0.000637546 0.00706178 / 0.5)", [52, 51, 47, 0.5]);
+    near("oklab(1 0 0)", [255, 255, 255, 1]);
+    near("oklab(0 0 0)", [0, 0, 0, 1]);
+    near("oklch(1 0 0)", [255, 255, 255, 1]);
+    near("oklch(0.5 0 0 / 50%)", [99, 99, 99, 0.5]);
+    near("color(srgb 1 0 0.5 / 0.25)", [255, 0, 127.5, 0.25]);
+    near("oklab(50% 0 0)", [99, 99, 99, 1]);
+  });
+
+  it("o que não é sRGB conhecido, fora da faixa ou lixo vira null", () => {
+    expect(parseColor("oklch(0.5 0.1)")).toBeNull();
+    expect(parseColor("oklab(a b c)")).toBeNull();
+    expect(parseColor("oklab(0.5 0 0 / 2)")).toBeNull();
+    expect(parseColor("lab(50 0 0)")).toBeNull();
     expect(parseColor("#ffffff")).toBeNull();
     expect(parseColor("rgb(256, 0, 0)")).toBeNull();
     expect(parseColor("rgba(0, 0, 0, 2)")).toBeNull();
@@ -103,5 +125,19 @@ describe("auditScript", () => {
     expect([...color]).toEqual([0, 0, 0, 0.5]);
     expect(ratio).toBeCloseTo(21, 5);
     expect(need).toBe(3);
+  });
+
+  it("parseColor roda sozinho num contexto vazio também com oklab", () => {
+    const [color] = runInNewContext(
+      `${String(parseColor)}
+[parseColor("oklab(1 0 0 / 0.5)")]`,
+      {},
+    ) as [number[]];
+    expect(Math.round(color[0])).toBe(255);
+    expect(color[3]).toBe(0.5);
+  });
+
+  it("o script conta os elementos pulados por cor que não foi lida (skipped)", () => {
+    expect(auditScript()).toContain("skipped");
   });
 });

@@ -5,8 +5,10 @@
 /** @typedef {[number, number, number, number]} Rgba — r, g, b de 0 a 255; alfa de 0 a 1 */
 
 /**
- * Cor computada do navegador ("rgb(…)", "rgba(…)", "rgb(r g b / a)", "transparent") em [r, g, b, a];
- * o que não for sRGB (oklch, lab, lixo) vira null.
+ * Cor computada do navegador em [r, g, b, a] (r, g, b de 0 a 255): "rgb(…)", "rgba(…)",
+ * "transparent", e também oklab(), oklch() e color(srgb …), que é como o Chromium devolve o
+ * color-mix do Tailwind 4 (bg-accent/50). Cor de gamut maior é recortada para o sRGB. Outra
+ * sintaxe ou lixo vira null. Sem closure: roda sozinha dentro da página.
  * @param {unknown} css
  * @returns {Rgba | null}
  */
@@ -14,19 +16,65 @@ export function parseColor(css) {
   if (typeof css !== "string") return null;
   const value = css.trim().toLowerCase();
   if (value === "transparent") return [0, 0, 0, 0];
-  const match = /^rgba?\(([^)]+)\)$/.exec(value);
+  const match = /^(rgba?|oklab|oklch|color)\(([^)]+)\)$/.exec(value);
   if (!match) return null;
-  const parts = match[1].split(/[\s,/]+/).filter(Boolean);
+  const fn = match[1];
+  let body = match[2].trim();
+  if (fn === "color") {
+    if (!body.startsWith("srgb ")) return null;
+    body = body.slice(5);
+  }
+  const parts = body.split(/[\s,/]+/).filter(Boolean);
   if (parts.length < 3 || parts.length > 4) return null;
-  const numbers = parts.map((part, index) =>
-    index === 3 && part.endsWith("%")
-      ? Number(part.slice(0, -1)) / 100
-      : Number(part),
-  );
-  if (numbers.some((n) => !Number.isFinite(n))) return null;
-  const [r, g, b, a = 1] = numbers;
-  if ([r, g, b].some((c) => c < 0 || c > 255) || a < 0 || a > 1) return null;
-  return [r, g, b, a];
+  const read = (part, scale) => {
+    if (part === "none") return 0;
+    if (part.endsWith("%")) return (Number(part.slice(0, -1)) / 100) * scale;
+    return Number(part);
+  };
+  const alphaPart = parts.length === 4 ? parts[3] : null;
+  const a = alphaPart === null ? 1 : read(alphaPart, 1);
+  if (!Number.isFinite(a) || a < 0 || a > 1) return null;
+  if (fn === "rgb" || fn === "rgba") {
+    const numbers = parts.slice(0, 3).map((part) => read(part, 255));
+    if (numbers.some((n) => !Number.isFinite(n))) return null;
+    if (numbers.some((c) => c < 0 || c > 255)) return null;
+    return [numbers[0], numbers[1], numbers[2], a];
+  }
+  if (fn === "color") {
+    const numbers = parts.slice(0, 3).map((part) => read(part, 1));
+    if (numbers.some((n) => !Number.isFinite(n))) return null;
+    const channel = (n) => Math.min(255, Math.max(0, n * 255));
+    return [channel(numbers[0]), channel(numbers[1]), channel(numbers[2]), a];
+  }
+  const lightness = read(parts[0], 1);
+  let labA;
+  let labB;
+  if (fn === "oklab") {
+    labA = read(parts[1], 0.4);
+    labB = read(parts[2], 0.4);
+  } else {
+    const chroma = read(parts[1], 0.4);
+    const hue = parts[2].endsWith("deg")
+      ? Number(parts[2].slice(0, -3))
+      : read(parts[2], 360);
+    const radians = (hue * Math.PI) / 180;
+    labA = chroma * Math.cos(radians);
+    labB = chroma * Math.sin(radians);
+  }
+  if (![lightness, labA, labB].every(Number.isFinite)) return null;
+  const l = (lightness + 0.3963377774 * labA + 0.2158037573 * labB) ** 3;
+  const m = (lightness - 0.1055613458 * labA - 0.0638541728 * labB) ** 3;
+  const s = (lightness - 0.0894841775 * labA - 1.291485548 * labB) ** 3;
+  const linear = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ];
+  const encode = (c) => {
+    const v = Math.min(1, Math.max(0, c));
+    return 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+  };
+  return [encode(linear[0]), encode(linear[1]), encode(linear[2]), a];
 }
 
 /**
@@ -90,6 +138,8 @@ export function requiredRatio(fontSizePx, fontWeight) {
 // rolagem horizontal, borda e preenchimento de campo e fundo que some no do pai. Usa só as funções
 // acima e o DOM.
 function auditPage() {
+  // Elementos com cor que o parseColor não leu (contados uma vez cada, sem fingir que foram medidos).
+  const unread = new Set();
   const backgroundOf = (element) => {
     const chain = [];
     for (let e = element; e; e = e.parentElement) {
@@ -98,6 +148,7 @@ function auditPage() {
       if (image && image !== "none" && !image.startsWith("linear-gradient"))
         return null;
       const color = parseColor(style.backgroundColor);
+      if (!color && style.backgroundColor) unread.add(e);
       if (color && color[3] > 0) {
         chain.push(color);
         if (color[3] >= 1) break;
@@ -141,6 +192,7 @@ function auditPage() {
     overflow: null,
     inputs: [],
     sameBg: [],
+    skipped: 0,
   };
   const viewport = window.innerWidth;
   if (document.documentElement.scrollWidth > viewport + 1) {
@@ -167,6 +219,7 @@ function auditPage() {
           ? getComputedStyle(element, "::placeholder").color
           : style.color,
       );
+      if (!raw) unread.add(element);
       if (background && raw) {
         const ratio = contrastRatio(over(raw, background), background);
         const need = requiredRatio(
@@ -287,6 +340,7 @@ function auditPage() {
       }
     }
   }
+  out.skipped = unread.size;
   return out;
 }
 
