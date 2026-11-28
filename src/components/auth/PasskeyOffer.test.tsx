@@ -46,6 +46,18 @@ describe("PasskeyOffer", () => {
     );
   });
 
+  it("'Agora não' fica no rodapé com hover local no escuro: input/50 no lugar do accent/50 do ghost (P109)", () => {
+    const { container } = render(<PasskeyOffer />);
+    const link = screen.getByRole("link", { name: "Agora não" });
+    const footer = container.querySelector('[data-slot="card-footer"]');
+    expect(footer).toHaveClass("bg-accent/50");
+    expect(footer).toContainElement(link);
+    // O cn junta as classes: o hover local substitui o do ghost, não soma.
+    expect(link).toHaveClass("hover:bg-accent", "dark:hover:bg-input/50");
+    expect(link).not.toHaveClass("dark:hover:bg-accent/50");
+    expect(link).not.toHaveClass("dark:hover:bg-accent");
+  });
+
   it("cria a passkey, avisa e vai para o início", async () => {
     render(<PasskeyOffer />);
     await userEvent.click(

@@ -473,10 +473,13 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 - **Local:** `src/components/auth/PasskeyOffer.tsx`
 - **Propósito:** oferta de passkey em `/bem-vindo`.
 - **Como funciona:** `"use client"`; "Criar passkey" (toast "Passkey criada." e vai para `/`);
-  "Agora não" é `<Link className={buttonVariants()}>` (role link); erros por
-  `passkeyErrorCode(…, "register")` + `authFormError`.
+  "Agora não" é `<Link className={buttonVariants()}>` (role link), `ghost` com hover local no
+  escuro: `dark:hover:bg-input/50` no lugar do `dark:hover:bg-accent/50` do `ghost` (o `cn` troca
+  um pelo outro), porque o rodapé já é `accent/50` (1,26:1 sobre o rodapé no escuro; no claro o
+  `hover:bg-accent` do `ghost`, 1,11:1); erros por `passkeyErrorCode(…, "register")` +
+  `authFormError`.
 - **Usa:** `Card*`, `Button`, `buttonVariants`, `FieldError`, `sonner`.
-- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 8): a descrição diz que a passkey é a forma mais rápida de entrar e que a recuperação é pelo administrador (`A passkey é a forma mais rápida de entrar: você usa a digital, o rosto ou o PIN do aparelho, sem digitar senha. Se esquecer a senha, peça ao administrador um link para criar outra.`); botões e comportamento iguais.
+- **Histórico:** 2026-11-20 — criado na Fase 1. 2026-11-26 — Fase 6 (Tarefa 8): a descrição diz que a passkey é a forma mais rápida de entrar e que a recuperação é pelo administrador (`A passkey é a forma mais rápida de entrar: você usa a digital, o rosto ou o PIN do aparelho, sem digitar senha. Se esquecer a senha, peça ao administrador um link para criar outra.`); botões e comportamento iguais. 2026-11-28 — P109 (revisão final do PR B, B-2): o hover do "Agora não" quase não se via no escuro (`accent/50` do `ghost` sobre o rodapé `accent/50`, 1,04:1; o `accent` opaco sugerido daria 1,09:1); hover local `dark:hover:bg-input/50`, o mesmo do `outline` no escuro (1,26:1). Medido no `themeContrast.test.ts`, que renderiza o componente e lê as classes do cartão, do rodapé e do link (hover ≥ 1,1:1 e texto ≥ 4,5:1 nos dois temas; casos negativos do `ghost` puro e do `accent` opaco), e afirmado no `PasskeyOffer.test.tsx`.
 
 ### PrivacyLink
 - **Status:** ✅ pronto (2026-11-26)

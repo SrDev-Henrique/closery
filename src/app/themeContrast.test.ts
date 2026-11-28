@@ -17,11 +17,17 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
+import { PasskeyOffer } from "@/components/auth/PasskeyOffer";
 import { BarList } from "@/components/dashboard/BarList";
 import { STATUS_TONE } from "@/components/passagens/MyShiftCard";
 import { buttonVariants } from "@/components/ui/button";
+
+// O PasskeyOffer é renderizado só para ler as classes (P109): sem cliente de
+// autenticação nem roteador de verdade, que nada aqui clica.
+vi.mock("@/lib/auth/client", () => ({ authClient: {} }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push() {} }) }));
 
 /** Texto normal (WCAG AA). */
 const TEXT_MIN = 4.5;
@@ -1161,6 +1167,96 @@ for (const [theme, selector] of THEMES) {
     });
   });
 }
+
+/**
+ * "Agora não" do `PasskeyOffer`: `ghost` dentro do `CardFooter` (`accent/50`), num `Card` sobre a
+ * página (`/bem-vindo`). O rodapé, o cartão e o link saem do HTML do próprio componente, então o
+ * alfa do rodapé e o do hover vêm das classes (com o `cn` já aplicado). O cliente de autenticação e
+ * o roteador são trocados por vazios: o guarda só renderiza, não clica.
+ */
+const passkeyHtml = renderToStaticMarkup(createElement(PasskeyOffer));
+const [passkeyCard = []] = classesWhere(
+  passkeyHtml,
+  (tag) => tag.attrs["data-slot"] === "card",
+  1,
+);
+const [passkeyFooter = []] = classesWhere(
+  passkeyHtml,
+  (tag) => tag.attrs["data-slot"] === "card-footer",
+  1,
+);
+const [passkeySkip = []] = classesWhere(
+  passkeyHtml,
+  (tag) => tag.tag === "a" && tag.attrs.href === "/",
+  1,
+);
+const GHOST = buttonVariants({ variant: "ghost" }).split(/\s+/);
+
+for (const [theme, selector] of THEMES) {
+  describe(`"Agora não" do PasskeyOffer sobre o rodapé — tema ${theme}`, () => {
+    const page = solid(readToken(css, selector, "background"), "background");
+    const card = paint(fillIn(passkeyCard, selector, ""), selector, page);
+    const footer = paint(fillIn(passkeyFooter, selector, ""), selector, card);
+    const skip = (classes: readonly string[], state: string) =>
+      paint(fillIn(classes, selector, state), selector, footer);
+
+    if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+      it("imprime a matriz medida", () => {
+        const line = `hover sobre o rodapé: ${contrast(skip(passkeySkip, "hover:"), skip(passkeySkip, "")).toFixed(2)}:1`;
+        console.log(`\n["Agora não" · ${theme}]\n${line}`);
+        expect(line).toContain(":1");
+      });
+    }
+
+    it("o rodapé é um fundo accent translúcido sobre o cartão, e o link não tem fundo em repouso", () => {
+      expect(fillIn(passkeyFooter, selector, "")?.token).toBe("accent");
+      expect(fillIn(passkeySkip, selector, "")).toBeNull();
+    });
+
+    it(`o hover muda o fundo do rodapé (≥${STATE_MIN}:1)`, () => {
+      const ratio = contrast(skip(passkeySkip, "hover:"), footer);
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(STATE_MIN);
+    });
+
+    it("o texto (foreground) sobre o hover passa 4,5:1", () => {
+      const ratio = contrast(
+        solid(readToken(css, selector, "foreground"), "foreground"),
+        skip(passkeySkip, "hover:"),
+      );
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
+  });
+}
+
+describe('caso negativo: o "Agora não" sem o hover local sumiria no escuro', () => {
+  const selector = ".dark";
+  const page = solid(readToken(css, selector, "background"), "background");
+  const card = paint(fillIn(passkeyCard, selector, ""), selector, page);
+  const footer = paint(fillIn(passkeyFooter, selector, ""), selector, card);
+  const hover = (classes: readonly string[]) =>
+    contrast(
+      paint(fillIn(classes, selector, "hover:"), selector, footer),
+      footer,
+    );
+
+  it("o ghost puro (dark:hover:bg-accent/50) fica abaixo do piso sobre o rodapé", () => {
+    expect(fillIn(GHOST, selector, "hover:")).toEqual({
+      token: "accent",
+      alpha: 0.5,
+    });
+    expect(hover(GHOST)).toBeLessThan(STATE_MIN);
+  });
+
+  it("o accent opaco também ficaria abaixo: por isso o input/50", () => {
+    expect(
+      hover(
+        [...GHOST, "dark:hover:bg-accent"].filter(
+          (name) => name !== "dark:hover:bg-accent/50",
+        ),
+      ),
+    ).toBeLessThan(STATE_MIN);
+  });
+});
 
 describe("leitura das classes do HTML estático (P109)", () => {
   it("tagsIn lê as tags de abertura e desfaz o escape do React nos atributos", () => {
