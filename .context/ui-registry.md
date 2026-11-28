@@ -1293,11 +1293,11 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 
 ### usePrefersReducedMotion
 - **Status:** ✅ pronto (2026-11-25)
-- **Local:** `src/components/dashboard/usePrefersReducedMotion.ts` (`"use client"`)
+- **Local:** `src/lib/usePrefersReducedMotion.ts` (`"use client"`)
 - **Propósito:** saber se a pessoa pediu menos movimento, para desligar animação em JS (o recharts).
 - **Como funciona:** `useSyncExternalStore` sobre `matchMedia("(prefers-reduced-motion: reduce)")`; acompanha a mudança sem recarregar; o snapshot do servidor é `false`.
 - **Usa:** `matchMedia`.
-- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-27 — Emenda do Motion (M1, refactor): sai de `src/components/dashboard/` para `src/lib/`, sem mudança de comportamento (passa a servir também os componentes com Motion).
 
 ### StockTrendChart
 - **Status:** ✅ pronto (2026-11-25)
