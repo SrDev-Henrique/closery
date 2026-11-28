@@ -187,12 +187,16 @@ describe("screens/provas.mjs", () => {
     expect(validateScreen(provas)).toEqual([]);
   });
 
-  it("os quatro estados da prova, todos só do app e com semente existente", () => {
+  it("os estados da prova, todos só do app e com semente existente", () => {
     expect(Object.keys(provas.states)).toEqual([
       "falha-de-rede",
       "hover-outline-em-cartao",
       "hover-ghost-em-cartao",
       "hover-statlink",
+      "hover-barlist-claro",
+      "hover-barlist-escuro",
+      "hover-agora-nao-claro",
+      "hover-agora-nao-escuro",
     ]);
     for (const [name, state] of states) {
       expect(state.proto, name).toBeNull();
@@ -236,5 +240,37 @@ describe("screens/provas.mjs", () => {
     // No claro o hover do outline e do ghost é bg-accent opaco: a sonda distingue o antes do depois.
     expect(provas.states["hover-outline-em-cartao"]?.theme).toBe("light");
     expect(provas.states["hover-ghost-em-cartao"]?.theme).toBe("light");
+  });
+
+  it("os hovers do P109 rodam nos dois temas, com um alvo cada, no estado rico", () => {
+    const pairs = [
+      ["hover-barlist", "/dashboard?setor={setor}"],
+      ["hover-agora-nao", "/bem-vindo"],
+    ] as const;
+    for (const [prefix, path] of pairs) {
+      const light = provas.states[`${prefix}-claro`];
+      const dark = provas.states[`${prefix}-escuro`];
+      expect(light?.theme, prefix).toBe("light");
+      expect(dark?.theme, prefix).toBe("dark");
+      for (const state of [light, dark]) {
+        expect(state).toMatchObject({
+          seed: "geral:rico",
+          person: "ana",
+          path,
+        });
+        expect(state?.steps?.app?.map((step) => step.kind)).toEqual([
+          "hover",
+          "wait",
+        ]);
+      }
+      expect(light?.steps).toEqual(dark?.steps);
+    }
+    // A segunda linha da lista com barras: a barra é parcial e o trilho aparece.
+    expect(provas.states["hover-barlist-claro"]?.steps?.app?.[0]).toEqual({
+      kind: "hover",
+      target: {
+        css: 'ul[aria-label="Tempo até a entrega por destino"] > li:nth-child(2) > a',
+      },
+    });
   });
 });
