@@ -25,7 +25,9 @@
     "smoke": "bun scripts/smoke.mjs",
     "visual:db": "bun scripts/visual/db.ts",
     "visual:seed": "bun scripts/visual/seed/index.ts",
-    "visual:people": "node scripts/visual/people.mjs"
+    "visual:people": "node scripts/visual/people.mjs",
+    "visual:names": "node scripts/visual/check-names.mjs",
+    "visual:hooks": "node scripts/visual/install-hooks.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

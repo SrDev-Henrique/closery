@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { SECTOR_COLORS } from "@/features/sectors/colors";
 import { REQUEST_STATUSES } from "@/lib/requestStatuses";
+import { findForbidden, loadNamesList } from "../../scripts/visual/names.mjs";
 import {
   VISUAL_DESTINATIONS,
   VISUAL_ITEMS,
@@ -154,4 +155,23 @@ describe("textos", () => {
     expect(Object.isFrozen(VISUAL_ITEMS.ULD)).toBe(true);
     expect(Object.isFrozen(VISUAL_TEXTS.staleRequests[0])).toBe(true);
   });
+});
+
+// A lista de verdade mora em .git/sdd e só existe na máquina do controlador: no
+// CI o caso é pulado. O relatório leva só os números das linhas, nunca o termo.
+const namesList = loadNamesList();
+
+describe("vocabulário contra a lista de nomes proibidos", () => {
+  it.skipIf(namesList === null)(
+    "nenhum termo da lista aparece no vocabulário",
+    () => {
+      const text = allStrings(VOCABULARY).join("\n");
+      const hits = findForbidden(text, namesList ?? { terms: [], allowed: [] });
+      expect(
+        hits.map(
+          (hit) => `linha ${hit.line} do texto, linha ${hit.listLine} da lista`,
+        ),
+      ).toEqual([]);
+    },
+  );
 });
