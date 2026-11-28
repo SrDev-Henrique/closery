@@ -197,9 +197,9 @@ A fonte única é `src/lib/motion.ts` (o guarda `src/app/motionUsage.test.ts` re
 
 | Nome | Valor | Onde |
 |---|---|---|
-| `MOTION_MAX_SECONDS` | 0,45 s | teto de qualquer duração ou mola |
+| `MOTION_MAX_SECONDS` | 0,45 s | teto de qualquer duração de tween ou `visualDuration` de mola (a mola assenta depois: até 0,58 s no `thumb`, com menos de um pixel de cauda) |
 | `MOTION_DURATION.instant` · `fast` · `exit` · `base` · `fade` | 0,1 · 0,15 · 0,18 · 0,2 · 0,4 s | fade do ramo reduzido · opacidade de entrada do painel · saída · tooltip, véu e padrão · cor do cartão do turno |
 | `MOTION_EASE.out` · `in` · `inOut` | `cubic-bezier(.2,.8,.2,1)` · `(.4,0,1,1)` · `(.65,0,.35,1)` | entrada · saída · o que muda na tela |
-| `MOTION_SPRING.press` · `knob` · `thumb` · `panel` | mola de 0,15 s sem sobra · 0,3 s, sobra 0,15 · 0,35 s, sobra 0,2 · 0,3 s sem sobra | aperto · knob do `ThemeSwitch` · thumb do `SectorPicker` · Sheet e gaveta |
+| `MOTION_SPRING.press` · `knob` · `thumb` · `panel` | mola com tempo visual de 0,15 s sem sobra · 0,3 s, sobra 0,15 · 0,35 s, sobra 0,2 · 0,3 s sem sobra | aperto · knob do `ThemeSwitch` · thumb do `SectorPicker` · Sheet e gaveta |
 | `PRESS_SCALE` | 0,97 | aperto do `Button` |
 | deslocamentos dos presets | painel 40px · gaveta 105% · tooltip 4px e escala 0,96 | `sheetMotion`, `tooltipMotion` |

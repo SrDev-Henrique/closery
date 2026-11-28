@@ -644,7 +644,9 @@ trocas, cópias, capturas e a lista de nomes) fica em `.git/sdd/`. O processo qu
   abre navegador é `.mjs` rodado com `node` (os atalhos `visual:*` já chamam o certo); `db.ts` e `seed/*.ts` rodam com
   `bun`.
 - **Portas fixas** (`config.mjs`): banco PGlite em `127.0.0.1:54332`, app em `localhost:3202`; outra URL de banco ou de
-  app é recusada. As portas 3000 (outro projeto), 3200 e 54329 (E2E) e 3201 e 54331 (o dono) nunca são usadas.
+  app é recusada. As portas 3000 (outro projeto), 3200 e 54329 (E2E) e 3201 e 54331 (o dono) nunca são usadas. O app
+  sobe com `-H localhost` (`bunx next start -H localhost -p 3202`, e o mesmo no `next dev`): sem ele o Next escuta em
+  todas as interfaces, e a rede local alcançaria as pessoas de teste com a senha conhecida.
 - **Pessoas e textos inventados.** `scripts/visual/vocabulary.mjs` é a fonte única: Ana, Bruno, Carla e Diego Teste
   (`@example.com`, senha `senha-de-teste-123`), os setores ULD, Carga, Operações e Rampa, os turnos, itens, destinos e
   textos. O seed escreve com ele, e o mapa de trocas do protótipo troca os originais por ele: o pixel compara texto
@@ -722,7 +724,7 @@ interação (`steps.mjs`): `click`, `hover`, `focus`, `tab`, `press`, `fill`, `d
   idempotente; um `pre-commit` sem a marca é recusado (código 1) e fica para juntar à mão; `--remove` apaga só o nosso.
   Um achado é texto a trocar, nunca hook a contornar.
 - **Branch sem `scripts/visual/`** (uma branch antiga, ou a `main` antes do merge do PR B): o hook não acha o script,
-  avisa no stderr e **deixa o commit passar** (decisão 9 do controlador). Não há o que tirar nem reinstalar; o portão
+  avisa no stderr e **deixa o commit passar** (emenda da spec §7, de 2026-11-28). Não há o que tirar nem reinstalar; o portão
   `--range=main...HEAD` continua valendo na branch que tem as ferramentas.
 - **Testes:** `test/visual/names.test.ts` e `test/visual/installHooks.test.ts`.
 

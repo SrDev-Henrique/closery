@@ -152,8 +152,9 @@ o código: o klauve tem infraestrutura (oRPC, realtime, mídia) que este projeto
 
 Valores em `src/lib/motion.ts` (`ui-tokens.md §8`); a biblioteca e a integração com o Base UI no `library-docs.md §23`.
 
-- **Curto e nunca no caminho da passagem.** Nenhuma duração ou mola passa de 0,45 s (`MOTION_MAX_SECONDS`), a saída é
-  mais curta que a entrada, e nada espera uma animação para liberar um clique, um envio ou uma navegação (regra de ouro).
+- **Curto e nunca no caminho da passagem.** Nenhuma duração de tween nem tempo visual de mola (`visualDuration`) passa de
+  0,45 s (`MOTION_MAX_SECONDS`; a mola assenta um pouco depois, com menos de um pixel de cauda), a saída é mais curta que
+  a entrada, e nada espera uma animação para liberar um clique, um envio ou uma navegação (regra de ouro).
 - **Nada anima na carga nem na hidratação.** O que vem do servidor sai do HTML no lugar: o repouso fica no CSS e só a
   troca anima (FLIP), ou o elemento usa `initial={false}`. `initial` com valores só em quem monta no cliente depois de uma
   ação (o painel do Sheet, o tooltip, a camada de cor).

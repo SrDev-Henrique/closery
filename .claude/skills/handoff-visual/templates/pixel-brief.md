@@ -8,8 +8,9 @@ A referência é o protótipo renderizado (`.git/sdd/visual-<slug>/ref/`), nunca
 1. Portas livres: `netstat -ano | grep -E ':(3202|54332)\s' | grep LISTEN` (de pé com o banco visual, o script avisa e
    segue).
 2. Banco visual, em segundo plano: `bun run visual:db`.
-3. App de produção, em segundo plano: `. scripts/visual/env.sh && bun run build && bunx next start -p 3202` (para
-   iterar numa correção, `. scripts/visual/env.sh && bunx next dev -p 3202`; os números finais são do build).
+3. App de produção, em segundo plano: `. scripts/visual/env.sh && bun run build && bunx next start -H localhost -p 3202`
+   (para iterar numa correção, `. scripts/visual/env.sh && bunx next dev -H localhost -p 3202`; os números finais são do
+   build). O `-H localhost` deixa o app fora da rede local.
 4. Mundo e pessoas, só na primeira vez (o banco visual fica em disco e é compartilhado entre as branches):
    `bun run visual:seed base` e `bun run visual:people`; depois, `bun run visual:seed avatars`. O estado de cada par o
    `visual:pairs` (e o `measure`, o `probe` e o `interact`) semeia sozinho.

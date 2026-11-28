@@ -1,6 +1,7 @@
 # Ambiente do processo visual (spec §5.3): banco PGlite na 54332 e app na 3202.
 # Use com ". scripts/visual/env.sh" de dentro do repositório (ou de uma worktree), antes do
-# "bun run build" e do "bunx next start -p 3202". Os valores exportados vencem o .env.local.
+# "bun run build" e do "bunx next start -H localhost -p 3202" (o -H deixa o app fora da rede local).
+# Os valores exportados vencem o .env.local.
 # O segredo do Better Auth fica fora do git, em <git-common-dir>/sdd/visual-db/secret: é gerado
 # na primeira vez (32 bytes, base64) e nunca é impresso.
 VISUAL_GIT_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"

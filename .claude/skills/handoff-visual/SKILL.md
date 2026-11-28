@@ -148,7 +148,7 @@ O brief é `templates/pixel-brief.md`. Em resumo:
 
 ```sh
 bun run visual:db                                   # em segundo plano; idempotente
-. scripts/visual/env.sh && bun run build && bunx next start -p 3202   # em segundo plano (next dev -p 3202 para iterar)
+. scripts/visual/env.sh && bun run build && bunx next start -H localhost -p 3202   # em segundo plano (next dev -H localhost -p 3202 para iterar)
 bun run visual:seed base       # só na primeira vez: o banco visual fica em disco e é compartilhado (já semeado: sai com 1)
 bun run visual:people          # só na primeira vez (de novo: "já existe")
 bun run visual:seed avatars

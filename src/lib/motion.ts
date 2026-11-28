@@ -6,7 +6,11 @@ import type { Transition } from "motion/react";
 // entrada, e cada efeito com o ramo de movimento reduzido. O comportamento (o que anima e como reduz)
 // segue a ArcUI (https://uiarc.dev, MIT); os valores são nossos. Do Motion, só tipos: o módulo é puro.
 
-/** O teto de qualquer duração ou mola, em segundos: o movimento nunca atrasa a passagem. */
+/**
+ * O teto de qualquer duração de tween ou `visualDuration` de mola, em segundos: o movimento nunca
+ * atrasa a passagem. A mola assenta um pouco depois do tempo visual (o `thumb`, em 0,58 s), com uma
+ * cauda de menos de um pixel que nada espera.
+ */
 export const MOTION_MAX_SECONDS = 0.45;
 
 /** Durações dos tweens, em segundos. */

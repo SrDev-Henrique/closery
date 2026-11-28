@@ -15,6 +15,10 @@ import { INTERNAL_ERROR_MESSAGE } from "@/features/admin/result";
 // SectorPicker). O redirect e o notFound do `requireAdmin` seguem adiante
 // (`unstable_rethrow`). Nada de `"use server"` aqui: o guarda
 // `actionsGuards.test.ts` só aceita a diretiva num `actions.ts` de (app).
+// A troca custa o funcionamento sem JS: o `<form action={ServerAction}>` de
+// antes enviava antes da hidratação; uma ação de função do cliente não tem
+// forma em HTML, e o clique antes da hidratação não faz nada (como no
+// SectorPicker). Vale, porque o cartão agora fica de pé na falha de rede.
 export function DismissInviteCardForm() {
   async function dismiss() {
     try {
