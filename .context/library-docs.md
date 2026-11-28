@@ -707,11 +707,13 @@ interação (`steps.mjs`): `click`, `hover`, `focus`, `tab`, `press`, `fill`, `d
   2 lista ausente ou vazia ou uso errado (a mensagem diz como criar a lista ou tirar o hook). Falso positivo vira uma
   linha `!<frase>`.
 - **O hook:** `bun run visual:hooks` grava em `git rev-parse --git-path hooks/pre-commit` (respeita o `core.hooksPath`)
-  o script `exec node scripts/visual/check-names.mjs --staged`, marcado com `# closery:check-names`; regravar é
+  um script que primeiro confere se `scripts/visual/check-names.mjs` existe (sem ele: aviso no stderr e código 0; com ele:
+  `exec node scripts/visual/check-names.mjs --staged` decide), marcado com `# closery:check-names`; regravar é
   idempotente; um `pre-commit` sem a marca é recusado (código 1) e fica para juntar à mão; `--remove` apaga só o nosso.
   Um achado é texto a trocar, nunca hook a contornar.
-- **Branch sem `scripts/visual/`** (uma branch antiga, ou a `main` antes do merge do PR B): o hook não acha o script e
-  recusa o commit. Tire o hook antes de trocar para ela (`bun run visual:hooks --remove`) e reinstale ao voltar.
+- **Branch sem `scripts/visual/`** (uma branch antiga, ou a `main` antes do merge do PR B): o hook não acha o script,
+  avisa no stderr e **deixa o commit passar** (decisão 9 do controlador). Não há o que tirar nem reinstalar; o portão
+  `--range=main...HEAD` continua valendo na branch que tem as ferramentas.
 - **Testes:** `test/visual/names.test.ts` e `test/visual/installHooks.test.ts`.
 
 **O registro:** `node scripts/visual/registry.mjs <Componente> historico "<frase>"` acrescenta a frase ao fim do
