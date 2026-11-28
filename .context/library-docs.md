@@ -389,7 +389,11 @@
   que tinha catch-all no slot (`/passagens/nova` e as cinco de `/admin/*`). A primeira resolve a rota no servidor; a
   segunda sai da previsão do cliente (o spec confere que ela não pediu a própria árvore, `next-router-segment-prefetch:
   /_tree`) e não pode passar de 3 pedidos em 2 s (o laço fazia 60 a 90). Rota nova de `(app)` linkada com buscas
-  diferentes entra na lista `PATHS` (§14).
+  diferentes entra na lista `PATHS` (§14). O caso (b) guarda o `SectorSwitcher` de `/admin/itens` e `/admin/turnos`
+  com 6 setores, nos três usos que entravam no laço com o `admin/[...rest]`: trocar de setor pelo link, um link novo
+  depois da carga e 6 links pedidos de uma vez a partir de `/conta`. Nenhuma URL pode passar de 3 pedidos na janela
+  (com o catch-all, de 109 a 426). Tela nova com um seletor de links para a própria rota entra na lista
+  `SWITCHER_PATHS`.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
 ## 11. GitHub Actions (CI)
