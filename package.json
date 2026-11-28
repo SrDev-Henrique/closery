@@ -26,6 +26,8 @@
     "visual:db": "bun scripts/visual/db.ts",
     "visual:seed": "bun scripts/visual/seed/index.ts",
     "visual:people": "node scripts/visual/people.mjs",
+    "visual:proto": "node scripts/visual/proto.mjs",
+    "visual:pairs": "node scripts/visual/pairs.mjs",
     "visual:names": "node scripts/visual/check-names.mjs",
     "visual:hooks": "node scripts/visual/install-hooks.mjs"
   },
