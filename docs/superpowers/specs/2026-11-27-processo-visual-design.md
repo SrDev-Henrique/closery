@@ -435,11 +435,21 @@ ou vazia, ou uso errado, em qualquer modo, com a instrução de criar a lista ou
 ```sh
 #!/bin/sh
 # closery:check-names (instalado por scripts/visual/install-hooks.mjs)
+if [ ! -f scripts/visual/check-names.mjs ]; then
+  echo "aviso (closery:check-names): esta branch não tem scripts/visual/check-names.mjs; o commit segue sem a conferência da lista de nomes." >&2
+  exit 0
+fi
 exec node scripts/visual/check-names.mjs --staged
 ```
 
 Se já existe um `pre-commit` sem a marca, recusa (código 1) e diz para juntar à mão. Com a marca, regrava (idempotente).
 `--remove` apaga só o hook com a marca. Puro: `HOOK_MARKER`, `hookScript()`, `isOurHook(texto)`.
+
+**Emenda de 2026-11-28 (desvio da decisão 9 do controlador, `d3fa951`):** o esboço original era só a linha do `exec`, e
+numa branch sem `scripts/visual/` (uma branch antiga, ou a `main` antes do merge) o `node` não achava o script e recusava
+todo commit. O hook entregue confere o arquivo antes: sem ele, avisa no stderr e sai com 0 (não há hook a tirar nem a
+reinstalar); com ele, o código é o do `check-names --staged`. O portão `--range=main...HEAD` continua valendo na branch que
+tem as ferramentas. Lista ausente ou vazia continua recusando (código 2).
 
 O controlador grava a lista antes da primeira tarefa e instala o hook logo depois da tarefa que o cria; daí em diante,
 todo commit da branch passa por ele.

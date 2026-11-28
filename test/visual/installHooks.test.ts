@@ -36,6 +36,19 @@ describe("hookScript", () => {
     expect(hookScript()).not.toContain("\r");
   });
 
+  it("é o script que a spec §7 mostra (a emenda da decisão 9 não volta ao esboço)", () => {
+    const spec = readFileSync(
+      join(
+        process.cwd(),
+        "docs/superpowers/specs/2026-11-27-processo-visual-design.md",
+      ),
+      "utf8",
+    ).replaceAll("\r\n", "\n");
+    const section = spec.slice(spec.indexOf("**`install-hooks.mjs`:**"));
+    const block = section.match(/```sh\n([\s\S]*?)```/);
+    expect(block?.[1]).toBe(hookScript());
+  });
+
   it("o aviso nomeia o script e não tem nada que o sh expanda dentro das aspas", () => {
     expect(MISSING_SCRIPT_WARNING).toContain("aviso");
     expect(MISSING_SCRIPT_WARNING).toContain(CHECK_NAMES_SCRIPT);

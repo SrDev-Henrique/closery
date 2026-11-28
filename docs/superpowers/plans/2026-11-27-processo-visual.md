@@ -21,7 +21,7 @@
 - Só pessoas e textos inventados: Ana, Bruno, Carla e Diego Teste (`<nome>.teste@example.com`; Ana admin, os outros três operadores do ULD), senha `VISUAL_PASSWORD = "senha-de-teste-123"`, e o vocabulário da spec §5.4, com os valores exatos, em `scripts/visual/vocabulary.mjs` (a única fonte).
 - Nada do protótipo, das screenshots ou das ferramentas antigas (nome de pessoa, e-mail, texto operacional) em código, teste, seed, configuração versionada, commit, mensagem, brief ou ledger; o conteúdo de `.git/sdd/nomes-proibidos.txt` nunca sai dela (fora dela, só números: "N termos, M permitidas").
 - O `check-names` nunca imprime o termo achado, só `arquivo:linha — termo nº N da lista (linha L)`; códigos 0 limpo, 1 achou, 2 lista ausente ou vazia ou uso errado (PB-D7).
-- O hook é exatamente `#!/bin/sh` + `# closery:check-names (instalado por scripts/visual/install-hooks.mjs)` + `exec node scripts/visual/check-names.mjs --staged`; um `pre-commit` sem a marca é recusado (código 1), com a marca é regravado, e `--remove` apaga só o que tem a marca.
+- O hook é exatamente `#!/bin/sh` + `# closery:check-names (instalado por scripts/visual/install-hooks.mjs)` + `if [ ! -f scripts/visual/check-names.mjs ]` (aviso no stderr e `exit 0`) + `exec node scripts/visual/check-names.mjs --staged`; um `pre-commit` sem a marca é recusado (código 1), com a marca é regravado, e `--remove` apaga só o que tem a marca. **Emenda de 2026-11-28** (spec §7, decisão 9 do controlador, `d3fa951`): o esboço era só o `exec` e recusava todo commit numa branch sem `scripts/visual/`; o hook entregue avisa e deixa passar, e não há hook a tirar nem a reinstalar.
 - O que é puro tem teste no Vitest (`test/visual/*.test.ts`), no padrão `scripts/smokeChecks.mjs` + `test/smokeChecks.test.ts`; scripts `.mjs` com JSDoc nos exports.
 - Os testes TS **não importam `pngjs` nem `pixelmatch` direto** (sem `@types`): usam `createPng` e as funções de `image.mjs`/`diff.mjs`.
 - Nada das ferramentas roda no CI além desses testes, que não dependem de navegador, rede, servidor nem da lista de nomes (o que precisa da lista usa `it.skipIf`); nada muda no `.github/workflows/ci.yml`; nenhum teste de screenshot no CI.
@@ -93,7 +93,7 @@ Do editor de consistência (`.git/sdd/processo/consistency-report.md`), as que v
 - **T6 Step 18 sempre roda:** acrescenta o caso "com a lista presente" ao `vocabulary.test.ts` da T4 (13 testes no arquivo, 12 caminhos no `--staged`), reaproveitando `allStrings(VOCABULARY)`.
 - **Ordem final dos atalhos no `package.json`:** `visual:db`, `visual:seed`, `visual:people`, `visual:proto`, `visual:pairs`, `visual:audit`, `visual:names`, `visual:hooks` (a da tabela do `AGENTS.md` da T10); a T6, a T7 e a T8 ancoram o `old_string` no que a tarefa anterior deixou.
 - **Lista do C0 contra o vocabulário:** a spec (§5.4) já está no git; cada termo da lista que coincidir com o vocabulário se decide no C0 Step 3 (sai da lista, se é palavra genérica de item ou de turno, ou ganha a linha `!<termo exato do vocabulário>`).
-- **Hook numa branch sem `scripts/visual/`** recusa todo commit (o `node` não acha o script); o contorno é `bun run visual:hooks --remove`, documentado no `library-docs.md §22`, no registro de decisões e no `memory.md`.
+- **Hook numa branch sem `scripts/visual/`** (emenda de 2026-11-28, decisão 9 do controlador, `d3fa951`): o hook confere o script antes do `exec`; sem ele, avisa no stderr e deixa o commit passar (código 0), sem nada a tirar nem a reinstalar. Documentado no `library-docs.md §22`, no trade-off 2 do registro de decisões (`e46d0f5`) e no `memory.md` (C2 Step 6). O texto original desta linha (recusava todo commit; o contorno era `bun run visual:hooks --remove`) descrevia o esboço da spec §7; os blocos da T6 (o código e o teste do esboço) e da T10 (com uma nota de emenda depois de cada um) ficaram como estavam: valem o `install-hooks.mjs`, o `installHooks.test.ts` e os documentos.
 - **Portão do Vitest em seis partes:** as cinco da spec §15.6 (`src/app`, `src/components`, `src/features`, `src/lib`, `test`) mais `src/db`, `src/instrumentation.test.ts` e `src/proxy.test.ts`, com a soma conferida contra `git ls-files '*.test.ts' '*.test.tsx'`.
 - **E2E de hidratação não rodou na redação:** a primeira execução (portão) pode achar `_r_` ou id repetido; investigar com systematic-debugging antes de qualquer entrada no `CLIENT_ONLY_IDS` (só para componente que monta depois da hidratação de propósito, com o motivo).
 - **`memory.md`:** o bullet de "Coisas que vão te morder" que descreve o `[...catchAll]` passa a descrever o espelho no C2 Step 6; as menções do `architecture.md` (Fase 4, item d; Fase 5) são histórico e ficam, e o PB-D1 da T10 registra a troca.
@@ -15261,6 +15261,10 @@ aparece como SUMIU e NOVO): é a conferência de toda revisão por tarefa. Teste
 ## Como adicionar uma biblioteca nova
 ````
 
+> **Emenda de 2026-11-28:** as linhas "O hook" e "Branch sem `scripts/visual/`" acima descrevem o esboço da spec §7. O
+> hook entregue (decisão 9, `d3fa951`) avisa e deixa passar numa branch sem o script, e o `library-docs.md §22` foi
+> corrigido em `e46d0f5`; vale o texto de lá.
+
 - [ ] **Step 5: `architecture.md`, a entrada do PR B**
 
 Edite `.context/architecture.md` (ferramenta Edit): acrescente ao fim do arquivo, depois da linha `- **Verificado:** …`
@@ -15297,6 +15301,9 @@ A migração `0005` foi aplicada no banco de dev (host conferido pelo `db:hosts`
   3. As ferramentas nunca rodam no CI (C-V7: sem teste de screenshot); só os testes puros delas.
   4. Rota nova de primeiro nível em `(app)` exige o espelho no slot; o guarda reprova o esquecimento.
 ```
+
+> **Emenda de 2026-11-28:** o fim do trade-off 2 acima descreve o esboço da spec §7. O hook entregue (decisão 9,
+> `d3fa951`) avisa e deixa passar numa branch sem o script, e o `architecture.md` foi corrigido em `e46d0f5`.
 
 O C2 acrescenta, no fim desta entrada, as linhas `- **Desvios registrados:** …` e `- **Verificado:** …`.
 
@@ -20038,9 +20045,10 @@ branches C a G nasce com ele, olhando a variante da ArcUI (`library-docs.md §23
 5. Em `## Coisas que vão te morder se ninguém avisar`, acrescente:
 
 ```markdown
-- **O `pre-commit` do `check-names` recusa commit numa branch sem `scripts/visual/`** (uma branch antiga): tire o hook
-  antes de trocar para ela (`bun run visual:hooks --remove`) e reinstale ao voltar. Um achado do hook é texto a trocar
-  por um inventado (`scripts/visual/vocabulary.mjs`), nunca motivo para contornar o hook.
+- **O `pre-commit` do `check-names` numa branch sem `scripts/visual/`** (uma branch antiga): avisa no stderr e deixa o
+  commit passar (decisão 9 do controlador); não há hook a tirar nem a reinstalar, e o `--range=main...HEAD` do portão
+  continua valendo na branch que tem as ferramentas. Lista ausente ou vazia recusa (código 2). Um achado do hook é texto a
+  trocar por um inventado (`scripts/visual/vocabulary.mjs`), nunca motivo para contornar o hook.
 ```
 
 6. Na mesma seção, o bullet do slot `@detalhe` ainda descreve o `[...catchAll]`, que o PR B tirou. `old_string`:
