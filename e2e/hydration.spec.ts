@@ -23,6 +23,9 @@ import { seedSector, signUpAdmin, signUpOperator, test } from "./helpers";
 
 type PageCheck = { label: string; url: string; h1: number };
 
+/** Quanto cada página tem para a rede parar (o `networkidle`: 500 ms sem pedido). */
+const NETWORK_IDLE_MS = 15_000;
+
 /**
  * Ids `_r_…_` legítimos: componente que só existe no cliente, montado depois da
  * hidratação de propósito. Lista fechada por página (o `label` da tabela), com
@@ -93,7 +96,17 @@ async function expectHydrated(page: Page, checks: readonly PageCheck[]) {
         page.getByRole("heading", { level: 1 }).first(),
         label,
       ).toBeVisible();
-      await page.waitForLoadState("networkidle");
+      // Limite próprio, com a página na mensagem: sem ele, uma rede que nunca
+      // para (o laço de prefetch do e2e/prefetch.spec.ts) só acabava no timeout
+      // do teste, sem dizer onde.
+      await page
+        .waitForLoadState("networkidle", { timeout: NETWORK_IDLE_MS })
+        .catch((error: unknown) => {
+          throw new Error(
+            `${label}: a rede não ficou ociosa em ${NETWORK_IDLE_MS / 1000} s (laço de prefetch?)`,
+            { cause: error },
+          );
+        });
       const snapshot = withoutIds(
         await page.evaluate(snapshotDom),
         await clientOnlyIds(page, label),

@@ -20,7 +20,11 @@ export const CLIENT_ID_PATTERN = /_r_[0-9a-z]*_/;
  * Mensagem de hidratação no console ou num erro da página. No dev o React escreve o texto
  * ("Hydration failed…", "Switched to client rendering"); na produção (o `next start` do E2E) o
  * erro sai minificado, com o código: 418 (HTML diferente), 419 (o servidor não terminou o
- * Suspense), 422 e 423 (erro ao hidratar, refeito no cliente) e 424 (a raiz refeita no cliente).
+ * Suspense) e 424 (a raiz refeita no cliente). O 422 e o 423 (erro ao hidratar, refeito no
+ * cliente) não chegam com o código: o React põe o erro original no `cause` deles, e o
+ * `onRecoverableError` do Next reporta só o `cause`, cuja mensagem não fala de hidratação. Os dois
+ * ficam na expressão para o caso de o Next mudar; quem os pega hoje é o DOM (ids `_r_`, conteúdo
+ * duplicado).
  */
 const HYDRATION_MESSAGE =
   /hydrat|switched to client rendering|react\.dev\/errors\/(?:418|419|422|423|424)(?!\d)/i;

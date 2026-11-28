@@ -92,13 +92,15 @@ describe("hydrationProblems", () => {
     );
   });
 
+  // O 422 e o 423 só provam a expressão: na produção chegam como o erro original
+  // (o Next reporta o `cause`), e quem os pega é o DOM.
   it.each([
     "418",
     "419",
     "422",
     "423",
     "424",
-  ])("erro minificado da produção (#%s) conta como hidratação", (code) => {
+  ])("código minificado da produção (#%s) conta como hidratação", (code) => {
     const message = `Error: Minified React error #${code}; visit https://react.dev/errors/${code}?args[]=HTML&args[]= for the full message`;
     expect(hydrationProblems(snapshot(), 1, [message])).toHaveLength(1);
   });
@@ -183,7 +185,19 @@ describe("snapshotDom (roda na página: nada de fora da função)", () => {
       querySelectorAll: (selector: string) => {
         if (selector === "main") return parts.mains.map(element);
         if (selector === "[id]") return parts.withId.map(element);
-        return parts.referrers.map(element);
+        // Uma lista de seletores de atributo, como no CSS: o elemento entra se
+        // tiver um dos atributos. Assim um atributo que sair do seletor deixa o
+        // elemento que só tem ele de fora. Outro formato de seletor lança.
+        const attributes = selector.split(",").map((part) => {
+          const name = /^\s*\[([a-z-]+)\]\s*$/.exec(part)?.[1];
+          if (!name) throw new Error(`seletor não suportado: ${selector}`);
+          return name;
+        });
+        return parts.referrers
+          .filter((fake) =>
+            attributes.some((name) => fake.attrs?.[name] !== undefined),
+          )
+          .map(element);
       },
     };
   }
@@ -214,6 +228,20 @@ describe("snapshotDom (roda na página: nada de fora da função)", () => {
       ids: ["_R_1_-email", "secao"],
       refs: ["_R_1_-email", "_R_1_-ajuda", "_R_1_-erro", "secao", "menu"],
     });
+  });
+
+  it.each([
+    "for",
+    "aria-labelledby",
+    "aria-describedby",
+    "aria-controls",
+  ])("o seletor das referências pega o elemento que só tem %s", (name) => {
+    const document = fakeDocument({
+      mains: [],
+      withId: [],
+      referrers: [{ attrs: { [name]: "_r_7_" } }, { attrs: { title: "x" } }],
+    });
+    expect(runIsolated(document).refs).toEqual(["_r_7_"]);
   });
 
   it("página sem nada: zeros e listas vazias", () => {

@@ -377,7 +377,10 @@
   `aria-labelledby`, `aria-describedby`, `aria-controls`) no formato do cliente (`_r_…_`; o do servidor é `_R_…_`) e erro
   de hidratação. `snapshotDom` vai como texto para o navegador: não pode usar nada de fora da função. Na produção o
   React 19 minifica o erro, e o Next o manda ao `reportError`: ele chega como `pageerror` com `react.dev/errors/418` (ou
-  419, 422, 423, 424), não como `console.error` com "hydrat"; o spec escuta os dois e o verificador casa os dois. Nas
+  419, 424), não como `console.error` com "hydrat"; o spec escuta os dois e o verificador casa os dois. O 422 e o 423 não
+  chegam com o código: o React põe o erro original no `cause`, e o `onRecoverableError` do Next reporta só o `cause`;
+  esses dois quem pega é o DOM (o `_r_` e a duplicação). Cada página tem 15 s para a rede parar, com o nome dela na
+  mensagem (uma rede que nunca para é o laço do `e2e/prefetch.spec.ts`). Nas
   telas de auth o título é o `CardTitle` com `role="heading"` (0 `h1`). Componente que só existe no cliente de propósito
   e gera `_r_` entra na lista fechada `CLIENT_ONLY_IDS` do spec (página, seletor, motivo), nunca num filtro genérico.
   Página principal nova entra na tabela do spec, com o `h1` conferido no código.
