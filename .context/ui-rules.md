@@ -146,3 +146,31 @@ o código: o klauve tem infraestrutura (oRPC, realtime, mídia) que este projeto
 - [ ] Formulário segue §2 (escolha, nunca em branco, 16px, rótulo de resultado).
 - [ ] Alvos de toque ≥ 44px no celular; ícone-só com tooltip.
 - [ ] Registrado no `ui-registry.md`.
+- [ ] Movimento (§9): curto, nada na carga nem na hidratação, o ramo reduzido testado e só os tokens.
+
+## 9. Movimento (Motion, desde 2026-11-27)
+
+Valores em `src/lib/motion.ts` (`ui-tokens.md §8`); a biblioteca e a integração com o Base UI no `library-docs.md §23`.
+
+- **Curto e nunca no caminho da passagem.** Nenhuma duração ou mola passa de 0,45 s (`MOTION_MAX_SECONDS`), a saída é
+  mais curta que a entrada, e nada espera uma animação para liberar um clique, um envio ou uma navegação (regra de ouro).
+- **Nada anima na carga nem na hidratação.** O que vem do servidor sai do HTML no lugar: o repouso fica no CSS e só a
+  troca anima (FLIP), ou o elemento usa `initial={false}`. `initial` com valores só em quem monta no cliente depois de uma
+  ação (o painel do Sheet, o tooltip, a camada de cor).
+- **Sempre respeita o movimento reduzido.** Todo efeito tem o ramo reduzido, pelo `usePrefersReducedMotion`: sem deslize,
+  sem escala, sem mola; no máximo um fade curto (`MOTION_DURATION.instant`) ou a troca na hora. O
+  `MotionConfig reducedMotion="user"` da raiz é a rede, não a regra.
+- **O que se move.** Só `transform` e `opacity`; a cor troca por uma camada com opacidade. Mola no que pode voltar no meio
+  (thumb, knob, aperto, painel); tween no fade. O `Button` encolhe para 0,97 ao apertar (`PRESS_SCALE`), menos o gatilho
+  de popup (`aria-haspopup`), que responde só com a cor.
+- **Um dono por propriedade.** Elemento que o Motion anima não tem `transition` de CSS na mesma propriedade (o CSS
+  correria atrás de cada quadro): troque `transition-all` por uma lista sem `transform` e tire as classes de entrada e
+  saída de CSS (`data-starting-style`, `animate-in`).
+- **Só `m`, só tokens.** `import * as m from "motion/react-m"`, dentro do `MotionProvider` (o `strict` recusa o `motion`
+  pronto); duração, curva e mola só pelos nomes de `src/lib/motion.ts`. Guarda: `src/app/motionUsage.test.ts`.
+- **Prova.** Teste de componente com a `MotionTree` e o `stubReducedMotion` (`test/motion.tsx`): os dois ramos, o primeiro
+  quadro, um valor no meio e o fim no lugar; o que o jsdom não vê (a saída que o Base UI espera, o `transform` calculado)
+  vai para o `e2e/motion.spec.ts`. As capturas do processo visual rodam com movimento reduzido e esperam as animações
+  (`library-docs.md §22` e §23).
+- **Referência de comportamento: a ArcUI** (https://uiarc.dev, MIT): o que anima e como reduz, nunca o estilo nem os
+  valores dela; trecho de código copiado leva o aviso de copyright MIT num comentário.

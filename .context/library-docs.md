@@ -644,8 +644,8 @@ trocas, cópias, capturas e a lista de nomes) fica em `.git/sdd/`. O processo qu
   (usam `createPng` e as funções de `image.mjs` e `diff.mjs`). Os CLIs do git e do registro (`check-names`,
   `install-hooks`, `registry`, `registry-diff`) são testados num repositório temporário (`test/visual/tempRepo.ts`),
   sem a configuração global do git. **Nada mais das ferramentas roda no CI.**
-- **Um servidor e um navegador por vez**; cada CLI fecha o navegador ao fim de cada estado. As capturas rodam com
-  `reducedMotion: "reduce"` e esperam as animações terminarem.
+- **Um servidor e um navegador por vez**; cada CLI fecha o navegador ao fim de cada estado. As capturas rodam sempre
+  com `reducedMotion: "reduce"` e esperam as animações e o `style` pararem (§23).
 - **Segredo:** o do ambiente visual é gerado em `.git/sdd/visual-db/secret` e só o `env.sh` o lê; nada o imprime.
 - **devDependencies exatas:** `pixelmatch` e `pngjs` (§21), só em `scripts/visual/` e nos testes dele.
 
@@ -721,6 +721,70 @@ interação (`steps.mjs`): `click`, `hover`, `focus`, `tab`, `press`, `fill`, `d
 recusam sumir ou criar um cabeçalho `###`. `node scripts/visual/registry-diff.mjs <base> [head]` compara os `###` do
 `ui-registry.md` e os `####` do `pendencias.md` entre dois commits e sai com 1 se algum sumiu (um título renomeado
 aparece como SUMIU e NOVO): é a conferência de toda revisão por tarefa. Teste: `test/visual/docs.test.ts`.
+
+## 23. Motion (`motion` 14.14.0) · emenda do PR B
+
+Decisão: `architecture.md §10` (2026-11-27, PB-D10 a PB-D15) e a spec do PR B §16. Regras de interface: `ui-rules.md §9`;
+valores: `ui-tokens.md §8` (a fonte é `src/lib/motion.ts`).
+
+- **Versão exata, sem `^`** (`bun add -E motion@14.14.0`, de 2026-11-13: passa a regra das duas semanas). O pacote fixa o
+  `framer-motion` 14.14.0 por dentro. API: https://motion.dev/docs/react (context7 `/websites/motion_dev`). Trocar de versão
+  exige rodar os testes de componente que usam o Motion (a lista do `motionUsage.test.ts`) e o `e2e/motion.spec.ts`.
+- **Peso: `LazyMotion` + `m`.** O `MotionProvider` (`src/components/motion/MotionProvider.tsx`) carrega o `domAnimation`
+  (animações, saídas e os gestos de toque, foco e hover; **sem layout nem arrasto**) com `strict`: um `motion.div` dentro
+  dele lança. Componente importa `import * as m from "motion/react-m"`. Fora do provider (um teste sem a `MotionTree`), o
+  `m` renderiza o `initial` e nunca anima.
+- **Sem animação de layout.** O `domAnimation` não traz `layout` nem `layoutId` (só o `domMax`, que dobra o peso). O que
+  desliza guarda o repouso no CSS e anima só a troca, por FLIP com `useSpring`: mede antes e depois (`offsetLeft`, ou a
+  diferença de índice vezes a largura), `jump` para a diferença e `set(0)`. Em repouso o `x` é 0 (`transform: none`).
+- **Só contexto na raiz, sem script.** O `MotionProvider` fica no `<body>` do `RootLayout`, por fora do `TooltipProvider` e
+  do `Toaster`, e não renderiza elemento nem `<script>` (a lição do §18): o `renderToString` dele é o dos filhos.
+  `MotionConfig reducedMotion="user"` (o aparelho que pede menos movimento desliga as transformações sozinho) e
+  `transition={MOTION_DEFAULT_TRANSITION}`.
+- **Hidratação.** O que vem do servidor sai do HTML no lugar: repouso no CSS com o `x` em 0, `initial={false}`, ou nenhum
+  valor (o aperto do `Button` é só gesto). Valor em `initial` só em quem monta no cliente depois de uma ação (o painel do
+  Sheet, o tooltip, a camada de cor). O ramo reduzido nunca muda o HTML: muda transição, gesto e o `initial` de quem
+  monta no cliente.
+- **Movimento reduzido: `usePrefersReducedMotion`** (`src/lib/usePrefersReducedMotion.ts`; `useSyncExternalStore` sobre
+  `(prefers-reduced-motion: reduce)`, snapshot do servidor `false`). Cada componente escolhe o ramo por ele, com os presets
+  puros de `src/lib/motion.ts` (`sheetMotion`, `overlayMotion`, `tooltipMotion`). O `useReducedMotion` do Motion lê o
+  `matchMedia("(prefers-reduced-motion)")` **uma vez por módulo** e avisa no console: não serve para escolher ramo em
+  teste. Todo stub de `matchMedia` precisa de `addEventListener` e `removeEventListener` (o Motion e o hook os chamam).
+- **Base UI (Dialog/Sheet, Tooltip).** O `render` do `Popup`/`Backdrop` recebe uma função `(props, state) => <m.div
+  {...(props as HTMLMotionProps<"div">)} initial={…} animate={state.open ? … : …} />`. O Base UI só espera a saída antes
+  de desmontar se ela tiver **opacidade** (a Motion a roda pela Web Animations API, que o `getAnimations()` vê); saída só
+  de `transform` desmonta na hora (para isso há o desmonte manual com `actionsRef`, handbook "Animation" em
+  `node_modules/@base-ui/react/docs/react/handbook/animation.md`). **Sem `keepMounted`** no portal: o popup montaria
+  depois da hidratação, com ids `_r_`, e o `e2e/hydration.spec.ts` reprovaria. O tooltip anima só a entrada.
+- **CSS e Motion não dividem propriedade.** O Motion escreve `transform` e `opacity` no `style` a cada quadro; uma
+  `transition` de CSS na mesma propriedade corre atrás de cada quadro e atrasa tudo. Elemento com Motion não tem
+  `transition-all` nem `transition` de `transform`/`opacity`, nem classes `data-starting-style`/`data-ending-style` ou
+  `animate-in` do tw-animate-css.
+- **Testes** (`test/motion.tsx`): `MotionTree` (o `MotionProvider` com `reducedMotion="never"`, para o Motion não reduzir
+  pelo estado global dele), `stubReducedMotion(reduce)`, `recordStyle` (os valores do `style` quadro a quadro: o ramo
+  normal tem valor no meio, o reduzido pula direto ao fim), `styleOnInsert` (o `style` no instante em que o elemento entra
+  no DOM, antes do primeiro quadro), `translateOf`, `scaleOf` e `wait` (dentro de `act`). O jsdom não tem Web Animations:
+  o Motion anima em JS pelo `requestAnimationFrame` (o Vitest liga o `pretendToBeVisual`), e o Base UI desmonta na hora
+  (não há `getAnimations`). O que só o Chromium vê (a saída esperada pelo Base UI, o `transform` calculado) fica no
+  `e2e/motion.spec.ts`.
+- **Capturas do processo visual** (`scripts/visual/capture.mjs`, §22): todo contexto com `reducedMotion: "reduce"`
+  (`CAPTURE_REDUCED_MOTION` de `scripts/visual/settle.mjs`, sem opção para desligar: o `newContext` do `capture.mjs` e o
+  contexto que o `audit.mjs` monta); o `settle` (que o `shoot` e o `audit.mjs` chamam) espera as fontes, o
+  `getAnimations()` e depois 200 ms sem escrita no `style` de nenhum elemento (`styleQuietScript`, até 3 s), mais os 300 ms.
+- **Guarda:** `src/app/motionUsage.test.ts`: só `m`, nada de `framer-motion` nem de `motion/react-client`; nos arquivos que
+  importam o Motion, nenhum número de duração ou mola e nenhuma curva fora de `src/lib/motion.ts`; o `RootLayout` com o
+  provider e um script só.
+- **ArcUI como referência, não dependência** (https://uiarc.dev/llms.txt; itens livres sob MIT): distribui itens do
+  registry do shadcn sobre Radix e CSS modules com tokens próprios, e não se instala aqui. O comportamento de movimento (o
+  que anima, a mola, o ramo reduzido) é portado para os nossos componentes (Base UI, Tailwind e `src/lib/motion.ts`), nunca
+  o estilo nem os valores dela; trecho de código copiado leva o aviso de copyright MIT num comentário. O que as branches C
+  a G vão olhar nela:
+  - Dialog: o véu em fade; o painel sobe uns pixels e cresce de perto de 1 numa mola sem sobra; fecha mais rápido e volta
+    de onde está; reduzido, só fade.
+  - Select: o valor novo entra na direção da lista (o de baixo sobe, o de cima desce); reduzido, troca com fade.
+  - Toast: entra subindo e crescendo; sai descendo com fade; arrasto para dispensar; reduzido, fades e sem arrasto.
+  - Switch e Segmented control: o knob e a pílula numa mola rápida; reduzido, na hora. Gatilho de popup não encolhe ao
+    apertar (responde com a cor).
 
 ## Como adicionar uma biblioteca nova
 

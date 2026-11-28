@@ -1,7 +1,7 @@
 // Captura do app (3202) e do protótipo (a cópia em .git/sdd) no mesmo tamanho (spec §5.3). Rodar com
 // node: o Chromium do Playwright não abre pelo Bun no Windows. Login pela API (cada login sai de um
 // IP próprio, por causa do rate limit do `next start`), tema no localStorage antes da página,
-// indicador do `next dev` escondido, movimento reduzido (PB-D6) e espera das fontes e das animações.
+// indicador do `next dev` escondido, movimento reduzido sempre (PB-D6) e espera das fontes, das animações e do `style`.
 // "Página inteira" é uma janela da altura do conteúdo, não o fullPage do Playwright: a moldura do
 // protótipo é 100vh com o <main> rolando por dentro, e a sidebar (100svh) vai até o fim nos dois lados.
 //   node scripts/visual/capture.mjs app <caminho> <LxA> <dark|light> <saída> [pessoa]
@@ -23,6 +23,11 @@ import {
 } from "./config.mjs";
 import { assertInsideSdd, sddPath } from "./paths.mjs";
 import { minHeight, protoFile } from "./screen.mjs";
+import {
+  CAPTURE_REDUCED_MOTION,
+  STYLE_QUIET_MS,
+  styleQuietScript,
+} from "./settle.mjs";
 import { runSteps } from "./steps.mjs";
 import { VISUAL_PASSWORD, VISUAL_PEOPLE } from "./vocabulary.mjs";
 
@@ -82,20 +87,22 @@ export async function loginAs(context, person) {
 }
 
 /**
+ * Toda captura roda com movimento reduzido (PB-D6, emenda do Motion), sem opção para desligar: o app
+ * pula deslizes, escalas e molas e só faz fades curtos, que o settle espera.
  * @param {Browser} browser
  * @param {number} width
- * @param {"reduce" | "no-preference" | undefined} reducedMotion
  */
-function newContext(browser, width, reducedMotion) {
+function newContext(browser, width) {
   return browser.newContext({
     viewport: { width, height: minHeight(width) },
     deviceScaleFactor: 1,
-    reducedMotion: reducedMotion ?? "reduce",
+    reducedMotion: CAPTURE_REDUCED_MOTION,
   });
 }
 
 /**
- * Espera as fontes, as animações pararem (até 3 s; uma infinita não trava) e mais 300 ms.
+ * Espera as fontes, as animações pararem (até 3 s; uma infinita não trava), o `style` ficar STYLE_QUIET_MS
+ * sem escrita (até 3 s; settle.mjs) e mais 300 ms.
  * @param {Page} page
  */
 export async function settle(page) {
@@ -111,6 +118,9 @@ export async function settle(page) {
     .catch(() => {
       // Animação infinita (ou que não terminou em 3 s): a captura segue assim mesmo.
     });
+  // O que o Motion anima em JS (molas, cores) não aparece no getAnimations(): espera o `style` de
+  // todos os elementos ficar STYLE_QUIET_MS sem escrita (até 3 s; estourar não trava a captura).
+  await page.evaluate(styleQuietScript(STYLE_QUIET_MS, ANIMATIONS_TIMEOUT_MS));
   await page.waitForTimeout(SETTLE_MS);
 }
 
@@ -134,14 +144,14 @@ export async function naturalHeight(page, kind) {
 /**
  * Abre o app logado, no tema, e espera o seletor `ready`.
  * @param {Browser} browser
- * @param {{ path: string, width: number, theme: "dark" | "light", person: PersonKey | null, ready: string, css?: string, reducedMotion?: "reduce" | "no-preference" }} opts
+ * @param {{ path: string, width: number, theme: "dark" | "light", person: PersonKey | null, ready: string, css?: string }} opts
  * @returns {Promise<{ context: BrowserContext, page: Page, height: number }>}
  */
 export async function openApp(browser, opts) {
-  const { path, width, theme, person, ready, css = "", reducedMotion } = opts;
+  const { path, width, theme, person, ready, css = "" } = opts;
   if (!path.startsWith("/"))
     throw new Error(`caminho do app começa com /: ${path}`);
-  const context = await newContext(browser, width, reducedMotion);
+  const context = await newContext(browser, width);
   try {
     if (person) await loginAs(context, person);
     await context.addInitScript(
@@ -175,13 +185,13 @@ export async function openApp(browser, opts) {
 /**
  * Abre a cópia do protótipo (um arquivo dentro de .git/sdd).
  * @param {Browser} browser
- * @param {{ file: string, width: number, reducedMotion?: "reduce" | "no-preference" }} opts
+ * @param {{ file: string, width: number }} opts
  * @returns {Promise<{ context: BrowserContext, page: Page, height: number }>}
  */
 export async function openProto(browser, opts) {
-  const { file, width, reducedMotion } = opts;
+  const { file, width } = opts;
   const target = assertInsideSdd(file);
-  const context = await newContext(browser, width, reducedMotion);
+  const context = await newContext(browser, width);
   try {
     const page = await context.newPage();
     await page.goto(pathToFileURL(target).href, {
@@ -217,7 +227,6 @@ export async function openState(browser, opts) {
     person: state.person,
     ready: screen.ready ?? "body",
     css: state.css,
-    reducedMotion: "reduce",
   });
   /** @type {Opened | null} */
   let proto = null;
@@ -226,7 +235,6 @@ export async function openState(browser, opts) {
       proto = await openProto(browser, {
         file: protoFile(out, screen, state.proto),
         width,
-        reducedMotion: "reduce",
       });
       if (screen.patch) {
         const value = await app.page.evaluate(screen.patch.read);

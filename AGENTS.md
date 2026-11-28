@@ -81,6 +81,8 @@ push na `main`; PR só entra com o CI verde (`library-docs.md §11`).
   tempo, não tabela
 - Gráficos: a forma segue a pergunta, escala rotulada quando responde "quanto", legenda para ≥2
   séries, a cor pertence à entidade e **nunca é ciclada** (`ui-rules.md §4`)
+- Movimento: curto, nunca na carga nem na hidratação, sempre com o ramo de movimento reduzido; só `m`
+  (`motion/react-m`) e os tokens de `src/lib/motion.ts` (`ui-rules.md §9`, `library-docs.md §23`)
 - **Passagem confirmada não muda em silêncio.** Depois do recebimento, só o administrador
   corrige, com motivo, e toda correção gera registro (antigo, novo, quem, quando) — nunca `UPDATE`
   sem rastro (`architecture.md §3`, D13)

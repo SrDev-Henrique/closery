@@ -209,7 +209,6 @@ ${USAGE}`);
       const proto = await openProto(browser, {
         file: protoFile(out, screen, state.proto),
         width,
-        reducedMotion: "reduce",
       });
       try {
         await runSteps(proto.page, state.steps?.proto ?? []);

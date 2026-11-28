@@ -257,6 +257,14 @@ Adicionados pelo CLI (`bunx shadcn add <nome>`), em kebab-case.
 
 ## 2. Componentes de aplicação — `src/components/<área>`
 
+### MotionProvider
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/motion/MotionProvider.tsx` (`"use client"`)
+- **Propósito:** a camada do Motion no app inteiro (`library-docs.md §23`).
+- **Como funciona:** só contexto, sem elemento nem script: `LazyMotion features={domAnimation} strict` (o `motion` pronto lança: só `m`, de `motion/react-m`) e `MotionConfig reducedMotion="user"` com a transição padrão `MOTION_DEFAULT_TRANSITION`. Fica no `<body>` do `RootLayout`, por fora do `TooltipProvider` e do `Toaster` (os portais herdam o contexto). Nos testes, a `MotionTree` (`test/motion.tsx`) põe o mesmo provider com `reducedMotion="never"`, e o ramo reduzido de cada componente vem do `usePrefersReducedMotion` com o `matchMedia` do `stubReducedMotion`.
+- **Usa:** `motion` 14.14.0 (`LazyMotion`, `domAnimation`, `MotionConfig`), `MOTION_DEFAULT_TRANSITION` (`src/lib/motion.ts`).
+- **Histórico:** 2026-11-27 — criado na emenda do Motion (M1).
+
 ### AppSidebar
 - **Status:** ✅ pronto (2026-11-20)
 - **Local:** `src/components/app-shell/AppSidebar.tsx` (itens em `navItems.ts`)
@@ -1294,7 +1302,7 @@ Gráficos e blocos do dashboard. Os componentes de gráfico são Client Componen
 ### usePrefersReducedMotion
 - **Status:** ✅ pronto (2026-11-25)
 - **Local:** `src/lib/usePrefersReducedMotion.ts` (`"use client"`)
-- **Propósito:** saber se a pessoa pediu menos movimento, para desligar animação em JS (o recharts).
+- **Propósito:** saber se a pessoa pediu menos movimento: desliga a animação do recharts e escolhe o ramo reduzido de cada componente com Motion (`library-docs.md §23`).
 - **Como funciona:** `useSyncExternalStore` sobre `matchMedia("(prefers-reduced-motion: reduce)")`; acompanha a mudança sem recarregar; o snapshot do servidor é `false`.
 - **Usa:** `matchMedia`.
 - **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-27 — Emenda do Motion (M1, refactor): sai de `src/components/dashboard/` para `src/lib/`, sem mudança de comportamento (passa a servir também os componentes com Motion).

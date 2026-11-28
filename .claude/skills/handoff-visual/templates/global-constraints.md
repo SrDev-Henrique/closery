@@ -12,6 +12,10 @@ Vão no cabeçalho do plano e em todo brief. Adapte as linhas marcadas com `<...
   fica sem `<script>`.
 - "Celular" é abaixo de **860px**. Abaixo disso, todo controle tem 44px; controle só com ícone tem `aria-label` e
   tooltip; ícones `aria-hidden`; `prefers-reduced-motion` desliga as animações.
+- Movimento: componente novo ou restilizado nasce com Motion (`ui-rules.md §9`, `library-docs.md §23`): só `m`
+  (`motion/react-m`) e os tokens de `src/lib/motion.ts`; nada anima na carga nem na hidratação; os dois ramos (normal e
+  movimento reduzido) testados com a `MotionTree` e o `stubReducedMotion` (`test/motion.tsx`). O comportamento vem da
+  variante da ArcUI listada no §23, nunca o estilo nem os valores dela.
 - Os cortes de layout são de **área útil** (`@container/main`, invólucro sem padding; a área útil inclui o padding de
   40px). Cortes desta tela: `<cortes>`.
 - A Satoshi mora fora do git (`bun run fonts` no `predev`/`prebuild`).

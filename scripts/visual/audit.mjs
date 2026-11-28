@@ -29,6 +29,7 @@ import {
   writeInsideSdd,
 } from "./paths.mjs";
 import { loadScreen, readState, resolvePath } from "./screen.mjs";
+import { CAPTURE_REDUCED_MOTION } from "./settle.mjs";
 import { runSteps } from "./steps.mjs";
 
 /** @typedef {import("./screen.mjs").AuditScreen} AuditScreen */
@@ -212,7 +213,7 @@ async function main() {
           const context = await browser.newContext({
             viewport: { width, height },
             deviceScaleFactor: 1,
-            reducedMotion: "reduce",
+            reducedMotion: CAPTURE_REDUCED_MOTION,
             ...(entry.person
               ? { storageState: await sessionOf(entry.person) }
               : {}),
