@@ -211,7 +211,7 @@ verdes.
 ```sh
 bun run check-types && bun run lint
 bunx vitest run src/app && bunx vitest run src/components && bunx vitest run src/features && bunx vitest run src/lib
-bunx vitest run src/db src/instrumentation.test.ts src/proxy.test.ts && bunx vitest run test
+bunx vitest run src/db src/instrumentation.test.ts src/proxy.test.ts && bunx vitest run test/
 git ls-files '*.test.ts' '*.test.tsx' | wc -l    # = a soma dos arquivos das seis partes
 bun run test:e2e && bun run build
 bun run visual:names --range=main...HEAD
