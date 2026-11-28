@@ -1,14 +1,29 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { redirect } from "next/navigation";
+import { Component, type ReactNode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type InviteCounts, InviteTeamCard } from "./InviteTeamCard";
 
-const mocks = vi.hoisted(() => ({ dismiss: vi.fn() }));
+const mocks = vi.hoisted(() => ({ dismiss: vi.fn(), toastError: vi.fn() }));
 
 vi.mock("@/app/(app)/actions", () => ({
   dismissInviteCardAction: mocks.dismiss,
 }));
+vi.mock("sonner", () => ({ toast: { error: mocks.toastError } }));
+
+// Fronteira de erro de teste: o que a ação lança e o componente deixa passar
+// chega aqui (no app, seria o error.tsx de (app), "Algo deu errado").
+class Catcher extends Component<{ children: ReactNode }, { error: unknown }> {
+  state: { error: unknown } = { error: null };
+  static getDerivedStateFromError(error: unknown) {
+    return { error };
+  }
+  render() {
+    return this.state.error ? <p>capturado</p> : this.props.children;
+  }
+}
 
 const AVATAR = "data:image/svg+xml,admin";
 
@@ -30,9 +45,14 @@ function renderCard(overrides: Partial<InviteCounts> = {}) {
 }
 
 describe("InviteTeamCard", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   beforeEach(() => {
     mocks.dismiss.mockReset();
-    // A ação da Task 10 devolve `void` (vai direto no `<form action>`).
+    mocks.toastError.mockReset();
+    // A ação da Task 10 devolve `void` (vai no `<form action>` do filho client).
     mocks.dismiss.mockResolvedValue(undefined);
   });
 
@@ -68,6 +88,50 @@ describe("InviteTeamCard", () => {
     await userEvent.click(screen.getByRole("button", { name: "Agora não" }));
 
     await waitFor(() => expect(mocks.dismiss).toHaveBeenCalledTimes(1));
+    expect(mocks.toastError).not.toHaveBeenCalled();
+  });
+
+  it("falha de rede no 'Agora não' vira o toast genérico e o cartão fica na tela (não cai no erro da página)", async () => {
+    mocks.dismiss.mockRejectedValue(new TypeError("Failed to fetch"));
+    render(
+      <Catcher>
+        <InviteTeamCard counts={counts()} avatarSrc={AVATAR} />
+      </Catcher>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Agora não" }));
+
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        "Não foi possível concluir. Tente de novo.",
+      ),
+    );
+    expect(mocks.toastError).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("capturado")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Convide sua equipe" }),
+    ).toBeInTheDocument();
+    // Dá para tentar de novo: o botão continua ali e chama a ação outra vez.
+    mocks.dismiss.mockResolvedValue(undefined);
+    await userEvent.click(screen.getByRole("button", { name: "Agora não" }));
+    await waitFor(() => expect(mocks.dismiss).toHaveBeenCalledTimes(2));
+  });
+
+  it("o redirect da ação (sessão vencida no requireAdmin) segue adiante: sem toast", async () => {
+    mocks.dismiss.mockImplementation(async () => {
+      redirect("/entrar");
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <Catcher>
+        <InviteTeamCard counts={counts()} avatarSrc={AVATAR} />
+      </Catcher>,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Agora não" }));
+
+    expect(await screen.findByText("capturado")).toBeInTheDocument();
+    expect(mocks.toastError).not.toHaveBeenCalled();
   });
 
   it("lista os cinco cadastros com a contagem e o plural certo", () => {

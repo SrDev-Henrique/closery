@@ -583,10 +583,11 @@
 
 #### P89 — "Agora não" do cartão de convite não dá retorno durante o envio ⚪
 **Estado:** Aberto, não triado
-**Arquivos:** `src/components/app-shell/InviteTeamCard.tsx`
+**Arquivos:** `src/components/app-shell/InviteTeamCard.tsx` · `src/components/app-shell/DismissInviteCardForm.tsx`
 **Impacto:** o `<form action>` de Server Component não desabilita o botão durante o envio. Até o `revalidatePath` redesenhar, nada muda na tela, e dá para clicar de novo (é inofensivo: só grava o cookie outra vez). Falta o retorno de ação de `ui-rules.md §3`.
 **Correção:** — (opção: um filho client pequeno com `useFormStatus`, que desabilita o botão e mostra "Dispensando…")
 **Registrado em:** 2026-11-27
+**Atualização (2026-11-27):** a prova do PR B (C1, falha de rede) achou o caso de erro: com a requisição da ação abortada, o erro subia até o `error.tsx` de (app) e o Início virava "Algo deu errado". O `<form>` passou ao filho client `src/components/app-shell/DismissInviteCardForm.tsx`, que pega a falha (toast genérico e o cartão fica), com teste no `InviteTeamCard.test.tsx`. Continua aberta: o botão ainda não dá retorno durante o envio; o `useFormStatus` da opção entra nesse filho.
 
 #### P90 — Foco fraco fora dos cartões coloridos, sem indicador no alto contraste do Windows, e borda de erro abaixo de 3:1 no escuro 🟡
 **Estado:** Aberto, não triado
