@@ -876,7 +876,6 @@ o operador usa o próprio setor e nunca vê o seletor.
 - **Histórico:** 2026-11-27 — criado na emenda do Motion (M2): substitui o `transition-colors duration-[450ms]` do cartão.
 
 ### ShiftProgressBar
-```
 - **Status:** ✅ pronto (2026-11-27)
 - **Local:** `src/components/passagens/ShiftProgressBar.tsx` (server-safe)
 - **Propósito:** barra de quanto do turno já passou, nos estados `start` e `continue` do `MyShiftCard`.
