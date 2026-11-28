@@ -50,4 +50,13 @@ describe("StatLink", () => {
     );
     expect(screen.getByRole("link")).toHaveAccessibleName("3 Entregues");
   });
+
+  it("o hover usa bg-accent (o bg-muted era o próprio card e o hover sumia)", () => {
+    render(
+      <StatLink label="Entregues" value={3} href="/passagens" icon={Clock} />,
+    );
+    const link = screen.getByRole("link");
+    expect(link).toHaveClass("bg-card", "hover:bg-accent");
+    expect(link).not.toHaveClass("hover:bg-muted");
+  });
 });

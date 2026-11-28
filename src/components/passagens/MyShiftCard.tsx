@@ -15,6 +15,7 @@ import { formatDateBR, formatTimeBR } from "@/features/handovers/saoPaulo";
 import { handoverHref, newHandoverHref } from "@/features/handovers/urls";
 import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
 
+import { SectorColorFade } from "./SectorColorFade";
 import { ShiftProgressBar } from "./ShiftProgressBar";
 
 // Protótipo: o primário dentro do card colorido tem 22px de padding (o do
@@ -66,10 +67,12 @@ function Shell({
     <Card
       variant="feature"
       className={cn(
-        "gap-[22px] text-on-pastel transition-colors duration-[450ms] motion-reduce:transition-none",
+        "relative isolate gap-[22px] text-on-pastel",
         SECTOR_COLOR_BG[color],
       )}
     >
+      {/* A troca de cor (Motion): a cor de antes por baixo do conteúdo, sumindo. O `isolate` prende o `-z-10` dela no cartão. */}
+      <SectorColorFade color={color} />
       <div className="flex items-center justify-between gap-3">
         <h2 className="min-w-0 font-heading text-lg leading-[normal] font-bold">
           Passagem do meu turno

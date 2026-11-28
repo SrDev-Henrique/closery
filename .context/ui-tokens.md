@@ -53,7 +53,7 @@ Restrições que valem sempre:
 
 Uso do status: estados de solicitação e de passagem, sempre com texto; o ícone acompanha o selo em todas as telas, menos no cartão de Solicitações do Início (`showIcon`/`badgeIcons` desligados, decisão do dono de 2026-11-27).
 
-`destructive` foi ajustado para AA (decisão do dono, 2026-11-27): o `oklch` antigo dava menos de 4,5:1 para `text-destructive`, e o primeiro ajuste (`#d60000` / `#ff8a8a`) ainda reprovava o botão sobre o fundo da página no claro (4,04:1, o "Cancelar solicitação" de `/solicitacoes/[id]`) e os hovers (3,36–4,18:1). Os hex acima, com o fundo do botão `destructive` em `/10` → hover `/15` no claro e `/15` → hover `/20` no escuro, passam 4,5:1 em `text-destructive` sobre `background`, `card` e `popover` e sobre o fundo do botão em repouso **e** no hover, composto sobre `background` e sobre `card`, nos dois temas. O guarda lê os percentuais da própria classe da variante (`buttonVariants`) e mede todos esses pares (tabela abaixo).
+`destructive` foi ajustado para AA (decisão do dono, 2026-11-27): o `oklch` antigo dava menos de 4,5:1 para `text-destructive`, e o primeiro ajuste (`#d60000` / `#ff8a8a`) ainda reprovava o botão sobre o fundo da página no claro (4,04:1, o "Cancelar solicitação" de `/solicitacoes/[id]`) e os hovers (3,36–4,18:1). Os hex acima, com o fundo do botão `destructive` em `/10` → hover `/15` no claro e `/15` → hover `/18` no escuro (era `/20`; sobre o rodapé `accent/50` o `/20` dava 4,38:1), passam 4,5:1 em `text-destructive` sobre `background`, `card` e `popover` e sobre o fundo do botão em repouso **e** no hover, composto sobre `background`, sobre `card` e sobre o rodapé (`accent/50` sobre `popover`), nos dois temas. O guarda lê os percentuais da própria classe da variante (`buttonVariants`) e mede todos esses pares (tabela abaixo).
 
 ## 3. Cores fixas (iguais nos dois temas)
 
@@ -101,8 +101,32 @@ para reimprimir). Piso nunca se afrouxa: reprovou, ajuste o token.
 | `thumb-foreground` / `thumb` | 17,21 | 14,99 |
 | `success` · `warning` · `info` (`-foreground` sobre o fundo) | 7,48 · 6,56 · 7,02 | 7,51 · 7,47 · 6,41 |
 | `destructive` / `background` · `card` · `popover` | 6,13 · 6,91 · 6,91 | 8,07 · 7,00 · 7,00 |
-| `destructive` sobre o fundo do botão em repouso (`/10` claro, `/15` escuro), composto em `background` · `card` | 5,10 · 5,72 | 6,09 · 5,24 |
-| `destructive` sobre o fundo do botão no hover (`/15` claro, `/20` escuro), composto em `background` · `card` | 4,63 · 5,19 | 5,46 · 4,72 |
+| `destructive` sobre o fundo do botão em repouso (`/10` claro, `/15` escuro), composto em `background` · `card` · rodapé | 5,10 · 5,72 · 5,18 | 6,09 · 5,24 · 4,85 |
+| `destructive` sobre o fundo do botão no hover (`/15` claro, `/18` escuro), composto em `background` · `card` · rodapé | 4,63 · 5,19 · 4,71 | 5,71 · 4,92 · 4,56 |
+
+Rodapé = `bg-accent/50` do `DialogFooter` (composto no popover) e do `CardFooter` (no card), com o alfa lido da classe de cada um (P109, 2026-11-28); o hover escuro do botão `destructive` caiu de `/20` para `/18` porque sobre o rodapé o `/20` media 4,38:1 (T3 do processo visual, 2026-11-27).
+
+### Fundos de estado (piso de perceptibilidade ≥ 1,1:1)
+
+Razão entre o fundo com o estado e o de repouso (ou entre o rodapé e o corpo), com o token e o alfa lidos das
+classes que cada componente renderiza. O piso (`STATE_MIN`, 1,1:1) é escolha de desenho do P109, não número da
+WCAG. Marcado com \* = hoje abaixo do piso, listado no guarda (`belowFloor`) e no P109 (troca em aberto).
+
+| Fundo de estado | Claro | Escuro |
+|---|---|---|
+| `Button` `outline` no hover · aberto, dentro de cartão | 1,09\* · 1,09\* | 1,10 · 1,00\* |
+| `Button` `outline` no hover, sobre o rodapé do `DialogFooter` | 1,09\* | 1,10 |
+| `Button` e `Badge` `ghost` no hover, dentro de cartão · sobre a página | 1,23 · 1,09\* | 1,08\* · 1,15 |
+| `Button` `ghost` no hover, sobre o rodapé do `CardFooter` | 1,11 | 1,04\* |
+| rodapé do `CardFooter` e do `DialogFooter` contra o corpo | 1,11 | 1,08\* |
+| linha da tabela e rótulo com campo no hover, dentro de cartão · sobre a página | 1,11 · 1,05\* | 1,08\* · 1,15 |
+| linha do `BarList`, `StatLink` e cartão da `AdminOverview` no hover | 1,23 | 1,18 |
+| trilho do `BarList` contra a linha, em repouso e no hover | 1,23 | 1,18 |
+| "Agora não" do `PasskeyOffer` no hover, sobre o rodapé (hover local no escuro) | 1,11 | 1,26 |
+
+No `outline` aberto no escuro, o `dark:bg-input/30` do repouso vence o `aria-expanded:bg-accent` na cascata (a mesma
+especificidade, e ele vem depois no CSS): o fundo não muda, 1,00:1 medido no Chromium. O guarda ainda calcula 1,03:1,
+porque o `fillIn` supõe que o estado vence (P117).
 
 | Par fixo (iguais nos dois temas) | Contraste |
 |---|---|
@@ -178,12 +202,26 @@ Celular é **abaixo de 860px** no app inteiro (`md:` e `max-md:` valem em 860px;
 
 ## 7. Como usar
 
-✅ `bg-background`, `text-foreground`, `bg-muted`, `text-muted-foreground`, `bg-card`,
+✅ `bg-background`, `text-foreground`, `bg-accent` (hover e estado), `text-muted-foreground`, `bg-card`,
 `border-border`, `bg-primary text-primary-foreground`, `rounded-full`, `ring-ring`,
 `bg-highlight text-on-pastel`, `bg-sector-sky`, `shadow-thumb`.
 
 ❌ `bg-[#F5F5F6]`, `text-zinc-500`, `bg-green-500`, `border-gray-200`, `shadow-[0_2px_8px_rgba(...)]`,
-`z-[...]` arbitrário.
+`z-[...]` arbitrário, `bg-muted` (tem o valor do `card`: use `bg-accent`; `mutedBackground.test.ts`).
 
 🔁 **Faltou um token?** Adicione no `globals.css` (claro **e** escuro, ou só `:root` se for fixo), exponha no
 `@theme inline`, mede o contraste em `themeContrast.test.ts` e documente aqui.
+
+## 8. Movimento (Motion, desde 2026-11-27)
+
+A fonte única é `src/lib/motion.ts` (o guarda `src/app/motionUsage.test.ts` recusa número fora dela); as regras, no
+`ui-rules.md §9`.
+
+| Nome | Valor | Onde |
+|---|---|---|
+| `MOTION_MAX_SECONDS` | 0,45 s | teto de qualquer duração de tween ou `visualDuration` de mola (a mola assenta depois: até 0,58 s no `thumb`, com menos de um pixel de cauda) |
+| `MOTION_DURATION.instant` · `fast` · `exit` · `base` · `fade` | 0,1 · 0,15 · 0,18 · 0,2 · 0,4 s | fade do ramo reduzido · opacidade de entrada do painel · saída · tooltip, véu e padrão · cor do cartão do turno |
+| `MOTION_EASE.out` · `in` · `inOut` | `cubic-bezier(.2,.8,.2,1)` · `(.4,0,1,1)` · `(.65,0,.35,1)` | entrada · saída · o que muda na tela |
+| `MOTION_SPRING.press` · `knob` · `thumb` · `panel` | mola com tempo visual de 0,15 s sem sobra · 0,3 s, sobra 0,15 · 0,35 s, sobra 0,2 · 0,3 s sem sobra | aperto · knob do `ThemeSwitch` · thumb do `SectorPicker` · Sheet e gaveta |
+| `PRESS_SCALE` | 0,97 | aperto do `Button` |
+| deslocamentos dos presets | painel 40px · gaveta 105% · tooltip 4px e escala 0,96 | `sheetMotion`, `tooltipMotion` |

@@ -46,6 +46,19 @@
   desligados; `"**"` e não `"*"`, que não casa `/`). Sem `bunVersion` (é o runtime das funções, que
   rodam em Node). `engines.node` é `"22.x"`: `>=22.12` faria a Vercel subir para a major mais recente.
   `test/vercelConfig.test.ts` amarra `vercel.json`, `engines` e o Node do CI.
+- **Rotas paralelas sob validação estrita (PR B, P81).** O 16.4 liga `experimental.strictRouteMatching` por padrão: o
+  `next dev` monta as rotas a partir de `normalizeCatchAllRoutes` e apaga a rota **inteira** quando um slot irmão não tem
+  página que case nem `default`. Um catch-all na raiz de um slot (`@detalhe/[...catchAll]`, que normaliza para
+  `/[...catchAll]`) é pendurado em **toda** rota, inclusive nas de fora do grupo: derrubava `/entrar`, `/convite/[token]`,
+  `/redefinir-senha` e `/privacidade` no dev (o build de produção servia as quatro). Por isso o slot `@detalhe` é um
+  **espelho exato** de `(app)` (§14): **toda página nova de `(app)` ganha a página nula do slot no mesmo caminho
+  (`@detalhe/<caminho>/page.tsx`, com os mesmos nomes de parâmetro)**, no mesmo commit, e o slot **não tem catch-all**
+  em nenhum nível: com um `[...rest]` no slot, o build de produção entra num laço de prefetch (§14).
+  Proibidos: `(app)/default.tsx` (cria a rota `/[...catchAll]`: toda URL desconhecida renderiza o shell em vez do 404) e
+  `deprecated.looseRouteMatching` (esconde o defeito). O guarda `src/app/routeStructure.test.ts` roda o validador interno
+  sobre a árvore real; os caminhos são fixos da 16.4.6 (`next/dist/server/lib/router-utils/normalize-catchall-routes` e
+  `next/dist/shared/lib/router/utils/app-paths`): se uma atualização do Next os mover, o import quebra com mensagem clara e
+  a correção é atualizar o caminho.
 
 ## 2. shadcn/ui (`base-nova`) + Base UI
 
@@ -292,7 +305,7 @@
   lançar `notFound`, não toca o banco. **Guardas estáticos** que leem arquivos: `appPagesAuth.test.ts`
   (páginas), `actionsAuth.test.ts`, `actionsInventory.test.ts` e `actionsGuards.test.ts` (actions e
   qualquer `"use server"`), `pendenciasDoc.test.ts` (índice, seções e próximo id de `pendencias.md`) e
-  `uiRegistryDoc.test.ts` (todo componente de `/admin`, `/passagens` e `/solicitacoes` e cada primitivo novo aparece em `ui-registry.md`). Na Fase 4 o `appPagesAuth.test.ts` ganhou a lista fechada `NULL_SLOT_PAGES` (páginas do slot `@detalhe` que só devolvem `null`) e o harness dos testes de migração é `test/migrations.ts`.
+  `uiRegistryDoc.test.ts` (todo componente de `/admin`, `/passagens` e `/solicitacoes` e cada primitivo novo aparece em `ui-registry.md`). Na Fase 4 o `appPagesAuth.test.ts` ganhou a lista fechada `NULL_SLOT_PAGES` (páginas do slot `@detalhe` que só devolvem `null`: desde o PR B, `@detalhe/page.tsx` e as nove do espelho por segmento, §14) e o harness dos testes de migração é `test/migrations.ts`. No PR B entrou `src/app/routeStructure.test.ts`, que roda o validador de rotas do próprio Next sobre a árvore real de `src/app` (§1).
 - **Route Handler (Fase 5).** Testa-se chamando `GET(new Request("http://closery.local/api/dashboard/export?periodo=7"))` com
   `@/lib/auth/session` (`requireUser`), `@/db` (getter que registra o toque no banco) e `next/headers` (`cookies`) mockados e o
   relógio falso. **O BOM se prova em bytes:** `new Uint8Array(await res.arrayBuffer())` e os 3 primeiros bytes `239, 187, 191`;
@@ -330,7 +343,8 @@
   do cartão e o ↗ têm nomes que se contêm: `getByRole("link", { name, exact: true })`. Toda `insertRequest` do E2E passa
   `createdAt` e `statusChangedAt` relativos a `Date.now()` (o padrão fixo da fixture é para o Vitest e sairia da janela de 30
   dias). Fechar o Sheet é o botão "Fechar"; depois `getByRole("dialog")` conta 0 e a URL volta à do Quadro. `/nao-existe`
-  logado responde 404 com "Página não encontrada": o `[...catchAll]` do slot não engole URL desconhecida.
+  logado responde 404 com "Página não encontrada": o espelho do slot (§14) não cria rota para URL desconhecida (nenhuma
+  rota começa com `/[...`; `routeStructure.test.ts`).
 - **`e2e/dashboard.spec.ts` (Fase 5).** Os helpers (`PASSWORD`, `test` com `clientIp`, `text`, `unique`, `uniqueEmail`, `ago`,
   `signUpOperator(page, db, sectorId, name)`, `signUpAdmin`, `seedSector(db, { shiftCreatedAt })`) estão em `e2e/helpers.ts`; os quatro specs
   antigos continuam com as cópias deles (P55). `seedSector({ shiftCreatedAt: ago(10 * DAY_MS) })` cria o turno 00:00–23:59 no passado, para os
@@ -355,6 +369,36 @@
   tela: o relatório lista todos os achados de uma vez. O operador precisa de uma passagem entregue **ontem** com contagem (sem ela o
   `/dashboard` mostra o estado vazio e nem o link da última contagem nem o total do anel aparecem) e de uma solicitação; o admin abre o
   diálogo `Link de nova senha`. Tela nova entra na lista do spec.
+- **`e2e/hydration.spec.ts` (PR B, guarda de hidratação).** No `next start`, antes de qualquer interação: cada página abre
+  com `page.goto` (documento novo: depois de uma navegação no cliente a `Activity` deixa a página anterior escondida no
+  DOM, e tudo pareceria duplicado), espera o título de nível 1 e o `networkidle`, tira o instantâneo com `snapshotDom` e
+  reprova pelo `hydrationProblems` (os dois em `test/hydrationCheck.ts`, testados em `test/hydrationCheck.test.ts`):
+  nenhum ou mais de um `main`, número de `h1` por `main` diferente do esperado, id repetido, id ou referência (`for`,
+  `aria-labelledby`, `aria-describedby`, `aria-controls`) no formato do cliente (`_r_…_`; o do servidor é `_R_…_`) e erro
+  de hidratação. `snapshotDom` vai como texto para o navegador: não pode usar nada de fora da função. Na produção o
+  React 19 minifica o erro, e o Next o manda ao `reportError`: ele chega como `pageerror` com `react.dev/errors/418` (ou
+  419, 424), não como `console.error` com "hydrat"; o spec escuta os dois e o verificador casa os dois. O 422 e o 423 não
+  chegam com o código: o React põe o erro original no `cause`, e o `onRecoverableError` do Next reporta só o `cause`;
+  esses dois quem pega é o DOM (o `_r_` e a duplicação). Cada página tem 15 s para a rede parar, com o nome dela na
+  mensagem (uma rede que nunca para é o laço do `e2e/prefetch.spec.ts`). Nas
+  telas de auth o título é o `CardTitle` com `role="heading"` (0 `h1`). Componente que só existe no cliente de propósito
+  e gera `_r_` entra na lista fechada `CLIENT_ONLY_IDS` do spec (página, seletor, motivo), nunca num filtro genérico.
+  A entrada que não acha mais um id do cliente reprova, então a página dela tem que mostrar o elemento em toda rodada:
+  o próprio caso semeia o dado e fixa o setor na URL (no E2E os nomes de setor são sorteados, e sem `?setor=` o admin
+  abre o primeiro em ordem alfabética). Hoje a lista tem uma entrada, o gráfico do Estoque: o recharts 3.8 não
+  renderiza o `<svg>` no servidor (o tamanho do gráfico no store começa em 0 e só é gravado num `useEffect`), então o
+  `<Line>` monta depois da hidratação e o id dele é sempre `_r_` (P119).
+  Página principal nova entra na tabela do spec, com o `h1` conferido no código.
+- **`e2e/prefetch.spec.ts` (PR B, laço de prefetch).** Logado como admin, pede pelo router
+  (`window.next.router.prefetch`) duas URLs do mesmo caminho com buscas diferentes, uma depois da outra, para cada rota
+  que tinha catch-all no slot (`/passagens/nova` e as cinco de `/admin/*`). A primeira resolve a rota no servidor; a
+  segunda sai da previsão do cliente (o spec confere que ela não pediu a própria árvore, `next-router-segment-prefetch:
+  /_tree`) e não pode passar de 3 pedidos em 2 s (o laço fazia 60 a 90). Rota nova de `(app)` linkada com buscas
+  diferentes entra na lista `PATHS` (§14). O caso (b) guarda o `SectorSwitcher` de `/admin/itens` e `/admin/turnos`
+  com 6 setores, nos três usos que entravam no laço com o `admin/[...rest]`: trocar de setor pelo link, um link novo
+  depois da carga e 6 links pedidos de uma vez a partir de `/conta`. Nenhuma URL pode passar de 3 pedidos na janela
+  (com o catch-all, de 109 a 426). Tela nova com um seletor de links para a própria rota entra na lista
+  `SWITCHER_PATHS`.
 - Duração: cerca de 1 min com o cache do Turbopack; 3 a 4 min na primeira vez.
 
 ## 11. GitHub Actions (CI)
@@ -424,7 +468,7 @@
 ## 14. Solicitações (Fase 4)
 
 - **Onde:** domínio em `src/features/requests/*` (recebe `db: Db` e, quando o tempo importa, `now: Date`; devolve `AdminResult` com mensagem pt-BR pronta). A lógica pura (status, "parada", permissões, filtros da URL, busca, textos, linha do tempo, `applyMove`, mensagens, links, schemas) não faz I/O e o cliente a importa; leituras e escritas são `server-only`. Server Actions em `src/app/(app)/solicitacoes/actions.ts`: `requireUser()` na primeira instrução e `runAction({ …, revalidate: "/(app)" })`, que só revalida em `ok`. Telas em `src/components/solicitacoes/*`. O arquivo `actions.ts` só exporta funções `async`.
-- **Detalhe rápido = rota interceptada.** O slot `@detalhe` do layout de `(app)` tem `@detalhe/(.)solicitacoes/[id]/page.tsx` (um `Sheet` com o `RequestDetail`) e três arquivos que só devolvem `null`: `default.tsx`, `page.tsx` (rota `/`) e `[...catchAll]/page.tsx`. As duas páginas nulas são **obrigatórias**: numa navegação no cliente o slot mantém a última página ativa e o Sheet ficaria aberto sobre a próxima tela. **Não** existe `(app)/default.tsx` (com ele uma URL desconhecida viraria página em branco em vez do 404). `(.)` conta segmentos de rota, não `@slot` nem grupo. O layout usa `LayoutProps<"/">`, que já tipa `detalhe`. Páginas do slot não exportam `metadata`; as de `/solicitacoes` exportam `metadata` estático.
+- **Detalhe rápido = rota interceptada.** O slot `@detalhe` do layout de `(app)` tem `@detalhe/(.)solicitacoes/[id]/page.tsx` (um `Sheet` com o `RequestDetail`), `default.tsx` e `page.tsx` (rota `/`) e, desde o PR B, o **espelho exato**: para cada página do `children` de `(app)`, uma página nula do slot no mesmo caminho e com os mesmos nomes de parâmetro (`admin`, `admin/{destinos,equipe,itens,setores,turnos}`, `bem-vindo`, `conta`, `dashboard`, `passagens`, `passagens/nova`, `passagens/[id]`, `solicitacoes`, `solicitacoes/[id]`). Tudo que não é a interceptada só devolve `null`. As páginas nulas são **obrigatórias**: numa navegação no cliente o slot mantém a última página ativa e o Sheet ficaria aberto sobre a próxima tela. **Página nova em `(app)` ganha o espelho no mesmo commit** (o `routeStructure.test.ts` reprova o esquecimento; a página nula entra no `NULL_SLOT_PAGES`). **Nenhum catch-all no slot, em nenhum nível.** Na raiz, a validação estrita o pendurava nas rotas de fora de `(app)` e o `next dev` dava 404 nelas (§1, P81). Abaixo dela (o primeiro espelho do PR B tinha `admin/[...rest]`, `passagens/[...rest]` e `solicitacoes/[...rest]`), o build de produção entrava num laço de prefetch, com cerca de 50 renderizações por segundo no servidor enquanto a aba ficasse aberta, no segundo link para o mesmo caminho com outra busca (os "Entregar turno" do histórico, o seletor de setor do `/admin/itens`). A causa é a previsão de rota do cliente do Next 16.4.6 com `partialPrefetching` (`segment-cache/optimistic-routes.js`). A segunda URL reaproveita a árvore da primeira e só resolve os parâmetros do ramo que casou a URL. O catch-all do slot fica sem valor, e a chave do segmento nunca bate com a resposta. O `@detalhe/[...catchAll]` antigo fazia o mesmo entre duas `/passagens/<id>`. Prova: `e2e/prefetch.spec.ts`, vermelho com o espelho de catch-alls e verde com o exato. **Não** existe `(app)/default.tsx` (com ele uma URL desconhecida viraria página em branco em vez do 404). `(.)` conta segmentos de rota, não `@slot` nem grupo. O layout usa `LayoutProps<"/">`, que já tipa `detalhe`. Páginas do slot não exportam `metadata`; as de `/solicitacoes` exportam `metadata` estático.
 - **Links do detalhe.** `<Link href={requestHref(id)} scroll={false}>` abre o Sheet. A página completa (↗, "Abrir página completa", "Ver comentários anteriores") é `<a href>` comum, navegação de documento: um `<Link>` para a mesma URL seria interceptado de novo. A interceptação depende do cabeçalho `next-url` (P44). O `RequestSheet` mantém `open` constante e fecha com `router.back()` com trava contra fechar duas vezes (estado local de `open` não reabriria sob a `Activity`).
 - **`useOptimistic` (`useRequestMove`, Quadro e Lista).** O `setOptimistic` roda **dentro** de `startTransition(async () => …)`, de forma síncrona, **antes** do primeiro `await` (fora disso o React loga "An optimistic state update occurred outside a transition"). O estado otimista volta sozinho quando a transição termina; `revalidatePath` só em `ok` (o RSC novo chega antes do fim da transição e o cartão não pisca). O reducer `applyMove` é puro: o cartão muda de coluna e as duas contagens mudam juntas. Falha: `toast.error` e, em `STATUS_CONFLICT`, `NO_CHANGES` ou `NOT_FOUND`, `router.refresh()` (o runner não revalida em falha). Exceção: `unstable_rethrow` e `INTERNAL`. jsdom não tem RSC: o sucesso se prova com `rerender` com as props novas e `console.error` sem chamadas.
 - **Transição de status.** `UPDATE request … WHERE id AND status = <o que a pessoa viu>` e `INSERT request_status_event` na mesma transação; 0 linhas → `lockRequest` (`FOR UPDATE`) + `lastChange` devolvem quem e quando venceu (`STATUS_CONFLICT`, ou `NO_CHANGES` quando o vencedor foi para o mesmo alvo). Cancelar também grava o motivo como comentário ligado ao evento. Solicitação não se edita (D-F4-1).
@@ -576,6 +620,207 @@
 - **Teste:** o jsdom não calcula layout; os testes conferem a string da classe. A medida real é conferida na verificação
   visual (spec §10). Na de 2026-11-27 (Task 16), os pares de 1440px (área útil de 1160px: 2 colunas, horário de 52px) e de 390px
   bateram com o protótipo, e nenhum corte mudou; o corte de 899px não foi medido em captura.
+
+## 21. `pixelmatch` 7.2.0 + `pngjs` 7.0.0 · processo visual
+
+- **Versões exatas, sem `^`, só em `devDependencies`** (`bun add -d -E pixelmatch@7.2.0 pngjs@7.0.0`). São as mesmas das
+  ferramentas do PR A, com que os números do `pixel.md` do Início foram medidos: trocar de versão exige rerodar os pares do
+  Início (`bun run visual:pairs --screen=inicio`) e comparar com eles.
+- **Só em `scripts/visual/` e nos testes dele** (`test/visual/`). Nunca em `src/`: nada disso entra no bundle do app.
+- **API (conferida no `node_modules` em 2026-11-27):** `import pixelmatch from "pixelmatch"` (ESM, com tipos próprios) e
+  `import { PNG } from "pngjs"` (CommonJS, sem `@types`). `pixelmatch(a.data, b.data, saida.data, largura, altura, { threshold })`
+  devolve o número de pixels diferentes e **lança** se as duas imagens não têm o mesmo tamanho: quem chama recorta antes
+  (`cropTo` de `scripts/visual/image.mjs`). `PNG.sync.read`/`PNG.sync.write` leem e gravam; `PNG.bitblt` recorta;
+  `new PNG({ width, height })` nasce transparente (`createPng` preenche).
+- **Threshold 0.1** (`PIXELMATCH_THRESHOLD` em `diff.mjs`), com os padrões da biblioteca para o anti-aliasing
+  (`includeAA: false`: o pixel de anti-aliasing detectado não conta). É o mesmo de todos os números desde o PR A.
+- **Testes:** os `.ts` de `test/visual/` **não importam** `pngjs` nem `pixelmatch` (sem `@types` no `pngjs`, o `tsc` reprovaria):
+  montam as imagens com `createPng` e medem com `diffImages`/`regionDiff`. Nada disso roda no CI além desses testes puros
+  (sem navegador, rede, servidor nem a lista de nomes).
+
+## 22. Ferramentas do processo visual (`scripts/visual/`) · PR B
+
+O motor da verificação visual das telas do Claude Design é versionado; tudo o que tem original do protótipo (mapa de
+trocas, cópias, capturas e a lista de nomes) fica em `.git/sdd/`. O processo que usa as ferramentas é a skill
+`/handoff-visual` (`.claude/skills/handoff-visual/`). Decisão: `architecture.md §10` (2026-11-27, "Processo visual").
+
+- **Saída só em `.git/sdd/`.** O caminho sai de `git rev-parse --path-format=absolute --git-common-dir` mais `/sdd`
+  (vale em worktree, onde `.git` é um arquivo), pelo `scripts/visual/paths.mjs`: todo destino passa por
+  `assertInsideSdd`, e um `--out` fora dele sai com código 1. Duas exceções, declaradas: `registry.mjs` grava só
+  `.context/ui-registry.md`, e `install-hooks.mjs` grava só o `pre-commit` de `git rev-parse --git-path
+  hooks/pre-commit` (fora da árvore).
+- **Node para o Chromium, Bun para o banco e o seed.** O Chromium do Playwright não abre pelo Bun no Windows: tudo o que
+  abre navegador é `.mjs` rodado com `node` (os atalhos `visual:*` já chamam o certo); `db.ts` e `seed/*.ts` rodam com
+  `bun`.
+- **Portas fixas** (`config.mjs`): banco PGlite em `127.0.0.1:54332`, app em `localhost:3202`; outra URL de banco ou de
+  app é recusada. As portas 3000 (outro projeto), 3200 e 54329 (E2E) e 3201 e 54331 (o dono) nunca são usadas. O app
+  sobe com `-H localhost` (`bunx next start -H localhost -p 3202`, e o mesmo no `next dev`): sem ele o Next escuta em
+  todas as interfaces, e a rede local alcançaria as pessoas de teste com a senha conhecida.
+- **Pessoas e textos inventados.** `scripts/visual/vocabulary.mjs` é a fonte única: Ana, Bruno, Carla e Diego Teste
+  (`@example.com`, senha `senha-de-teste-123`), os setores ULD, Carga, Operações e Rampa, os turnos, itens, destinos e
+  textos. O seed escreve com ele, e o mapa de trocas do protótipo troca os originais por ele: o pixel compara texto
+  igual com texto igual. Texto novo entra ali, e nunca um texto do protótipo.
+- **Puro tem teste** em `test/visual/*.test.ts` (o padrão `scripts/smokeChecks.mjs`): sem navegador, rede, servidor nem
+  a lista de nomes (o caso que precisa dela usa `it.skipIf`); os testes não importam `pngjs` nem `pixelmatch` direto
+  (usam `createPng` e as funções de `image.mjs` e `diff.mjs`). Os CLIs do git e do registro (`check-names`,
+  `install-hooks`, `registry`, `registry-diff`) são testados num repositório temporário (`test/visual/tempRepo.ts`),
+  sem a configuração global do git. **Nada mais das ferramentas roda no CI.**
+- **Um servidor e um navegador por vez**; cada CLI fecha o navegador ao fim de cada estado. As capturas rodam sempre
+  com `reducedMotion: "reduce"` e esperam as animações e o `style` pararem (§23).
+- **Segredo:** o do ambiente visual é gerado em `.git/sdd/visual-db/secret` e só o `env.sh` o lê; nada o imprime.
+- **devDependencies exatas:** `pixelmatch` e `pngjs` (§21), só em `scripts/visual/` e nos testes dele.
+
+**Pastas fora do git:**
+
+```
+.git/sdd/
+  nomes-proibidos.txt     lista de nomes, e-mails e textos dos protótipos (global, acumula por branch)
+  visual-db/              banco visual compartilhado: pgdata/, secret, world.json, state.json, avatars.json
+  processo/               o PR B: ledger, proto.config.mjs, proto/, pares/, interacoes/, legibilidade/, medidas/
+  visual-<slug>/          cada branch de tela, com a mesma forma
+```
+
+**As ferramentas:**
+
+| Ferramenta | O que faz | Como chamar |
+|---|---|---|
+| `paths.mjs`, `config.mjs`, `vocabulary.mjs` | caminhos conferidos; portas, URLs e argumentos; o vocabulário | importados |
+| `db.ts` (bun) | PGlite em disco com as migrações de `./drizzle`, servido na 54332; porta de pé com o banco visual: avisa e sai 0 | `bun run visual:db` |
+| `env.sh` | exporta `DATABASE_URL` e `DATABASE_URL_POOLED` (54332), `DATABASE_POOL_MAX=1`, `BETTER_AUTH_URL` (3202) e o segredo; esvazia social e Sentry | `. scripts/visual/env.sh` |
+| `seed/index.ts` (bun) | `base` (`world.json`), `state <tela>:<estado> [--setor=<nome>]` (`state.json`), `reopen-invites`, `avatars` (`avatars.json`) | `bun run visual:seed …` |
+| `people.mjs` | cadastra as 4 pessoas pela API, com o cookie do convite; "já existe" conta como sucesso | `bun run visual:people` |
+| `proto.mjs` | cópias do protótipo: as trocas na ordem (erro pelo número da troca), os `default` do `data-props`, sobra de termo da lista = erro | `bun run visual:proto --config=<relativo a .git/sdd>` |
+| `capture.mjs` | captura avulsa do app ou de uma cópia | `node scripts/visual/capture.mjs app <caminho> <LxA> <dark\|light> <saída> [pessoa]` · `… proto <arquivo> <LxA> <saída>` |
+| `pairs.mjs` | semeia cada estado, roda os passos, captura os dois lados na mesma altura, mascara e mede página e regiões | `bun run visual:pairs --screen=<tela> --out=<pasta> [estado …] [--sizes=] [--sufixo=]` |
+| `measure.mjs` | caixa, tipografia, cor, fundo, raio e padding pelo texto, app contra protótipo; `--so-proto` extrai os px do protótipo | `node scripts/visual/measure.mjs --screen=<tela> --state=<estado> --width=<L> --out=<pasta> [--root=<css>] [--all] [--so-proto]` |
+| `probe.mjs` | avalia uma expressão nas duas páginas (ou só no app) depois dos passos: a prova por estilo computado | `node scripts/visual/probe.mjs --screen=<tela> --state=<estado> --width=<L> (--out=<pasta> \| --app-only) "<expressão>"` |
+| `interact.mjs` | roda os passos (inclusive a falha de rede) e registra em `<pasta>/interacoes/<estado>-<L>.json`; código 1 se o `expect` do estado falhar | `node scripts/visual/interact.mjs --screen=<tela> --state=<estado> --out=<pasta> [--width=1440]` |
+| `audit.mjs` | contraste de texto, alvo de toque abaixo de 860px, rolagem horizontal, borda de campo, fundo que some no do pai | `bun run visual:audit --screen=legibilidade --out=<pasta> [--only=] [--themes=] [--sizes=] [--dir=]` |
+| `diff.mjs` | `pixelmatch` (threshold 0.1), recorte ao menor tamanho comum, máscaras iguais nos dois lados | `node scripts/visual/diff.mjs <a.png> <b.png> <saída.png> [máscaras.json]` |
+| `sheet.mjs`, `sbs.mjs`, `crop.mjs` | folha de contato; protótipo, app e diferença empilhados com zoom; recorte em tamanho real | `node scripts/visual/<ferramenta>.mjs … --dir=<relativo a .git/sdd>` |
+| `check-names.mjs`, `install-hooks.mjs` | a guarda de nomes e o hook (abaixo) | `bun run visual:names …` · `bun run visual:hooks [--remove]` |
+| `registry.mjs`, `registry-diff.mjs` | uma entrada do registro; os cabeçalhos entre commits (abaixo) | `node scripts/visual/registry.mjs …` · `node scripts/visual/registry-diff.mjs …` |
+
+Onde a tabela diz `--screen=<tela>`, vale também `--config=<arquivo relativo a .git/sdd>` (uma configuração de rascunho,
+fora do git). O `pairs`, o `measure`, o `probe` e o `interact` semeiam o estado de cada par antes de abrir o app (o
+`measure --so-proto` não abre o app nem semeia); o `audit` usa o estado que estiver no banco (semeie `geral:rico` antes).
+O `visual:proto` lê os avatares do `.git/sdd/visual-db/avatars.json` (`bun run visual:seed avatars`).
+
+**Configuração de tela:** `scripts/visual/screens/<tela>.mjs`, um `export default` validado por `validateScreen`
+(`test/visual/screens.test.ts` lê a pasta, valida cada arquivo, confere que o `name` é o nome do arquivo e que cada
+`seed` está em `STATES`), com os estados, o `patch` e as `masks` do que depende do agora, as regiões e a lista `audit`.
+Sem nenhum nome: o que identifica pessoa mora no mapa de trocas, fora do git. Cada branch acrescenta
+`seed/states/<tela>.ts` e o registra em `seed/states/index.ts`, na mesma tarefa do plano que promove o rascunho
+`.git/sdd/visual-<slug>/screen.mjs` para a pasta (skill `handoff-visual`, Etapa 3). Os passos de
+interação (`steps.mjs`): `click`, `hover`, `focus`, `tab`, `press`, `fill`, `drag`, `wait`, `waitFor`, `failRequests`,
+`restoreRequests` e `sample`; a Server Action é `{ method: "POST", header: "next-action" }`.
+
+**`check-names` e o hook** (spec §7):
+
+- **A lista** (`.git/sdd/nomes-proibidos.txt`): uma entrada por linha; linha vazia e `#` não contam; `!<frase>` é
+  permitida (sai do texto antes da busca: para a pessoa fictícia que contém um nome da lista). A busca ignora caixa e
+  acento; palavra e frase casam só inteiras; e-mail (tem `@`) casa como trecho. Entram os nomes e e-mails do protótipo e
+  das screenshots **e os textos operacionais** (descrições, frases, observações, itens e destinos próprios); a palavra
+  genérica do domínio que já está no código (setor, ULD, pátio) fica de fora.
+- **Os modos:** `--staged` (linhas acrescentadas e caminhos de `git diff --cached`: o `pre-commit`), `--range=<a>...<b>`
+  (o diff da branch e as mensagens de `git log <a>..<b>`: o portão, `--range=main...HEAD`) e `--file=<caminho>` (o
+  arquivo inteiro, ex.: uma cópia do protótipo).
+- **A saída** é `arquivo:linha — termo nº N da lista (linha L)`, `caminho nº K do diff — …` ou `mensagem do commit
+  <sha>, linha L — …`: **nunca o termo**, e o caminho que contém um termo vira o número dele. Códigos: 0 limpo, 1 achou,
+  2 lista ausente ou vazia ou uso errado (a mensagem diz como criar a lista ou tirar o hook). Falso positivo vira uma
+  linha `!<frase>`.
+- **O hook:** `bun run visual:hooks` grava em `git rev-parse --git-path hooks/pre-commit` (respeita o `core.hooksPath`)
+  um script que primeiro confere se `scripts/visual/check-names.mjs` existe (sem ele: aviso no stderr e código 0; com ele:
+  `exec node scripts/visual/check-names.mjs --staged` decide), marcado com `# closery:check-names`; regravar é
+  idempotente; um `pre-commit` sem a marca é recusado (código 1) e fica para juntar à mão; `--remove` apaga só o nosso.
+  Um achado é texto a trocar, nunca hook a contornar.
+- **Branch sem `scripts/visual/`** (uma branch antiga, ou a `main` antes do merge do PR B): o hook não acha o script,
+  avisa no stderr e **deixa o commit passar** (emenda da spec §7, de 2026-11-28). Não há o que tirar nem reinstalar; o portão
+  `--range=main...HEAD` continua valendo na branch que tem as ferramentas.
+- **Testes:** `test/visual/names.test.ts` e `test/visual/installHooks.test.ts`.
+
+**O registro:** `node scripts/visual/registry.mjs <Componente> historico "<frase>"` acrescenta a frase ao fim do
+`Histórico` da entrada; `… <Componente> troca "<de>" "<para>"` troca um trecho que aparece uma vez só na entrada; os dois
+recusam sumir ou criar um cabeçalho `###`. `node scripts/visual/registry-diff.mjs <base> [head]` compara os `###` do
+`ui-registry.md` e os `####` do `pendencias.md` entre dois commits e sai com 1 se algum sumiu (um título renomeado
+aparece como SUMIU e NOVO): é a conferência de toda revisão por tarefa. Teste: `test/visual/docs.test.ts`.
+
+## 23. Motion (`motion` 14.14.0) · emenda do PR B
+
+Decisão: `architecture.md §10` (2026-11-27, PB-D10 a PB-D15) e a spec do PR B §16. Regras de interface: `ui-rules.md §9`;
+valores: `ui-tokens.md §8` (a fonte é `src/lib/motion.ts`).
+
+- **Versão exata, sem `^`** (`bun add -E motion@14.14.0`, de 2026-11-13: passa a regra das duas semanas). O pacote fixa o
+  `framer-motion` 14.14.0 por dentro. API: https://motion.dev/docs/react (context7 `/websites/motion_dev`). Trocar de versão
+  exige rodar os testes de componente que usam o Motion (a lista do `motionUsage.test.ts`) e o `e2e/motion.spec.ts`.
+- **Peso: `LazyMotion` + `m`.** O `MotionProvider` (`src/components/motion/MotionProvider.tsx`) carrega o `domAnimation`
+  (animações, saídas e os gestos de toque, foco e hover; **sem layout nem arrasto**) com `strict`: um `motion.div` dentro
+  dele lança. Componente importa `import * as m from "motion/react-m"`. Fora do provider (um teste sem a `MotionTree`), o
+  `m` renderiza o `initial` e nunca anima.
+- **Sem animação de layout.** O `domAnimation` não traz `layout` nem `layoutId` (só o `domMax`, que dobra o peso). O que
+  desliza guarda o repouso no CSS e anima só a troca, por FLIP com `useSpring`: mede antes e depois (`offsetLeft`, ou a
+  diferença de índice vezes a largura), `jump` para a diferença e `set(0)`. Em repouso o `x` é 0 (`transform: none`).
+- **Só contexto na raiz, sem script.** O `MotionProvider` fica no `<body>` do `RootLayout`, por fora do `TooltipProvider` e
+  do `Toaster`, e não renderiza elemento nem `<script>` (a lição do §18): o `renderToString` dele é o dos filhos.
+  `MotionConfig reducedMotion="user"` (o aparelho que pede menos movimento desliga as transformações sozinho) e
+  `transition={MOTION_DEFAULT_TRANSITION}`.
+- **Hidratação.** O que vem do servidor sai do HTML no lugar: repouso no CSS com o `x` em 0, `initial={false}`, ou nenhum
+  valor (o aperto do `Button` é só gesto). Valor em `initial` só em quem monta no cliente depois de uma ação (o painel do
+  Sheet, o tooltip, a camada de cor). O ramo reduzido nunca muda o HTML: muda transição, gesto e o `initial` de quem
+  monta no cliente.
+- **Movimento reduzido: `usePrefersReducedMotion`** (`src/lib/usePrefersReducedMotion.ts`; `useSyncExternalStore` sobre
+  `(prefers-reduced-motion: reduce)`, snapshot do servidor `false`). Cada componente escolhe o ramo por ele, com os presets
+  puros de `src/lib/motion.ts` (`sheetMotion`, `overlayMotion`, `tooltipMotion`). O `useReducedMotion` do Motion não
+  serve para escolher ramo, nem em teste: na primeira chamada ele cria a consulta `matchMedia("(prefers-reduced-motion)")`
+  uma vez para o módulo inteiro e assina o `change`, que só atualiza um valor do módulo; cada componente lê esse valor
+  uma vez, na montagem (`useState`), e não renderiza de novo quando ele muda. Um stub de `matchMedia` trocado depois da
+  primeira chamada não chega a ele, e em desenvolvimento ele avisa no console quando o movimento reduzido está ligado
+  (`framer-motion/dist/es/utils/reduced-motion/use-reduced-motion.mjs`, `motion-dom/dist/es/render/utils/reduced-motion/`).
+  Todo stub de `matchMedia` precisa de `addEventListener` e `removeEventListener` (o Motion e o hook os chamam).
+- **O `whileTap` do `PressButton` e o teclado.** Com o foco num `Button` que aperta (sem `aria-haspopup` e sem
+  movimento reduzido), o Enter dispara `pointerdown` e `pointerup` sintéticos, que sobem pela árvore, e um blur no meio
+  do aperto dispara `pointercancel` (`motion-dom/dist/es/gestures/press/utils/keyboard.mjs`): é assim que o aperto
+  responde ao teclado. Um `onPointerDown` num ancestral de um `Button` ouviria o Enter; hoje nenhum ouve (os dois de
+  `src/`, no `metric-card` e no `spending-ring` da kokonutui, não têm `Button` dentro). O Motion também põe
+  `tabIndex={0}` em quem tem `whileTap` sem `tabIndex` (`framer-motion/dist/es/render/html/use-props.mjs`), mas no
+  `Button` isso não muda nada: o Base UI já passa `tabIndex: 0` a todo botão fora de um composto
+  (`useFocusableWhenDisabled`), e o `renderToStaticMarkup` dá `tabindex="0"` com e sem o provider, com e sem
+  `aria-haspopup`.
+- **Base UI (Dialog/Sheet, Tooltip).** O `render` do `Popup`/`Backdrop` recebe uma função `(props, state) => <m.div
+  {...(props as HTMLMotionProps<"div">)} initial={…} animate={state.open ? … : …} />`. O Base UI só espera a saída antes
+  de desmontar se ela tiver **opacidade** (a Motion a roda pela Web Animations API, que o `getAnimations()` vê); saída só
+  de `transform` desmonta na hora (para isso há o desmonte manual com `actionsRef`, handbook "Animation" em
+  `node_modules/@base-ui/react/docs/react/handbook/animation.md`). **Sem `keepMounted`** no portal: o popup montaria
+  depois da hidratação, com ids `_r_`, e o `e2e/hydration.spec.ts` reprovaria. O tooltip anima só a entrada.
+- **CSS e Motion não dividem propriedade.** O Motion escreve `transform` e `opacity` no `style` a cada quadro; uma
+  `transition` de CSS na mesma propriedade corre atrás de cada quadro e atrasa tudo. Elemento com Motion não tem
+  `transition-all` nem `transition` de `transform`/`opacity`, nem classes `data-starting-style`/`data-ending-style` ou
+  `animate-in` do tw-animate-css.
+- **Testes** (`test/motion.tsx`): `MotionTree` (o `MotionProvider` com `reducedMotion="never"`, para o Motion não reduzir
+  pelo estado global dele), `stubReducedMotion(reduce)`, `recordStyle` (os valores do `style` quadro a quadro: o ramo
+  normal tem valor no meio, o reduzido pula direto ao fim), `styleOnInsert` (o `style` no instante em que o elemento entra
+  no DOM, antes do primeiro quadro), `translateOf`, `scaleOf` e `wait` (dentro de `act`). O jsdom não tem Web Animations:
+  o Motion anima em JS pelo `requestAnimationFrame` (o Vitest liga o `pretendToBeVisual`), e o Base UI desmonta na hora
+  (não há `getAnimations`). O que só o Chromium vê (a saída esperada pelo Base UI, o `transform` calculado) fica no
+  `e2e/motion.spec.ts`.
+- **Capturas do processo visual** (`scripts/visual/capture.mjs`, §22): todo contexto com `reducedMotion: "reduce"`
+  (`CAPTURE_REDUCED_MOTION` de `scripts/visual/settle.mjs`, sem opção para desligar: o `newContext` do `capture.mjs` e o
+  contexto que o `audit.mjs` monta); o `settle` (que o `shoot` e o `audit.mjs` chamam) espera as fontes, o
+  `getAnimations()` e depois 200 ms sem escrita no `style` de nenhum elemento (`styleQuietScript`, até 3 s), mais os 300 ms.
+- **Guarda:** `src/app/motionUsage.test.ts`: só `m`, nada de `framer-motion` nem de `motion/react-client`; nos arquivos que
+  importam o Motion, nenhum número de duração ou mola e nenhuma curva fora de `src/lib/motion.ts`; o `RootLayout` com o
+  provider e um script só.
+- **ArcUI como referência, não dependência** (https://uiarc.dev/llms.txt; itens livres sob MIT): distribui itens do
+  registry do shadcn sobre Radix e CSS modules com tokens próprios, e não se instala aqui. O comportamento de movimento (o
+  que anima, a mola, o ramo reduzido) é portado para os nossos componentes (Base UI, Tailwind e `src/lib/motion.ts`), nunca
+  o estilo nem os valores dela; trecho de código copiado leva o aviso de copyright MIT num comentário. O que as branches C
+  a G vão olhar nela:
+  - Dialog: o véu em fade; o painel sobe uns pixels e cresce de perto de 1 numa mola sem sobra; fecha mais rápido e volta
+    de onde está; reduzido, só fade.
+  - Select: o valor novo entra na direção da lista (o de baixo sobe, o de cima desce); reduzido, troca com fade.
+  - Toast: entra subindo e crescendo; sai descendo com fade; arrasto para dispensar; reduzido, fades e sem arrasto.
+  - Switch e Segmented control: o knob e a pílula numa mola rápida; reduzido, na hora. Gatilho de popup não encolhe ao
+    apertar (responde com a cor).
 
 ## Como adicionar uma biblioteca nova
 

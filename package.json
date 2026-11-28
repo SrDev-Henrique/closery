@@ -22,7 +22,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "smoke": "bun scripts/smoke.mjs"
+    "smoke": "bun scripts/smoke.mjs",
+    "visual:db": "bun scripts/visual/db.ts",
+    "visual:seed": "bun scripts/visual/seed/index.ts",
+    "visual:people": "node scripts/visual/people.mjs",
+    "visual:proto": "node scripts/visual/proto.mjs",
+    "visual:pairs": "node scripts/visual/pairs.mjs",
+    "visual:audit": "node scripts/visual/audit.mjs",
+    "visual:names": "node scripts/visual/check-names.mjs",
+    "visual:hooks": "node scripts/visual/install-hooks.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -37,6 +45,7 @@
     "cn": "^0.5.2",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.77.0",
+    "motion": "14.14.0",
     "next": "16.4.6",
     "pg": "^8.23.1",
     "react": "19.3.0",
@@ -67,6 +76,8 @@
     "babel-plugin-react-compiler": "1.0.0",
     "drizzle-kit": "^0.31.11",
     "jsdom": "^28",
+    "pixelmatch": "7.2.0",
+    "pngjs": "7.0.0",
     "tailwindcss": "4.3.3",
     "typescript": "^5",
     "vitest": "^5.1.1"

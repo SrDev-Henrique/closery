@@ -108,4 +108,39 @@ describe("BarList", () => {
     expect(track).toHaveClass("bg-accent");
     expect(track).not.toHaveClass("bg-muted");
   });
+
+  it("no hover da linha o trilho troca para bg-card: a linha vira accent e o trilho accent sumia (P109)", () => {
+    const { container } = renderList();
+    const links = screen.getAllByRole("link");
+    const tracks = [...container.querySelectorAll("span.h-2")];
+    expect(tracks).toHaveLength(links.length);
+    for (const [index, link] of links.entries()) {
+      // O grupo tem nome: um `group` sem nome num ancestral trocaria o trilho
+      // sem a linha mudar, e o trilho card sumiria sobre a linha card.
+      expect(link).toHaveClass("group/bar-row");
+      expect(link).not.toHaveClass("group");
+      const track = tracks[index];
+      expect(link).toContainElement(track as HTMLElement);
+      expect(track).toHaveClass("bg-accent", "group-hover/bar-row:bg-card");
+      expect(track).not.toHaveClass("group-hover:bg-card");
+    }
+  });
+
+  it("sem barras, a linha não leva trilho a trocar", () => {
+    const { container } = renderList({ bars: false });
+    expect(container.querySelector("span.h-2")).toBeNull();
+    for (const link of screen.getAllByRole("link")) {
+      expect(link).toHaveClass("hover:bg-accent");
+    }
+  });
+
+  it("o hover da linha usa bg-accent (o bg-muted era o próprio card e o hover sumia)", () => {
+    renderList();
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(3);
+    for (const link of links) {
+      expect(link).toHaveClass("bg-card", "hover:bg-accent");
+      expect(link).not.toHaveClass("hover:bg-muted");
+    }
+  });
 });

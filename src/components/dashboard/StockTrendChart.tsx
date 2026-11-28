@@ -11,9 +11,9 @@ import {
 import type { StockPoint } from "@/features/dashboard/types";
 import { formatDateBR } from "@/features/handovers/saoPaulo";
 import { formatInteger } from "@/lib/numberFormat";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 
 import { SINGLE_SERIES_COLOR } from "./chartColors";
-import { usePrefersReducedMotion } from "./usePrefersReducedMotion";
 
 type StockTrendChartProps = {
   label: string;

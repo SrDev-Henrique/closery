@@ -11,11 +11,10 @@
 
 ## ▸ Próximo passo
 
-- **2026-11-27 — Visual novo do Início e do shell (branch `feat/visual-inicio`) pronto para o PR depois do portão**
-  (Vitest em partes, `build` e `test:e2e`). Depois do merge, a fila dos próximos handoffs segue o roteiro (fora do git,
-  `.git/sdd/roadmap/roteiro.md`: B processo, C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação,
-  G Dashboard), com as decisões do lote 0 esperando o dono. O go-live continua pendente: se esta branch entrar antes
-  dele, a migração `0005` vai no passo B4, antes do deploy.
+- **2026-11-28 — Processo visual (branch `chore/processo-visual`, PR B) pronto para o merge.** O Início novo já está na
+  `main` (PR #8). Depois do merge, a branch C (Passagens) começa pela skill `/handoff-visual`, que lê o roteiro (fora do
+  git, `.git/sdd/roadmap/roteiro.md`: C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação, G
+  Dashboard). O go-live continua pendente: se o visual entrar antes dele, a migração `0005` vai no passo B4, antes do deploy.
 - **2026-11-26 — Fases 0 a 5 concluídas e o código da Fase 6 (Produção) pronto. Próximo: o go-live (Parte B),
   conduzido pelo controlador com o dono, passo a passo e com confirmação do dono em cada passo voltado para
   fora, em `.context/runbook-producao.md`:** proteção da `main` (P62), Neon e Vercel de produção, migração,
@@ -120,7 +119,7 @@
 - ✅ Testes: Vitest 4488 testes em 324 arquivos; E2E com 44 cenários (os 35 de antes, 2 de alvos de toque, 3 da redefinição de senha e 4 das páginas públicas). Verificado: `check-types`, `lint`, `test`, `test:e2e` (44 passed), `build` e o smoke local (7 OK, 1 FALHOU esperado, 2 PULADO) verdes (2026-11-27)
 - ⬜ Go-live (Parte B): proteção da `main`, Neon e Vercel de produção, migração, primeiro administrador, aprovação da empresa (P64), convites e a semana de piloto
 
-## Visual novo (Início e shell) · 🟡
+## Visual novo (Início e shell) · ✅
 
 Spec em `docs/superpowers/specs/2026-11-27-visual-inicio-design.md`, plano em `docs/superpowers/plans/2026-11-27-visual-inicio.md`
 (Tasks 1 a 18) e a decisão no `architecture.md §10` (2026-11-27). O go-live (Fase 6, Parte B) continua pendente.
@@ -140,8 +139,26 @@ Spec em `docs/superpowers/specs/2026-11-27-visual-inicio-design.md`, plano em `d
 - ✅ Documentos: ADR, `ui-rules.md §6`, `library-docs.md` (§3 e §17 a §20), runbook (a Satoshi em todo build e a `0005` antes do deploy), pendências novas P81 a P108, P17 resolvida e P67 e P70 com `Atualização` (2026-11-27)
 - ✅ Migração `0005` no banco de dev, com o host conferido pelo `db:hosts` antes do `db:migrate` (2026-11-27)
 - ✅ Testes: Vitest 5248 testes em 352 arquivos; E2E com 49 cenários (os 44 de antes, 4 do Início novo e 1 de toque). Verificado: `check-types`, `lint`, `test`, `build` e `test:e2e` (49 passed) verdes (2026-11-27)
-- ⬜ PR da `feat/visual-inicio` e o merge pelo dono
-- ⬜ Os próximos handoffs, na fila do roteiro (`.git/sdd/roadmap/roteiro.md`, fora do git): B processo, C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação, G Dashboard
+- ✅ PR #8 (`feat/visual-inicio`) mergeado pelo dono (2026-11-27)
+- ⬜ Os próximos handoffs, na fila do roteiro (`.git/sdd/roadmap/roteiro.md`, fora do git): C Passagens, D Passagem de turno, E Solicitações, F detalhe da solicitação, G Dashboard (o B, o processo, é a seção abaixo)
+
+## Processo visual (PR B) · ✅
+
+Spec em `docs/superpowers/specs/2026-11-27-processo-visual-design.md`, plano em
+`docs/superpowers/plans/2026-11-27-processo-visual.md` e a decisão no `architecture.md §10` (2026-11-27, "Processo
+visual (PR B)").
+
+- ✅ 404 do `next dev` corrigido: o espelho exato do slot `@detalhe` (uma página nula do slot por página de `(app)`, nenhum catch-all), com o guarda que roda o validador do Next (`src/app/routeStructure.test.ts`); o laço de prefetch que o catch-all do slot causava no build de produção (também o da `main`, entre duas `/passagens/<id>`) saiu junto, com o guarda `e2e/prefetch.spec.ts`; P81 resolvida e P44 com `Atualização` (2026-11-27; o espelho exato e a segunda `Atualização` da P81, 2026-11-28)
+- ✅ Guarda de hidratação: `e2e/hydration.spec.ts`, com o verificador puro `test/hydrationCheck.ts` (2026-11-27)
+- ✅ `bg-muted` → `bg-accent` nos estados e rodapés dentro de cartão, com o guarda `src/app/mutedBackground.test.ts` e a exceção do `RequestColumn`; P83 resolvida; os casos de `accent` sobre `accent` que sobraram são a P109 (2026-11-27)
+- ✅ Ferramentas visuais permanentes em `scripts/visual/` (banco 54332, app 3202 só no `localhost`, pessoas e textos inventados, cópias do protótipo, captura, diferença, pares, medida, sonda, interação com falha de rede, auditoria, recortes e registro), com `pixelmatch` 7.2.0 e `pngjs` 7.0.0 exatas e os testes puros em `test/visual/` (2026-11-27)
+- ✅ `check-names` no `pre-commit` local e no portão (`--range=main...HEAD`), sem imprimir o termo; numa branch sem `scripts/visual/` o hook avisa e deixa passar (2026-11-27)
+- ✅ Skill `handoff-visual` com os oito modelos (2026-11-27)
+- ✅ Motion (`motion` 14.14.0 exata): a fundação (`MotionProvider` no `RootLayout`, tokens em `src/lib/motion.ts`, guarda `src/app/motionUsage.test.ts`, capturas sempre com movimento reduzido e espera do `style`) e os componentes que já se mexiam (`Button`, `ThemeSwitch`, `SectorPicker`, `Sheet` e gaveta, cor do `MyShiftCard`, `Tooltip`), com os dois ramos provados por teste e `e2e/motion.spec.ts`; P87 com `Atualização` (2026-11-27)
+- ✅ Prova: os 19 pares do Início pelas ferramentas permanentes (o maior, menu-390 com 0,210%, dentro da faixa da spec §15.2), a falha de rede injetada (que achou o "Agora não" caindo no `error.tsx`, corrigido no `DismissInviteCardForm`; P89 com `Atualização`), os hovers do `outline` e do `ghost` dentro de cartão com o fundo diferente do pai e o texto plantado recusado pelo hook (`.git/sdd/processo/pixel.md`, fora do git) (2026-11-27)
+- ✅ Revisão final em 3 lentes, com uma rodada de correções (o laço de prefetch e o texto do hook na spec e no plano) e, no fecho, o guarda de hidratação e os textos; sem Critical. O que não foi corrigido (os dois Important da lente de interface, de `accent` sobre `accent`, e os Minor) virou as pendências P109 a P118; P62 com `Atualização`, e P107 com a frase corrigida (2026-11-28)
+- ✅ Testes: Vitest 5795 testes em 383 arquivos (em seis partes; a soma bate com o `git ls-files` dos testes); E2E com 57 cenários (os 49 de antes, 3 de hidratação, 3 do Motion e 2 do laço de prefetch, o segundo no `SectorSwitcher`). Verificado: `check-types`, `lint`, `test`, `test:e2e` (57 passed) e `build` verdes (2026-11-28)
+- ⬜ PR da `chore/processo-visual` e o merge pelo dono
 
 ## Histórico
 
@@ -155,3 +172,4 @@ Spec em `docs/superpowers/specs/2026-11-27-visual-inicio-design.md`, plano em `d
 - **2026-11-25** — Fase 5 concluída: dashboard de ponta a ponta (passagens, controles, estoque e solicitações, com período, comparação e todo número como link para a lista filtrada) e exportação CSV; P13, P19, P45 e P48 resolvidas. Plano em `docs/superpowers/plans/2026-11-24-fase-5-dashboard.md`.
 - **2026-11-26** — Fase 6 (código) concluída: configuração de produção, log sanitizado, trava de host, Better Auth endurecido, redefinição de senha pelo link do administrador, Sentry, alvos de toque, `/privacidade`, smoke e runbook; P16, P22 e P12 resolvidas. Falta o go-live (Parte B). Plano em `docs/superpowers/plans/2026-11-25-fase-6-producao.md`.
 - **2026-11-27** — Visual novo do Início e do shell (paleta e tema escuro padrão no app inteiro, Satoshi, cor do setor, seletor deslizante, avatares, shell e Início, mais o pack de correção do cartão do turno), revisado e documentado, com a `0005` aplicada no banco de dev; P17 resolvida e P81 a P108 registradas. Falta o portão e o PR; o go-live continua pendente. Plano em `docs/superpowers/plans/2026-11-27-visual-inicio.md`.
+- **2026-11-28** — Processo visual (PR B): o 404 do `next dev` corrigido pelo espelho exato do slot `@detalhe` (que tirou também o laço de prefetch do build de produção), as ferramentas visuais permanentes em `scripts/visual/`, as guardas de nomes, de hidratação e do `bg-muted`, a skill `handoff-visual` e o Motion (a fundação e os componentes que já se mexiam); P81 e P83 resolvidas, P44, P62, P87, P89 e P107 com `Atualização`, P109 a P118 registradas. Plano em `docs/superpowers/plans/2026-11-27-processo-visual.md`.

@@ -2,12 +2,12 @@ import { cn } from "cn";
 import { ArrowRight, Check, Plus } from "lucide-react";
 import Link from "next/link";
 
-import { dismissInviteCardAction } from "@/app/(app)/actions";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import type { AdminOverviewCounts } from "@/features/admin/overview";
 import { pluralize } from "@/lib/plural";
 
+import { DismissInviteCardForm } from "./DismissInviteCardForm";
 import { UserAvatar } from "./UserAvatar";
 
 export type InviteCounts = Pick<
@@ -84,22 +84,9 @@ export function InviteTeamCard({
             Gerar convites
             <ArrowRight aria-hidden="true" strokeWidth={2.2} />
           </Link>
-          {/* "Agora não": formulário com a Server Action da Task 10 (funciona sem
-              JS e sem estado de cliente; ela devolve `void`, o tipo que o
-              `action` do React aceita). Nada de `"use server"` inline aqui: o
-              guarda `actionsGuards.test.ts` só aceita a diretiva num
-              `actions.ts` de `src/app/(app)/`. A ação grava o cookie e o
-              `revalidatePath("/")` dela redesenha o Início sem o cartão. */}
-          <form action={dismissInviteCardAction}>
-            <Button
-              type="submit"
-              variant="on-pastel-secondary"
-              size="pill"
-              className="px-5"
-            >
-              Agora não
-            </Button>
-          </form>
+          {/* "Agora não": o `<form>` com a Server Action da Task 10 mora num
+              filho client, que pega a falha de rede (toast, e o cartão fica). */}
+          <DismissInviteCardForm />
         </div>
       </div>
 

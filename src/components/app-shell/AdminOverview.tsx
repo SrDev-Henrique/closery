@@ -71,7 +71,8 @@ export async function AdminOverview() {
               href={card.href}
               className="group block h-full rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <Card className="h-full transition-colors group-hover:bg-muted/50">
+              {/* Hover opaco: accent/50 sobre a página escura dá exatamente o --card (P83). */}
+              <Card className="h-full transition-colors group-hover:bg-accent">
                 <CardHeader>
                   <CardTitle>{card.title}</CardTitle>
                   <CardDescription>{card.description}</CardDescription>

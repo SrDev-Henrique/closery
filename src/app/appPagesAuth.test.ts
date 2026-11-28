@@ -61,10 +61,25 @@ function readComponentFromDisk(path: string): string | null {
 // Páginas de slot (rota paralela) que só devolvem null: não leem nada, então não
 // há o que proteger. A lista é fechada de propósito: uma página nula que não
 // esteja aqui continua precisando do portão, e o guarda reprova. Caminhos
-// relativos a src/app/(app), com "/". Entra o slot @detalhe na Tarefa 12.
+// relativos a src/app/(app), com "/". O slot @detalhe tem a página da raiz e,
+// desde o PR B, o espelho exato de (app) (library-docs.md §14): página nova do
+// grupo entra aqui junto com o espelho dela (routeStructure.test.ts).
 export const NULL_SLOT_PAGES: readonly string[] = [
   "@detalhe/page.tsx",
-  "@detalhe/[...catchAll]/page.tsx",
+  "@detalhe/admin/page.tsx",
+  "@detalhe/admin/destinos/page.tsx",
+  "@detalhe/admin/equipe/page.tsx",
+  "@detalhe/admin/itens/page.tsx",
+  "@detalhe/admin/setores/page.tsx",
+  "@detalhe/admin/turnos/page.tsx",
+  "@detalhe/bem-vindo/page.tsx",
+  "@detalhe/conta/page.tsx",
+  "@detalhe/dashboard/page.tsx",
+  "@detalhe/passagens/page.tsx",
+  "@detalhe/passagens/nova/page.tsx",
+  "@detalhe/passagens/[id]/page.tsx",
+  "@detalhe/solicitacoes/page.tsx",
+  "@detalhe/solicitacoes/[id]/page.tsx",
 ];
 
 // Verdadeiro só para `export default function Nome() { return null; }`, sem

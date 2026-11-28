@@ -94,3 +94,38 @@ describe("Badge — variantes novas só com tokens", () => {
     ).toEqual(["font-semibold"]);
   });
 });
+
+describe("Badge — hover em accent, não muted (P83)", () => {
+  const VARIANTS = [
+    "default",
+    "secondary",
+    "destructive",
+    "outline",
+    "ghost",
+    "link",
+    "warning",
+    "info",
+    "success",
+    "neutral",
+  ] as const;
+
+  it("outline num link: hover bg-accent", () => {
+    expect(badgeVariants({ variant: "outline" }).split(/\s+/)).toContain(
+      "[a]:hover:bg-accent",
+    );
+  });
+
+  it("ghost: hover bg-accent; no escuro, accent/50", () => {
+    expect(badgeVariants({ variant: "ghost" }).split(/\s+/)).toEqual(
+      expect.arrayContaining(["hover:bg-accent", "dark:hover:bg-accent/50"]),
+    );
+  });
+
+  it.each(VARIANTS)("variant=%s não usa bg-muted", (variant) => {
+    expect(
+      badgeVariants({ variant })
+        .split(/\s+/)
+        .filter((name) => /(?:^|:)bg-muted(?:\/|$)/.test(name)),
+    ).toEqual([]);
+  });
+});

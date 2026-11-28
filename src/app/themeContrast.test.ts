@@ -15,15 +15,41 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { Inbox } from "lucide-react";
+import { createElement, type ReactElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 
+import { PasskeyOffer } from "@/components/auth/PasskeyOffer";
+import { BarList } from "@/components/dashboard/BarList";
+import { StatLink } from "@/components/dashboard/StatLink";
 import { STATUS_TONE } from "@/components/passagens/MyShiftCard";
+import { badgeVariants } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
+import { Card, CardFooter } from "@/components/ui/card";
+import { DialogFooter } from "@/components/ui/dialog";
+import { FieldLabel } from "@/components/ui/field";
+import { TableRow } from "@/components/ui/table";
+
+// O PasskeyOffer é renderizado só para ler as classes (P109): sem cliente de
+// autenticação nem roteador de verdade, que nada aqui clica.
+vi.mock("@/lib/auth/client", () => ({ authClient: {} }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push() {} }) }));
 
 /** Texto normal (WCAG AA). */
 const TEXT_MIN = 4.5;
 /** Componente de interface e objeto gráfico (WCAG 1.4.11). */
 const NON_TEXT_MIN = 3;
+/**
+ * Piso de perceptibilidade de um fundo de estado: a razão entre o fundo com o estado (hover) e o de
+ * repouso, ou entre duas superfícies que precisam se separar (o trilho do `BarList` e a linha). Não
+ * é número da WCAG (a 1.4.11 pede 3:1 para o que identifica o controle; aqui o rótulo já identifica
+ * e o fundo é só retorno): é a escolha de desenho do P109. Fica acima dos pares que a revisão final
+ * do PR B viu e mal se distinguem (1,04:1, o "Agora não" no escuro; 1,08:1, os `/50` no escuro
+ * dentro de cartão) e abaixo do menor que se vê sem esforço (1,18:1, o `accent` opaco sobre o card
+ * escuro, o que a `AdminOverview` escolheu).
+ */
+const STATE_MIN = 1.1;
 
 // ---------------------------------------------------------------- cor
 /** sRGB codificado (gama aplicada), cada canal em 0..1. */
@@ -113,6 +139,277 @@ const useMobileSource = readFileSync(
   join(import.meta.dirname, "..", "hooks", "use-mobile.ts"),
   "utf8",
 ).replaceAll("\r\n", "\n");
+
+// ---------------------------------------------------------------- leitura das classes (P109)
+/** Uma tag de abertura do HTML estático, com os atributos já sem o escape do React. */
+type Tag = { tag: string; attrs: Record<string, string> };
+
+/**
+ * As tags de abertura do HTML que o `renderToStaticMarkup` gera, na ordem do documento. O React
+ * escapa `&`, `<`, `>` e as aspas dentro dos atributos, então o corte por `>` e por `"` é seguro.
+ */
+function tagsIn(html: string): Tag[] {
+  const decode = (text: string) =>
+    text
+      .replaceAll("&quot;", '"')
+      .replaceAll("&#x27;", "'")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&amp;", "&");
+  return [...html.matchAll(/<([a-z][a-z0-9]*)\b([^>]*)>/g)].map((hit) => ({
+    tag: hit[1] ?? "",
+    attrs: Object.fromEntries(
+      [...(hit[2] ?? "").matchAll(/\s([^\s="]+)="([^"]*)"/g)].map((attr) => [
+        attr[1] ?? "",
+        decode(attr[2] ?? ""),
+      ]),
+    ),
+  }));
+}
+
+/** As classes de cada tag que passa em `match`; lança se não forem exatamente `count` (fail-closed). */
+function classesWhere(
+  html: string,
+  match: (tag: Tag) => boolean,
+  count: number,
+): string[][] {
+  const hits = tagsIn(html)
+    .filter(match)
+    .map((tag) => (tag.attrs.class ?? "").split(/\s+/).filter(Boolean));
+  if (hits.length !== count) {
+    throw new Error(`esperava ${count} elemento(s), achei ${hits.length}`);
+  }
+  return hits;
+}
+
+/** Um fundo lido de uma classe `bg-<token>` ou `bg-<token>/N` (N%, como o Tailwind gera). */
+type Fill = { token: string; alpha: number };
+
+/** Os tokens de cor do tema (`--<nome>` em `:root`): `bg-clip-padding` não é fundo de cor. */
+const isColorToken = (name: string) =>
+  new RegExp(`\\s--${name}:`).test(blockOf(css, ":root"));
+
+/** O utilitário de cor lido: `bg` (fundo) ou `text` (tinta). */
+type ColorUtility = "bg" | "text";
+
+/**
+ * O `bg-<token>[/N]` (ou `text-…`, com `utility`) com exatamente este prefixo de variante (`""`,
+ * `hover:`, `dark:hover:`, `group-hover/<nome>:`). `null` se não houver; lança com dois, ou com um
+ * fundo arbitrário (`bg-[…]`), que o guarda não sabe medir. `text-sm` e `bg-clip-padding` não são
+ * cor (não há token com esse nome) e ficam de fora.
+ */
+function fillWith(
+  classes: readonly string[],
+  prefix: string,
+  utility: ColorUtility = "bg",
+): Fill | null {
+  const start = `${prefix}${utility}-`;
+  const hits = classes.flatMap((name): Fill[] => {
+    if (!name.startsWith(start)) return [];
+    const rest = name.slice(start.length);
+    if (rest.startsWith("[")) {
+      if (utility === "text") return [];
+      throw new Error(`fundo arbitrário que o guarda não mede: "${name}"`);
+    }
+    const hit = /^([a-z][a-z0-9-]*)(?:\/(\d+))?$/.exec(rest);
+    if (!hit?.[1] || !isColorToken(hit[1])) return [];
+    return [{ token: hit[1], alpha: hit[2] ? Number(hit[2]) / 100 : 1 }];
+  });
+  if (hits.length > 1) {
+    throw new Error(
+      `mais de uma cor ${start}* nas classes: ${classes.join(" ")}`,
+    );
+  }
+  return hits[0] ?? null;
+}
+
+/**
+ * A cor que vale no tema e no estado (`""` é o repouso). No escuro, `dark:<estado>` vence
+ * `<estado>` (o `dark` é `&:is(.dark *)`, mais específico); sem classe do estado vale a de repouso.
+ */
+function fillIn(
+  classes: readonly string[],
+  selector: string,
+  state: string,
+  utility: ColorUtility = "bg",
+): Fill | null {
+  const dark = (prefix: string) =>
+    selector === ".dark" ? fillWith(classes, `dark:${prefix}`, utility) : null;
+  const resting = dark("") ?? fillWith(classes, "", utility);
+  if (state === "") return resting;
+  return dark(state) ?? fillWith(classes, state, utility) ?? resting;
+}
+
+/** O que o olho vê: o fundo da classe (alfa da classe vezes o do token) sobre a base opaca. */
+function paint(fill: Fill | null, selector: string, base: Rgb): Rgb {
+  if (!fill) return base;
+  const color = readToken(css, selector, fill.token);
+  return over({ rgb: color.rgb, alpha: color.alpha * fill.alpha }, base);
+}
+
+/** O nome do único `group/<nome>` das classes (o `group-hover/<nome>:` dos filhos depende dele). */
+function groupName(classes: readonly string[]): string {
+  const names = classes.flatMap(
+    (name) => /^group\/([a-z][a-z0-9-]*)$/.exec(name)?.[1] ?? [],
+  );
+  if (names.length !== 1 || !names[0]) {
+    throw new Error(`esperava um group/<nome>, achei ${names.length}`);
+  }
+  return names[0];
+}
+
+// ---------------------------------------------------------------- classes lidas dos componentes (P109)
+/**
+ * As classes que os guardas dos fundos de estado medem, lidas do que cada componente renderiza
+ * (`renderToStaticMarkup`) ou da variante (`buttonVariants`, `badgeVariants`). Nenhum alfa nem token
+ * de fundo é escrito à mão: mudar a classe no componente muda o que o guarda mede.
+ */
+const classesOfVariant = (classes: string) => classes.split(/\s+/);
+/** As classes do único elemento com este `data-slot` no HTML do elemento renderizado. */
+const slotClasses = (element: ReactElement, slot: string): string[] =>
+  classesWhere(
+    renderToStaticMarkup(element),
+    (tag) => tag.attrs["data-slot"] === slot,
+    1,
+  )[0] ?? [];
+
+const OUTLINE = classesOfVariant(buttonVariants({ variant: "outline" }));
+const GHOST = classesOfVariant(buttonVariants({ variant: "ghost" }));
+const BADGE_GHOST = classesOfVariant(badgeVariants({ variant: "ghost" }));
+const CARD_FOOTER = slotClasses(createElement(CardFooter), "card-footer");
+const DIALOG_FOOTER = slotClasses(createElement(DialogFooter), "dialog-footer");
+const TABLE_ROW = slotClasses(
+  createElement(
+    "table",
+    null,
+    createElement("tbody", null, createElement(TableRow)),
+  ),
+  "table-row",
+);
+const FIELD_LABEL = slotClasses(createElement(FieldLabel), "field-label");
+/** O hover do rótulo que envolve um campo (o estado só vale com um `Field` dentro e habilitado). */
+const FIELD_LABEL_HOVER =
+  "has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:";
+
+const barListHtml = renderToStaticMarkup(
+  createElement(BarList, {
+    label: "Barras",
+    rows: [
+      {
+        key: "a",
+        label: "Destino Teste",
+        value: 3,
+        valueText: "3",
+        detail: "3 entregues",
+        href: "/a",
+      },
+    ],
+    bars: true,
+    emptyText: "",
+    moreText: null,
+  }),
+);
+const [barRow = []] = classesWhere(barListHtml, (tag) => tag.tag === "a", 1);
+const [barTrack = []] = classesWhere(
+  barListHtml,
+  (tag) => tag.tag === "span" && tag.attrs["aria-hidden"] === "true",
+  1,
+);
+const [barFill = []] = classesWhere(
+  barListHtml,
+  (tag) => tag.tag === "span" && "style" in tag.attrs,
+  1,
+);
+/** O estado do trilho que acompanha o hover da linha (o grupo é o da linha). */
+const BAR_ROW_HOVER = `group-hover/${groupName(barRow)}:`;
+
+const [statLink = []] = classesWhere(
+  renderToStaticMarkup(
+    createElement(StatLink, {
+      label: "Abertas agora",
+      value: 3,
+      href: "/a",
+      icon: Inbox,
+    }),
+  ),
+  (tag) => tag.tag === "a",
+  1,
+);
+
+/**
+ * O cartão da `AdminOverview` é um Server Component assíncrono (sessão e banco), que o guarda não
+ * renderiza: o `className` do `<Card>` sai do código-fonte (o único com `group-hover:`), e o `Card`
+ * é renderizado com ele, para o `cn` juntar as classes como na tela. O `group` é o do `<Link>`.
+ */
+const adminCardClassName = (() => {
+  const source = readFileSync(
+    join(
+      import.meta.dirname,
+      "..",
+      "components",
+      "app-shell",
+      "AdminOverview.tsx",
+    ),
+    "utf8",
+  );
+  const hits = [...source.matchAll(/<Card className="([^"]*)"/g)].flatMap(
+    (hit) => (hit[1]?.includes("group-hover:") ? [hit[1]] : []),
+  );
+  if (hits.length !== 1 || !hits[0]) {
+    throw new Error(
+      `esperava um <Card className="…group-hover:…"> na AdminOverview, achei ${hits.length}`,
+    );
+  }
+  return hits[0];
+})();
+const ADMIN_CARD = slotClasses(
+  createElement(Card, { className: adminCardClassName }),
+  "card",
+);
+
+/** "Agora não" do `PasskeyOffer`: o cartão, o rodapé e o link, do HTML do componente. */
+const passkeyHtml = renderToStaticMarkup(createElement(PasskeyOffer));
+const [passkeyCard = []] = classesWhere(
+  passkeyHtml,
+  (tag) => tag.attrs["data-slot"] === "card",
+  1,
+);
+const [passkeyFooter = []] = classesWhere(
+  passkeyHtml,
+  (tag) => tag.attrs["data-slot"] === "card-footer",
+  1,
+);
+const [passkeySkip = []] = classesWhere(
+  passkeyHtml,
+  (tag) => tag.tag === "a" && tag.attrs.href === "/",
+  1,
+);
+
+/**
+ * Onde a peça fica: o nome que vai no título e o fundo opaco embaixo dela. Os rodapés são o fundo
+ * do `CardFooter` (sobre o card) e do `DialogFooter` (sobre o popover), com o token e o alfa lidos
+ * da classe de cada um.
+ */
+const UNDER = {
+  "--background": (selector: string) =>
+    solid(readToken(css, selector, "background"), "background"),
+  "--card": (selector: string) =>
+    solid(readToken(css, selector, "card"), "card"),
+  "--popover": (selector: string) =>
+    solid(readToken(css, selector, "popover"), "popover"),
+  "rodapé do CardFooter": (selector: string) =>
+    paint(
+      fillIn(CARD_FOOTER, selector, ""),
+      selector,
+      solid(readToken(css, selector, "card"), "card"),
+    ),
+  "rodapé do DialogFooter": (selector: string) =>
+    paint(
+      fillIn(DIALOG_FOOTER, selector, ""),
+      selector,
+      solid(readToken(css, selector, "popover"), "popover"),
+    ),
+} satisfies Record<string, (selector: string) => Rgb>;
 
 const THEMES = [
   ["claro", ":root"],
@@ -440,6 +737,9 @@ const SURFACE_PAIRS: [string, string][] = [
   ["muted-foreground", "card"],
   ["muted-foreground", "muted"],
   ["muted-foreground", "accent"],
+  // Texto sobre o fundo de estado opaco (hover e aberto do Button outline e
+  // ghost, linha selecionada, BarList, StatLink, cartão da Administração; P83).
+  ["foreground", "accent"],
   ["muted-foreground", "seg"],
   ["foreground", "seg"],
   ["primary-foreground", "primary"],
@@ -525,7 +825,8 @@ for (const [theme, selector] of THEMES) {
  * N%). Os percentuais vêm da classe da própria variante (`buttonVariants`), em repouso e no hover,
  * nos dois temas: mudar o botão sem passar aqui não é possível. O botão aparece sobre o fundo da
  * página (`/solicitacoes/[id]`, "Cancelar solicitação" direto no `SidebarInset`) e sobre o card ou o
- * diálogo (`popover`/`muted` têm o valor do card).
+ * diálogo (`popover` tem o valor do card) e, no `DialogFooter` e no `CardFooter`, sobre o fundo do
+ * rodapé composto no popover e no card (o alfa do rodapé sai da classe dele).
  */
 function destructiveButtonAlphas() {
   const names = buttonVariants({ variant: "destructive" }).split(/\s+/);
@@ -545,7 +846,13 @@ function destructiveButtonAlphas() {
   } as const;
 }
 
-const DESTRUCTIVE_BUTTON_SURFACES = ["background", "card"] as const;
+/** Onde o botão fica (o fundo de cada um está em `UNDER`; os rodapés com o alfa da classe, P109). */
+const DESTRUCTIVE_BUTTON_SURFACES = [
+  "--background",
+  "--card",
+  "rodapé do CardFooter",
+  "rodapé do DialogFooter",
+] as const satisfies readonly (keyof typeof UNDER)[];
 type ButtonState = "repouso" | "hover";
 
 describe("botão destructive — os percentuais lidos da variante", () => {
@@ -563,16 +870,17 @@ describe("botão destructive — os percentuais lidos da variante", () => {
 for (const [theme, selector] of THEMES) {
   describe(`contraste do botão destructive — tema ${theme}`, () => {
     const cases = (["repouso", "hover"] as const).flatMap((state) =>
-      DESTRUCTIVE_BUTTON_SURFACES.map((surface): [ButtonState, string] => [
-        state,
-        surface,
-      ]),
+      DESTRUCTIVE_BUTTON_SURFACES.map(
+        (surface): [ButtonState, keyof typeof UNDER] => [state, surface],
+      ),
     );
-    const measure = (state: ButtonState, surface: string) => {
+    const measure = (state: ButtonState, surface: keyof typeof UNDER) => {
       const destructive = readToken(css, selector, "destructive");
       const alpha = destructiveButtonAlphas()[selector][state];
-      const base = solid(readToken(css, selector, surface), surface);
-      const fill = over({ rgb: destructive.rgb, alpha }, base);
+      const fill = over(
+        { rgb: destructive.rgb, alpha },
+        UNDER[surface](selector),
+      );
       return contrast(solid(destructive, "destructive"), fill);
     };
 
@@ -589,7 +897,7 @@ for (const [theme, selector] of THEMES) {
 
     it.each(
       cases,
-    )("text-destructive sobre o fundo do botão (%s) composto em cima de --%s (≥4,5:1)", (state, surface) => {
+    )("text-destructive sobre o fundo do botão (%s) composto em cima de %s (≥4,5:1)", (state, surface) => {
       const ratio = measure(state, surface);
       expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
     });
@@ -787,5 +1095,539 @@ describe(`contraste do bloco 'Aguardando recebimento' (${PENDING_BLOCK} sobre a 
       ratio,
       `on-pastel sobre ${PENDING_BLOCK} em ${base}: ${ratio.toFixed(2)}:1`,
     ).toBeGreaterThanOrEqual(TEXT_MIN);
+  });
+});
+
+// ---------------------------------------------------------------- fundos de estado (P83, PR B §9)
+/**
+ * Os estados e rodapés que eram `bg-muted` viraram `bg-accent` (PB-D8): `--muted` tem o valor do
+ * `--card`, e dentro de cartão, diálogo ou Sheet o fundo antigo não mudava nada. Cada caso lê as
+ * classes do componente (bloco "classes lidas dos componentes", no topo; nenhum alfa à mão) e é
+ * medido nos dois temas: (1) o texto (`foreground` e `muted-foreground`) sobre o fundo com o estado
+ * passa 4,5:1; (2) o estado muda a cor de repouso (outra cor de 8 bits); (3) a razão entre os dois
+ * passa o `STATE_MIN`, salvo onde o caso está em `belowFloor` (P109: hoje abaixo do piso, e a
+ * troca é escolha de desenho em aberto). O guarda confere os dois lados: o caso listado continua
+ * abaixo (a lista não envelhece quando alguém corrige) e o não listado passa (um caso novo abaixo
+ * do piso falha). Os casos negativos mostram por que o `bg-muted` sumia e por que o cartão da
+ * Administração usa `accent` opaco.
+ */
+const STATE_TEXT = ["foreground", "muted-foreground"] as const;
+const BOTH_THEMES = [":root", ".dark"] as const;
+
+/** A cor como os 3 bytes que a tela pinta: iguais aqui = a mesma cor na tela. */
+function bytes(rgb: Rgb): string {
+  return rgb.map((channel) => Math.round(channel * 255)).join(",");
+}
+
+/**
+ * Um fundo de estado lido das classes do elemento. `state` é o prefixo do estado (`hover:`,
+ * `aria-expanded:`…); `null` quer dizer a própria superfície (o rodapé) contra o que fica embaixo.
+ * `belowFloor`: os temas em que o caso fica abaixo do `STATE_MIN` hoje (P109).
+ */
+type StateCase = {
+  name: string;
+  classes: readonly string[];
+  state: string | null;
+  under: keyof typeof UNDER;
+  belowFloor?: readonly string[];
+};
+
+const STATE_CASES: StateCase[] = [
+  {
+    name: "Button outline no hover, dentro de cartão",
+    classes: OUTLINE,
+    state: "hover:",
+    under: "--card",
+    belowFloor: [":root"],
+  },
+  {
+    name: "Button outline aberto (aria-expanded), dentro de cartão",
+    classes: OUTLINE,
+    state: "aria-expanded:",
+    under: "--card",
+    belowFloor: BOTH_THEMES,
+  },
+  {
+    name: "Button outline no hover, sobre o rodapé do DialogFooter (o Cancelar dos diálogos)",
+    classes: OUTLINE,
+    state: "hover:",
+    under: "rodapé do DialogFooter",
+    belowFloor: [":root"],
+  },
+  {
+    name: "Button ghost no hover, dentro de cartão",
+    classes: GHOST,
+    state: "hover:",
+    under: "--card",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "Button ghost no hover, sobre a página",
+    classes: GHOST,
+    state: "hover:",
+    under: "--background",
+    belowFloor: [":root"],
+  },
+  {
+    name: "Button ghost no hover, sobre o rodapé do CardFooter (o PasskeyOffer tem hover local)",
+    classes: GHOST,
+    state: "hover:",
+    under: "rodapé do CardFooter",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "Badge ghost no hover, dentro de cartão",
+    classes: BADGE_GHOST,
+    state: "hover:",
+    under: "--card",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "Badge ghost no hover, sobre a página",
+    classes: BADGE_GHOST,
+    state: "hover:",
+    under: "--background",
+    belowFloor: [":root"],
+  },
+  {
+    name: "rodapé do CardFooter, dentro do cartão",
+    classes: CARD_FOOTER,
+    state: null,
+    under: "--card",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "rodapé do DialogFooter, dentro do diálogo",
+    classes: DIALOG_FOOTER,
+    state: null,
+    under: "--popover",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "linha da tabela no hover, dentro de cartão",
+    classes: TABLE_ROW,
+    state: "hover:",
+    under: "--card",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "linha da tabela no hover, sobre a página",
+    classes: TABLE_ROW,
+    state: "hover:",
+    under: "--background",
+    belowFloor: [":root"],
+  },
+  {
+    name: "rótulo com campo no hover, dentro de cartão",
+    classes: FIELD_LABEL,
+    state: FIELD_LABEL_HOVER,
+    under: "--card",
+    belowFloor: [".dark"],
+  },
+  {
+    name: "rótulo com campo no hover, sobre a página",
+    classes: FIELD_LABEL,
+    state: FIELD_LABEL_HOVER,
+    under: "--background",
+    belowFloor: [":root"],
+  },
+  {
+    name: "linha do BarList no hover, sobre a página",
+    classes: barRow,
+    state: "hover:",
+    under: "--background",
+  },
+  {
+    name: "StatLink no hover, sobre a página",
+    classes: statLink,
+    state: "hover:",
+    under: "--background",
+  },
+  {
+    name: "cartão da Administração no hover (group-hover), sobre a página",
+    classes: ADMIN_CARD,
+    state: "group-hover:",
+    under: "--background",
+  },
+];
+
+/** O fundo sem e com o estado, compostos sobre o que fica embaixo. */
+function stateColors(item: StateCase, selector: string): [Rgb, Rgb] {
+  const under = UNDER[item.under](selector);
+  const resting =
+    item.state === null
+      ? under
+      : paint(fillIn(item.classes, selector, ""), selector, under);
+  const active = paint(
+    fillIn(item.classes, selector, item.state ?? ""),
+    selector,
+    under,
+  );
+  return [resting, active];
+}
+
+/**
+ * A tinta medida sobre o fundo com o estado: a que a classe do estado fixa (`hover:text-foreground`
+ * no `outline` e no `ghost`, `hover:text-muted-foreground` no `Badge` `ghost`), que é a do rótulo
+ * da peça; sem ela, as duas que o conteúdo usa (`foreground` e `muted-foreground`).
+ */
+function stateTexts(item: StateCase, selector: string): string[] {
+  if (item.state !== null) {
+    const ink =
+      (selector === ".dark"
+        ? fillWith(item.classes, `dark:${item.state}`, "text")
+        : null) ?? fillWith(item.classes, item.state, "text");
+    if (ink && ink.alpha !== 1) {
+      throw new Error(
+        `tinta translúcida que o guarda não compõe: ${ink.token}`,
+      );
+    }
+    if (ink) return [ink.token];
+  }
+  return [...STATE_TEXT];
+}
+
+describe("fundos de estado: as classes lidas têm o estado que o caso mede", () => {
+  it.each(
+    STATE_CASES.map((item): [string, StateCase] => [item.name, item]),
+  )("%s", (_name, item) => {
+    const prefix = item.state ?? "";
+    const own = fillWith(item.classes, prefix);
+    const dark = fillWith(item.classes, `dark:${prefix}`);
+    expect(own ?? dark, item.classes.join(" ")).not.toBeNull();
+  });
+});
+
+for (const [theme, selector] of THEMES) {
+  describe(`fundos de estado (accent) — tema ${theme}`, () => {
+    const token = (name: string) => solid(readToken(css, selector, name), name);
+    const cases = STATE_CASES.map((item): [string, StateCase] => [
+      item.name,
+      item,
+    ]);
+
+    if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+      it("imprime a matriz medida", () => {
+        const lines = STATE_CASES.map((item) => {
+          const [resting, active] = stateColors(item, selector);
+          const below = item.belowFloor?.includes(selector) ? " (P109)" : "";
+          return `${item.name}: ${contrast(active, resting).toFixed(2)}:1${below}`;
+        });
+        console.log(`\n[fundos de estado · ${theme}]\n${lines.join("\n")}`);
+        expect(lines).toHaveLength(STATE_CASES.length);
+      });
+    }
+
+    it.each(
+      cases.flatMap(([name, item]) =>
+        stateTexts(item, selector).map((fg): [string, string, StateCase] => [
+          fg,
+          name,
+          item,
+        ]),
+      ),
+    )("%s sobre %s (≥4,5:1)", (fg, _name, item) => {
+      const ratio = contrast(token(fg), stateColors(item, selector)[1]);
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
+
+    it.each(cases)("%s: o estado muda a cor de repouso", (_name, item) => {
+      const [resting, active] = stateColors(item, selector);
+      expect(bytes(active)).not.toBe(bytes(resting));
+    });
+
+    it.each(
+      cases,
+    )(`%s: passa o piso de ${STATE_MIN}:1, ou está em belowFloor e continua abaixo (P109)`, (_name, item) => {
+      const [resting, active] = stateColors(item, selector);
+      const ratio = contrast(active, resting);
+      if (item.belowFloor?.includes(selector)) {
+        expect(ratio, `${ratio.toFixed(2)}:1`).toBeLessThan(STATE_MIN);
+      } else {
+        expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+          STATE_MIN,
+        );
+      }
+    });
+
+    it("caso negativo: o bg-muted de antes, com o alfa do rodapé, pinta a mesma cor do cartão", () => {
+      const footer = fillIn(CARD_FOOTER, selector, "");
+      expect(footer?.alpha).toBeLessThan(1);
+      const old = paint(
+        { token: "muted", alpha: footer?.alpha ?? 1 },
+        selector,
+        token("card"),
+      );
+      expect(bytes(old)).toBe(bytes(token("card")));
+    });
+  });
+}
+
+describe("caso negativo: o cartão da Administração com o accent/50 dos rodapés sumiria no escuro (por isso accent opaco)", () => {
+  it("o accent com o alfa do rodapé, sobre a página escura, é exatamente o --card", () => {
+    const token = (name: string) => solid(readToken(css, ".dark", name), name);
+    const footer = fillIn(CARD_FOOTER, ".dark", "");
+    expect(footer?.token).toBe("accent");
+    expect(fillIn(ADMIN_CARD, ".dark", "group-hover:")?.alpha).toBe(1);
+    expect(bytes(paint(footer, ".dark", token("background")))).toBe(
+      bytes(token("card")),
+    );
+  });
+});
+
+// ---------------------------------------------------------------- estado accent sobre fundo accent (P109)
+/**
+ * O `accent` que some onde o fundo já é `accent` (spec do PR B §14). Os tokens e os alfas saem das
+ * classes que o componente renderiza (`renderToStaticMarkup`), nunca de número escrito aqui: mudar
+ * a classe sem passar por este guarda não é possível. Cada par tem de passar o `STATE_MIN` nos dois
+ * temas, e o caso negativo mostra o defeito que o guarda pega. As classes vêm do bloco "classes
+ * lidas dos componentes", no topo.
+ */
+for (const [theme, selector] of THEMES) {
+  describe(`trilho do BarList no hover da linha — tema ${theme}`, () => {
+    // As linhas do BarList ficam direto na página (DashboardRequests, sem Card).
+    const under = solid(readToken(css, selector, "background"), "background");
+    const row = (state: string) =>
+      paint(fillIn(barRow, selector, state), selector, under);
+    const track = (classes: readonly string[], rowState: string) =>
+      paint(
+        fillIn(classes, selector, rowState === "" ? "" : BAR_ROW_HOVER),
+        selector,
+        row(rowState),
+      );
+    const measured = {
+      linha: contrast(row("hover:"), row("")),
+      "trilho em repouso": contrast(track(barTrack, ""), row("")),
+      "trilho no hover": contrast(track(barTrack, "hover:"), row("hover:")),
+    };
+
+    if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+      it("imprime a matriz medida", () => {
+        const lines = Object.entries(measured).map(
+          ([name, ratio]) => `${name}: ${ratio.toFixed(2)}:1`,
+        );
+        console.log(`\n[trilho do BarList · ${theme}]\n${lines.join("\n")}`);
+        expect(lines).toHaveLength(3);
+      });
+    }
+
+    it.each(
+      Object.entries(measured),
+    )(`%s: separa-se do fundo (≥${STATE_MIN}:1)`, (_name, ratio) => {
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(STATE_MIN);
+    });
+
+    it.each([
+      ["repouso", ""],
+      ["hover", "hover:"],
+    ])("a barra se separa do trilho no %s (≥3:1)", (_name, rowState) => {
+      const trackColor = track(barTrack, rowState);
+      const ratio = contrast(
+        paint(fillIn(barFill, selector, ""), selector, trackColor),
+        trackColor,
+      );
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+        NON_TEXT_MIN,
+      );
+    });
+
+    it("caso negativo: o trilho sem a troca (só bg-accent) some no hover da linha (1:1)", () => {
+      const before = barTrack.filter((name) => !name.startsWith(BAR_ROW_HOVER));
+      expect(before).not.toEqual(barTrack);
+      const ratio = contrast(track(before, "hover:"), row("hover:"));
+      expect(ratio).toBeLessThan(STATE_MIN);
+      expect(bytes(track(before, "hover:"))).toBe(bytes(row("hover:")));
+    });
+  });
+}
+
+/**
+ * "Agora não" do `PasskeyOffer`: `ghost` dentro do `CardFooter` (`accent/50`), num `Card` sobre a
+ * página (`/bem-vindo`). O rodapé, o cartão e o link saem do HTML do próprio componente, então o
+ * alfa do rodapé e o do hover vêm das classes (com o `cn` já aplicado).
+ */
+for (const [theme, selector] of THEMES) {
+  describe(`"Agora não" do PasskeyOffer sobre o rodapé — tema ${theme}`, () => {
+    const page = solid(readToken(css, selector, "background"), "background");
+    const card = paint(fillIn(passkeyCard, selector, ""), selector, page);
+    const footer = paint(fillIn(passkeyFooter, selector, ""), selector, card);
+    const skip = (classes: readonly string[], state: string) =>
+      paint(fillIn(classes, selector, state), selector, footer);
+
+    if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+      it("imprime a matriz medida", () => {
+        const line = `hover sobre o rodapé: ${contrast(skip(passkeySkip, "hover:"), skip(passkeySkip, "")).toFixed(2)}:1`;
+        console.log(`\n["Agora não" · ${theme}]\n${line}`);
+        expect(line).toContain(":1");
+      });
+    }
+
+    it("o rodapé é um fundo accent translúcido sobre o cartão, e o link não tem fundo em repouso", () => {
+      expect(fillIn(passkeyFooter, selector, "")?.token).toBe("accent");
+      expect(fillIn(passkeySkip, selector, "")).toBeNull();
+    });
+
+    it(`o hover muda o fundo do rodapé (≥${STATE_MIN}:1)`, () => {
+      const ratio = contrast(skip(passkeySkip, "hover:"), footer);
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(STATE_MIN);
+    });
+
+    it("o texto (foreground) sobre o hover passa 4,5:1", () => {
+      const ratio = contrast(
+        solid(readToken(css, selector, "foreground"), "foreground"),
+        skip(passkeySkip, "hover:"),
+      );
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(TEXT_MIN);
+    });
+  });
+}
+
+describe('caso negativo: o "Agora não" sem o hover local sumiria no escuro', () => {
+  const selector = ".dark";
+  const page = solid(readToken(css, selector, "background"), "background");
+  const card = paint(fillIn(passkeyCard, selector, ""), selector, page);
+  const footer = paint(fillIn(passkeyFooter, selector, ""), selector, card);
+  const hover = (classes: readonly string[]) =>
+    contrast(
+      paint(fillIn(classes, selector, "hover:"), selector, footer),
+      footer,
+    );
+
+  it("o ghost puro (dark:hover:bg-accent/50) fica abaixo do piso sobre o rodapé", () => {
+    expect(fillIn(GHOST, selector, "hover:")).toEqual({
+      token: "accent",
+      alpha: 0.5,
+    });
+    expect(hover(GHOST)).toBeLessThan(STATE_MIN);
+  });
+
+  it("o accent opaco também ficaria abaixo: por isso o input/50", () => {
+    expect(
+      hover(
+        [...GHOST, "dark:hover:bg-accent"].filter(
+          (name) => name !== "dark:hover:bg-accent/50",
+        ),
+      ),
+    ).toBeLessThan(STATE_MIN);
+  });
+});
+
+describe("leitura das classes do HTML estático (P109)", () => {
+  it("tagsIn lê as tags de abertura e desfaz o escape do React nos atributos", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        "div",
+        { className: "a [&_svg:not([class*='size-'])]:size-4", title: 'x"<>&' },
+        createElement("span", { "aria-hidden": "true" }),
+      ),
+    );
+    expect(tagsIn(html)).toEqual([
+      {
+        tag: "div",
+        attrs: {
+          class: "a [&_svg:not([class*='size-'])]:size-4",
+          title: 'x"<>&',
+        },
+      },
+      { tag: "span", attrs: { "aria-hidden": "true" } },
+    ]);
+  });
+
+  it("classesWhere falha alto quando não acha o número esperado de elementos", () => {
+    const html = '<a class="x"></a><a class="y"></a>';
+    expect(classesWhere(html, (tag) => tag.tag === "a", 2)).toEqual([
+      ["x"],
+      ["y"],
+    ]);
+    expect(() => classesWhere(html, (tag) => tag.tag === "a", 1)).toThrow(
+      "esperava 1 elemento(s), achei 2",
+    );
+    expect(() => classesWhere(html, (tag) => tag.tag === "b", 1)).toThrow(
+      "achei 0",
+    );
+  });
+
+  it("fillWith lê token e alfa só com o prefixo exato e ignora o que não é cor", () => {
+    const classes = [
+      "bg-clip-padding",
+      "bg-card",
+      "hover:bg-accent",
+      "dark:hover:bg-accent/50",
+      "group-hover/x:bg-input/30",
+    ];
+    expect(fillWith(classes, "")).toEqual({ token: "card", alpha: 1 });
+    expect(fillWith(classes, "hover:")).toEqual({ token: "accent", alpha: 1 });
+    expect(fillWith(classes, "dark:hover:")).toEqual({
+      token: "accent",
+      alpha: 0.5,
+    });
+    expect(fillWith(classes, "group-hover/x:")).toEqual({
+      token: "input",
+      alpha: 0.3,
+    });
+    expect(fillWith(classes, "aria-expanded:")).toBeNull();
+    expect(fillWith([], "")).toBeNull();
+  });
+
+  it("fillWith recusa dois fundos no mesmo prefixo e o valor arbitrário", () => {
+    expect(() => fillWith(["bg-card", "bg-accent"], "")).toThrow(
+      "mais de uma cor",
+    );
+    expect(() =>
+      fillWith(["hover:bg-[color-mix(in_oklch,red,blue)]"], "hover:"),
+    ).toThrow("fundo arbitrário");
+  });
+
+  it("fillWith com text: lê a tinta e ignora tamanho e valor arbitrário", () => {
+    const classes = [
+      "text-sm",
+      "text-[0.8rem]",
+      "hover:text-foreground",
+      "text-card-foreground",
+    ];
+    expect(fillWith(classes, "", "text")).toEqual({
+      token: "card-foreground",
+      alpha: 1,
+    });
+    expect(fillWith(classes, "hover:", "text")).toEqual({
+      token: "foreground",
+      alpha: 1,
+    });
+    expect(fillIn(classes, ".dark", "hover:", "text")?.token).toBe(
+      "foreground",
+    );
+    expect(fillWith(["text-sm"], "", "text")).toBeNull();
+  });
+
+  it("fillIn: no escuro o dark: vence; sem a classe do estado vale a de repouso", () => {
+    const classes = ["bg-card", "hover:bg-accent", "dark:hover:bg-input/50"];
+    expect(fillIn(classes, ":root", "hover:")).toEqual({
+      token: "accent",
+      alpha: 1,
+    });
+    expect(fillIn(classes, ".dark", "hover:")).toEqual({
+      token: "input",
+      alpha: 0.5,
+    });
+    expect(fillIn(classes, ".dark", "")).toEqual({ token: "card", alpha: 1 });
+    expect(fillIn(classes, ":root", "group-hover/x:")).toEqual({
+      token: "card",
+      alpha: 1,
+    });
+    expect(fillIn([], ".dark", "hover:")).toBeNull();
+  });
+
+  it("paint compõe o alfa da classe vezes o do token; sem fundo devolve a base", () => {
+    const base: Rgb = [0, 0, 0];
+    expect(paint(null, ".dark", base)).toBe(base);
+    // --input no escuro é branco a 15%; com /50, 7,5% de branco sobre o preto.
+    const [r] = paint({ token: "input", alpha: 0.5 }, ".dark", base);
+    expect(r).toBeCloseTo(0.075, 6);
+  });
+
+  it("groupName exige exatamente um group/<nome>", () => {
+    expect(groupName(["group/bar-row", "flex"])).toBe("bar-row");
+    expect(() => groupName(["group", "flex"])).toThrow("achei 0");
+    expect(() => groupName(["group/a", "group/b"])).toThrow("achei 2");
   });
 });

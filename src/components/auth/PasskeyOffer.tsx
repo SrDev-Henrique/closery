@@ -73,11 +73,16 @@ export function PasskeyOffer() {
         >
           Criar passkey
         </Button>
+        {/* Hover local no escuro (P109): o rodapé já é accent/50, e o
+            dark:hover:bg-accent/50 do ghost por cima dava 1,04:1 (o accent
+            opaco, 1,09:1). O input/50 do outline dá 1,26:1; no claro o
+            hover:bg-accent do ghost dá 1,11:1 e fica. Guarda:
+            themeContrast.test.ts, que lê as classes renderizadas. */}
         <Link
           href="/"
           className={cn(
             buttonVariants({ variant: "ghost", size: "lg" }),
-            "w-full sm:w-auto",
+            "w-full sm:w-auto dark:hover:bg-input/50",
           )}
         >
           Agora não

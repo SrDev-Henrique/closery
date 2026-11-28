@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 
+import { MotionProvider } from "@/components/motion/MotionProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -50,6 +51,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// O MotionProvider (library-docs §23) é só contexto, sem script e sem elemento: fica no <body>, por fora
+// do TooltipProvider e do Toaster (os portais herdam o contexto), como o guia de providers do Next manda.
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -65,8 +68,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="flex min-h-full flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster />
+        <MotionProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
+        </MotionProvider>
       </body>
     </html>
   );
