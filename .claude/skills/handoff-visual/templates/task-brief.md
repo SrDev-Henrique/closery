@@ -34,7 +34,8 @@ está em `docs/superpowers/plans/<data>-visual-<slug>.md`; esta tarefa é a úni
 
 Mensagem gravada com Write em `.git/sdd/visual-<slug>/msg-task-<N>.txt`, depois
 `git add <os arquivos da tarefa> && git commit -F .git/sdd/visual-<slug>/msg-task-<N>.txt`. A mensagem é a do plano,
-com a linha final `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
+com a linha final `Co-Authored-By: Claude <modelo> <noreply@anthropic.com>`, onde `<modelo>` é o seu, o do modelo que
+implementa (o controlador preenche aqui; por padrão o Sonnet, como nos Papéis da skill).
 
 ## Relatório
 

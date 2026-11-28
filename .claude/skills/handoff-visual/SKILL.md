@@ -16,7 +16,8 @@ o roteiro quando os dois divergirem. Três ideias guiam tudo:
   string da classe é só o começo.
 
 Marcadores usados aqui e nos modelos: `<slug>` (o nome curto da tela, ex.: `passagens`), `<data>` (AAAA-MM-DD),
-`<base>` (o commit da `main` de onde a branch nasceu), `<N>` (o número da tarefa).
+`<base>` (o commit da `main` de onde a branch nasceu), `<N>` (o número da tarefa), `<modelo>` (o modelo que implementa,
+no trailer `Co-Authored-By` do commit: por padrão o Sonnet, como nos Papéis).
 
 ## Primeiro passo, sempre
 
@@ -53,7 +54,8 @@ Tudo de trabalho fica em `.git/sdd/visual-<slug>/` (fora do git; o caminho sai d
 `.git/sdd/nomes-proibidos.txt`. O banco visual é compartilhado: `.git/sdd/visual-db/`.
 
 No git: a spec em `docs/superpowers/specs/<data>-visual-<slug>-design.md`, o plano em
-`docs/superpowers/plans/<data>-visual-<slug>.md` e a configuração de tela em `scripts/visual/screens/<slug>.mjs`.
+`docs/superpowers/plans/<data>-visual-<slug>.md`, a configuração de tela em `scripts/visual/screens/<slug>.mjs` e o
+estado do seed em `scripts/visual/seed/states/<slug>.ts` (os dois entram por uma tarefa do plano: Etapa 3).
 
 A referência de cada ferramenta (entradas, saídas, códigos de saída) está em `.context/library-docs.md §22`.
 
@@ -117,12 +119,19 @@ Saída: a spec commitada e aprovada pelo dono.
 1. O controlador escreve `plan-contract.md` a partir de `templates/plan-contract.md` e `global-constraints.md` a
    partir de `templates/global-constraints.md`. Extração de peça que já existe é tarefa `refactor` própria, antes da
    feature, com os pares da tela dona rerodados.
-2. Redatores Sonnet em paralelo, 2 ou 3 tarefas cada, cada um no seu `draft-<X>.md`.
-3. Editor de consistência (Opus): cruza nomes, assinaturas, imports, arquivos, ordem, testes tocados por dois
+2. A configuração de tela entra no git por uma tarefa do plano, antes dos passes visuais: ela cria o estado do seed em
+   `scripts/visual/seed/states/<slug>.ts`, o registra no `STATES` de `scripts/visual/seed/states/index.ts` (com o
+   prefixo `<slug>:`) e promove o rascunho `.git/sdd/visual-<slug>/screen.mjs` da Etapa 0.6 para
+   `scripts/visual/screens/<slug>.mjs`, sem nenhum nome (o que identifica pessoa fica no mapa de trocas, fora do git).
+   O `test/visual/screens.test.ts` lê a pasta, valida cada arquivo e confere cada `seed` em `STATES`; dali em diante o
+   `--screen=<slug>` substitui o `--config=`.
+3. Redatores Sonnet em paralelo, 2 ou 3 tarefas cada, cada um no seu `draft-<X>.md`.
+4. Editor de consistência (Opus): cruza nomes, assinaturas, imports, arquivos, ordem, testes tocados por dois
    rascunhos e as classes que o `cn` funde; corrige no lugar e grava `consistency-report.md`.
-4. Montagem: cabeçalho com as Global Constraints e as decisões da montagem, as tarefas em ordem e as do controlador
-   (E2E, legibilidade, pixel, documentos e portão). Um script confere que todo `### Task N` está lá, em ordem. Número
-   ou literal calculado (dashboard, paridade) o redator valida no clone integrado. Commit `docs: plano …`.
+5. Montagem: cabeçalho com as Global Constraints e as decisões da montagem, as tarefas em ordem e as do controlador,
+   na ordem das etapas (os três E2E da Etapa 4, o pixel, a legibilidade, os documentos e o portão). Um script confere
+   que todo `### Task N` está lá, em ordem. Número ou literal calculado (dashboard, paridade) o redator valida no clone
+   integrado. Commit `docs: plano …`.
 
 Saída: o plano commitado; a execução começa direto.
 
@@ -261,6 +270,7 @@ Saída: o PR aberto com o CI verde e o link entregue ao dono.
 | O protótipo manda no valor fino; as screenshots são reduzidas | Etapas 0.4 e 2 |
 | Hex do README vira token; contraste AA medido em cada fundo real e estado | Etapa 0.6; revisão por tarefa |
 | Redatores em paralelo precisam de um editor de consistência | Etapa 3 |
+| A configuração de tela ficava no rascunho, e o teste só validava as que importava pelo nome | Etapa 3 (a tarefa que promove o rascunho e registra o estado do seed); `test/visual/screens.test.ts` lê a pasta |
 | A revisão por tarefa pegou um registro corrompido | Etapa 4 (`registry-diff`) |
 | Ids `_R_` e `_r_` denunciam renderização no cliente | Etapa 4 (E2E cedo) e `e2e/hydration.spec.ts` |
 | Pixel com ferramentas, seed inventado, pares 1440 e 390 nos dois temas, máscaras | Etapa 5 |

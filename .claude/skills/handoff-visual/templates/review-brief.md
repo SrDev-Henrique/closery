@@ -21,8 +21,16 @@ revisão do código, `git show` e `git diff`).
 
 - `node scripts/visual/registry-diff.mjs <antes> <depois>` sai com 0 (nenhum `###` do registro nem `####` das
   pendências sumiu).
-- Os guardas `rawColors`, `themeContrast`, `mutedBackground`, `uiRegistryDoc` e `pendenciasDoc` ficam verdes
-  (`bunx vitest run src/app/rawColors.test.ts` etc.).
+- Os guardas ficam verdes. `rawColors`, `themeContrast`, `mutedBackground` e `motionUsage` moram em `src/app/`;
+  `uiRegistryDoc` e `pendenciasDoc`, em `test/`:
+  `bunx vitest run src/app/rawColors.test.ts src/app/themeContrast.test.ts src/app/mutedBackground.test.ts src/app/motionUsage.test.ts test/uiRegistryDoc.test.ts test/pendenciasDoc.test.ts`.
+- Movimento (`ui-rules.md §9`, `library-docs.md §23`):
+  - só `m` (`motion/react-m`) e os nomes de `src/lib/motion.ts`, nenhum número de duração, mola ou curva no componente;
+  - nada anima na carga nem na hidratação: repouso no CSS, `initial={false}`, ou `initial` com valor só em quem monta
+    no cliente depois de uma ação;
+  - o ramo reduzido existe (sem deslize, escala nem mola; no máximo um fade curto) e os dois ramos estão testados com a
+    `MotionTree` e o `stubReducedMotion` (`test/motion.tsx`): o primeiro quadro, um valor no meio e o fim;
+  - nenhuma `transition` de CSS na propriedade que o Motion anima.
 - Componente client acima de `Suspense` sem `<script>`; render sem `Date.now`, `Math.random` ou `matchMedia`.
 - Nenhuma cor literal em `.tsx`.
 - Foco, contraste e tamanho provados por estilo computado (`probe`, `measure` ou E2E); teste que só confere a string da

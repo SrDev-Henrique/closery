@@ -1,3 +1,6 @@
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { Script } from "node:vm";
 import { describe, expect, it } from "vitest";
 
@@ -7,7 +10,48 @@ import legibilidade from "../../scripts/visual/screens/legibilidade.mjs";
 import provas from "../../scripts/visual/screens/provas.mjs";
 import { STATES } from "../../scripts/visual/seed/states/index";
 
-// As configurações de tela versionadas (spec §5.5) são válidas, e cada semente existe.
+// As configurações de tela versionadas (spec §5.5) são válidas, e cada semente existe. O primeiro
+// bloco lê a pasta inteira: a configuração que uma branch de tela acrescenta (skill handoff-visual,
+// Etapa 3) entra sozinha, sem ninguém lembrar de importá-la aqui. Os outros detalham as três de hoje.
+
+const SCREENS_DIR = join(
+  import.meta.dirname,
+  "..",
+  "..",
+  "scripts",
+  "visual",
+  "screens",
+);
+const SCREEN_FILES = readdirSync(SCREENS_DIR)
+  .filter((file) => file.endsWith(".mjs"))
+  .sort();
+
+describe("scripts/visual/screens/ (todas as configurações da pasta)", () => {
+  it("tem ao menos as três de hoje, e nada além de .mjs", () => {
+    expect(SCREEN_FILES).toEqual(
+      expect.arrayContaining(["inicio.mjs", "legibilidade.mjs", "provas.mjs"]),
+    );
+    expect(readdirSync(SCREENS_DIR).sort()).toEqual(SCREEN_FILES);
+  });
+
+  it.each(
+    SCREEN_FILES,
+  )("%s é válida, com o nome do arquivo e cada semente em STATES", async (file) => {
+    const module = (await import(
+      pathToFileURL(join(SCREENS_DIR, file)).href
+    )) as { default?: unknown };
+    const screen = module.default as
+      | { name?: unknown; states?: Record<string, { seed?: unknown }> }
+      | undefined;
+    expect(validateScreen(screen), file).toEqual([]);
+    expect(screen?.name, file).toBe(file.replace(/\.mjs$/, ""));
+    for (const [name, state] of Object.entries(screen?.states ?? {})) {
+      expect(Object.keys(STATES), `${file}: estado ${name}`).toContain(
+        state.seed,
+      );
+    }
+  });
+});
 
 const INICIO_COPIES = [
   "proto-admin-escuro",

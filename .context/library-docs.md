@@ -707,9 +707,11 @@ fora do git). O `pairs`, o `measure`, o `probe` e o `interact` semeiam o estado 
 O `visual:proto` lê os avatares do `.git/sdd/visual-db/avatars.json` (`bun run visual:seed avatars`).
 
 **Configuração de tela:** `scripts/visual/screens/<tela>.mjs`, um `export default` validado por `validateScreen`
-(`test/visual/screens.test.ts` valida todas e confere cada `seed` em `STATES`), com os estados, o `patch` e as `masks`
-do que depende do agora, as regiões e a lista `audit`. Sem nenhum nome: o que identifica pessoa mora no mapa de trocas,
-fora do git. Cada branch acrescenta `seed/states/<tela>.ts` e o registra em `seed/states/index.ts`. Os passos de
+(`test/visual/screens.test.ts` lê a pasta, valida cada arquivo, confere que o `name` é o nome do arquivo e que cada
+`seed` está em `STATES`), com os estados, o `patch` e as `masks` do que depende do agora, as regiões e a lista `audit`.
+Sem nenhum nome: o que identifica pessoa mora no mapa de trocas, fora do git. Cada branch acrescenta
+`seed/states/<tela>.ts` e o registra em `seed/states/index.ts`, na mesma tarefa do plano que promove o rascunho
+`.git/sdd/visual-<slug>/screen.mjs` para a pasta (skill `handoff-visual`, Etapa 3). Os passos de
 interação (`steps.mjs`): `click`, `hover`, `focus`, `tab`, `press`, `fill`, `drag`, `wait`, `waitFor`, `failRequests`,
 `restoreRequests` e `sample`; a Server Action é `{ method: "POST", header: "next-action" }`.
 
@@ -768,9 +770,22 @@ valores: `ui-tokens.md §8` (a fonte é `src/lib/motion.ts`).
   monta no cliente.
 - **Movimento reduzido: `usePrefersReducedMotion`** (`src/lib/usePrefersReducedMotion.ts`; `useSyncExternalStore` sobre
   `(prefers-reduced-motion: reduce)`, snapshot do servidor `false`). Cada componente escolhe o ramo por ele, com os presets
-  puros de `src/lib/motion.ts` (`sheetMotion`, `overlayMotion`, `tooltipMotion`). O `useReducedMotion` do Motion lê o
-  `matchMedia("(prefers-reduced-motion)")` **uma vez por módulo** e avisa no console: não serve para escolher ramo em
-  teste. Todo stub de `matchMedia` precisa de `addEventListener` e `removeEventListener` (o Motion e o hook os chamam).
+  puros de `src/lib/motion.ts` (`sheetMotion`, `overlayMotion`, `tooltipMotion`). O `useReducedMotion` do Motion não
+  serve para escolher ramo, nem em teste: na primeira chamada ele cria a consulta `matchMedia("(prefers-reduced-motion)")`
+  uma vez para o módulo inteiro e assina o `change`, que só atualiza um valor do módulo; cada componente lê esse valor
+  uma vez, na montagem (`useState`), e não renderiza de novo quando ele muda. Um stub de `matchMedia` trocado depois da
+  primeira chamada não chega a ele, e em desenvolvimento ele avisa no console quando o movimento reduzido está ligado
+  (`framer-motion/dist/es/utils/reduced-motion/use-reduced-motion.mjs`, `motion-dom/dist/es/render/utils/reduced-motion/`).
+  Todo stub de `matchMedia` precisa de `addEventListener` e `removeEventListener` (o Motion e o hook os chamam).
+- **O `whileTap` do `PressButton` e o teclado.** Com o foco num `Button` que aperta (sem `aria-haspopup` e sem
+  movimento reduzido), o Enter dispara `pointerdown` e `pointerup` sintéticos, que sobem pela árvore, e um blur no meio
+  do aperto dispara `pointercancel` (`motion-dom/dist/es/gestures/press/utils/keyboard.mjs`): é assim que o aperto
+  responde ao teclado. Um `onPointerDown` num ancestral de um `Button` ouviria o Enter; hoje nenhum ouve (os dois de
+  `src/`, no `metric-card` e no `spending-ring` da kokonutui, não têm `Button` dentro). O Motion também põe
+  `tabIndex={0}` em quem tem `whileTap` sem `tabIndex` (`framer-motion/dist/es/render/html/use-props.mjs`), mas no
+  `Button` isso não muda nada: o Base UI já passa `tabIndex: 0` a todo botão fora de um composto
+  (`useFocusableWhenDisabled`), e o `renderToStaticMarkup` dá `tabindex="0"` com e sem o provider, com e sem
+  `aria-haspopup`.
 - **Base UI (Dialog/Sheet, Tooltip).** O `render` do `Popup`/`Backdrop` recebe uma função `(props, state) => <m.div
   {...(props as HTMLMotionProps<"div">)} initial={…} animate={state.open ? … : …} />`. O Base UI só espera a saída antes
   de desmontar se ela tiver **opacidade** (a Motion a roda pela Web Animations API, que o `getAnimations()` vê); saída só

@@ -282,12 +282,20 @@ describe(".context/pendencias.md", () => {
     expect(entry?.updates).toContain("2026-11-28");
   });
 
-  it("Processo visual: P109 a P118 entraram como Aberto, não triado", () => {
-    for (let number = 109; number <= 118; number++) {
+  it("Processo visual: P109 a P118 entraram como Aberto, não triado (menos a P118, já resolvida)", () => {
+    for (let number = 109; number <= 117; number++) {
       const id = `P${number}`;
       expect(entries.get(id)?.state, id).toBe("Aberto, não triado");
       expect(entries.get(id)?.section, id).toBe("1");
       expect(index.get(id), `${id}: índice`).toBe("Aberto, não triado");
     }
+  });
+
+  it("Processo visual: P118 resolvida em 2026-11-28 (a skill e os modelos alinhados às regras)", () => {
+    const entry = entries.get("P118");
+    expect(entry?.state).toBe("Resolvido");
+    expect(entry?.section).toBe("5");
+    expect(index.get("P118")).toBe("Resolvido");
+    expect(entry?.updates).toContain("2026-11-28");
   });
 });

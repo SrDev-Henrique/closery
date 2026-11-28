@@ -75,7 +75,8 @@ Expected: FAIL com "<mensagem>"
 Mensagem gravada com Write em `.git/sdd/visual-<slug>/msg-task-N.txt`;
 `git add <arquivos> && git commit -F .git/sdd/visual-<slug>/msg-task-N.txt`.
 Mensagem: `<tipo>(<escopo>): <resumo em pt-BR>` + corpo curto + linha final
-`Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`.
+`Co-Authored-By: Claude <modelo> <noreply@anthropic.com>` (o `<modelo>` é o de quem implementar a tarefa; o
+controlador o preenche no brief).
 ````
 
 Regras do formato:
@@ -91,16 +92,23 @@ Regras do formato:
 ## Tarefas, donos e dependências
 
 As extrações de peça que já existe vêm primeiro, como tarefas `refactor` próprias, cada uma com os pares da tela dona
-rerodados. As tarefas do controlador (sem número) ficam no fim.
+rerodados. Uma tarefa cria o estado do seed (`scripts/visual/seed/states/<slug>.ts`, registrado no `STATES` de
+`scripts/visual/seed/states/index.ts`) e promove o rascunho `.git/sdd/visual-<slug>/screen.mjs` para
+`scripts/visual/screens/<slug>.mjs` (skill, Etapa 3). As tarefas do controlador (C1 a C6, sem número de Task) ficam no
+fim da tabela, na ordem da skill; a coluna "Depende de" diz em que ponto cada uma roda: o E2E completo com build roda
+três vezes (depois das tarefas de fundação, na metade do plano e antes dos passes visuais), depois vêm o pixel, a
+legibilidade e os documentos com o portão.
 
 | # | Tarefa | Spec | Redator | Depende de | Commit |
 |---|---|---|---|---|---|
 | 1 | `<extração>` | §x | R1 | — | `refactor(<escopo>): …` |
 | 2 | `<tarefa>` | §x | R1 | 1 | `feat(<escopo>): …` |
-| C1 | E2E completo com build | §x | controlador | `<N>` | nenhum |
-| C2 | Passe de legibilidade | §x | controlador | C1 | `fix(visual): …` por tela |
-| C3 | Pixel perfect | §x | controlador | C2 | `fix(visual): …` |
-| C4 | Documentos e portão | §x | controlador | C3 | `docs: …` |
+| C1 | E2E completo com build, depois da fundação (tokens, primitivos, layout) | §x | controlador | `<última tarefa de fundação>` | nenhum |
+| C2 | E2E completo com build, na metade do plano | §x | controlador | `<tarefa da metade>` | nenhum |
+| C3 | E2E completo com build, antes dos passes visuais | §x | controlador | `<N>` | nenhum |
+| C4 | Pixel perfect (Etapa 5) | §x | controlador | C3 | `fix(visual): …` |
+| C5 | Passe de legibilidade (Etapa 6) | §x | controlador | C4 | `fix(visual): …` por tela |
+| C6 | Documentos e portão (Etapas 9 e 10) | §x | controlador | C5 | `docs: …` |
 
 Rascunhos: R1 → `.git/sdd/visual-<slug>/draft-R1.md` (`<tarefas>`); R2 → `draft-R2.md` (`<tarefas>`).
 

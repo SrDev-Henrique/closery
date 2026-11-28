@@ -99,6 +99,21 @@ describe("skill handoff-visual", () => {
     expect(cited.filter((path) => !existsSync(path))).toEqual([]);
   });
 
+  it.each(
+    documents,
+  )("%s: todo teste citado (src/, test/, e2e/) existe no caminho citado", (_file, text) => {
+    const cited = [
+      ...text.matchAll(/\b(?:src|test|e2e)\/[\w./-]+\.(?:test|spec)\.tsx?\b/g),
+    ].map((match) => match[0]);
+    expect(cited.filter((path) => !existsSync(path))).toEqual([]);
+  });
+
+  it.each(
+    documents,
+  )("%s: o trailer do commit não fixa um modelo (é o de quem implementa)", (_file, text) => {
+    expect(text).not.toMatch(/Co-Authored-By: Claude (?!<modelo>)/);
+  });
+
   it.skipIf(namesList === null)(
     "nenhum termo da lista de nomes proibidos aparece na skill",
     () => {
