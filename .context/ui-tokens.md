@@ -114,7 +114,7 @@ WCAG. Marcado com \* = hoje abaixo do piso, listado no guarda (`belowFloor`) e n
 
 | Fundo de estado | Claro | Escuro |
 |---|---|---|
-| `Button` `outline` no hover · aberto, dentro de cartão | 1,09\* · 1,09\* | 1,10 · 1,03\* |
+| `Button` `outline` no hover · aberto, dentro de cartão | 1,09\* · 1,09\* | 1,10 · 1,00\* |
 | `Button` `outline` no hover, sobre o rodapé do `DialogFooter` | 1,09\* | 1,10 |
 | `Button` e `Badge` `ghost` no hover, dentro de cartão · sobre a página | 1,23 · 1,09\* | 1,08\* · 1,15 |
 | `Button` `ghost` no hover, sobre o rodapé do `CardFooter` | 1,11 | 1,04\* |
@@ -123,6 +123,10 @@ WCAG. Marcado com \* = hoje abaixo do piso, listado no guarda (`belowFloor`) e n
 | linha do `BarList`, `StatLink` e cartão da `AdminOverview` no hover | 1,23 | 1,18 |
 | trilho do `BarList` contra a linha, em repouso e no hover | 1,23 | 1,18 |
 | "Agora não" do `PasskeyOffer` no hover, sobre o rodapé (hover local no escuro) | 1,11 | 1,26 |
+
+No `outline` aberto no escuro, o `dark:bg-input/30` do repouso vence o `aria-expanded:bg-accent` na cascata (a mesma
+especificidade, e ele vem depois no CSS): o fundo não muda, 1,00:1 medido no Chromium. O guarda ainda calcula 1,03:1,
+porque o `fillIn` supõe que o estado vence (P117).
 
 | Par fixo (iguais nos dois temas) | Contraste |
 |---|---|
