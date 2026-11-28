@@ -46,6 +46,18 @@ Leia nesta ordem antes de qualquer implementação:
 | `bun run db:generate` → revisar → `bun run db:migrate` | migração versionada do Drizzle |
 | `bun run admin:invite --confirmar-host=<host>` | gera o link de convite do primeiro administrador; sem a flag, mostra o banco de destino e recusa |
 | `bun run db:hosts` | mostra só o host do banco da aplicação e o das migrações (conferir antes do `db:migrate`) |
+| `bun run visual:db` | banco visual: PGlite em disco (`.git/sdd/visual-db/`), com as migrações, na porta 54332; idempotente. O app visual sobe com `. scripts/visual/env.sh` na porta 3202 |
+| `bun run visual:seed <base \| state <tela>:<estado> [--setor=<nome>] \| reopen-invites \| avatars>` | o mundo visual, o estado de uma tela e os avatares, só com pessoas e textos inventados |
+| `bun run visual:people` | cadastra Ana, Bruno, Carla e Diego Teste pela API do app visual |
+| `bun run visual:proto --config=<caminho em .git/sdd>` | cópias do protótipo com pessoas, avatares e textos inventados; erro se sobrar um termo da lista de nomes |
+| `bun run visual:pairs --screen=<tela> --out=<pasta em .git/sdd>` | pares protótipo × app (página e regiões), com a diferença e o `results.json` |
+| `bun run visual:audit --screen=legibilidade --out=<pasta em .git/sdd>` | auditoria de legibilidade: contraste, alvo de toque, rolagem horizontal, borda de campo e fundo que some |
+| `bun run visual:names --staged \| --range=main...HEAD \| --file=<caminho>` | nenhum termo de `.git/sdd/nomes-proibidos.txt` no diff, nas mensagens ou no arquivo; código 0 limpo, 1 achou, 2 lista ausente ou uso errado; nunca imprime o termo |
+| `bun run visual:hooks [--remove]` | instala (ou tira) o `pre-commit` que roda o `visual:names --staged` |
+
+As ferramentas de `scripts/visual/` gravam só em `.git/sdd/` e nunca rodam no CI; as que abrem o navegador são `.mjs`
+e rodam com `node` (o Chromium do Playwright não abre pelo Bun no Windows): `node scripts/visual/<ferramenta>.mjs`.
+Referência: `library-docs.md §22`; o processo: `/handoff-visual`.
 
 O CI (`.github/workflows/ci.yml`) roda `check-types`, `lint`, `test` e `test:e2e` em todo PR e
 push na `main`; PR só entra com o CI verde (`library-docs.md §11`).
@@ -104,3 +116,5 @@ push na `main`; PR só entra com o CI verde (`library-docs.md §11`).
 - `/recover` — quando algo quebra depois de uma correção que falhou.
 - `/remember save` — quando uma feature atravessa várias sessões.
 - `/remember restore` — ao voltar para uma feature de várias sessões.
+- `/handoff-visual` — para implementar um handoff do Claude Design (README, `.dc.html` e screenshots de uma tela), da
+  abertura da branch ao PR.

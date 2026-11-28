@@ -619,6 +619,107 @@
   montam as imagens com `createPng` e medem com `diffImages`/`regionDiff`. Nada disso roda no CI além desses testes puros
   (sem navegador, rede, servidor nem a lista de nomes).
 
+## 22. Ferramentas do processo visual (`scripts/visual/`) · PR B
+
+O motor da verificação visual das telas do Claude Design é versionado; tudo o que tem original do protótipo (mapa de
+trocas, cópias, capturas e a lista de nomes) fica em `.git/sdd/`. O processo que usa as ferramentas é a skill
+`/handoff-visual` (`.claude/skills/handoff-visual/`). Decisão: `architecture.md §10` (2026-11-27, "Processo visual").
+
+- **Saída só em `.git/sdd/`.** O caminho sai de `git rev-parse --path-format=absolute --git-common-dir` mais `/sdd`
+  (vale em worktree, onde `.git` é um arquivo), pelo `scripts/visual/paths.mjs`: todo destino passa por
+  `assertInsideSdd`, e um `--out` fora dele sai com código 1. Duas exceções, declaradas: `registry.mjs` grava só
+  `.context/ui-registry.md`, e `install-hooks.mjs` grava só o `pre-commit` de `git rev-parse --git-path
+  hooks/pre-commit` (fora da árvore).
+- **Node para o Chromium, Bun para o banco e o seed.** O Chromium do Playwright não abre pelo Bun no Windows: tudo o que
+  abre navegador é `.mjs` rodado com `node` (os atalhos `visual:*` já chamam o certo); `db.ts` e `seed/*.ts` rodam com
+  `bun`.
+- **Portas fixas** (`config.mjs`): banco PGlite em `127.0.0.1:54332`, app em `localhost:3202`; outra URL de banco ou de
+  app é recusada. As portas 3000 (outro projeto), 3200 e 54329 (E2E) e 3201 e 54331 (o dono) nunca são usadas.
+- **Pessoas e textos inventados.** `scripts/visual/vocabulary.mjs` é a fonte única: Ana, Bruno, Carla e Diego Teste
+  (`@example.com`, senha `senha-de-teste-123`), os setores ULD, Carga, Operações e Rampa, os turnos, itens, destinos e
+  textos. O seed escreve com ele, e o mapa de trocas do protótipo troca os originais por ele: o pixel compara texto
+  igual com texto igual. Texto novo entra ali, e nunca um texto do protótipo.
+- **Puro tem teste** em `test/visual/*.test.ts` (o padrão `scripts/smokeChecks.mjs`): sem navegador, rede, servidor nem
+  a lista de nomes (o caso que precisa dela usa `it.skipIf`); os testes não importam `pngjs` nem `pixelmatch` direto
+  (usam `createPng` e as funções de `image.mjs` e `diff.mjs`). Os CLIs do git e do registro (`check-names`,
+  `install-hooks`, `registry`, `registry-diff`) são testados num repositório temporário (`test/visual/tempRepo.ts`),
+  sem a configuração global do git. **Nada mais das ferramentas roda no CI.**
+- **Um servidor e um navegador por vez**; cada CLI fecha o navegador ao fim de cada estado. As capturas rodam com
+  `reducedMotion: "reduce"` e esperam as animações terminarem.
+- **Segredo:** o do ambiente visual é gerado em `.git/sdd/visual-db/secret` e só o `env.sh` o lê; nada o imprime.
+- **devDependencies exatas:** `pixelmatch` e `pngjs` (§21), só em `scripts/visual/` e nos testes dele.
+
+**Pastas fora do git:**
+
+```
+.git/sdd/
+  nomes-proibidos.txt     lista de nomes, e-mails e textos dos protótipos (global, acumula por branch)
+  visual-db/              banco visual compartilhado: pgdata/, secret, world.json, state.json, avatars.json
+  processo/               o PR B: ledger, proto.config.mjs, proto/, pares/, interacoes/, legibilidade/, medidas/
+  visual-<slug>/          cada branch de tela, com a mesma forma
+```
+
+**As ferramentas:**
+
+| Ferramenta | O que faz | Como chamar |
+|---|---|---|
+| `paths.mjs`, `config.mjs`, `vocabulary.mjs` | caminhos conferidos; portas, URLs e argumentos; o vocabulário | importados |
+| `db.ts` (bun) | PGlite em disco com as migrações de `./drizzle`, servido na 54332; porta de pé com o banco visual: avisa e sai 0 | `bun run visual:db` |
+| `env.sh` | exporta `DATABASE_URL` e `DATABASE_URL_POOLED` (54332), `DATABASE_POOL_MAX=1`, `BETTER_AUTH_URL` (3202) e o segredo; esvazia social e Sentry | `. scripts/visual/env.sh` |
+| `seed/index.ts` (bun) | `base` (`world.json`), `state <tela>:<estado> [--setor=<nome>]` (`state.json`), `reopen-invites`, `avatars` (`avatars.json`) | `bun run visual:seed …` |
+| `people.mjs` | cadastra as 4 pessoas pela API, com o cookie do convite; "já existe" conta como sucesso | `bun run visual:people` |
+| `proto.mjs` | cópias do protótipo: as trocas na ordem (erro pelo número da troca), os `default` do `data-props`, sobra de termo da lista = erro | `bun run visual:proto --config=<relativo a .git/sdd>` |
+| `capture.mjs` | captura avulsa do app ou de uma cópia | `node scripts/visual/capture.mjs app <caminho> <LxA> <dark\|light> <saída> [pessoa]` · `… proto <arquivo> <LxA> <saída>` |
+| `pairs.mjs` | semeia cada estado, roda os passos, captura os dois lados na mesma altura, mascara e mede página e regiões | `bun run visual:pairs --screen=<tela> --out=<pasta> [estado …] [--sizes=] [--sufixo=]` |
+| `measure.mjs` | caixa, tipografia, cor, fundo, raio e padding pelo texto, app contra protótipo; `--so-proto` extrai os px do protótipo | `node scripts/visual/measure.mjs --screen=<tela> --state=<estado> --width=<L> --out=<pasta> [--root=<css>] [--all] [--so-proto]` |
+| `probe.mjs` | avalia uma expressão nas duas páginas (ou só no app) depois dos passos: a prova por estilo computado | `node scripts/visual/probe.mjs --screen=<tela> --state=<estado> --width=<L> (--out=<pasta> \| --app-only) "<expressão>"` |
+| `interact.mjs` | roda os passos (inclusive a falha de rede) e registra em `<pasta>/interacoes/<estado>-<L>.json`; código 1 se o `expect` do estado falhar | `node scripts/visual/interact.mjs --screen=<tela> --state=<estado> --out=<pasta> [--width=1440]` |
+| `audit.mjs` | contraste de texto, alvo de toque abaixo de 860px, rolagem horizontal, borda de campo, fundo que some no do pai | `bun run visual:audit --screen=legibilidade --out=<pasta> [--only=] [--themes=] [--sizes=] [--dir=]` |
+| `diff.mjs` | `pixelmatch` (threshold 0.1), recorte ao menor tamanho comum, máscaras iguais nos dois lados | `node scripts/visual/diff.mjs <a.png> <b.png> <saída.png> [máscaras.json]` |
+| `sheet.mjs`, `sbs.mjs`, `crop.mjs` | folha de contato; protótipo, app e diferença empilhados com zoom; recorte em tamanho real | `node scripts/visual/<ferramenta>.mjs … --dir=<relativo a .git/sdd>` |
+| `check-names.mjs`, `install-hooks.mjs` | a guarda de nomes e o hook (abaixo) | `bun run visual:names …` · `bun run visual:hooks [--remove]` |
+| `registry.mjs`, `registry-diff.mjs` | uma entrada do registro; os cabeçalhos entre commits (abaixo) | `node scripts/visual/registry.mjs …` · `node scripts/visual/registry-diff.mjs …` |
+
+Onde a tabela diz `--screen=<tela>`, vale também `--config=<arquivo relativo a .git/sdd>` (uma configuração de rascunho,
+fora do git). O `pairs`, o `measure`, o `probe` e o `interact` semeiam o estado de cada par antes de abrir o app (o
+`measure --so-proto` não abre o app nem semeia); o `audit` usa o estado que estiver no banco (semeie `geral:rico` antes).
+O `visual:proto` lê os avatares do `.git/sdd/visual-db/avatars.json` (`bun run visual:seed avatars`).
+
+**Configuração de tela:** `scripts/visual/screens/<tela>.mjs`, um `export default` validado por `validateScreen`
+(`test/visual/screens.test.ts` valida todas e confere cada `seed` em `STATES`), com os estados, o `patch` e as `masks`
+do que depende do agora, as regiões e a lista `audit`. Sem nenhum nome: o que identifica pessoa mora no mapa de trocas,
+fora do git. Cada branch acrescenta `seed/states/<tela>.ts` e o registra em `seed/states/index.ts`. Os passos de
+interação (`steps.mjs`): `click`, `hover`, `focus`, `tab`, `press`, `fill`, `drag`, `wait`, `waitFor`, `failRequests`,
+`restoreRequests` e `sample`; a Server Action é `{ method: "POST", header: "next-action" }`.
+
+**`check-names` e o hook** (spec §7):
+
+- **A lista** (`.git/sdd/nomes-proibidos.txt`): uma entrada por linha; linha vazia e `#` não contam; `!<frase>` é
+  permitida (sai do texto antes da busca: para a pessoa fictícia que contém um nome da lista). A busca ignora caixa e
+  acento; palavra e frase casam só inteiras; e-mail (tem `@`) casa como trecho. Entram os nomes e e-mails do protótipo e
+  das screenshots **e os textos operacionais** (descrições, frases, observações, itens e destinos próprios); a palavra
+  genérica do domínio que já está no código (setor, ULD, pátio) fica de fora.
+- **Os modos:** `--staged` (linhas acrescentadas e caminhos de `git diff --cached`: o `pre-commit`), `--range=<a>...<b>`
+  (o diff da branch e as mensagens de `git log <a>..<b>`: o portão, `--range=main...HEAD`) e `--file=<caminho>` (o
+  arquivo inteiro, ex.: uma cópia do protótipo).
+- **A saída** é `arquivo:linha — termo nº N da lista (linha L)`, `caminho nº K do diff — …` ou `mensagem do commit
+  <sha>, linha L — …`: **nunca o termo**, e o caminho que contém um termo vira o número dele. Códigos: 0 limpo, 1 achou,
+  2 lista ausente ou vazia ou uso errado (a mensagem diz como criar a lista ou tirar o hook). Falso positivo vira uma
+  linha `!<frase>`.
+- **O hook:** `bun run visual:hooks` grava em `git rev-parse --git-path hooks/pre-commit` (respeita o `core.hooksPath`)
+  o script `exec node scripts/visual/check-names.mjs --staged`, marcado com `# closery:check-names`; regravar é
+  idempotente; um `pre-commit` sem a marca é recusado (código 1) e fica para juntar à mão; `--remove` apaga só o nosso.
+  Um achado é texto a trocar, nunca hook a contornar.
+- **Branch sem `scripts/visual/`** (uma branch antiga, ou a `main` antes do merge do PR B): o hook não acha o script e
+  recusa o commit. Tire o hook antes de trocar para ela (`bun run visual:hooks --remove`) e reinstale ao voltar.
+- **Testes:** `test/visual/names.test.ts` e `test/visual/installHooks.test.ts`.
+
+**O registro:** `node scripts/visual/registry.mjs <Componente> historico "<frase>"` acrescenta a frase ao fim do
+`Histórico` da entrada; `… <Componente> troca "<de>" "<para>"` troca um trecho que aparece uma vez só na entrada; os dois
+recusam sumir ou criar um cabeçalho `###`. `node scripts/visual/registry-diff.mjs <base> [head]` compara os `###` do
+`ui-registry.md` e os `####` do `pendencias.md` entre dois commits e sai com 1 se algum sumiu (um título renomeado
+aparece como SUMIU e NOVO): é a conferência de toda revisão por tarefa. Teste: `test/visual/docs.test.ts`.
+
 ## Como adicionar uma biblioteca nova
 
 1. Justifique (o que resolve que o stack atual não resolve?) — YAGNI.
