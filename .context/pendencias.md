@@ -20,7 +20,7 @@
 
 **Severidade:** 🔴 Crítico · 🟠 Alto · 🟡 Médio · ⚪ Baixo (o emoji do título é só severidade).
 
-**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P119.**
+**Ids:** `P<N>` em sequência, nunca renumerados. **Próximo id livre: P120.**
 
 ```markdown
 #### P999 — Título que nomeia o defeito, não a área 🟠
@@ -155,6 +155,7 @@
 | P116 | A memória de 2 s do SectorColorFade se arma em qualquer desmontagem | ⚪ | Aberto, não triado |
 | P117 | Testes e sondas do PR B que provam menos do que dizem | ⚪ | Aberto, não triado |
 | P118 | A skill handoff-visual, os modelos e o library-docs §23 divergem das regras em pontos de texto | ⚪ | Aberto, não triado |
+| P119 | O guarda de hidratação reprova o /dashboard às vezes, com um id do gráfico de estoque gerado no cliente | 🟡 | Aberto, não triado |
 
 ---
 
@@ -803,6 +804,13 @@
 **Arquivos:** `.claude/skills/handoff-visual/SKILL.md` · `.claude/skills/handoff-visual/templates/review-brief.md` · `templates/global-constraints.md` · `templates/task-brief.md` · `templates/plan-contract.md` · `.context/library-docs.md` (§22 e §23) · `test/visual/screens.test.ts`
 **Impacto:** quem planejar a branch C pelos modelos copia o erro. O `review-brief.md` sugere que os guardas moram em `src/app/` ("`bunx vitest run src/app/rawColors.test.ts` etc.", mas o `uiRegistryDoc` e o `pendenciasDoc` moram em `test/`) e não lista o `motionUsage.test.ts` nem as conferências do Motion (ramo reduzido testado, nada na carga, só tokens). O `global-constraints.md` diz que o movimento reduzido "desliga as animações", contra o `ui-rules.md §9` (no máximo um fade curto). O `task-brief.md` e o `plan-contract.md` fixam o trailer de um modelo, e a Global Constraint diz "o modelo que implementou". O `plan-contract.md` tem um E2E só, no fim das tarefas, e a legibilidade antes do pixel, contra a ordem da skill (E2E depois da fundação, na metade e antes dos passes; pixel na Etapa 5, legibilidade na 6). A skill põe o rascunho da configuração de tela em `.git/sdd/visual-<slug>/screen.mjs` e a versão em `scripts/visual/screens/<slug>.mjs` sem o passo que promove um no outro nem o registro do `seed/states/<tela>.ts` no `index.ts`; o `screens.test.ts` importa as três configurações pelo nome, e o `library-docs.md §22` diz que ele valida todas. No `library-docs.md §23`, o `useReducedMotion` do Motion não lê "uma vez por módulo" (também assina o `change`; a conclusão sobre o stub continua certa), e falta dizer o que o `whileTap` muda no teclado (a revisão da M2 apontou; conferir na fonte antes de escrever).
 **Correção:** — (opção: um commit de texto antes da branch C, com o `skillHandoffVisual.test.ts` verde, e o `screens.test.ts` lendo a pasta `scripts/visual/screens/`)
+**Registrado em:** 2026-11-28
+
+#### P119 — O guarda de hidratação reprova o /dashboard às vezes, com um id do gráfico de estoque gerado no cliente 🟡
+**Estado:** Aberto, não triado
+**Arquivos:** `e2e/hydration.spec.ts` (caso b, `/dashboard`) · `src/components/dashboard/StockTrendChart.tsx` · `src/components/ui/chart.tsx`
+**Impacto:** o `test:e2e` pode ficar vermelho sem mudança no código. No CI, o `retries: 1` costuma esconder a falha. Num `bun run test:e2e` completo (2026-11-28, `7548fd6`), o caso (b) do `hydration.spec.ts` reprovou o `/dashboard` com `id gerado no cliente: recharts-line-_r_0_`. Os outros 56 casos passaram. Depois rodei de novo `auth`, `cadastros`, `dashboard` e `hydration`, com os mesmos dados antes da hidratação, e os 23 casos passaram. O id tem o formato do cliente (`_r_`), e o contador está no 0. O jeito sugere uma montagem só no cliente dentro do `Line` do Recharts, que aparece ou não antes da foto do DOM conforme o tempo. Não é hidratação com valor diferente do servidor. A causa não foi isolada. O log está em `.git/sdd/processo/e2e-full-switcher.log`.
+**Correção:** —
 **Registrado em:** 2026-11-28
 
 ## 2. Triado, plano pronto
