@@ -104,7 +104,25 @@ para reimprimir). Piso nunca se afrouxa: reprovou, ajuste o token.
 | `destructive` sobre o fundo do botão em repouso (`/10` claro, `/15` escuro), composto em `background` · `card` · rodapé | 5,10 · 5,72 · 5,18 | 6,09 · 5,24 · 4,85 |
 | `destructive` sobre o fundo do botão no hover (`/15` claro, `/18` escuro), composto em `background` · `card` · rodapé | 4,63 · 5,19 · 4,71 | 5,71 · 4,92 · 4,56 |
 
-Rodapé = `bg-accent/50` do `DialogFooter` e do `CardFooter` composto no popover; o hover escuro do botão `destructive` caiu de `/20` para `/18` porque sobre o rodapé o `/20` media 4,38:1 (T3 do processo visual, 2026-11-27).
+Rodapé = `bg-accent/50` do `DialogFooter` (composto no popover) e do `CardFooter` (no card), com o alfa lido da classe de cada um (P109, 2026-11-28); o hover escuro do botão `destructive` caiu de `/20` para `/18` porque sobre o rodapé o `/20` media 4,38:1 (T3 do processo visual, 2026-11-27).
+
+### Fundos de estado (piso de perceptibilidade ≥ 1,1:1)
+
+Razão entre o fundo com o estado e o de repouso (ou entre o rodapé e o corpo), com o token e o alfa lidos das
+classes que cada componente renderiza. O piso (`STATE_MIN`, 1,1:1) é escolha de desenho do P109, não número da
+WCAG. Marcado com \* = hoje abaixo do piso, listado no guarda (`belowFloor`) e no P109 (troca em aberto).
+
+| Fundo de estado | Claro | Escuro |
+|---|---|---|
+| `Button` `outline` no hover · aberto, dentro de cartão | 1,09\* · 1,09\* | 1,10 · 1,03\* |
+| `Button` `outline` no hover, sobre o rodapé do `DialogFooter` | 1,09\* | 1,10 |
+| `Button` e `Badge` `ghost` no hover, dentro de cartão · sobre a página | 1,23 · 1,09\* | 1,08\* · 1,15 |
+| `Button` `ghost` no hover, sobre o rodapé do `CardFooter` | 1,11 | 1,04\* |
+| rodapé do `CardFooter` e do `DialogFooter` contra o corpo | 1,11 | 1,08\* |
+| linha da tabela e rótulo com campo no hover, dentro de cartão · sobre a página | 1,11 · 1,05\* | 1,08\* · 1,15 |
+| linha do `BarList`, `StatLink` e cartão da `AdminOverview` no hover | 1,23 | 1,18 |
+| trilho do `BarList` contra a linha, em repouso e no hover | 1,23 | 1,18 |
+| "Agora não" do `PasskeyOffer` no hover, sobre o rodapé (hover local no escuro) | 1,11 | 1,26 |
 
 | Par fixo (iguais nos dois temas) | Contraste |
 |---|---|

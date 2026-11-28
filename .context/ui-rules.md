@@ -124,6 +124,13 @@ Valores em `ui-tokens.md`; a decisão e os desvios no `architecture.md §10` (20
 - **Contraste medido sobre cada fundo real e em cada estado.** Texto ≥ 4,5:1 e indicador de estado
   ≥ 3:1, sobre o fundo onde a peça realmente fica (página, card, popover, cada pastel) e em repouso e
   hover, com o translúcido composto sobre a superfície. O guarda é `src/app/themeContrast.test.ts`.
+- **O fundo de estado se separa do repouso: ≥ 1,1:1** (`STATE_MIN`, piso de perceptibilidade, escolha
+  de desenho do P109). Vale para hover, aberto e rodapé, e para o que fica dentro de algo que ganha
+  estado: um `accent` dentro de uma linha com hover `accent` (o trilho do `BarList`) ou um `ghost`
+  sobre o rodapé `accent/50` (o "Agora não" do `PasskeyOffer`) pede um estado local, medido. O guarda
+  lê o token e o alfa das classes que o componente renderiza, nunca de número escrito à mão; os casos
+  que hoje ficam abaixo do piso estão listados nele (`belowFloor`) e no P109, e um caso novo abaixo
+  falha.
 - **Valor fino é do protótipo.** Onde a spec e o protótipo divergem num padding, raio ou altura de
   linha, vale o protótipo (por exemplo, `leading-[normal]` onde ele não declara `line-height`).
 
