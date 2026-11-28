@@ -107,7 +107,7 @@ Saída: nenhuma decisão em aberto que mude a spec.
   setor inativo, "Todos"); os campos de dados; a lista de pares, com as máscaras do que depende do agora, os estados de
   interação e de falha (com os passos de cada um) e a terceira largura; as pendências da linha da branch, com o que
   cada uma ganha.
-- Segmento novo de primeiro nível em `src/app/(app)` ganha o espelho no slot `@detalhe` (`library-docs.md §1`).
+- Página nova em `src/app/(app)` ganha a página nula do slot `@detalhe` no mesmo caminho, com os mesmos nomes de parâmetro, e o slot nunca ganha catch-all (`library-docs.md §1` e `§14`).
 - Revisão por um Opus contra o README, o mapa e as regras; o dono aprova; commit `docs(spec): …`.
 
 Saída: a spec commitada e aprovada pelo dono.
@@ -253,7 +253,7 @@ Saída: o PR aberto com o CI verde e o link entregue ao dono.
 | Pouca memória; processos ociosos derrubados; Vitest em partes | Regras da máquina; Etapas 4, 5 e 10 |
 | O Chromium não abre pelo Bun no Windows | Regras da máquina; ferramentas de navegador em `.mjs` com `node` |
 | Ambiente visual isolado (54332/3202), banco do dono intocado | Etapa 5; `config.mjs` recusa outra porta e outro host |
-| Página fora de `(app)` dava 404 no `next dev` por causa do slot `@detalhe` | o espelho por segmento (`library-docs.md §1`); segmento novo ganha o espelho (Etapa 2) |
+| Página fora de `(app)` dava 404 no `next dev` por causa do slot `@detalhe`; com `[...rest]` no slot, o build de produção entrava num laço de prefetch | o espelho exato (`library-docs.md §1` e `§14`); página nova ganha o espelho no mesmo caminho, sem catch-all (Etapa 2) |
 | Protótipo com cara de gente real | Etapa 0.3 (lista, hook, cópias inventadas); Etapa 10 (`--range`); contrato do plano |
 | A Satoshi fora do git e de artefato público | Global Constraints; Etapa 10 (`git ls-files`) |
 | `<script>` em componente client acima de `Suspense` duplicava o conteúdo | Global Constraints; revisão por tarefa; `e2e/hydration.spec.ts` |

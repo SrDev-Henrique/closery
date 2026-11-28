@@ -6,6 +6,16 @@
  * `@detalhe/[...catchAll]` normaliza para `/[...catchAll]`, é pendurado em toda rota, e a poda
  * estrita apaga a rota inteira quando o `children` de `(app)` não tem página nem `default` nela.
  *
+ * O espelho é **exato** (grupo 4): cada página do `children` de `(app)` tem a página nula do slot no
+ * mesmo caminho, com os mesmos nomes de parâmetro, e o slot não tem catch-all. Com o `[...rest]` do
+ * primeiro espelho, o build de produção entrava num laço de prefetch (cerca de 50 pedidos por segundo,
+ * cada um uma renderização no servidor) no segundo link para o mesmo caminho com outra busca
+ * (`/passagens/nova?…`, `/admin/itens?setor=…`): a previsão de rota do cliente do Next 16.4.6
+ * (`segment-cache/optimistic-routes.js`, `reifyRouteTree`) só resolve os parâmetros do ramo que casou
+ * a URL, então o catch-all do slot ficava sem valor e a chave do segmento nunca batia com a resposta.
+ * O antigo `@detalhe/[...catchAll]` fazia o mesmo em `/passagens/<id>`. A prova é de navegador
+ * (`e2e/prefetch.spec.ts`); aqui fica a regra.
+ *
  * Os dois módulos são internos do Next (caminhos fixados na 16.4.6, `library-docs.md §1`). Se uma
  * atualização os mover, o import quebra aqui com a mensagem do Node: atualize o caminho. Se o
  * comportamento mudar, o grupo 5 (a causa, numa árvore sintética) avisa.
@@ -116,7 +126,10 @@ function routesWithoutSlotPage(routes: Record<string, string[]>): string[] {
     .sort();
 }
 
-/** O espelho que a árvore pede: por segmento de primeiro nível de `(app)` com página. */
+/**
+ * O espelho que a árvore pede: para cada página do `children` de `(app)`, a do slot no mesmo
+ * caminho (`/(app)/passagens/[id]/page` pede `/(app)/@detalhe/passagens/[id]/page`).
+ */
 function expectedMirror(pages: readonly string[]): string[] {
   const mirror = new Set<string>();
   for (const page of pages) {
@@ -125,13 +138,16 @@ function expectedMirror(pages: readonly string[]): string[] {
     if (segments[0] !== "(app)" || segments.length < 3) continue;
     const segment = segments[1] ?? "";
     if (segment.startsWith("@") || segment.startsWith("(")) continue;
-    mirror.add(
-      segments.length === 3
-        ? `${SLOT}${segment}/page`
-        : `${SLOT}${segment}/[...rest]/page`,
-    );
+    mirror.add(`${SLOT}${segments.slice(1).join("/")}`);
   }
   return [...mirror].sort();
+}
+
+/** As páginas do slot com catch-all (`[...x]` ou `[[...x]]`) em qualquer nível. */
+function slotCatchAlls(pages: readonly string[]): string[] {
+  return pages
+    .filter((page) => page.startsWith(SLOT) && /\[\[?\.\.\./.test(page))
+    .sort();
 }
 
 /** As páginas do slot fora da raiz e da interceptada (o espelho que existe). */
@@ -157,17 +173,22 @@ const OUTSIDE_APP: Record<string, string[]> = {
   "/privacidade": ["/privacidade/page"],
 };
 
-/** O espelho de hoje (spec §4.5): a branch que criar um segmento acrescenta o dele. */
+/** O espelho de hoje (spec §4.5, emenda de 2026-11-28): a branch que criar uma página acrescenta a dela. */
 const MIRROR_TODAY = [
   `${SLOT}admin/page`,
-  `${SLOT}admin/[...rest]/page`,
+  `${SLOT}admin/destinos/page`,
+  `${SLOT}admin/equipe/page`,
+  `${SLOT}admin/itens/page`,
+  `${SLOT}admin/setores/page`,
+  `${SLOT}admin/turnos/page`,
   `${SLOT}bem-vindo/page`,
   `${SLOT}conta/page`,
   `${SLOT}dashboard/page`,
   `${SLOT}passagens/page`,
-  `${SLOT}passagens/[...rest]/page`,
+  `${SLOT}passagens/nova/page`,
+  `${SLOT}passagens/[id]/page`,
   `${SLOT}solicitacoes/page`,
-  `${SLOT}solicitacoes/[...rest]/page`,
+  `${SLOT}solicitacoes/[id]/page`,
 ];
 
 describe("listAppRouteFiles (a árvore como o Next a vê)", () => {
@@ -263,15 +284,20 @@ describe("a árvore real de src/app passa no validador estrito do Next", () => {
   });
 });
 
-describe("4. o espelho do @detalhe por segmento de (app)", () => {
-  it("cada segmento com página tem a página nula do slot; com subrota, também o [...rest]", () => {
+describe("4. o espelho exato do @detalhe", () => {
+  it("cada página de (app) tem a página nula do slot no mesmo caminho, e o slot não tem outra", () => {
     expect(actualMirror(tree.pages)).toEqual(expectedMirror(tree.pages));
   });
 
-  it("o espelho de hoje são as nove páginas da spec §4.5", () => {
+  it("o espelho de hoje são as 14 páginas da emenda da spec §4.5", () => {
     expect(expectedMirror(tree.pages)).toEqual(
       expect.arrayContaining(MIRROR_TODAY),
     );
+    expect(MIRROR_TODAY).toHaveLength(14);
+  });
+
+  it("o slot não tem catch-all em nenhum nível (o laço de prefetch do Next)", () => {
+    expect(slotCatchAlls(tree.pages)).toEqual([]);
   });
 
   it("toda rota do grupo (app) leva uma página do @detalhe que não é a interceptada (o Sheet fecha)", () => {
@@ -339,6 +365,31 @@ describe("5. a causa, documentada numa árvore sintética", () => {
     expect(result.unmatched).toEqual([]);
     expect(routesWithoutSlotPage(result.routes)).toEqual(["/relatorios"]);
     expect(actualMirror(missing)).not.toEqual(expectedMirror(missing));
+  });
+
+  it("espelho com [...rest] (o primeiro do PR B): o validador deixa passar, o grupo 4 reprova", () => {
+    const withRest = [
+      "/(app)/page",
+      "/(app)/@detalhe/page",
+      "/(app)/passagens/page",
+      "/(app)/passagens/nova/page",
+      "/(app)/@detalhe/passagens/page",
+      "/(app)/@detalhe/passagens/[...rest]/page",
+      "/(auth)/entrar/page",
+    ];
+    const result = validateRoutes(withRest, slotDefault);
+    expect(result.unmatched).toEqual([]);
+    expect(routesWithoutSlotPage(result.routes)).toEqual([]);
+    expect(result.routes["/passagens/nova"]).toContain(
+      "/(app)/@detalhe/passagens/[...rest]/page",
+    );
+    // O laço é do cliente (a previsão de rota), e o servidor não reclama: só a regra pega.
+    expect(slotCatchAlls(withRest)).toEqual([
+      "/(app)/@detalhe/passagens/[...rest]/page",
+    ]);
+    expect(actualMirror(withRest)).not.toEqual(expectedMirror(withRest));
+    expect(slotCatchAlls(["/(app)/@detalhe/a/[[...x]]/page"])).toHaveLength(1);
+    expect(slotCatchAlls(["/(app)/a/[...x]/page"])).toEqual([]);
   });
 
   it("espelho órfão (o segmento saiu e a página do slot ficou): o validador reprova", () => {

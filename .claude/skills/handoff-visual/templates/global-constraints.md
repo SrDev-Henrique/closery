@@ -39,7 +39,7 @@ Vão no cabeçalho do plano e em todo brief. Adapte as linhas marcadas com `<...
 - Foco por contorno, com `outline-none` na base, leva `focus-visible:outline-solid`. Foco, contraste e tamanho se
   provam por estilo computado (E2E, `measure` ou `probe`).
 - Contraste medido sobre cada fundo real da peça e nos estados hover, active e disabled.
-- Rota nova de primeiro nível em `src/app/(app)` ganha o espelho no slot `@detalhe` (`library-docs.md §1`).
+- Página nova em `src/app/(app)` ganha a página nula do slot `@detalhe` no mesmo caminho, com os mesmos nomes de parâmetro; nenhum catch-all no slot (`library-docs.md §1` e `§14`). Se for linkada com buscas diferentes, entra no `PATHS` do `e2e/prefetch.spec.ts`.
 
 ## Decisões tomadas na montagem do plano
 

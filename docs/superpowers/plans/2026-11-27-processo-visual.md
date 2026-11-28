@@ -43,7 +43,7 @@
 - `bg-muted` e `hover:bg-muted` nunca são fundo dentro de `card` (`accent`): `bg-muted` vira `bg-accent` com a mesma opacidade e a mesma variante (PB-D8); a única exceção é `src/components/solicitacoes/RequestColumn.tsx` `bg-muted/30`, com o motivo.
 - Foco, contraste e tamanho se provam por estilo computado, nunca só pela classe.
 - Sem hex cru nem classe de cor crua do Tailwind em `.tsx` (só tokens).
-- Rotas: não entram `(app)/default.tsx`, o slot `@detalhe` no layout raiz nem `deprecated.looseRouteMatching`; toda rota nova de primeiro nível em `(app)` ganha o espelho no slot (página nula e, se tiver subrotas, o `[...rest]`).
+- Rotas: não entram `(app)/default.tsx`, o slot `@detalhe` no layout raiz nem `deprecated.looseRouteMatching`; toda rota nova de primeiro nível em `(app)` ganha o espelho no slot (página nula e, se tiver subrotas, o `[...rest]`). **Emenda de 2026-11-28** (spec §4.5, revisão final): o espelho é exato, uma página nula do slot por página de `(app)`, no mesmo caminho e com os mesmos nomes de parâmetro, e o slot não tem catch-all em nenhum nível (o `[...rest]` fazia o build de produção entrar num laço de prefetch); as tarefas T1 e T10 ficaram como foram executadas, e valem o código, o `routeStructure.test.ts` e o `library-docs.md §14`.
 - Página nula do espelho: exatamente `export default function <Nome>() { return null; }` (pode ter comentário acima), sem import e sem `metadata`.
 - Nenhuma tela muda de layout; as únicas mudanças visíveis no app são os hovers e estados do §9 da spec e o movimento da emenda (§16, só na troca; em repouso nada muda).
 - Faixa do pixel (C1): página até o número do PR A **mais 0,02 ponto percentual**, sem passar de 0,11% (o menu aberto, de 0,22%); no pack, o cartão até 0,005%; cada par com a mesma altura nos dois lados.
@@ -20063,11 +20063,12 @@ branches C a G nasce com ele, olhando a variante da ArcUI (`library-docs.md §23
 
 ```markdown
 - **Solicitações (Fase 4; o slot mudou no PR B):** o detalhe rápido é o slot `@detalhe` do layout de `(app)`: além de
-  `default.tsx` e `page.tsx` (rota `/`), ele tem o **espelho por segmento**, uma página nula por segmento de primeiro
-  nível de `(app)` e um `[...rest]` onde há subrotas (`library-docs.md §14`). Segmento novo ganha o espelho no mesmo
-  commit, senão o Sheet fica aberto sobre a tela nova (o `routeStructure.test.ts` reprova). Nada de catch-all na raiz
-  do slot (o `next dev` dava 404 fora de `(app)`, P81) e **não** pode haver `(app)/default.tsx` (a URL desconhecida
-  deixaria de dar 404).
+  `default.tsx` e `page.tsx` (rota `/`), ele tem o **espelho exato**, uma página nula do slot para cada página de
+  `(app)`, no mesmo caminho e com os mesmos nomes de parâmetro (`library-docs.md §14`). Página nova ganha o espelho no
+  mesmo commit, senão o Sheet fica aberto sobre a tela nova (o `routeStructure.test.ts` reprova). Nenhum catch-all no
+  slot, em nenhum nível: na raiz, o `next dev` dava 404 fora de `(app)` (P81); abaixo dela, o build de produção entra
+  num laço de prefetch no segundo link para o mesmo caminho com outra busca (`e2e/prefetch.spec.ts`). E **não** pode
+  haver `(app)/default.tsx` (a URL desconhecida deixaria de dar 404).
 ```
 
 - [ ] **Step 7: Conferir e commitar os documentos**

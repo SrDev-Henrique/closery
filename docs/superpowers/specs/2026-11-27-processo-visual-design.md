@@ -148,6 +148,20 @@ confere), sem import e sem `metadata`. Ficam como estão `@detalhe/default.tsx`,
 subrotas, o `[...rest]`). Sem ele, o Sheet ficaria aberto sobre a tela nova numa navegação no cliente. O guarda (§4.6)
 reprova o esquecimento. As branches C a G não criam segmento novo (`/passagens`, `/solicitacoes` e `/dashboard` já existem).
 
+**Emenda de 2026-11-28 (revisão final do PR B): o espelho é exato, sem catch-all.** No build de produção, os três
+`[...rest]` da tabela acima faziam o segundo link para o mesmo caminho com outra busca entrar num laço de prefetch: cerca
+de 50 pedidos por segundo, cada um uma renderização no servidor. Os casos eram os "Entregar turno" do histórico em
+`/passagens` e os `?setor=` do `/admin/itens`. A causa é a previsão de rota do cliente do Next 16.4.6 com
+`partialPrefetching`. A segunda URL reaproveita a árvore da primeira e só resolve os parâmetros do ramo que casou a URL;
+o catch-all do slot fica sem valor, e a chave do segmento nunca bate com a resposta. No A/B com a `ad49dc3`, o
+`@detalhe/[...catchAll]` antigo fazia o mesmo entre duas `/passagens/<id>`. Os `[...rest]` saem, e entra uma página nula
+do slot por página de `(app)`, no mesmo caminho e com os mesmos nomes de parâmetro:
+`@detalhe/admin/{destinos,equipe,itens,setores,turnos}/page.tsx`, `@detalhe/passagens/nova/page.tsx`,
+`@detalhe/passagens/[id]/page.tsx` e `@detalhe/solicitacoes/[id]/page.tsx`, ao lado da interceptada. São 14 páginas
+nulas. A regra passa a ser: **toda página nova de `(app)` ganha a página nula do slot no mesmo caminho, e o slot não tem
+catch-all em nenhum nível**. O guarda (§4.6, item 4) confere as duas coisas, e o `e2e/prefetch.spec.ts` prova a ausência
+do laço no build de produção.
+
 ### 4.6 Guardas
 
 - **`src/app/routeStructure.test.ts` (novo).** Monta a lista de páginas e de `default`s de `src/app` como o Next as vê
@@ -160,7 +174,8 @@ reprova o esquecimento. As branches C a G não criam segmento novo (`/passagens`
   3. nenhuma rota começa com `/[...` (URL desconhecida continua no 404 da raiz);
   4. o espelho: todo segmento de primeiro nível de `(app)` com `page.tsx` tem `@detalhe/<segmento>/page.tsx`; todo
      segmento com página mais funda tem `@detalhe/<segmento>/[...rest]/page.tsx`; não existem `@detalhe/[...catchAll]` nem
-     `(app)/default.tsx`;
+     `(app)/default.tsx` (emenda de 2026-11-28, §4.5: toda página de `(app)` tem a do slot no mesmo caminho, e o slot não
+     tem catch-all em nenhum nível);
   5. **a causa, documentada em teste:** com uma árvore sintética igual à de antes (catch-all na raiz do slot e uma página
      num grupo irmão), o validador reprova a página do grupo irmão; com `(app)/default.tsx` acrescentado, aparece a rota
      `/[...catchAll]`. Se um dia o Next mudar o validador, este caso avisa.

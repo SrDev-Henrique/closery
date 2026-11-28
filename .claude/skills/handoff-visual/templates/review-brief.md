@@ -37,7 +37,7 @@ revisão do código, `git show` e `git diff`).
 - `leading-[normal]` onde o protótipo não declara `line-height`; pílula e selo sem borda transparente.
 - Fundo de estado dentro de `card` é `accent`, nunca `bg-muted` nem `hover:bg-muted`.
 - Componente visual mudado tem `Histórico` datado no `ui-registry.md` no mesmo commit.
-- Segmento novo em `src/app/(app)` tem o espelho no `@detalhe`.
+- Página nova em `src/app/(app)` tem a página nula do `@detalhe` no mesmo caminho, e o slot não tem catch-all.
 - Nenhum nome, e-mail ou texto do protótipo no diff (o `pre-commit` confere; desconfie de texto que não está no
   vocabulário de `scripts/visual/vocabulary.mjs`).
 
