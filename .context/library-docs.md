@@ -383,6 +383,11 @@
   mensagem (uma rede que nunca para é o laço do `e2e/prefetch.spec.ts`). Nas
   telas de auth o título é o `CardTitle` com `role="heading"` (0 `h1`). Componente que só existe no cliente de propósito
   e gera `_r_` entra na lista fechada `CLIENT_ONLY_IDS` do spec (página, seletor, motivo), nunca num filtro genérico.
+  A entrada que não acha mais um id do cliente reprova, então a página dela tem que mostrar o elemento em toda rodada:
+  o próprio caso semeia o dado e fixa o setor na URL (no E2E os nomes de setor são sorteados, e sem `?setor=` o admin
+  abre o primeiro em ordem alfabética). Hoje a lista tem uma entrada, o gráfico do Estoque: o recharts 3.8 não
+  renderiza o `<svg>` no servidor (o tamanho do gráfico no store começa em 0 e só é gravado num `useEffect`), então o
+  `<Line>` monta depois da hidratação e o id dele é sempre `_r_` (P119).
   Página principal nova entra na tabela do spec, com o `h1` conferido no código.
 - **`e2e/prefetch.spec.ts` (PR B, laço de prefetch).** Logado como admin, pede pelo router
   (`window.next.router.prefetch`) duas URLs do mesmo caminho com buscas diferentes, uma depois da outra, para cada rota
