@@ -4,9 +4,11 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  CHECK_NAMES_SCRIPT,
   HOOK_MARKER,
   hookScript,
   isOurHook,
+  MISSING_SCRIPT_WARNING,
 } from "../../scripts/visual/install-hooks.mjs";
 import { createTempRepo, type TempRepo } from "./tempRepo";
 
@@ -16,12 +18,28 @@ import { createTempRepo, type TempRepo } from "./tempRepo";
 const FOREIGN_HOOK = "#!/bin/sh\nexec npx lint-staged\n";
 
 describe("hookScript", () => {
-  it("é o script da spec §7, com LF e a marca na segunda linha", () => {
+  it("é o script da spec §7 com o desvio da branch sem o check-names, com LF e a marca na segunda linha", () => {
     expect(HOOK_MARKER).toBe("# closery:check-names");
+    expect(CHECK_NAMES_SCRIPT).toBe("scripts/visual/check-names.mjs");
     expect(hookScript()).toBe(
-      "#!/bin/sh\n# closery:check-names (instalado por scripts/visual/install-hooks.mjs)\nexec node scripts/visual/check-names.mjs --staged\n",
+      [
+        "#!/bin/sh",
+        "# closery:check-names (instalado por scripts/visual/install-hooks.mjs)",
+        "if [ ! -f scripts/visual/check-names.mjs ]; then",
+        `  echo "${MISSING_SCRIPT_WARNING}" >&2`,
+        "  exit 0",
+        "fi",
+        "exec node scripts/visual/check-names.mjs --staged",
+        "",
+      ].join("\n"),
     );
     expect(hookScript()).not.toContain("\r");
+  });
+
+  it("o aviso nomeia o script e não tem nada que o sh expanda dentro das aspas", () => {
+    expect(MISSING_SCRIPT_WARNING).toContain("aviso");
+    expect(MISSING_SCRIPT_WARNING).toContain(CHECK_NAMES_SCRIPT);
+    expect(MISSING_SCRIPT_WARNING).not.toMatch(/["$`\\\n]/);
   });
 });
 
@@ -92,6 +110,39 @@ describe("install-hooks.mjs (CLI)", () => {
     repo.write(join(".git", "hooks", "pre-commit"), FOREIGN_HOOK);
     expect(repo.run("install-hooks.mjs", ["--remove"]).status).toBe(1);
     expect(readFileSync(defaultHook(), "utf8")).toBe(FOREIGN_HOOK);
+  });
+
+  it("o hook instalado deixa o commit passar com o aviso numa branch sem o check-names", () => {
+    expect(repo.run("install-hooks.mjs").status).toBe(0);
+    repo.write("leia.txt", "texto\n");
+    repo.git("add", "leia.txt");
+    const commit = repo.gitResult("commit", "-q", "-m", "primeiro");
+    expect(commit.status).toBe(0);
+    expect(commit.stderr).toContain(MISSING_SCRIPT_WARNING);
+    expect(repo.git("log", "--format=%s").trim()).toBe("primeiro");
+  });
+
+  it("com o check-names na branch, o hook roda --staged e o código dele decide o commit", () => {
+    expect(repo.run("install-hooks.mjs").status).toBe(0);
+    const fakeCheck = (code: number) =>
+      repo.write(
+        CHECK_NAMES_SCRIPT,
+        `console.error("falso:" + process.argv.slice(2).join(" "));\nprocess.exit(${code});\n`,
+      );
+    fakeCheck(1);
+    repo.write("leia.txt", "texto\n");
+    repo.git("add", "leia.txt");
+    const refused = repo.gitResult("commit", "-q", "-m", "recusado");
+    expect(refused.status).not.toBe(0);
+    expect(refused.stderr).toContain("falso:--staged");
+    expect(refused.stderr).not.toContain(MISSING_SCRIPT_WARNING);
+    expect(repo.gitResult("rev-parse", "--verify", "HEAD").status).not.toBe(0);
+    fakeCheck(0);
+    const passed = repo.gitResult("commit", "-q", "-m", "aceito");
+    expect(passed.status).toBe(0);
+    expect(passed.stderr).toContain("falso:--staged");
+    expect(passed.stderr).not.toContain(MISSING_SCRIPT_WARNING);
+    expect(repo.git("log", "--format=%s").trim()).toBe("aceito");
   });
 
   it.each([

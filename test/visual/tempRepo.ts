@@ -22,6 +22,8 @@ export type TempRepo = {
   /** a árvore de trabalho */
   dir: string;
   git: (...args: string[]) => string;
+  /** roda o git sem lançar: devolve o código, a saída e o erro (ex.: um commit que o hook recusa) */
+  gitResult: (...args: string[]) => CliResult;
   write: (relative: string, content: string) => void;
   /** roda `node scripts/visual/<script>` com a raiz do repositório temporário como cwd */
   run: (script: string, args?: string[]) => CliResult;
@@ -52,6 +54,18 @@ export function createTempRepo(): TempRepo {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
     });
+  const gitResult = (...args: string[]): CliResult => {
+    const result = spawnSync("git", args, {
+      cwd: dir,
+      env,
+      encoding: "utf8",
+    });
+    return {
+      status: result.status,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    };
+  };
   const write = (relative: string, content: string) => {
     const file = join(dir, relative);
     mkdirSync(dirname(file), { recursive: true });
@@ -73,6 +87,7 @@ export function createTempRepo(): TempRepo {
   return {
     dir,
     git,
+    gitResult,
     write,
     run,
     remove: () => rmSync(base, { recursive: true, force: true }),

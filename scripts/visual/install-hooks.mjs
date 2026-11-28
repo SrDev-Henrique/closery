@@ -4,6 +4,8 @@
 // Grava só o arquivo de `git rev-parse --git-path hooks/pre-commit` (respeita o
 // core.hooksPath; fora da árvore de trabalho): é a exceção declarada à regra do
 // .git/sdd. Um pre-commit que não é deste projeto nunca é tocado (código 1).
+// Numa branch sem scripts/visual/check-names.mjs (uma branch antiga, ou a main
+// antes do merge do PR B) o hook deixa o commit passar com um aviso.
 import { execFileSync } from "node:child_process";
 import {
   chmodSync,
@@ -20,17 +22,28 @@ import { parseCliArgs } from "./config.mjs";
 
 export const HOOK_MARKER = "# closery:check-names";
 
+/** O script que o hook roda, relativo à raiz da árvore (o cwd de um hook do git). */
+export const CHECK_NAMES_SCRIPT = "scripts/visual/check-names.mjs";
+
+/** O aviso do hook numa branch que não tem o {@link CHECK_NAMES_SCRIPT}. */
+export const MISSING_SCRIPT_WARNING = `aviso (closery:check-names): esta branch não tem ${CHECK_NAMES_SCRIPT}; o commit segue sem a conferência da lista de nomes.`;
+
 const USAGE = "Uso: node scripts/visual/install-hooks.mjs [--remove]";
 
 /**
- * O pre-commit, com LF (o sh do Git para Windows não aceita CRLF).
+ * O pre-commit, com LF (o sh do Git para Windows não aceita CRLF). Sem o
+ * check-names na branch, avisa e sai com 0; com ele, o código é o do check-names.
  * @returns {string}
  */
 export function hookScript() {
   return [
     "#!/bin/sh",
     `${HOOK_MARKER} (instalado por scripts/visual/install-hooks.mjs)`,
-    "exec node scripts/visual/check-names.mjs --staged",
+    `if [ ! -f ${CHECK_NAMES_SCRIPT} ]; then`,
+    `  echo "${MISSING_SCRIPT_WARNING}" >&2`,
+    "  exit 0",
+    "fi",
+    `exec node ${CHECK_NAMES_SCRIPT} --staged`,
     "",
   ].join("\n");
 }
@@ -89,7 +102,7 @@ function main(argv) {
   }
   if (current !== null && !isOurHook(current)) {
     console.error(
-      `já existe um pre-commit que não é deste projeto em ${file}; nada foi gravado. Junte à mão: acrescente a linha "node scripts/visual/check-names.mjs --staged || exit 1" ao hook que existe.`,
+      `já existe um pre-commit que não é deste projeto em ${file}; nada foi gravado. Junte à mão: acrescente a linha "[ ! -f ${CHECK_NAMES_SCRIPT} ] || node ${CHECK_NAMES_SCRIPT} --staged || exit 1" ao hook que existe.`,
     );
     return 1;
   }
