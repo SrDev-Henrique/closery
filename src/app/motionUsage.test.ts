@@ -145,10 +145,16 @@ describe("motionUsage", () => {
     expect(violations).toEqual([]);
   });
 
-  it("os arquivos que usam o Motion: a fundação (M1)", () => {
+  it("os componentes que se mexem usam o Motion (M1 e M2)", () => {
     expect(motionFiles).toEqual(
       expect.arrayContaining([
+        "components/app-shell/ThemeSwitch.tsx",
         "components/motion/MotionProvider.tsx",
+        "components/motion/PressButton.tsx",
+        "components/passagens/SectorColorFade.tsx",
+        "components/passagens/SectorPicker.tsx",
+        "components/ui/sheet.tsx",
+        "components/ui/tooltip.tsx",
         "lib/motion.ts",
       ]),
     );

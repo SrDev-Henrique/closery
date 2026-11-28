@@ -2,11 +2,18 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { redirect } from "next/navigation";
 import { Component, type ReactNode } from "react";
+import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ALL_SECTORS } from "@/features/handovers/limits";
 import { SECTOR_COLOR_BG } from "@/features/sectors/colors";
 
+import {
+  MotionTree,
+  recordStyle,
+  stubReducedMotion,
+  translateOf,
+} from "../../../test/motion";
 import { SectorPicker } from "./SectorPicker";
 
 const mocks = vi.hoisted(() => ({
@@ -114,14 +121,13 @@ describe("SectorPicker", () => {
     ).toBe("3");
   });
 
-  it("o thumb desliza sem animação para quem pede menos movimento", () => {
+  it("o thumb não tem transição de CSS (o deslize é do Motion) e usa os tokens de fundo e sombra", () => {
     render(
       <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
     );
 
     const thumb = document.querySelector("[data-slot=sector-picker-thumb]");
-    expect(thumb).toHaveClass("motion-reduce:transition-none");
-    expect(thumb).toHaveClass("transition-[left]");
+    expect(thumb?.className).not.toMatch(/transition|duration-|ease-\[/);
     // A sombra é o token da Task 1, nunca rgba() no .tsx.
     expect(thumb).toHaveClass("shadow-thumb", "bg-thumb");
   });
@@ -547,8 +553,11 @@ describe("SectorPicker", () => {
       overflow(1000, 400);
       layout({ railLeft: 10, scrollLeft: 0, segment: 104 });
       const { scrollTo } = spies();
+      // Com os ouvintes: o usePrefersReducedMotion do thumb e o Motion também leem o matchMedia.
       const matchMedia = vi.fn((query: string) => ({
         matches: query === "(prefers-reduced-motion: reduce)",
+        addEventListener: () => {},
+        removeEventListener: () => {},
       }));
       vi.stubGlobal("matchMedia", matchMedia);
       render(
@@ -690,5 +699,98 @@ describe("SectorPicker", () => {
     for (const item of screen.getAllByRole("radio")) {
       expect(item).toHaveClass("max-md:h-11");
     }
+  });
+});
+
+// O deslize do thumb (emenda do Motion): o repouso continua no CSS (`--i`, `--n`); na troca o thumb
+// volta para onde estava (x = a diferença de índice vezes a largura dele) e a mola o leva a 0. O jsdom
+// não mede: o thumb tem 100px.
+describe("SectorPicker — o thumb desliza (Motion)", () => {
+  const offsetWidth = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "offsetWidth",
+  );
+  let restoreMedia: () => void = () => {};
+
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.dataset.slot === "sector-picker-thumb" ? 100 : 0;
+      },
+    });
+  });
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+    if (offsetWidth)
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", offsetWidth);
+  });
+
+  function picker(selectedId: string) {
+    return (
+      <MotionTree>
+        <SectorPicker
+          sectors={[ULD, CARGA, OPERACOES]}
+          selectedId={selectedId}
+          path="/"
+        />
+      </MotionTree>
+    );
+  }
+
+  function thumb(): HTMLElement {
+    const element = document.querySelector<HTMLElement>(
+      "[data-slot=sector-picker-thumb]",
+    );
+    if (!element) throw new Error("thumb ausente");
+    return element;
+  }
+
+  it("no servidor o thumb sai no lugar do CSS, sem deslocamento (nada anima na hidratação)", () => {
+    const html = renderToString(picker(OPERACOES.id));
+    expect(html).toMatch(/data-slot="sector-picker-thumb"[^>]*--i:2/);
+    expect(html).toMatch(/data-slot="sector-picker-thumb"[^>]*transform:none/);
+  });
+
+  it("trocar de setor: o CSS já põe o thumb no novo, ele parte de onde estava (-100px) e a mola o leva a 0", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(picker(ULD.id));
+
+    const seen = await recordStyle(thumb(), "transform", 500, () =>
+      rerender(picker(CARGA.id)),
+    );
+
+    expect(thumb().style.getPropertyValue("--i")).toBe("1");
+    const moved = seen
+      .slice(1)
+      .map((value) => translateOf(value, "X")?.value ?? 0);
+    expect(moved[0]).toBeLessThanOrEqual(-80);
+    expect(moved.some((value) => value > -80 && value < 0)).toBe(true);
+    await waitFor(() => expect(thumb().style.transform).toBe("none"));
+  });
+
+  it("com movimento reduzido o thumb vai direto: nunca ganha deslocamento", async () => {
+    restoreMedia = stubReducedMotion(true);
+    const { rerender } = render(picker(ULD.id));
+
+    const seen = await recordStyle(thumb(), "transform", 300, () =>
+      rerender(picker(OPERACOES.id)),
+    );
+
+    expect(seen).toEqual(["none"]);
+    expect(thumb().style.getPropertyValue("--i")).toBe("2");
+  });
+
+  it("o mesmo setor de novo não mexe o thumb", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(picker(CARGA.id));
+
+    const seen = await recordStyle(thumb(), "transform", 200, () =>
+      rerender(picker(CARGA.id)),
+    );
+
+    expect(seen).toEqual(["none"]);
   });
 });

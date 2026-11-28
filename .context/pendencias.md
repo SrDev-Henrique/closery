@@ -572,6 +572,7 @@
 **Impacto:** a spec §7 promete que o cartão "Passagem do meu turno" faz crossfade da cor quando o admin troca de setor. Como a troca remonta o cartão (P86), ele já nasce com a cor nova e a transição não tem de onde animar. A verificação visual não conferiu o crossfade nem a transição de cor na troca de tema (sem `disableTransitionOnChange`, as cores com transição mudam devagar). Sem efeito na operação.
 **Correção:** — (opção: conferir as duas no navegador; se o crossfade não roda, tirar a promessa da spec e do registro, ou manter o nó do cartão entre as trocas)
 **Registrado em:** 2026-11-27
+**Atualização (2026-11-27):** a troca de cor do cartão passou ao Motion na emenda do PR B (`SectorColorFade`): uma camada com a cor de antes some em 0,4 s, também quando o cartão remonta (a cor do último cartão vale por até 2 s), e troca na hora com movimento reduzido. Provada em `SectorColorFade.test.tsx` (troca no mesmo cartão e remontagem) e no Chromium (`e2e/motion.spec.ts`). Continua aberta: a transição de cor na troca de tema não foi conferida.
 
 #### P88 — Lista de Setores não mostra a cor de cada setor ⚪
 **Estado:** Aberto, não triado

@@ -340,10 +340,13 @@ describe("AppSidebar: drawer do celular", () => {
     expect(panelClasses).not.toContain("data-[side=left]:border-r");
     expect(panelClasses).toContain("data-[side=left]:shadow-drawer");
     expect(panel?.className ?? "").not.toMatch(/rgba?\(/);
-    expect(panelClasses).toContain("duration-[350ms]");
-    expect(panelClasses).toContain("motion-reduce:transition-none");
-    expect(panelClasses).toContain(
-      "data-[side=left]:data-starting-style:translate-x-[-105%]",
+    // O deslize é do Motion (SheetContent motionKind="drawer"): da borda
+    // (−105%), opaca, sem transição nem estado inicial de CSS (os dois
+    // correriam atrás do Motion). Sem a MotionTree, fica no primeiro quadro.
+    expect(panel?.style.transform).toBe("translateX(-105%)");
+    expect(panel?.style.opacity).toBe("1");
+    expect(panel?.className ?? "").not.toMatch(
+      /duration-|ease-\[|data-starting-style|data-ending-style|motion-reduce/,
     );
 
     const scrimClasses = (scrim?.className ?? "").split(" ");

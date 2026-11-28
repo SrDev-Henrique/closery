@@ -67,15 +67,28 @@ describe("buttonVariants — variantes novas só com tokens", () => {
     );
   });
 
-  it("on-pastel usa tinta e texto fixos e encolhe ao apertar", () => {
+  it("on-pastel usa tinta e texto fixos e, no <Link> cru, encolhe ao apertar pelo CSS", () => {
     const classes = classesOf({ variant: "on-pastel" });
     expect(classes).toEqual(
       expect.arrayContaining([
         "bg-on-pastel",
         "text-on-pastel-ink",
-        "active:scale-[.97]",
+        "active:not-data-[press]:scale-[.97]",
       ]),
     );
+    expect(classes).not.toContain("active:scale-[.97]");
+  });
+
+  it("a base não transiciona o transform (é do Motion) e o aperto de CSS só vale sem data-press", () => {
+    const classes = classesOf({});
+    expect(classes).not.toContain("transition-all");
+    expect(classes).toContain(
+      "transition-[color,background-color,border-color,outline-color,box-shadow,opacity,translate,scale]",
+    );
+    expect(classes).toContain(
+      "active:not-aria-[haspopup]:not-data-[press]:translate-y-px",
+    );
+    expect(classes).not.toContain("active:not-aria-[haspopup]:translate-y-px");
   });
 
   it("on-pastel-secondary usa o fundo translúcido e o hover próprio", () => {

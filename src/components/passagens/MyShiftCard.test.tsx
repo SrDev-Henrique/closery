@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import type { MyShiftState } from "@/features/handovers/home";
 import { SECTOR_COLOR_BG, SECTOR_COLORS } from "@/features/sectors/colors";
 import { spDate } from "../../../test/clock";
+import { MotionTree, stubReducedMotion } from "../../../test/motion";
 import { MyShiftCard } from "./MyShiftCard";
+import { resetSectorColorMemory } from "./SectorColorFade";
 
 const SECTOR_ID = "11111111-1111-4111-8111-111111111111";
 const SHIFT = {
@@ -118,6 +120,11 @@ function follows(earlier: Node, later: Node): boolean {
 }
 
 describe("MyShiftCard", () => {
+  // A camada de cor lembra o último cartão da aba: cada teste começa sem memória.
+  beforeEach(() => {
+    resetSectorColorMemory();
+  });
+
   it("start: título, turno, horário, data, barra, nota de sugestão e 'Começar passagem'", () => {
     renderCard(START);
 
@@ -154,17 +161,52 @@ describe("MyShiftCard", () => {
     );
   });
 
-  it("o cartão leva a cor do setor, a tinta de pastel e o crossfade que respeita movimento reduzido", () => {
+  it("o cartão leva a cor do setor e a tinta de pastel; a troca de cor é a camada do SectorColorFade, sem transição de CSS", () => {
     const { container } = renderCard(START, { sectorColor: "peach" });
 
     const card = cardOf(container);
     expect(card).toHaveClass(
       SECTOR_COLOR_BG.peach,
       "text-on-pastel",
-      "transition-colors",
-      "duration-[450ms]",
-      "motion-reduce:transition-none",
+      "relative",
+      "isolate",
     );
+    expect(card.className).not.toMatch(/transition|duration-/);
+    // Parado (na carga e na hidratação) não há camada.
+    expect(card.querySelector('[data-slot="sector-color-fade"]')).toBeNull();
+  });
+
+  it("trocar o setor: a cor de antes aparece por cima da nova, dentro do cartão, e some (Motion)", async () => {
+    const restore = stubReducedMotion(false);
+    try {
+      const card = (sectorColor: "lilac" | "peach") => (
+        <MotionTree>
+          <MyShiftCard
+            state={START}
+            sectorId={SECTOR_ID}
+            sectorName="ULD"
+            sectorColor={sectorColor}
+            canManageCatalog={false}
+            sectorParam={null}
+          />
+        </MotionTree>
+      );
+      const { container, rerender } = render(card("lilac"));
+      rerender(card("peach"));
+
+      const shell = cardOf(container);
+      expect(shell).toHaveClass(SECTOR_COLOR_BG.peach);
+      expect(
+        shell.querySelector('[data-slot="sector-color-fade"]'),
+      ).toHaveClass(SECTOR_COLOR_BG.lilac);
+      await waitFor(() =>
+        expect(
+          shell.querySelector('[data-slot="sector-color-fade"]'),
+        ).toBeNull(),
+      );
+    } finally {
+      restore();
+    }
   });
 
   it.each(

@@ -214,7 +214,9 @@ describe("PasskeyManager", () => {
     fireEvent.mouseEnter(button);
     fireEvent.pointerMove(button, { pointerType: "mouse" });
     fireEvent.mouseMove(button);
-    expect(await screen.findByText("Remover passkey")).toBeVisible();
+    // Sem a MotionTree o tooltip fica no primeiro quadro (opacidade 0): a entrada é provada em
+    // tooltip.test.tsx; aqui basta que ele tenha aberto.
+    expect(await screen.findByText("Remover passkey")).toBeInTheDocument();
   });
 
   it("remover só afeta o item clicado", async () => {

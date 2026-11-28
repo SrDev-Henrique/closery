@@ -186,7 +186,10 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar p-0 text-sidebar-foreground duration-[350ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none data-[side=left]:w-(--sidebar-width) data-[side=left]:border-r-0 data-[side=left]:shadow-drawer data-[side=left]:sm:max-w-none data-[side=left]:data-starting-style:translate-x-[-105%] data-[side=left]:data-ending-style:translate-x-[-105%] data-starting-style:opacity-100 data-ending-style:opacity-100 [&>button]:hidden"
+          // A gaveta entra da borda pela mola do Motion e sai com fade
+          // (sheetMotion "drawer", src/lib/motion.ts); sem transição de CSS.
+          motionKind="drawer"
+          className="bg-sidebar p-0 text-sidebar-foreground data-[side=left]:w-(--sidebar-width) data-[side=left]:border-r-0 data-[side=left]:shadow-drawer data-[side=left]:sm:max-w-none [&>button]:hidden"
           overlayClassName="bg-scrim supports-backdrop-filter:backdrop-blur-none"
           style={
             {

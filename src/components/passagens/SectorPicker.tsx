@@ -3,10 +3,13 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
 import { cn } from "cn";
+import { type MotionStyle, useSpring } from "motion/react";
+import * as m from "motion/react-m";
 import { unstable_rethrow } from "next/navigation";
 import {
   type CSSProperties,
   useEffect,
+  useLayoutEffect,
   useOptimistic,
   useRef,
   useTransition,
@@ -19,6 +22,8 @@ import type { SectorChoice } from "@/features/admin/sectors";
 import { ALL_SECTORS } from "@/features/handovers/limits";
 import type { SectorPickerPath } from "@/features/handovers/urls";
 import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
+import { MOTION_SPRING } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
 
 // "Todos os setores" não é um setor: não tem cor, então não tem bolinha.
 type PickerOption = {
@@ -76,6 +81,30 @@ export function SectorPicker({
   const count = options.length;
   const scrolls = count > MAX_WITHOUT_SCROLL;
   const index = options.findIndex((option) => option.id === shownId);
+  const thumbIndex = Math.max(index, 0);
+
+  // O deslize do thumb (Motion, FLIP; library-docs §23). O repouso é do CSS
+  // (`left: calc(i * 100% / N)` pelo `--i`), igual no servidor, na hidratação
+  // e no pixel. Na troca, antes da pintura, o thumb volta para onde estava
+  // (x = a diferença de índice vezes a largura dele, mais o x de um deslize em
+  // curso) e a mola `MOTION_SPRING.thumb` o leva a 0. Com movimento reduzido,
+  // vai direto.
+  const reduceMotion = usePrefersReducedMotion();
+  const thumbRef = useRef<HTMLSpanElement>(null);
+  const lastThumbIndex = useRef(thumbIndex);
+  const thumbX = useSpring(0, MOTION_SPRING.thumb);
+  useLayoutEffect(() => {
+    const from = lastThumbIndex.current;
+    lastThumbIndex.current = thumbIndex;
+    if (from === thumbIndex) return;
+    const width = thumbRef.current?.offsetWidth ?? 0;
+    if (reduceMotion || width === 0) {
+      thumbX.jump(0);
+      return;
+    }
+    thumbX.jump(thumbX.get() + (from - thumbIndex) * width);
+    thumbX.set(0);
+  }, [thumbIndex, reduceMotion, thumbX]);
 
   const trackRef = useRef<HTMLDivElement>(null);
   // Com o trilho rolando (celular), a opção marcada entra na tela ao montar e a
@@ -138,12 +167,13 @@ export function SectorPicker({
           scrolls ? "min-w-[max(100%,calc(var(--n)*6.5rem))]" : "min-w-0",
         )}
       >
-        <span
+        <m.span
+          ref={thumbRef}
           aria-hidden="true"
           data-slot="sector-picker-thumb"
-          style={{ "--i": Math.max(index, 0) } as CSSProperties}
+          style={{ "--i": thumbIndex, x: thumbX } as MotionStyle}
           className={cn(
-            "pointer-events-none absolute inset-y-0 left-[calc(var(--i)*100%/var(--n))] w-[calc(100%/var(--n))] rounded-full bg-thumb shadow-thumb transition-[left] duration-[400ms] ease-[cubic-bezier(.3,1.25,.4,1)] motion-reduce:transition-none",
+            "pointer-events-none absolute inset-y-0 left-[calc(var(--i)*100%/var(--n))] w-[calc(100%/var(--n))] rounded-full bg-thumb shadow-thumb",
             index < 0 && "opacity-0",
           )}
         />
