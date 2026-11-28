@@ -15,8 +15,11 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { BarList } from "@/components/dashboard/BarList";
 import { STATUS_TONE } from "@/components/passagens/MyShiftCard";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -24,6 +27,16 @@ import { buttonVariants } from "@/components/ui/button";
 const TEXT_MIN = 4.5;
 /** Componente de interface e objeto gráfico (WCAG 1.4.11). */
 const NON_TEXT_MIN = 3;
+/**
+ * Piso de perceptibilidade de um fundo de estado: a razão entre o fundo com o estado (hover) e o de
+ * repouso, ou entre duas superfícies que precisam se separar (o trilho do `BarList` e a linha). Não
+ * é número da WCAG (a 1.4.11 pede 3:1 para o que identifica o controle; aqui o rótulo já identifica
+ * e o fundo é só retorno): é a escolha de desenho do P109. Fica acima dos pares que a revisão final
+ * do PR B viu e mal se distinguem (1,04:1, o "Agora não" no escuro; 1,08:1, os `/50` no escuro
+ * dentro de cartão) e abaixo do menor que se vê sem esforço (1,18:1, o `accent` opaco sobre o card
+ * escuro, o que a `AdminOverview` escolheu).
+ */
+const STATE_MIN = 1.1;
 
 // ---------------------------------------------------------------- cor
 /** sRGB codificado (gama aplicada), cada canal em 0..1. */
@@ -113,6 +126,114 @@ const useMobileSource = readFileSync(
   join(import.meta.dirname, "..", "hooks", "use-mobile.ts"),
   "utf8",
 ).replaceAll("\r\n", "\n");
+
+// ---------------------------------------------------------------- leitura das classes (P109)
+/** Uma tag de abertura do HTML estático, com os atributos já sem o escape do React. */
+type Tag = { tag: string; attrs: Record<string, string> };
+
+/**
+ * As tags de abertura do HTML que o `renderToStaticMarkup` gera, na ordem do documento. O React
+ * escapa `&`, `<`, `>` e as aspas dentro dos atributos, então o corte por `>` e por `"` é seguro.
+ */
+function tagsIn(html: string): Tag[] {
+  const decode = (text: string) =>
+    text
+      .replaceAll("&quot;", '"')
+      .replaceAll("&#x27;", "'")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&amp;", "&");
+  return [...html.matchAll(/<([a-z][a-z0-9]*)\b([^>]*)>/g)].map((hit) => ({
+    tag: hit[1] ?? "",
+    attrs: Object.fromEntries(
+      [...(hit[2] ?? "").matchAll(/\s([^\s="]+)="([^"]*)"/g)].map((attr) => [
+        attr[1] ?? "",
+        decode(attr[2] ?? ""),
+      ]),
+    ),
+  }));
+}
+
+/** As classes de cada tag que passa em `match`; lança se não forem exatamente `count` (fail-closed). */
+function classesWhere(
+  html: string,
+  match: (tag: Tag) => boolean,
+  count: number,
+): string[][] {
+  const hits = tagsIn(html)
+    .filter(match)
+    .map((tag) => (tag.attrs.class ?? "").split(/\s+/).filter(Boolean));
+  if (hits.length !== count) {
+    throw new Error(`esperava ${count} elemento(s), achei ${hits.length}`);
+  }
+  return hits;
+}
+
+/** Um fundo lido de uma classe `bg-<token>` ou `bg-<token>/N` (N%, como o Tailwind gera). */
+type Fill = { token: string; alpha: number };
+
+/** Os tokens de cor do tema (`--<nome>` em `:root`): `bg-clip-padding` não é fundo de cor. */
+const isColorToken = (name: string) =>
+  new RegExp(`\\s--${name}:`).test(blockOf(css, ":root"));
+
+/**
+ * O `bg-<token>[/N]` com exatamente este prefixo de variante (`""`, `hover:`, `dark:hover:`,
+ * `group-hover/<nome>:`). `null` se não houver; lança com dois, ou com um valor arbitrário
+ * (`bg-[…]`), que o guarda não sabe medir.
+ */
+function fillWith(classes: readonly string[], prefix: string): Fill | null {
+  const start = `${prefix}bg-`;
+  const hits = classes.flatMap((name): Fill[] => {
+    if (!name.startsWith(start)) return [];
+    const rest = name.slice(start.length);
+    if (rest.startsWith("[")) {
+      throw new Error(`fundo arbitrário que o guarda não mede: "${name}"`);
+    }
+    const hit = /^([a-z][a-z0-9-]*)(?:\/(\d+))?$/.exec(rest);
+    if (!hit?.[1] || !isColorToken(hit[1])) return [];
+    return [{ token: hit[1], alpha: hit[2] ? Number(hit[2]) / 100 : 1 }];
+  });
+  if (hits.length > 1) {
+    throw new Error(
+      `mais de um fundo ${start}* nas classes: ${classes.join(" ")}`,
+    );
+  }
+  return hits[0] ?? null;
+}
+
+/**
+ * O fundo que vale no tema e no estado (`""` é o repouso). No escuro, `dark:<estado>` vence
+ * `<estado>` (o `dark` é `&:is(.dark *)`, mais específico); sem classe do estado vale a de repouso.
+ */
+function fillIn(
+  classes: readonly string[],
+  selector: string,
+  state: string,
+): Fill | null {
+  const dark = (prefix: string) =>
+    selector === ".dark" ? fillWith(classes, `dark:${prefix}`) : null;
+  const resting = dark("") ?? fillWith(classes, "");
+  if (state === "") return resting;
+  return dark(state) ?? fillWith(classes, state) ?? resting;
+}
+
+/** O que o olho vê: o fundo da classe (alfa da classe vezes o do token) sobre a base opaca. */
+function paint(fill: Fill | null, selector: string, base: Rgb): Rgb {
+  if (!fill) return base;
+  const color = readToken(css, selector, fill.token);
+  return over({ rgb: color.rgb, alpha: color.alpha * fill.alpha }, base);
+}
+
+/** O nome do único `group/<nome>` das classes (o `group-hover/<nome>:` dos filhos depende dele). */
+function groupName(classes: readonly string[]): string {
+  const names = classes.flatMap(
+    (name) => /^group\/([a-z][a-z0-9-]*)$/.exec(name)?.[1] ?? [],
+  );
+  if (names.length !== 1 || !names[0]) {
+    throw new Error(`esperava um group/<nome>, achei ${names.length}`);
+  }
+  return names[0];
+}
 
 const THEMES = [
   ["claro", ":root"],
@@ -941,5 +1062,201 @@ describe("caso negativo: o cartão da Administração com accent/50 sumiria no e
         over({ rgb: token("accent"), alpha: ACCENT_HALF }, token("background")),
       ),
     ).toBe(bytes(token("card")));
+  });
+});
+
+// ---------------------------------------------------------------- estado accent sobre fundo accent (P109)
+/**
+ * O `accent` que some onde o fundo já é `accent` (spec do PR B §14). Os tokens e os alfas saem das
+ * classes que o componente renderiza (`renderToStaticMarkup`), nunca de número escrito aqui: mudar
+ * a classe sem passar por este guarda não é possível. Cada par tem de passar o `STATE_MIN` nos dois
+ * temas, e o caso negativo mostra o defeito que o guarda pega.
+ */
+const barListHtml = renderToStaticMarkup(
+  createElement(BarList, {
+    label: "Barras",
+    rows: [
+      {
+        key: "a",
+        label: "Destino Teste",
+        value: 3,
+        valueText: "3",
+        detail: "3 entregues",
+        href: "/a",
+      },
+    ],
+    bars: true,
+    emptyText: "",
+    moreText: null,
+  }),
+);
+const [barRow = []] = classesWhere(barListHtml, (tag) => tag.tag === "a", 1);
+const [barTrack = []] = classesWhere(
+  barListHtml,
+  (tag) => tag.tag === "span" && tag.attrs["aria-hidden"] === "true",
+  1,
+);
+const [barFill = []] = classesWhere(
+  barListHtml,
+  (tag) => tag.tag === "span" && "style" in tag.attrs,
+  1,
+);
+/** O estado do trilho que acompanha o hover da linha (o grupo é o da linha). */
+const BAR_ROW_HOVER = `group-hover/${groupName(barRow)}:`;
+
+for (const [theme, selector] of THEMES) {
+  describe(`trilho do BarList no hover da linha — tema ${theme}`, () => {
+    // O BarList fica dentro de um Card (DashboardRequests).
+    const under = solid(readToken(css, selector, "card"), "card");
+    const row = (state: string) =>
+      paint(fillIn(barRow, selector, state), selector, under);
+    const track = (classes: readonly string[], rowState: string) =>
+      paint(
+        fillIn(classes, selector, rowState === "" ? "" : BAR_ROW_HOVER),
+        selector,
+        row(rowState),
+      );
+    const measured = {
+      linha: contrast(row("hover:"), row("")),
+      "trilho em repouso": contrast(track(barTrack, ""), row("")),
+      "trilho no hover": contrast(track(barTrack, "hover:"), row("hover:")),
+    };
+
+    if (process.env.VITEST_PRINT_THEME_CONTRAST) {
+      it("imprime a matriz medida", () => {
+        const lines = Object.entries(measured).map(
+          ([name, ratio]) => `${name}: ${ratio.toFixed(2)}:1`,
+        );
+        console.log(`\n[trilho do BarList · ${theme}]\n${lines.join("\n")}`);
+        expect(lines).toHaveLength(3);
+      });
+    }
+
+    it.each(
+      Object.entries(measured),
+    )(`%s: separa-se do fundo (≥${STATE_MIN}:1)`, (_name, ratio) => {
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(STATE_MIN);
+    });
+
+    it.each([
+      ["repouso", ""],
+      ["hover", "hover:"],
+    ])("a barra se separa do trilho no %s (≥3:1)", (_name, rowState) => {
+      const trackColor = track(barTrack, rowState);
+      const ratio = contrast(
+        paint(fillIn(barFill, selector, ""), selector, trackColor),
+        trackColor,
+      );
+      expect(ratio, `${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+        NON_TEXT_MIN,
+      );
+    });
+
+    it("caso negativo: o trilho sem a troca (só bg-accent) some no hover da linha (1:1)", () => {
+      const before = barTrack.filter((name) => !name.startsWith(BAR_ROW_HOVER));
+      expect(before).not.toEqual(barTrack);
+      const ratio = contrast(track(before, "hover:"), row("hover:"));
+      expect(ratio).toBeLessThan(STATE_MIN);
+      expect(bytes(track(before, "hover:"))).toBe(bytes(row("hover:")));
+    });
+  });
+}
+
+describe("leitura das classes do HTML estático (P109)", () => {
+  it("tagsIn lê as tags de abertura e desfaz o escape do React nos atributos", () => {
+    const html = renderToStaticMarkup(
+      createElement(
+        "div",
+        { className: "a [&_svg:not([class*='size-'])]:size-4", title: 'x"<>&' },
+        createElement("span", { "aria-hidden": "true" }),
+      ),
+    );
+    expect(tagsIn(html)).toEqual([
+      {
+        tag: "div",
+        attrs: {
+          class: "a [&_svg:not([class*='size-'])]:size-4",
+          title: 'x"<>&',
+        },
+      },
+      { tag: "span", attrs: { "aria-hidden": "true" } },
+    ]);
+  });
+
+  it("classesWhere falha alto quando não acha o número esperado de elementos", () => {
+    const html = '<a class="x"></a><a class="y"></a>';
+    expect(classesWhere(html, (tag) => tag.tag === "a", 2)).toEqual([
+      ["x"],
+      ["y"],
+    ]);
+    expect(() => classesWhere(html, (tag) => tag.tag === "a", 1)).toThrow(
+      "esperava 1 elemento(s), achei 2",
+    );
+    expect(() => classesWhere(html, (tag) => tag.tag === "b", 1)).toThrow(
+      "achei 0",
+    );
+  });
+
+  it("fillWith lê token e alfa só com o prefixo exato e ignora o que não é cor", () => {
+    const classes = [
+      "bg-clip-padding",
+      "bg-card",
+      "hover:bg-accent",
+      "dark:hover:bg-accent/50",
+      "group-hover/x:bg-input/30",
+    ];
+    expect(fillWith(classes, "")).toEqual({ token: "card", alpha: 1 });
+    expect(fillWith(classes, "hover:")).toEqual({ token: "accent", alpha: 1 });
+    expect(fillWith(classes, "dark:hover:")).toEqual({
+      token: "accent",
+      alpha: 0.5,
+    });
+    expect(fillWith(classes, "group-hover/x:")).toEqual({
+      token: "input",
+      alpha: 0.3,
+    });
+    expect(fillWith(classes, "aria-expanded:")).toBeNull();
+    expect(fillWith([], "")).toBeNull();
+  });
+
+  it("fillWith recusa dois fundos no mesmo prefixo e o valor arbitrário", () => {
+    expect(() => fillWith(["bg-card", "bg-accent"], "")).toThrow(
+      "mais de um fundo",
+    );
+    expect(() =>
+      fillWith(["hover:bg-[color-mix(in_oklch,red,blue)]"], "hover:"),
+    ).toThrow("fundo arbitrário");
+  });
+
+  it("fillIn: no escuro o dark: vence; sem a classe do estado vale a de repouso", () => {
+    const classes = ["bg-card", "hover:bg-accent", "dark:hover:bg-input/50"];
+    expect(fillIn(classes, ":root", "hover:")).toEqual({
+      token: "accent",
+      alpha: 1,
+    });
+    expect(fillIn(classes, ".dark", "hover:")).toEqual({
+      token: "input",
+      alpha: 0.5,
+    });
+    expect(fillIn(classes, ".dark", "")).toEqual({ token: "card", alpha: 1 });
+    expect(fillIn(classes, ":root", "group-hover/x:")).toEqual({
+      token: "card",
+      alpha: 1,
+    });
+    expect(fillIn([], ".dark", "hover:")).toBeNull();
+  });
+
+  it("paint compõe o alfa da classe vezes o do token; sem fundo devolve a base", () => {
+    const base: Rgb = [0, 0, 0];
+    expect(paint(null, ".dark", base)).toBe(base);
+    // --input no escuro é branco a 15%; com /50, 7,5% de branco sobre o preto.
+    const [r] = paint({ token: "input", alpha: 0.5 }, ".dark", base);
+    expect(r).toBeCloseTo(0.075, 6);
+  });
+
+  it("groupName exige exatamente um group/<nome>", () => {
+    expect(groupName(["group/bar-row", "flex"])).toBe("bar-row");
+    expect(() => groupName(["group", "flex"])).toThrow("achei 0");
+    expect(() => groupName(["group/a", "group/b"])).toThrow("achei 2");
   });
 });

@@ -39,7 +39,7 @@ export function BarList({
           <li key={row.key}>
             <Link
               href={row.href}
-              className="flex min-h-11 flex-col justify-center gap-1 rounded-lg border bg-card px-3 py-2 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
+              className="group/bar-row flex min-h-11 flex-col justify-center gap-1 rounded-lg border bg-card px-3 py-2 text-card-foreground outline-none transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none"
             >
               <span className="flex flex-wrap items-baseline justify-between gap-x-3">
                 <span className="text-sm font-medium">
@@ -66,7 +66,11 @@ export function BarList({
                 <span
                   aria-hidden="true"
                   // accent, não muted: na paleta nova muted = card e o trilho sumia.
-                  className="h-2 w-full overflow-hidden rounded-full bg-accent"
+                  // No hover a linha vira accent e o trilho troca para card: as
+                  // duas cores trocam de lugar e a razão fica a do repouso, nos
+                  // dois temas. Sem a troca o trilho sumia no hover (P109; o
+                  // guarda é o themeContrast.test.ts).
+                  className="h-2 w-full overflow-hidden rounded-full bg-accent transition-colors group-hover/bar-row:bg-card motion-reduce:transition-none"
                 >
                   <span
                     className={`block h-full rounded-full ${SINGLE_BAR_CLASS}`}
