@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 16.4.6 (App Router, Cache Components, Turbopack, validação estrita de rotas), React 19.3, Tailwind CSS 4.3, shadcn base-nova, Drizzle + Postgres (PGlite com `@electric-sql/pglite-socket` no banco visual e nos testes), Better Auth, DiceBear (`@dicebear/core` 10.7.0), Playwright (Chromium só pelo `node`), `pixelmatch` 7.2.0 + `pngjs` 7.0.0 (devDependencies exatas), Vitest 5 + Testing Library, Biome 2.4, Bun, Git Bash no Windows.
 
-**Spec:** `docs/superpowers/specs/2026-11-27-processo-visual-design.md` (commit `8d246e9`). **Fora do git:** o contrato do plano (`.git/sdd/processo/plan-contract.md`), o relatório do editor (`.git/sdd/processo/consistency-report.md`), o ledger (`.git/sdd/processo/progress.md`), o roteiro (`.git/sdd/roadmap/roteiro.md` §6 e §7) e as ferramentas antigas do PR A (`.git/sdd/visual/tools/`, só para portar a lógica, nunca uma string).
+**Spec:** `docs/superpowers/specs/2026-11-27-processo-visual-design.md` (commit `8d246e9`) e a emenda do §16 (Motion). **Fora do git:** o contrato do plano (`.git/sdd/processo/plan-contract.md`), o relatório do editor (`.git/sdd/processo/consistency-report.md`), o ledger (`.git/sdd/processo/progress.md`), o roteiro (`.git/sdd/roadmap/roteiro.md` §6 e §7) e as ferramentas antigas do PR A (`.git/sdd/visual/tools/`, só para portar a lógica, nunca uma string).
 
 ## Global Constraints
 
@@ -25,10 +25,10 @@
 - O que é puro tem teste no Vitest (`test/visual/*.test.ts`), no padrão `scripts/smokeChecks.mjs` + `test/smokeChecks.test.ts`; scripts `.mjs` com JSDoc nos exports.
 - Os testes TS **não importam `pngjs` nem `pixelmatch` direto** (sem `@types`): usam `createPng` e as funções de `image.mjs`/`diff.mjs`.
 - Nada das ferramentas roda no CI além desses testes, que não dependem de navegador, rede, servidor nem da lista de nomes (o que precisa da lista usa `it.skipIf`); nada muda no `.github/workflows/ci.yml`; nenhum teste de screenshot no CI.
-- devDependencies exatas: `"pixelmatch": "7.2.0"` e `"pngjs": "7.0.0"`, só por `bun add -d -E pixelmatch@7.2.0 pngjs@7.0.0` (o `bun.lock` muda junto); nenhuma outra dependência; usadas só em `scripts/visual/` e nos testes dele, nunca em `src/`.
+- devDependencies exatas: `"pixelmatch": "7.2.0"` e `"pngjs": "7.0.0"`, só por `bun add -d -E pixelmatch@7.2.0 pngjs@7.0.0` (o `bun.lock` muda junto); nenhuma outra dependência além do `motion` da emenda (M1, abaixo); usadas só em `scripts/visual/` e nos testes dele, nunca em `src/`.
 - Constantes fixas: `THEME_STORAGE_KEY = "closery-tema"` (= `src/lib/theme.ts`), `VISUAL_INVITE_COOKIE = "closery_invite"` (= `INVITE_COOKIE`), `MOBILE_MAX_WIDTH = 859` ("celular" é abaixo de 860), `PIXELMATCH_THRESHOLD = 0.1`, `HIDE_DEV_CSS = "nextjs-portal{display:none!important}"`, `MASK_RGBA = [255, 0, 255, 255]`.
 - Altura comum de um par: a maior altura natural dos dois lados, com mínimo de 844 abaixo de 860px de largura e 900 acima; larguras padrão `[1440, 390]`.
-- Capturas com `reducedMotion: "reduce"`, esperando `document.fonts.ready` e as animações terminarem (até 3 s) mais 300 ms (PB-D6).
+- Capturas com `reducedMotion: "reduce"`, esperando `document.fonts.ready` e as animações terminarem (até 3 s) mais 300 ms (PB-D6). Depois da M1: sempre `"reduce"` (sem opção para desligar) e, antes dos 300 ms, 200 ms sem escrita no `style` (até 3 s; spec §16.2, regra 6).
 - Um servidor e um navegador por vez; cada CLI fecha o navegador ao fim de cada estado.
 - Nunca imprimir segredo: o do ambiente visual é gerado em `.git/sdd/visual-db/secret` (32 bytes, base64) e só o `env.sh` o lê; nunca imprimir nem ler o `.env.local`.
 - `bunx vitest run <arquivo>`, nunca `bun test`.
@@ -37,7 +37,7 @@
 - Ferramenta de navegador (CLI) não tem teste no Vitest: o passo final dela é a conferência manual pelo controlador no C1.
 - Testes cobrem erro, limite (vazio, zero, máximo) e recusa (porta errada, destino fora do `.git/sdd`), não só o caminho feliz.
 - Arquivos com acento (e todo `.mjs`, `.ts` e `.sh` destas tarefas, porque o heredoc do Git Bash também estraga barra invertida): a ferramenta Write.
-- Commit: mensagem gravada com Write em `.git/sdd/processo/msg-task-N.txt` e `git commit -F`, com o trailer do modelo que implementou (`Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` nas tarefas T1 a T10).
+- Commit: mensagem gravada com Write em `.git/sdd/processo/msg-task-N.txt` e `git commit -F`, com o trailer do modelo que implementou (`Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` nas tarefas T1 a T10; nas M1 e M2 os modelos de mensagem trazem `Claude Opus 5.5`, o desta execução: troque se for outro).
 - Componente visual mudado atualiza o `ui-registry.md` (`Histórico` datado 2026-11-27) no mesmo commit; os cabeçalhos `###` não diminuem (`test/uiRegistryDoc.test.ts`).
 - Pendência: a fechada muda de seção e ganha `Atualização` datada (2026-11-27), nunca é apagada; o índice do topo acompanha (`test/pendenciasDoc.test.ts`); pendência nova entra como "Aberto, não triado".
 - `bg-muted` e `hover:bg-muted` nunca são fundo dentro de `card` (`accent`): `bg-muted` vira `bg-accent` com a mesma opacidade e a mesma variante (PB-D8); a única exceção é `src/components/solicitacoes/RequestColumn.tsx` `bg-muted/30`, com o motivo.
@@ -45,14 +45,16 @@
 - Sem hex cru nem classe de cor crua do Tailwind em `.tsx` (só tokens).
 - Rotas: não entram `(app)/default.tsx`, o slot `@detalhe` no layout raiz nem `deprecated.looseRouteMatching`; toda rota nova de primeiro nível em `(app)` ganha o espelho no slot (página nula e, se tiver subrotas, o `[...rest]`).
 - Página nula do espelho: exatamente `export default function <Nome>() { return null; }` (pode ter comentário acima), sem import e sem `metadata`.
-- Nenhuma tela muda de layout; as únicas mudanças visíveis no app são os hovers e estados do §9 da spec.
+- Nenhuma tela muda de layout; as únicas mudanças visíveis no app são os hovers e estados do §9 da spec e o movimento da emenda (§16, só na troca; em repouso nada muda).
 - Faixa do pixel (C1): página até o número do PR A **mais 0,02 ponto percentual**, sem passar de 0,11% (o menu aberto, de 0,22%); no pack, o cartão até 0,005%; cada par com a mesma altura nos dois lados.
-- Fora deste plano: Motion (emenda depois da T10, antes do C1), proteção da `main` (P62, decisão do dono), apagar `.git/sdd/visual/tools/` (fica como registro do PR A) e guardas do `leading-[normal]` e da borda transparente da pílula (ficam na revisão por tarefa).
+- Motion (M1, M2): só `m` (`motion/react-m`) dentro do `MotionProvider`; duração, curva e mola só por `src/lib/motion.ts`; todo efeito com o ramo de movimento reduzido testado; nada anima na carga nem na hidratação; CSS e Motion nunca na mesma propriedade (`ui-rules.md §9`, `library-docs.md §23`).
+- Dependência exata: `"motion": "14.14.0"`, só por `bun add -E motion@14.14.0` (o `bun.lock` muda junto; baixa do npm, então quem executa a M1 precisa da rede).
+- Fora deste plano: proteção da `main` (P62, decisão do dono), apagar `.git/sdd/visual/tools/` (fica como registro do PR A) e guardas do `leading-[normal]` e da borda transparente da pílula (ficam na revisão por tarefa).
 - Para qualquer API do Next, leia `node_modules/next/dist/docs/` (rotas paralelas: `01-app/03-api-reference/03-file-conventions/parallel-routes.md`, `default.md`, `route-groups.md`).
 
 ## Ordem de execução
 
-**C0 (Steps 1 a 4) → T1 → T2 → T3 → T4 → T5 → T6 → C0 Step 5 (instalar o hook e conferir a lista) → T7 → T8 → T9 → T10 → emenda do Motion (fora deste plano) → C1 → C2.** As tarefas aparecem abaixo nesta ordem. C0, C1 e C2 são do controlador e não têm número, para a emenda do Motion entrar depois da T10 sem renumerar.
+**C0 (Steps 1 a 4) → T1 → T2 → T3 → T4 → T5 → T6 → C0 Step 5 (instalar o hook e conferir a lista) → T7 → T8 → T9 → T10 → M1 → M2 → C1 → C2.** As tarefas aparecem abaixo nesta ordem. C0, C1 e C2 são do controlador e não têm número; a emenda do Motion (spec §16) entrou depois da T10 como M1 e M2, sem renumerar.
 
 | # | Tarefa | Spec | Depende de | Commit |
 |---|---|---|---|---|
@@ -67,8 +69,10 @@
 | 8 | `measure`, `probe`, `interact`, `contrast`, `audit`, `sheet`, `sbs`, `crop`, `screens/legibilidade`, `screens/provas` + `visual:audit` | §5.3, §5.5, §6 | T7 | `chore(visual): medida, sonda, interação, auditoria e recortes` |
 | 9 | Skill `handoff-visual` (SKILL.md + 8 modelos) + `test/skillHandoffVisual.test.ts` | §10 | T4–T8 (os nomes) | `docs(skill): handoff-visual, o processo das telas do Claude Design` |
 | 10 | `AGENTS.md`, `library-docs §22`, `architecture.md` (registro do PR B) | §11 | T1–T9 | `docs: processo visual no AGENTS, library-docs e architecture` |
-| C1 | Prova: 404, cópias, pares, falha de rede, hover, legibilidade, conferências das ferramentas, texto plantado, diff da branch | §13, §15 | T1–T10 | nenhum (resultado em `.git/sdd/processo/pixel.md`) |
-| C2 | Documentos finais e portão: `progress-tracker.md`, `pendencias.md` (P62), `memory.md`, portão, `check-names --range`, PR | §11, §15 | C1 | `docs: fecha o PR B (progresso, pendências e memória)` |
+| M1 | Fundação do Motion: `motion` 14.14.0, `MotionProvider`, `src/lib/motion.ts`, guarda, capturas sempre com movimento reduzido e espera do `style` (`capture.mjs`, `audit.mjs`, `measure.mjs`), `library-docs §23`, `ui-rules §9`, `ui-tokens §8`, a linha da skill | §16.1, §16.2, §16.4 | T7, T8, T9, T10 | `refactor(motion): usePrefersReducedMotion sai do dashboard para src/lib` + `feat(motion): fundação do Motion (provider, tokens, guarda e capturas)` |
+| M2 | Motion nos componentes que já se mexem (Button, ThemeSwitch, SectorPicker, Sheet e gaveta, cor do cartão, Tooltip) + `e2e/motion.spec.ts` + registro e P87 | §16.3, §16.4 | M1 | `feat(motion): os componentes que já se mexiam passam ao Motion` |
+| C1 | Prova: 404, cópias, pares, falha de rede, hover, legibilidade, conferências das ferramentas, texto plantado, diff da branch | §13, §15, §16.6 | T1–T10, M1, M2 | nenhum (resultado em `.git/sdd/processo/pixel.md`) |
+| C2 | Documentos finais e portão: `progress-tracker.md`, `pendencias.md` (P62), `memory.md`, portão (com o `e2e/motion.spec.ts`), `check-names --range`, PR | §11, §15, §16.6 | C1 | `docs: fecha o PR B (progresso, pendências e memória)` |
 
 ## Decisões tomadas na montagem do plano
 
@@ -95,6 +99,28 @@ Do editor de consistência (`.git/sdd/processo/consistency-report.md`), as que v
 - **`memory.md`:** o bullet de "Coisas que vão te morder" que descreve o `[...catchAll]` passa a descrever o espelho no C2 Step 6; as menções do `architecture.md` (Fase 4, item d; Fase 5) são histórico e ficam, e o PB-D1 da T10 registra a troca.
 - **Guarda de "rodar como script":** o `runsAsScript()` local da T6 e o `import.meta.url === pathToFileURL(process.argv[1]).href` dos CLIs da T5, T7 e T8 valem os dois; não há helper comum.
 - **Cercas no plano:** os blocos `~~~~markdown` da T9 (os modelos da skill), do C0 e da T10 contêm linhas `### Task N`, ``### Task `<N>` ``, `### Strengths` e `### 2026-11-27 — …`; qualquer script que liste as tarefas deste plano precisa pular o que está dentro de cerca.
+- **Emenda do Motion (M1 e M2, spec §16), as dúvidas do rascunho**, resolvidas pela decisão do dono
+  (`.git/sdd/roadmap/decisions.md`, "Motion nos componentes") e pelo código das T4 a T10, todas aceitas como redigidas, salvo
+  a 10 e a 14: o ramo reduzido de cada componente vem do `usePrefersReducedMotion` (movido para `src/lib` num refactor à
+  parte) e o `MotionConfig reducedMotion="user"` da decisão fica como rede; sem `layout`/`layoutId` (o `domAnimation` não
+  traz), o thumb e o knob deslizam por FLIP com `useSpring` e o repouso fica no CSS; o `SectorColorFade` lembra a cor do
+  último cartão por até 2 s (`resetSectorColorMemory` só para os testes); o Tooltip anima só a entrada e fecha na hora; a
+  gaveta passa a sair com fade; o `Button` troca `transition-all` por uma lista sem `transform` e o aperto de CSS ganha
+  `not-data-[press]` (o `<Link>` cru continua com ele); o `button.tsx` continua sem `"use client"` e usa o `PressButton`
+  como elemento; o `e2e/motion.spec.ts` (3 cenários, 3 cadastros) só roda no portão do C2; o `AGENTS.md` ganha uma linha;
+  PB-D10 a PB-D15; nenhum trecho da ArcUI copiado (nenhum aviso MIT no código); a API do Motion 14.14.0 foi conferida só na
+  doc e se confirma no `check-types` da M1 e da M2; a P87 ganha `Atualização` e continua aberta; o peso (cerca de 25 KB
+  comprimidos) é aceito pela decisão; o `bun add` precisa da rede. **Dúvida 10 (trailer):** os commits das T1 a T10 saíram
+  com `Claude Opus 5.5` (só a T8 com `Sonnet`); os modelos de mensagem da M1 e da M2 trazem o `Opus 5.5`, e quem
+  implementar com outro modelo troca. **Dúvida 14 (as chamadas da T8 inertes):** com o código atual, a M1 tira a opção do
+  `measure.mjs` (o único que ainda passa `reducedMotion` ao `openProto`) e o `audit.mjs`, que monta o próprio contexto,
+  passa a usar a constante `CAPTURE_REDUCED_MOTION`; nenhuma opção morta fica nas ferramentas.
+- **Ajustes da montagem da emenda** (além do rascunho): o `settle` do `capture.mjs` ganha a espera do `style` também no
+  JSDoc e no cabeçalho do arquivo; o `library-docs.md §22` aponta o §23 na linha das capturas; o modelo
+  `global-constraints.md` da skill ganha a linha de movimento (as branches C a G nascem com Motion); o C2 Step 5 ancora o
+  `old_string` no item 5 que a M1 acrescenta ao fim do `architecture.md` (antes era o item 4, o último da T10). Os blocos
+  da M1 e da M2 também têm cabeçalhos `##` e `###` dentro de cerca (os trechos de `library-docs`, `ui-rules`, `ui-tokens`
+  e `ui-registry`).
 
 Convenções dos rascunhos que valem para toda tarefa:
 
@@ -134,7 +160,7 @@ Acrescente ao fim de `.git/sdd/processo/progress.md` (ferramenta Edit):
 - [ ] T4 base · [ ] T5 banco, ambiente, pessoas e seed · [ ] T6 nomes, hook e registro · [ ] hook instalado
 - [ ] T7 captura, diferença, cópias e pares · [ ] T8 medida, sonda, interação e auditoria
 - [ ] T9 skill · [ ] T10 documentos do processo
-- [ ] emenda do Motion
+- [ ] M1 fundação do Motion · [ ] M2 componentes com Motion
 - [ ] C1 prova (resultado em .git/sdd/processo/pixel.md)
 - [ ] C2 documentos, portão e PR
 
@@ -15309,9 +15335,4122 @@ Expected: o `pre-commit` passa (`check-names: nada da lista …`).
 
 ---
 
+### Task M1: Fundação do Motion
+
+**Spec:** §16.1, §16.2, §16.4 · **Redator:** emenda do Motion · **Depende de:** T7 (`capture.mjs`), T8 (`audit.mjs`, `measure.mjs`), T9 (o modelo `global-constraints.md`), T10 (`library-docs §22`, a entrada do PR B no `architecture.md`)
+
+**Files:**
+- Move (commit de refactor à parte): `src/components/dashboard/usePrefersReducedMotion.ts` → `src/lib/usePrefersReducedMotion.ts`
+- Move (idem): `src/components/dashboard/usePrefersReducedMotion.test.tsx` → `src/lib/usePrefersReducedMotion.test.tsx`
+- Modify (idem): `src/components/dashboard/StockTrendChart.tsx` (o import)
+- Modify: `package.json`, `bun.lock` (`motion` 14.14.0 exata)
+- Create: `src/lib/motion.ts`
+- Create: `src/components/motion/MotionProvider.tsx`
+- Create: `test/motion.tsx` (ajuda dos testes de movimento)
+- Create: `scripts/visual/settle.mjs`
+- Modify: `scripts/visual/capture.mjs` (contexto sempre com movimento reduzido; `settle` espera o `style`)
+- Modify: `scripts/visual/audit.mjs` (o contexto que ele monta usa `CAPTURE_REDUCED_MOTION`) e `scripts/visual/measure.mjs`
+  (sai a opção `reducedMotion` que ele passava ao `openProto`)
+- Modify: `src/app/layout.tsx` (o `MotionProvider` no `<body>`)
+- Modify: `.context/library-docs.md` (§23 e a linha das capturas do §22), `.context/ui-rules.md` (§9 e o checklist do
+  §8), `.context/ui-tokens.md` (§8), `.context/architecture.md` (PB-D10 a PB-D15, dependência, trade-off), `AGENTS.md`
+  (uma regra), `.context/ui-registry.md` (`MotionProvider`; `usePrefersReducedMotion`)
+- Modify: `.claude/skills/handoff-visual/templates/global-constraints.md` (a linha de movimento das branches C a G)
+- Test: `src/lib/motion.test.ts`
+- Test: `src/components/motion/MotionProvider.test.tsx`
+- Test: `src/app/motionUsage.test.ts`
+- Test: `test/visual/settle.test.ts`
+
+Testes existentes que mudam: só o `usePrefersReducedMotion.test.tsx`, que muda de pasta sem mudar uma linha (o import é
+`./usePrefersReducedMotion`). `grep -rln "usePrefersReducedMotion" src test` acha o `StockTrendChart.tsx` (import) e o
+`test/uiRegistryDoc.test.ts` (só o nome do cabeçalho, que continua). Os que leem o `layout.tsx` como texto
+(`test/fontsConfig.test.ts`, `src/app/robots.test.ts`) não mudam e rodam no Step 13. Nenhum teste importa o `capture.mjs`,
+o `audit.mjs` nem o `measure.mjs`; o modelo da skill é lido pelo `test/skillHandoffVisual.test.ts`, que roda no Step 17.
+
+**Interfaces:**
+- Consumes: `scripts/visual/capture.mjs` da T7 (`newContext`, `settle`, `openApp`, `openProto`, `openState`, `shoot`,
+  `ANIMATIONS_TIMEOUT_MS`, `SETTLE_MS`); o `audit.mjs` (o contexto próprio, com o `settle`) e o `measure.mjs` (o
+  `openProto` do `--so-proto`) da T8; o modelo `.claude/skills/handoff-visual/templates/global-constraints.md` da T9; a
+  seção `## 22.` e a linha `## Como adicionar uma biblioteca nova` do `library-docs.md` (T10); a entrada
+  `### 2026-11-27 — Processo visual (PR B)` do `architecture.md` (T10).
+- Produces (a M2 usa):
+  - `src/lib/motion.ts`: `MOTION_MAX_SECONDS`, `MOTION_DURATION` (`instant`, `fast`, `exit`, `base`, `fade`),
+    `CubicBezier`, `MOTION_EASE` (`out`, `in`, `inOut`), `MOTION_SPRING` (`press`, `knob`, `thumb`, `panel`),
+    `PRESS_SCALE`, `MOTION_DEFAULT_TRANSITION`, `COLOR_FADE`, `MotionValues`, `MotionTarget`, `PopupMotion`, `SheetSide`,
+    `SheetMotionKind`, `sheetMotion(side, kind, reduce): PopupMotion`, `overlayMotion(reduce): PopupMotion`, `TooltipSide`,
+    `tooltipMotion(side, reduce): { initial: MotionValues; animate: MotionTarget }`.
+  - `src/lib/usePrefersReducedMotion.ts`: `usePrefersReducedMotion(): boolean` (o mesmo de antes, noutra pasta).
+  - `src/components/motion/MotionProvider.tsx`: `MotionProvider({ children })`.
+  - `test/motion.tsx`: `MotionTree({ children })`, `stubReducedMotion(reduce): () => void`, `wait(ms)`,
+    `recordStyle(element, property, ms, trigger): Promise<string[]>`, `styleOnInsert(selector, properties)`,
+    `translateOf(transform, axis): { value, unit } | null`, `scaleOf(transform): number | null`.
+  - `scripts/visual/settle.mjs`: `CAPTURE_REDUCED_MOTION`, `STYLE_QUIET_MS`, `settleVerdict(sample)`,
+    `styleQuietScript(quietMs, timeoutMs)`.
+  - `capture.mjs`: `openApp`/`openProto` sem a opção `reducedMotion` (sempre `"reduce"`); `settle(page)` com a espera do
+    `style` (vale também para o `shoot` e o `audit.mjs`, que o chamam). O `audit.mjs` usa a mesma constante no contexto
+    que monta, e o `measure.mjs` deixa de passar a opção ao `openProto`: nenhuma opção morta fica nas ferramentas.
+
+- [ ] **Step 1: Ponto de partida**
+
+```sh
+git status --short
+grep -c "^### " .context/ui-registry.md
+grep -n "^## 2[12]\. \|^## Como adicionar" .context/library-docs.md
+grep -n "function newContext\|export async function settle" scripts/visual/capture.mjs
+grep -n "reducedMotion" scripts/visual/audit.mjs scripts/visual/measure.mjs
+```
+
+Expected: `git status` vazio; um número N de cabeçalhos (anote: no fim da M1 tem de ser N + 1); `## 21.`, `## 22.` e `## Como
+adicionar uma biblioteca nova`, nesta ordem; as duas funções da T7 achadas; uma linha `reducedMotion: "reduce",` em cada
+um dos dois arquivos da T8.
+
+- [ ] **Step 2: Refactor — o hook do movimento reduzido vai para `src/lib` (verde antes)**
+
+Run: `bunx vitest run src/components/dashboard/usePrefersReducedMotion.test.tsx src/components/dashboard/StockTrendChart.test.tsx`
+Expected: PASS (os dois arquivos).
+
+```sh
+git mv src/components/dashboard/usePrefersReducedMotion.ts src/lib/usePrefersReducedMotion.ts
+git mv src/components/dashboard/usePrefersReducedMotion.test.tsx src/lib/usePrefersReducedMotion.test.tsx
+```
+
+Edite `src/components/dashboard/StockTrendChart.tsx` (ferramenta Edit). old_string:
+
+```ts
+import { formatInteger } from "@/lib/numberFormat";
+
+import { SINGLE_SERIES_COLOR } from "./chartColors";
+import { usePrefersReducedMotion } from "./usePrefersReducedMotion";
+```
+
+new_string:
+
+```ts
+import { formatInteger } from "@/lib/numberFormat";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+import { SINGLE_SERIES_COLOR } from "./chartColors";
+```
+
+Registro (ferramenta Edit em `.context/ui-registry.md`). old_string:
+
+```markdown
+- **Local:** `src/components/dashboard/usePrefersReducedMotion.ts` (`"use client"`)
+```
+
+new_string:
+
+```markdown
+- **Local:** `src/lib/usePrefersReducedMotion.ts` (`"use client"`)
+```
+
+e old_string:
+
+```markdown
+- **Usa:** `matchMedia`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10).
+```
+
+new_string:
+
+```markdown
+- **Usa:** `matchMedia`.
+- **Histórico:** 2026-11-25 — criado na Fase 5 (Tarefa 10). 2026-11-27 — Emenda do Motion (M1, refactor): sai de `src/components/dashboard/` para `src/lib/`, sem mudança de comportamento (passa a servir também os componentes com Motion).
+```
+
+- [ ] **Step 3: Refactor — verde depois e commit**
+
+```sh
+bunx vitest run src/lib/usePrefersReducedMotion.test.tsx src/components/dashboard/StockTrendChart.test.tsx test/uiRegistryDoc.test.ts
+bunx biome check --write src/components/dashboard/StockTrendChart.tsx src/lib/usePrefersReducedMotion.ts src/lib/usePrefersReducedMotion.test.tsx
+bun run check-types
+bun run lint
+grep -rn "dashboard/usePrefersReducedMotion" src test .context
+```
+
+Expected: os três arquivos PASS com o mesmo número de testes do Step 2 (mais os do registro); tipos e lint sem erro; o `grep`
+sem saída.
+
+Mensagem gravada com Write em `.git/sdd/processo/msg-task-M1-refactor.txt`:
+
+```text
+refactor(motion): usePrefersReducedMotion sai do dashboard para src/lib
+
+O hook do movimento reduzido passa a servir também os componentes com
+Motion (emenda do PR B). Só o caminho muda: o StockTrendChart importa de
+@/lib/usePrefersReducedMotion e o teste vai junto, sem mudar uma linha.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+`git add src/lib/usePrefersReducedMotion.ts src/lib/usePrefersReducedMotion.test.tsx src/components/dashboard/StockTrendChart.tsx .context/ui-registry.md && git status --short && git commit -F .git/sdd/processo/msg-task-M1-refactor.txt`
+Expected: o `git status` mostra os dois `R` (renomeados) e os dois `M`; o `pre-commit` passa; `git status` limpo depois.
+
+- [ ] **Step 4: A dependência exata**
+
+```sh
+bun add -E motion@14.14.0
+grep -n '"motion"' package.json
+git diff --stat
+```
+
+Expected: `"motion": "14.14.0",` em `dependencies` (sem `^`); o `git diff --stat` só com `package.json` e `bun.lock`.
+
+- [ ] **Step 5: Escrever o teste dos tokens**
+
+`src/lib/motion.test.ts` (projeto `node`):
+
+```ts
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+import {
+  COLOR_FADE,
+  MOTION_DEFAULT_TRANSITION,
+  MOTION_DURATION,
+  MOTION_EASE,
+  MOTION_MAX_SECONDS,
+  MOTION_SPRING,
+  overlayMotion,
+  PRESS_SCALE,
+  sheetMotion,
+  tooltipMotion,
+} from "./motion";
+
+// Os tokens e os presets de movimento (emenda do Motion, ui-rules §9): curtos, saída mais curta que a
+// entrada, e o ramo reduzido de cada preset sem deslize nem escala.
+
+const REDUCED_FADE = {
+  duration: MOTION_DURATION.instant,
+  ease: MOTION_EASE.out,
+};
+const EXIT = { duration: MOTION_DURATION.exit, ease: MOTION_EASE.in };
+const FADE_ONLY = {
+  initial: { opacity: 0 },
+  open: { opacity: 1, transition: REDUCED_FADE },
+  closed: { opacity: 0, transition: REDUCED_FADE },
+};
+
+describe("tokens de movimento", () => {
+  it("toda duração é positiva e cabe no teto (curto)", () => {
+    for (const [name, seconds] of Object.entries(MOTION_DURATION)) {
+      expect(seconds, name).toBeGreaterThan(0);
+      expect(seconds, name).toBeLessThanOrEqual(MOTION_MAX_SECONDS);
+    }
+  });
+
+  it("toda mola cabe no teto e tem pouca ou nenhuma sobra", () => {
+    for (const [name, spring] of Object.entries(MOTION_SPRING)) {
+      expect(spring.type, name).toBe("spring");
+      expect(spring.visualDuration, name).toBeGreaterThan(0);
+      expect(spring.visualDuration, name).toBeLessThanOrEqual(
+        MOTION_MAX_SECONDS,
+      );
+      expect(spring.bounce, name).toBeGreaterThanOrEqual(0);
+      expect(spring.bounce, name).toBeLessThanOrEqual(0.25);
+    }
+  });
+
+  it("a saída é mais curta que a entrada (do painel e do véu)", () => {
+    expect(MOTION_DURATION.exit).toBeLessThan(
+      MOTION_SPRING.panel.visualDuration,
+    );
+    expect(MOTION_DURATION.exit).toBeLessThan(MOTION_DURATION.base);
+  });
+
+  it("as curvas são cubic-bezier com x entre 0 e 1", () => {
+    for (const [name, curve] of Object.entries(MOTION_EASE)) {
+      expect(curve, name).toHaveLength(4);
+      for (const x of [curve[0], curve[2]]) {
+        expect(x, name).toBeGreaterThanOrEqual(0);
+        expect(x, name).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  it("o aperto encolhe pouco: de 0,95 a 1 (sem chegar a 1)", () => {
+    expect(PRESS_SCALE).toBeGreaterThanOrEqual(0.95);
+    expect(PRESS_SCALE).toBeLessThan(1);
+  });
+
+  it("a transição padrão e a troca de cor são tweens dos tokens", () => {
+    expect(MOTION_DEFAULT_TRANSITION).toEqual({
+      duration: MOTION_DURATION.base,
+      ease: MOTION_EASE.out,
+    });
+    expect(COLOR_FADE).toEqual({
+      duration: MOTION_DURATION.fade,
+      ease: MOTION_EASE.inOut,
+    });
+  });
+
+  it("o módulo é puro: do Motion, só tipos", () => {
+    const source = readFileSync(join(import.meta.dirname, "motion.ts"), "utf8");
+    expect(source.match(/^import .*$/gm) ?? []).toEqual([
+      'import type { Transition } from "motion/react";',
+    ]);
+  });
+});
+
+describe("sheetMotion", () => {
+  it.each([
+    ["right", { x: 40 }, { x: 0 }],
+    ["left", { x: -40 }, { x: 0 }],
+    ["top", { y: -40 }, { y: 0 }],
+    ["bottom", { y: 40 }, { y: 0 }],
+  ] as const)("painel à %s: chega de 40px com fade e sai pelo mesmo lado", (side, away, home) => {
+    const preset = sheetMotion(side, "sheet", false);
+    expect(preset.initial).toEqual({ ...away, opacity: 0 });
+    expect(preset.open).toEqual({
+      ...home,
+      opacity: 1,
+      transition: {
+        default: MOTION_SPRING.panel,
+        opacity: { duration: MOTION_DURATION.fast, ease: MOTION_EASE.out },
+      },
+    });
+    expect(preset.closed).toEqual({ ...away, opacity: 0, transition: EXIT });
+  });
+
+  it.each([
+    ["left", "-105%"],
+    ["right", "105%"],
+  ] as const)("gaveta à %s: vem da borda (%s), opaca, e sai com fade (a opacidade é o que o Base UI espera)", (side, away) => {
+    const preset = sheetMotion(side, "drawer", false);
+    expect(preset.initial).toEqual({ x: away, opacity: 1 });
+    expect(preset.open).toMatchObject({ x: "0%", opacity: 1 });
+    expect(preset.closed).toEqual({ x: away, opacity: 0, transition: EXIT });
+  });
+
+  it("gaveta em cima ou embaixo anda no y", () => {
+    expect(sheetMotion("top", "drawer", false).initial).toEqual({
+      y: "-105%",
+      opacity: 1,
+    });
+    expect(sheetMotion("bottom", "drawer", false).closed).toMatchObject({
+      y: "105%",
+      opacity: 0,
+    });
+  });
+
+  it.each([
+    "top",
+    "right",
+    "bottom",
+    "left",
+  ] as const)("com movimento reduzido (%s): só o fade curto, sem x nem y", (side) => {
+    expect(sheetMotion(side, "sheet", true)).toEqual(FADE_ONLY);
+    expect(sheetMotion(side, "drawer", true)).toEqual(FADE_ONLY);
+  });
+});
+
+describe("overlayMotion", () => {
+  it("o véu entra em fade e sai mais rápido", () => {
+    expect(overlayMotion(false)).toEqual({
+      initial: { opacity: 0 },
+      open: {
+        opacity: 1,
+        transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE.out },
+      },
+      closed: { opacity: 0, transition: EXIT },
+    });
+  });
+
+  it("com movimento reduzido, o fade curto", () => {
+    expect(overlayMotion(true)).toEqual(FADE_ONLY);
+  });
+});
+
+describe("tooltipMotion", () => {
+  it.each([
+    ["top", { y: 4 }],
+    ["bottom", { y: -4 }],
+    ["left", { x: 4 }],
+    ["inline-start", { x: 4 }],
+    ["right", { x: -4 }],
+    ["inline-end", { x: -4 }],
+  ] as const)("à %s: sai do gatilho (4px) crescendo de 0,96 até o lugar", (side, offset) => {
+    const preset = tooltipMotion(side, false);
+    expect(preset.initial).toEqual({ opacity: 0, scale: 0.96, ...offset });
+    expect(preset.animate).toEqual({
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE.out },
+    });
+  });
+
+  it("com movimento reduzido, só o fade curto (sem deslocamento nem escala)", () => {
+    expect(tooltipMotion("top", true)).toEqual({
+      initial: { opacity: 0 },
+      animate: { opacity: 1, transition: REDUCED_FADE },
+    });
+  });
+});
+```
+
+- [ ] **Step 6: Rodar e ver falhar**
+
+Run: `bunx vitest run src/lib/motion.test.ts`
+Expected: FAIL com o import que não existe ("Failed to load url ./motion" ou "Cannot find module './motion'").
+
+- [ ] **Step 7: Implementar `src/lib/motion.ts`**
+
+```ts
+import type { Transition } from "motion/react";
+
+// Movimento do Closery (emenda do Motion, 2026-11-27; ui-rules §9, ui-tokens §8, library-docs §23).
+// Os números de duração, curva e mola moram só aqui: os componentes usam estes nomes (guarda:
+// src/app/motionUsage.test.ts). Curto (nada passa de MOTION_MAX_SECONDS), saída mais curta que a
+// entrada, e cada efeito com o ramo de movimento reduzido. O comportamento (o que anima e como reduz)
+// segue a ArcUI (https://uiarc.dev, MIT); os valores são nossos. Do Motion, só tipos: o módulo é puro.
+
+/** O teto de qualquer duração ou mola, em segundos: o movimento nunca atrasa a passagem. */
+export const MOTION_MAX_SECONDS = 0.45;
+
+/** Durações dos tweens, em segundos. */
+export const MOTION_DURATION = {
+  /** o fade do ramo reduzido */
+  instant: 0.1,
+  /** a opacidade de entrada do painel */
+  fast: 0.15,
+  /** a saída do painel, da gaveta e do véu (mais curta que a entrada) */
+  exit: 0.18,
+  /** a entrada do tooltip e do véu; a transição padrão */
+  base: 0.2,
+  /** a troca de cor do cartão do turno */
+  fade: 0.4,
+} as const;
+
+/** Uma curva cúbica: os quatro números do `cubic-bezier`. */
+export type CubicBezier = [number, number, number, number];
+
+/** Curvas dos tweens. */
+export const MOTION_EASE: Record<"out" | "in" | "inOut", CubicBezier> = {
+  /** entrada (a curva que o knob e a gaveta tinham no CSS) */
+  out: [0.2, 0.8, 0.2, 1],
+  /** saída: acelera para fora */
+  in: [0.4, 0, 1, 1],
+  /** o que já está na tela e muda (a cor do cartão) */
+  inOut: [0.65, 0, 0.35, 1],
+};
+
+/**
+ * Molas (`visualDuration` em segundos; `bounce` de 0 a 1). Servem de `transition` e de opção do
+ * `useSpring` (o `type` a mais é ignorado ali).
+ */
+export const MOTION_SPRING = {
+  /** o aperto do botão: firme, sem sobra */
+  press: { type: "spring", visualDuration: 0.15, bounce: 0 },
+  /** o knob do ThemeSwitch */
+  knob: { type: "spring", visualDuration: 0.3, bounce: 0.15 },
+  /** o thumb do SectorPicker: um pouco de sobra, como a curva do protótipo, cubic-bezier(.3,1.25,.4,1) */
+  thumb: { type: "spring", visualDuration: 0.35, bounce: 0.2 },
+  /** o painel do Sheet e a gaveta: sem sobra */
+  panel: { type: "spring", visualDuration: 0.3, bounce: 0 },
+} as const satisfies Record<string, Transition>;
+
+/** O aperto: o botão encolhe para isto. */
+export const PRESS_SCALE = 0.97;
+
+/** A transição de quem não declarar nenhuma (o MotionConfig da raiz). */
+export const MOTION_DEFAULT_TRANSITION = {
+  duration: MOTION_DURATION.base,
+  ease: MOTION_EASE.out,
+} satisfies Transition;
+
+/** A troca de cor do cartão do turno (a camada do SectorColorFade some). */
+export const COLOR_FADE = {
+  duration: MOTION_DURATION.fade,
+  ease: MOTION_EASE.inOut,
+} satisfies Transition;
+
+/** Os valores que um `m.*` recebe em `initial` e nos alvos (só transformação e opacidade). */
+export type MotionValues = {
+  x?: string | number;
+  y?: string | number;
+  opacity?: number;
+  scale?: number;
+};
+
+/** Um alvo com a transição dele. */
+export type MotionTarget = MotionValues & { transition?: Transition };
+
+/** A entrada e a saída de um popup: `initial` ao montar, `open` aberto, `closed` fechando. */
+export type PopupMotion = {
+  initial: MotionValues;
+  open: MotionTarget;
+  closed: MotionTarget;
+};
+
+export type SheetSide = "top" | "right" | "bottom" | "left";
+
+/** `sheet`: o painel chega de perto (40px) com fade; `drawer`: a gaveta do menu vem da borda (105%), opaca. */
+export type SheetMotionKind = "sheet" | "drawer";
+
+const SHEET_TRAVEL_PX = 40;
+const DRAWER_TRAVEL_PCT = 105;
+
+const ENTER_FADE = {
+  duration: MOTION_DURATION.fast,
+  ease: MOTION_EASE.out,
+} satisfies Transition;
+const EXIT = {
+  duration: MOTION_DURATION.exit,
+  ease: MOTION_EASE.in,
+} satisfies Transition;
+const REDUCED_FADE = {
+  duration: MOTION_DURATION.instant,
+  ease: MOTION_EASE.out,
+} satisfies Transition;
+
+/** O ramo reduzido de todo popup: um fade curto, sem deslize nem escala. */
+const FADE_ONLY: PopupMotion = {
+  initial: { opacity: 0 },
+  open: { opacity: 1, transition: REDUCED_FADE },
+  closed: { opacity: 0, transition: REDUCED_FADE },
+};
+
+/**
+ * Entrada e saída do painel do Sheet e da gaveta. A entrada é a mola `panel` (a opacidade, um fade
+ * curto); a saída, um tween mais curto que leva a opacidade a 0: é por ela que o Base UI espera a
+ * animação antes de desmontar (library-docs §23). Com movimento reduzido, só o fade.
+ */
+export function sheetMotion(
+  side: SheetSide,
+  kind: SheetMotionKind,
+  reduce: boolean,
+): PopupMotion {
+  if (reduce) return FADE_ONLY;
+  const sign = side === "left" || side === "top" ? -1 : 1;
+  const away =
+    kind === "drawer"
+      ? `${sign * DRAWER_TRAVEL_PCT}%`
+      : sign * SHEET_TRAVEL_PX;
+  const home = kind === "drawer" ? "0%" : 0;
+  const horizontal = side === "left" || side === "right";
+  const at = (value: string | number): MotionValues =>
+    horizontal ? { x: value } : { y: value };
+  return {
+    initial: { ...at(away), opacity: kind === "drawer" ? 1 : 0 },
+    open: {
+      ...at(home),
+      opacity: 1,
+      transition: { default: MOTION_SPRING.panel, opacity: ENTER_FADE },
+    },
+    closed: { ...at(away), opacity: 0, transition: EXIT },
+  };
+}
+
+/** O véu do Sheet: fade de entrada e de saída (no reduzido, o fade curto). */
+export function overlayMotion(reduce: boolean): PopupMotion {
+  if (reduce) return FADE_ONLY;
+  return {
+    initial: { opacity: 0 },
+    open: {
+      opacity: 1,
+      transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE.out },
+    },
+    closed: { opacity: 0, transition: EXIT },
+  };
+}
+
+export type TooltipSide =
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
+  | "inline-start"
+  | "inline-end";
+
+const TOOLTIP_TRAVEL_PX = 4;
+const TOOLTIP_FROM_SCALE = 0.96;
+
+/** De onde o tooltip sai: 4px para o lado do gatilho. */
+const TOOLTIP_FROM: Record<TooltipSide, MotionValues> = {
+  top: { y: TOOLTIP_TRAVEL_PX },
+  bottom: { y: -TOOLTIP_TRAVEL_PX },
+  left: { x: TOOLTIP_TRAVEL_PX },
+  "inline-start": { x: TOOLTIP_TRAVEL_PX },
+  right: { x: -TOOLTIP_TRAVEL_PX },
+  "inline-end": { x: -TOOLTIP_TRAVEL_PX },
+};
+
+/**
+ * Entrada do tooltip: sai do gatilho (4px) crescendo de 0,96; no reduzido, só o fade curto. A saída é
+ * imediata (o tooltip fecha na hora).
+ */
+export function tooltipMotion(
+  side: TooltipSide,
+  reduce: boolean,
+): { initial: MotionValues; animate: MotionTarget } {
+  if (reduce) {
+    return {
+      initial: { opacity: 0 },
+      animate: { opacity: 1, transition: REDUCED_FADE },
+    };
+  }
+  return {
+    initial: { opacity: 0, scale: TOOLTIP_FROM_SCALE, ...TOOLTIP_FROM[side] },
+    animate: {
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      transition: { duration: MOTION_DURATION.base, ease: MOTION_EASE.out },
+    },
+  };
+}
+```
+
+- [ ] **Step 8: Rodar e ver passar**
+
+Run: `bunx vitest run src/lib/motion.test.ts`
+Expected: PASS (todos; os `it.each` contam um teste por linha).
+
+- [ ] **Step 9: A ajuda dos testes de movimento**
+
+`test/motion.tsx` (importado pelos testes `dom`; não é teste):
+
+```tsx
+import { act } from "@testing-library/react";
+import { MotionConfig } from "motion/react";
+import type { ReactNode } from "react";
+
+import { MotionProvider } from "@/components/motion/MotionProvider";
+
+// Ajuda dos testes de movimento (library-docs §23). O jsdom não tem a Web Animations API: o Motion
+// anima em JS, quadro a quadro (o Vitest liga o `pretendToBeVisual`, que dá o requestAnimationFrame),
+// e escreve no `style` do elemento. Fora do provider o `m` renderiza o `initial` e nunca anima.
+
+/**
+ * O provider do app com o Motion proibido de reduzir sozinho (`reducedMotion="never"`): quem decide o
+ * ramo reduzido é o `usePrefersReducedMotion` de cada componente, pelo `matchMedia` do
+ * `stubReducedMotion`. O estado de movimento reduzido do próprio Motion é lido uma vez por arquivo e
+ * faria um teste depender da ordem dos outros.
+ */
+export function MotionTree({ children }: { children: ReactNode }) {
+  return (
+    <MotionProvider>
+      <MotionConfig reducedMotion="never">{children}</MotionConfig>
+    </MotionProvider>
+  );
+}
+
+const REDUCE_QUERY = /prefers-reduced-motion(?!\s*:\s*no-preference)/;
+
+/** Troca o `window.matchMedia`: "pediu menos movimento" vale `reduce`; o resto, `false`. Devolve o desfazer. */
+export function stubReducedMotion(reduce: boolean): () => void {
+  const original = window.matchMedia;
+  window.matchMedia = (query: string): MediaQueryList => ({
+    matches: reduce && REDUCE_QUERY.test(query),
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  });
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
+/** Espera `ms` dentro de um `act`: atualização do React no meio não vira aviso. */
+export async function wait(ms: number): Promise<void> {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, ms));
+  });
+}
+
+type MotionProperty = "transform" | "opacity";
+
+/**
+ * Os valores de `property` no `style` do elemento durante `ms` depois do `trigger` (o primeiro é o de
+ * antes do gatilho; sem repetir valores seguidos).
+ */
+export async function recordStyle(
+  element: HTMLElement,
+  property: MotionProperty,
+  ms: number,
+  trigger: () => void,
+): Promise<string[]> {
+  const seen = [element.style[property]];
+  const observer = new MutationObserver(() => {
+    const value = element.style[property];
+    if (seen.at(-1) !== value) seen.push(value);
+  });
+  observer.observe(element, { attributes: true, attributeFilter: ["style"] });
+  try {
+    trigger();
+    await wait(ms);
+  } finally {
+    observer.disconnect();
+  }
+  return seen;
+}
+
+/**
+ * O `style` do primeiro elemento de `selector` no instante em que ele entra no DOM: o callback do
+ * MutationObserver é uma microtarefa e roda antes do primeiro quadro do Motion.
+ */
+export function styleOnInsert(
+  selector: string,
+  properties: readonly MotionProperty[],
+): Promise<Record<string, string>> {
+  const read = (element: HTMLElement) =>
+    Object.fromEntries(properties.map((name) => [name, element.style[name]]));
+  return new Promise((resolve) => {
+    const present = document.querySelector<HTMLElement>(selector);
+    if (present) {
+      resolve(read(present));
+      return;
+    }
+    const observer = new MutationObserver(() => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return;
+      observer.disconnect();
+      resolve(read(element));
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+}
+
+/** O deslocamento de `translateX`/`translateY` num `transform` do `style` (null se não houver). */
+export function translateOf(
+  transform: string,
+  axis: "X" | "Y",
+): { value: number; unit: string } | null {
+  const match = new RegExp(
+    `translate${axis}\\((-?[\\d.]+)(px|%|rem)\\)`,
+    "i",
+  ).exec(transform);
+  return match ? { value: Number(match[1]), unit: match[2].toLowerCase() } : null;
+}
+
+/** A escala de um `transform` do `style` (null se não houver). */
+export function scaleOf(transform: string): number | null {
+  const match = /scale\((-?[\d.]+)\)/i.exec(transform);
+  return match ? Number(match[1]) : null;
+}
+```
+
+- [ ] **Step 10: Escrever o teste do provider**
+
+`src/components/motion/MotionProvider.test.tsx`:
+
+```tsx
+import { render, screen, waitFor } from "@testing-library/react";
+import { MotionConfigContext, motion } from "motion/react";
+import * as m from "motion/react-m";
+import { Component, type ReactNode, useContext } from "react";
+import { renderToString } from "react-dom/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { MOTION_DEFAULT_TRANSITION } from "@/lib/motion";
+import { wait } from "../../../test/motion";
+import { MotionProvider } from "./MotionProvider";
+
+// O provider da raiz (library-docs §23): só contexto (nenhum elemento, nenhum script), movimento
+// reduzido do aparelho, transição padrão curta, as animações do domAnimation e o `strict`.
+
+class Catcher extends Component<
+  { children: ReactNode },
+  { message: string | null }
+> {
+  state: { message: string | null } = { message: null };
+  static getDerivedStateFromError(error: unknown) {
+    return { message: error instanceof Error ? error.message : String(error) };
+  }
+  render() {
+    return this.state.message === null ? (
+      this.props.children
+    ) : (
+      <p role="alert">{this.state.message}</p>
+    );
+  }
+}
+
+function ConfigProbe() {
+  const { reducedMotion, transition } = useContext(MotionConfigContext);
+  return (
+    <output aria-label="config">
+      {JSON.stringify({ reducedMotion, transition })}
+    </output>
+  );
+}
+
+describe("MotionProvider", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("é só contexto: no servidor não acrescenta elemento nem script", () => {
+    expect(
+      renderToString(
+        <MotionProvider>
+          <p>conteúdo</p>
+        </MotionProvider>,
+      ),
+    ).toBe("<p>conteúdo</p>");
+  });
+
+  it("segue o movimento reduzido do aparelho e dá a transição curta padrão", () => {
+    render(
+      <MotionProvider>
+        <ConfigProbe />
+      </MotionProvider>,
+    );
+    expect(
+      JSON.parse(screen.getByLabelText("config").textContent ?? "{}"),
+    ).toEqual({ reducedMotion: "user", transition: MOTION_DEFAULT_TRANSITION });
+  });
+
+  it("carrega as animações: dentro dele o m anima; fora, fica parado no initial", async () => {
+    render(
+      <>
+        <MotionProvider>
+          <m.div
+            data-testid="dentro"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0 }}
+          />
+        </MotionProvider>
+        <m.div
+          data-testid="fora"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0 }}
+        />
+      </>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("dentro").style.opacity).toBe("1"),
+    );
+    await wait(100);
+    expect(screen.getByTestId("fora").style.opacity).toBe("0");
+  });
+
+  it("strict: o motion pronto dentro dele lança (só m)", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <Catcher>
+        <MotionProvider>
+          <motion.div />
+        </MotionProvider>
+      </Catcher>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/LazyMotion/);
+  });
+});
+```
+
+- [ ] **Step 11: Rodar, ver falhar, implementar e ver passar**
+
+Run: `bunx vitest run src/components/motion/MotionProvider.test.tsx`
+Expected: FAIL com o import que não existe ("Failed to load url ./MotionProvider").
+
+`src/components/motion/MotionProvider.tsx`:
+
+```tsx
+"use client";
+
+import { domAnimation, LazyMotion, MotionConfig } from "motion/react";
+import type { ReactNode } from "react";
+
+import { MOTION_DEFAULT_TRANSITION } from "@/lib/motion";
+
+// A camada do Motion no app inteiro (library-docs §23). Só contexto: nenhum elemento e nenhum script
+// (a lição do next-themes, library-docs §18), então pode ficar acima dos Suspense. O LazyMotion carrega
+// o domAnimation (animações, saídas e os gestos de toque, foco e hover; sem layout nem arrasto) e o
+// `strict` lança se alguém usar o `motion` pronto em vez do `m`. O MotionConfig desliga as
+// transformações sozinho quando o aparelho pede menos movimento (a rede: cada componente tem o ramo
+// reduzido dele) e dá a transição curta a quem não declarar nenhuma.
+export function MotionProvider({ children }: { children: ReactNode }) {
+  return (
+    <LazyMotion features={domAnimation} strict>
+      <MotionConfig
+        reducedMotion="user"
+        transition={MOTION_DEFAULT_TRANSITION}
+      >
+        {children}
+      </MotionConfig>
+    </LazyMotion>
+  );
+}
+```
+
+Run: `bunx vitest run src/components/motion/MotionProvider.test.tsx`
+Expected: PASS (4 testes).
+
+- [ ] **Step 12: Escrever o guarda do Motion**
+
+`src/app/motionUsage.test.ts` (projeto `node`):
+
+```ts
+/**
+ * Guarda do Motion (emenda de 2026-11-27; ui-rules §9, library-docs §23). Varre os `.ts` e `.tsx` de
+ * `src/` (fora os testes) e recusa: (1) o `motion` pronto, o `framer-motion` e o `motion/react-client`
+ * (só o `m`, dentro do LazyMotion); (2) nos arquivos que importam o Motion, número de duração ou de
+ * mola e curva escrita no lugar dos nomes de `src/lib/motion.ts` (o único arquivo com os números).
+ * E confere que o RootLayout põe o MotionProvider no <body> e continua com um script só (o do tema).
+ *
+ * Rodar: `bunx vitest run src/app/motionUsage.test.ts`
+ */
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { describe, expect, it } from "vitest";
+
+const SRC = join(import.meta.dirname, "..");
+
+/** Os arquivos com os números (chave relativa a `src/`, com `/`). */
+const TOKEN_FILES: ReadonlySet<string> = new Set(["lib/motion.ts"]);
+
+const MOTION_IMPORT = /from\s+["']motion\/react(?:-m)?["']/;
+
+const ANYWHERE: readonly (readonly [string, RegExp])[] = [
+  [
+    "motion pronto (use o m de motion/react-m)",
+    /import\s*\{[^}]*\bmotion\b[^}]*\}\s*from\s*["']motion\/react["']/,
+  ],
+  ["framer-motion direto", /from\s+["']framer-motion["']/],
+  ["motion/react-client", /from\s+["']motion\/react-client["']/],
+];
+
+const IN_MOTION_FILES: readonly (readonly [string, RegExp])[] = [
+  [
+    "número de duração ou mola fora de src/lib/motion.ts",
+    /\b(?:duration|visualDuration|stiffness|damping|mass|bounce|delay|repeatDelay)\s*:\s*-?\.?\d/,
+  ],
+  ["curva fora de src/lib/motion.ts", /\bease\s*:\s*[["'`]/],
+];
+
+function stripComments(source: string): string {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[^:"'`])\/\/[^\n]*/g, "$1");
+}
+
+/** Os nomes das regras que o código reprova (vazio = limpo). */
+function motionViolations(source: string, key = ""): string[] {
+  const code = stripComments(source);
+  const found = ANYWHERE.filter(([, rule]) => rule.test(code)).map(
+    ([name]) => name,
+  );
+  if (MOTION_IMPORT.test(code) && !TOKEN_FILES.has(key)) {
+    for (const [name, rule] of IN_MOTION_FILES) {
+      if (rule.test(code)) found.push(name);
+    }
+  }
+  return found;
+}
+
+function sourceFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) return sourceFiles(full);
+    return /\.(ts|tsx)$/.test(name) && !/\.test\.(ts|tsx)$/.test(name)
+      ? [full]
+      : [];
+  });
+}
+
+const files = sourceFiles(SRC).map((file) => ({
+  key: relative(SRC, file).split("\\").join("/"),
+  source: readFileSync(file, "utf8"),
+}));
+
+const motionFiles = files
+  .filter(({ source }) => MOTION_IMPORT.test(stripComments(source)))
+  .map(({ key }) => key)
+  .sort();
+
+const M = 'import * as m from "motion/react-m";\n';
+
+describe("motionUsage", () => {
+  it("as regras: o que pegam", () => {
+    expect(motionViolations('import { motion } from "motion/react";')).toEqual(
+      ["motion pronto (use o m de motion/react-m)"],
+    );
+    expect(
+      motionViolations('import { AnimatePresence, motion } from "motion/react";'),
+    ).toEqual(["motion pronto (use o m de motion/react-m)"]);
+    expect(motionViolations('import { m } from "framer-motion";')).toEqual([
+      "framer-motion direto",
+    ]);
+    expect(
+      motionViolations('import * as m from "motion/react-client";'),
+    ).toEqual(["motion/react-client"]);
+    expect(
+      motionViolations(`${M}<m.div transition={{ duration: 0.3 }} />`),
+    ).toEqual(["número de duração ou mola fora de src/lib/motion.ts"]);
+    expect(
+      motionViolations(`${M}<m.div transition={{ type: "spring", bounce: .2 }} />`),
+    ).toEqual(["número de duração ou mola fora de src/lib/motion.ts"]);
+    expect(
+      motionViolations(`${M}<m.div transition={{ ease: [0.2, 0.8, 0.2, 1] }} />`),
+    ).toEqual(["curva fora de src/lib/motion.ts"]);
+    expect(
+      motionViolations(`${M}<m.div transition={{ ease: "easeOut" }} />`),
+    ).toEqual(["curva fora de src/lib/motion.ts"]);
+  });
+
+  it("as regras: o que poupam", () => {
+    expect(
+      motionViolations(
+        'import { type HTMLMotionProps, useSpring } from "motion/react";\nconst x = useSpring(0, MOTION_SPRING.knob);',
+      ),
+    ).toEqual([]);
+    expect(
+      motionViolations(
+        `${M}<m.div transition={MOTION_SPRING.press} animate={{ x: 0, opacity: 1 }} />`,
+      ),
+    ).toEqual([]);
+    expect(motionViolations(`${M}// duration: 3 só num comentário\n<m.div />`)).toEqual(
+      [],
+    );
+    // Sem importar o Motion, um número de duração é de outra coisa (o toast do sonner).
+    expect(
+      motionViolations('toast.success("Salvo", { duration: 6000 });'),
+    ).toEqual([]);
+    // O arquivo dos tokens pode (e deve) ter os números.
+    expect(
+      motionViolations(
+        'import type { Transition } from "motion/react";\nexport const X = { duration: 0.2, ease: [0.2, 0.8, 0.2, 1] };',
+        "lib/motion.ts",
+      ),
+    ).toEqual([]);
+  });
+
+  it("nenhum arquivo de src/ viola", () => {
+    const violations = files.flatMap(({ key, source }) =>
+      motionViolations(source, key).map((name) => `${key}: ${name}`),
+    );
+    expect(violations).toEqual([]);
+  });
+
+  it("os arquivos que usam o Motion: a fundação (M1)", () => {
+    expect(motionFiles).toEqual(
+      expect.arrayContaining([
+        "components/motion/MotionProvider.tsx",
+        "lib/motion.ts",
+      ]),
+    );
+  });
+
+  it("o RootLayout põe o MotionProvider no <body>, por fora do TooltipProvider e do Toaster, com um script só (o do tema)", () => {
+    const layout = stripComments(
+      readFileSync(join(SRC, "app", "layout.tsx"), "utf8"),
+    );
+    expect(layout).toContain(
+      'import { MotionProvider } from "@/components/motion/MotionProvider";',
+    );
+    expect(layout).toMatch(
+      /<body[^>]*>\s*<MotionProvider>\s*<TooltipProvider>\{children\}<\/TooltipProvider>\s*<Toaster \/>\s*<\/MotionProvider>\s*<\/body>/,
+    );
+    expect(layout.match(/<script\b/g) ?? []).toHaveLength(1);
+  });
+});
+```
+
+- [ ] **Step 13: Rodar, ver falhar, pôr o provider no `RootLayout` e ver passar**
+
+Run: `bunx vitest run src/app/motionUsage.test.ts`
+Expected: FAIL só no último teste ("expected … to contain 'import { MotionProvider } from …'"); os outros passam (o
+`MotionProvider` e o `motion.ts` já existem e não violam).
+
+Edite `src/app/layout.tsx` (ferramenta Edit). old_string:
+
+```tsx
+import { Toaster } from "@/components/ui/sonner";
+```
+
+new_string:
+
+```tsx
+import { MotionProvider } from "@/components/motion/MotionProvider";
+import { Toaster } from "@/components/ui/sonner";
+```
+
+old_string:
+
+```tsx
+export default function RootLayout({ children }: LayoutProps<"/">) {
+```
+
+new_string:
+
+```tsx
+// O MotionProvider (library-docs §23) é só contexto, sem script e sem elemento: fica no <body>, por fora
+// do TooltipProvider e do Toaster (os portais herdam o contexto), como o guia de providers do Next manda.
+export default function RootLayout({ children }: LayoutProps<"/">) {
+```
+
+old_string:
+
+```tsx
+      <body className="flex min-h-full flex-col">
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
+      </body>
+```
+
+new_string:
+
+```tsx
+      <body className="flex min-h-full flex-col">
+        <MotionProvider>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster />
+        </MotionProvider>
+      </body>
+```
+
+Run: `bunx vitest run src/app/motionUsage.test.ts test/fontsConfig.test.ts src/app/robots.test.ts`
+Expected: PASS (os três arquivos).
+
+- [ ] **Step 14: Escrever o teste do assentar das capturas**
+
+`test/visual/settle.test.ts` (projeto `node`):
+
+```ts
+import { describe, expect, it } from "vitest";
+
+import {
+  CAPTURE_REDUCED_MOTION,
+  STYLE_QUIET_MS,
+  settleVerdict,
+  styleQuietScript,
+} from "../../scripts/visual/settle.mjs";
+
+// O assentar das capturas (PB-D6, emenda do Motion): as molas e as cores que o Motion anima em JS
+// não aparecem no getAnimations(), mas escrevem no `style` a cada quadro. Sem navegador: o script da
+// página roda com um documento e um MutationObserver falsos.
+
+const BASE = { startedAt: 0, quietMs: 200, timeoutMs: 3000 };
+
+describe("settleVerdict", () => {
+  it("assenta com quietMs sem escrita no style (no limite exato)", () => {
+    expect(settleVerdict({ ...BASE, now: 200, lastWrite: 0 })).toBe("quiet");
+    expect(settleVerdict({ ...BASE, now: 199, lastWrite: 0 })).toBe("wait");
+  });
+
+  it("escrita recente reinicia a espera", () => {
+    expect(settleVerdict({ ...BASE, now: 1000, lastWrite: 900 })).toBe("wait");
+  });
+
+  it("estoura no timeoutMs com escrita contínua: animação infinita não trava a captura", () => {
+    expect(settleVerdict({ ...BASE, now: 3000, lastWrite: 2990 })).toBe(
+      "timeout",
+    );
+    expect(settleVerdict({ ...BASE, now: 2999, lastWrite: 2990 })).toBe("wait");
+  });
+
+  it("o silêncio vence o tempo quando os dois valem", () => {
+    expect(settleVerdict({ ...BASE, now: 3500, lastWrite: 3000 })).toBe(
+      "quiet",
+    );
+  });
+});
+
+describe("styleQuietScript", () => {
+  it("monta uma expressão que compila, com o settleVerdict embutido e os números pedidos", () => {
+    const script = styleQuietScript(STYLE_QUIET_MS, 3000);
+    expect(script).toContain("function settleVerdict");
+    expect(script).toContain(`quietMs: ${STYLE_QUIET_MS}`);
+    expect(script).toContain("timeoutMs: 3000");
+    expect(() => new Function(`return ${script};`)).not.toThrow();
+  });
+
+  it.each([
+    [0, 3000],
+    [-1, 3000],
+    [Number.NaN, 3000],
+    [200, 100],
+    [200, Number.POSITIVE_INFINITY],
+  ])("recusa quietMs=%s com timeoutMs=%s", (quietMs, timeoutMs) => {
+    expect(() => styleQuietScript(quietMs, timeoutMs)).toThrow();
+  });
+
+  it("numa página falsa: sem escrita assenta; com escrita contínua estoura", async () => {
+    let notify: () => void = () => {};
+    class FakeObserver {
+      constructor(callback: () => void) {
+        notify = callback;
+      }
+      observe(): void {
+        // O teste chama o `notify` no lugar das escritas de verdade.
+      }
+      disconnect(): void {
+        // Nada a soltar.
+      }
+    }
+    const run = (script: string) =>
+      new Function("document", "MutationObserver", `return ${script};`)(
+        { documentElement: {} },
+        FakeObserver,
+      ) as Promise<string>;
+
+    await expect(run(styleQuietScript(60, 600))).resolves.toBe("quiet");
+
+    const writer = setInterval(() => notify(), 10);
+    try {
+      await expect(run(styleQuietScript(60, 300))).resolves.toBe("timeout");
+    } finally {
+      clearInterval(writer);
+    }
+  });
+
+  it("as capturas rodam com movimento reduzido", () => {
+    expect(CAPTURE_REDUCED_MOTION).toBe("reduce");
+  });
+});
+```
+
+Run: `bunx vitest run test/visual/settle.test.ts`
+Expected: FAIL com o import que não existe ("Failed to load url ../../scripts/visual/settle.mjs").
+
+- [ ] **Step 15: Implementar `scripts/visual/settle.mjs` e ver passar**
+
+```js
+// Assentar a página antes de capturar (PB-D6, emenda do Motion; library-docs §23). O getAnimations()
+// só vê as animações de CSS e as da Web Animations API (o fade de opacidade do Motion); as molas e as
+// cores que o Motion anima em JS aparecem como escritas no atributo `style` a cada quadro. A página
+// assenta quando passa STYLE_QUIET_MS sem nenhuma escrita (ou estoura o tempo).
+
+/** Toda captura roda assim (o `reducedMotion` do contexto do Playwright). */
+export const CAPTURE_REDUCED_MOTION = "reduce";
+
+/** O silêncio pedido no `style` antes da captura, em ms. */
+export const STYLE_QUIET_MS = 200;
+
+/**
+ * O veredito de uma amostra: "quiet" (nenhuma escrita há quietMs), "timeout" (estourou) ou "wait".
+ * @param {{ now: number, lastWrite: number, startedAt: number, quietMs: number, timeoutMs: number }} sample
+ * @returns {"quiet" | "timeout" | "wait"}
+ */
+export function settleVerdict({ now, lastWrite, startedAt, quietMs, timeoutMs }) {
+  if (now - lastWrite >= quietMs) return "quiet";
+  if (now - startedAt >= timeoutMs) return "timeout";
+  return "wait";
+}
+
+/**
+ * O script da página, para `page.evaluate`: observa as escritas no `style` de qualquer elemento e
+ * resolve com o veredito quando ele sai de "wait" (amostra a cada 50 ms). O settleVerdict vai
+ * embutido pelo próprio código.
+ * @param {number} quietMs
+ * @param {number} timeoutMs
+ * @returns {string}
+ */
+export function styleQuietScript(quietMs, timeoutMs) {
+  if (!Number.isFinite(quietMs) || quietMs <= 0) {
+    throw new Error(`quietMs precisa ser positivo: ${quietMs}`);
+  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs < quietMs) {
+    throw new Error(`timeoutMs precisa ser finito e >= quietMs: ${timeoutMs}`);
+  }
+  return `new Promise((resolve) => {
+  const settleVerdict = ${settleVerdict.toString()};
+  const startedAt = performance.now();
+  let lastWrite = startedAt;
+  const observer = new MutationObserver(() => {
+    lastWrite = performance.now();
+  });
+  observer.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ["style"] });
+  const check = () => {
+    const verdict = settleVerdict({ now: performance.now(), lastWrite, startedAt, quietMs: ${quietMs}, timeoutMs: ${timeoutMs} });
+    if (verdict === "wait") {
+      setTimeout(check, 50);
+      return;
+    }
+    observer.disconnect();
+    resolve(verdict);
+  };
+  setTimeout(check, 50);
+})`;
+}
+```
+
+Run: `bunx vitest run test/visual/settle.test.ts`
+Expected: PASS (todos).
+
+- [ ] **Step 16: As capturas — sempre com movimento reduzido e esperando o `style` (`capture.mjs`, `audit.mjs`, `measure.mjs`)**
+
+Edite `scripts/visual/capture.mjs` (ferramenta Edit), nove trechos:
+
+1. O cabeçalho. old_string:
+
+```js
+// indicador do `next dev` escondido, movimento reduzido (PB-D6) e espera das fontes e das animações.
+```
+
+new_string:
+
+```js
+// indicador do `next dev` escondido, movimento reduzido sempre (PB-D6) e espera das fontes, das animações e do `style`.
+```
+
+2. old_string:
+
+```js
+import { runSteps } from "./steps.mjs";
+```
+
+new_string:
+
+```js
+import {
+  CAPTURE_REDUCED_MOTION,
+  STYLE_QUIET_MS,
+  styleQuietScript,
+} from "./settle.mjs";
+import { runSteps } from "./steps.mjs";
+```
+
+3. old_string:
+
+```js
+/**
+ * @param {Browser} browser
+ * @param {number} width
+ * @param {"reduce" | "no-preference" | undefined} reducedMotion
+ */
+function newContext(browser, width, reducedMotion) {
+  return browser.newContext({
+    viewport: { width, height: minHeight(width) },
+    deviceScaleFactor: 1,
+    reducedMotion: reducedMotion ?? "reduce",
+  });
+}
+```
+
+new_string:
+
+```js
+/**
+ * Toda captura roda com movimento reduzido (PB-D6, emenda do Motion), sem opção para desligar: o app
+ * pula deslizes, escalas e molas e só faz fades curtos, que o settle espera.
+ * @param {Browser} browser
+ * @param {number} width
+ */
+function newContext(browser, width) {
+  return browser.newContext({
+    viewport: { width, height: minHeight(width) },
+    deviceScaleFactor: 1,
+    reducedMotion: CAPTURE_REDUCED_MOTION,
+  });
+}
+```
+
+4. O JSDoc do `settle`. old_string:
+
+```js
+ * Espera as fontes, as animações pararem (até 3 s; uma infinita não trava) e mais 300 ms.
+```
+
+new_string:
+
+```js
+ * Espera as fontes, as animações pararem (até 3 s; uma infinita não trava), o `style` ficar STYLE_QUIET_MS
+ * sem escrita (até 3 s; settle.mjs) e mais 300 ms.
+```
+
+5. old_string:
+
+```js
+    .catch(() => {
+      // Animação infinita (ou que não terminou em 3 s): a captura segue assim mesmo.
+    });
+  await page.waitForTimeout(SETTLE_MS);
+}
+```
+
+new_string:
+
+```js
+    .catch(() => {
+      // Animação infinita (ou que não terminou em 3 s): a captura segue assim mesmo.
+    });
+  // O que o Motion anima em JS (molas, cores) não aparece no getAnimations(): espera o `style` de
+  // todos os elementos ficar STYLE_QUIET_MS sem escrita (até 3 s; estourar não trava a captura).
+  await page.evaluate(styleQuietScript(STYLE_QUIET_MS, ANIMATIONS_TIMEOUT_MS));
+  await page.waitForTimeout(SETTLE_MS);
+}
+```
+
+6. old_string:
+
+```js
+ * @param {{ path: string, width: number, theme: "dark" | "light", person: PersonKey | null, ready: string, css?: string, reducedMotion?: "reduce" | "no-preference" }} opts
+```
+
+new_string:
+
+```js
+ * @param {{ path: string, width: number, theme: "dark" | "light", person: PersonKey | null, ready: string, css?: string }} opts
+```
+
+e old_string `  const { path, width, theme, person, ready, css = "", reducedMotion } = opts;` → new_string
+`  const { path, width, theme, person, ready, css = "" } = opts;`
+
+7. old_string ` * @param {{ file: string, width: number, reducedMotion?: "reduce" | "no-preference" }} opts` → new_string
+` * @param {{ file: string, width: number }} opts`; e old_string `  const { file, width, reducedMotion } = opts;` →
+new_string `  const { file, width } = opts;`
+
+8. Com `replace_all: true`, old_string `  const context = await newContext(browser, width, reducedMotion);` → new_string
+`  const context = await newContext(browser, width);` (duas ocorrências: `openApp` e `openProto`).
+
+9. No `openState`, old_string:
+
+```js
+    css: state.css,
+    reducedMotion: "reduce",
+  });
+```
+
+new_string:
+
+```js
+    css: state.css,
+  });
+```
+
+e old_string:
+
+```js
+        width,
+        reducedMotion: "reduce",
+      });
+      if (screen.patch) {
+```
+
+new_string:
+
+```js
+        width,
+      });
+      if (screen.patch) {
+```
+
+Edite `scripts/visual/audit.mjs` (ferramenta Edit), dois trechos. O contexto da auditoria é montado ali mesmo (com a
+sessão de cada pessoa), não pelo `newContext`; ele passa a usar a mesma constante, e o `settle` que ele já chama ganha a
+espera do `style` sozinho. old_string:
+
+```js
+import { loadScreen, readState, resolvePath } from "./screen.mjs";
+import { runSteps } from "./steps.mjs";
+```
+
+new_string:
+
+```js
+import { loadScreen, readState, resolvePath } from "./screen.mjs";
+import { CAPTURE_REDUCED_MOTION } from "./settle.mjs";
+import { runSteps } from "./steps.mjs";
+```
+
+e old_string `            reducedMotion: "reduce",` → new_string `            reducedMotion: CAPTURE_REDUCED_MOTION,`
+
+Edite `scripts/visual/measure.mjs` (ferramenta Edit): o `--so-proto` passava a opção que o `openProto` deixou de aceitar.
+old_string:
+
+```js
+        width,
+        reducedMotion: "reduce",
+      });
+      try {
+```
+
+new_string:
+
+```js
+        width,
+      });
+      try {
+```
+
+Run:
+
+```sh
+grep -n "reducedMotion" scripts/visual/capture.mjs scripts/visual/audit.mjs scripts/visual/measure.mjs
+node --check scripts/visual/capture.mjs && node --check scripts/visual/audit.mjs && node --check scripts/visual/measure.mjs && echo "sintaxe ok"
+```
+
+Expected: duas linhas, `scripts/visual/capture.mjs:…:    reducedMotion: CAPTURE_REDUCED_MOTION,` e
+`scripts/visual/audit.mjs:…:            reducedMotion: CAPTURE_REDUCED_MOTION,` (nenhuma no `measure.mjs`), e `sintaxe ok`.
+Os CLIs que abrem pelo `openState` (o `pairs` da T7; o `measure`, o `probe` e o `interact` da T8) não mudam: herdam o
+contexto e o `settle` novos.
+
+- [ ] **Step 17: Documentos**
+
+Ferramenta Edit em cada arquivo.
+
+**`.context/library-docs.md`** — old_string `## Como adicionar uma biblioteca nova` → new_string:
+
+````markdown
+## 23. Motion (`motion` 14.14.0) · emenda do PR B
+
+Decisão: `architecture.md §10` (2026-11-27, PB-D10 a PB-D15) e a spec do PR B §16. Regras de interface: `ui-rules.md §9`;
+valores: `ui-tokens.md §8` (a fonte é `src/lib/motion.ts`).
+
+- **Versão exata, sem `^`** (`bun add -E motion@14.14.0`, de 2026-11-13: passa a regra das duas semanas). O pacote fixa o
+  `framer-motion` 14.14.0 por dentro. API: https://motion.dev/docs/react (context7 `/websites/motion_dev`). Trocar de versão
+  exige rodar os testes de componente que usam o Motion (a lista do `motionUsage.test.ts`) e o `e2e/motion.spec.ts`.
+- **Peso: `LazyMotion` + `m`.** O `MotionProvider` (`src/components/motion/MotionProvider.tsx`) carrega o `domAnimation`
+  (animações, saídas e os gestos de toque, foco e hover; **sem layout nem arrasto**) com `strict`: um `motion.div` dentro
+  dele lança. Componente importa `import * as m from "motion/react-m"`. Fora do provider (um teste sem a `MotionTree`), o
+  `m` renderiza o `initial` e nunca anima.
+- **Sem animação de layout.** O `domAnimation` não traz `layout` nem `layoutId` (só o `domMax`, que dobra o peso). O que
+  desliza guarda o repouso no CSS e anima só a troca, por FLIP com `useSpring`: mede antes e depois (`offsetLeft`, ou a
+  diferença de índice vezes a largura), `jump` para a diferença e `set(0)`. Em repouso o `x` é 0 (`transform: none`).
+- **Só contexto na raiz, sem script.** O `MotionProvider` fica no `<body>` do `RootLayout`, por fora do `TooltipProvider` e
+  do `Toaster`, e não renderiza elemento nem `<script>` (a lição do §18): o `renderToString` dele é o dos filhos.
+  `MotionConfig reducedMotion="user"` (o aparelho que pede menos movimento desliga as transformações sozinho) e
+  `transition={MOTION_DEFAULT_TRANSITION}`.
+- **Hidratação.** O que vem do servidor sai do HTML no lugar: repouso no CSS com o `x` em 0, `initial={false}`, ou nenhum
+  valor (o aperto do `Button` é só gesto). Valor em `initial` só em quem monta no cliente depois de uma ação (o painel do
+  Sheet, o tooltip, a camada de cor). O ramo reduzido nunca muda o HTML: muda transição, gesto e o `initial` de quem
+  monta no cliente.
+- **Movimento reduzido: `usePrefersReducedMotion`** (`src/lib/usePrefersReducedMotion.ts`; `useSyncExternalStore` sobre
+  `(prefers-reduced-motion: reduce)`, snapshot do servidor `false`). Cada componente escolhe o ramo por ele, com os presets
+  puros de `src/lib/motion.ts` (`sheetMotion`, `overlayMotion`, `tooltipMotion`). O `useReducedMotion` do Motion lê o
+  `matchMedia("(prefers-reduced-motion)")` **uma vez por módulo** e avisa no console: não serve para escolher ramo em
+  teste. Todo stub de `matchMedia` precisa de `addEventListener` e `removeEventListener` (o Motion e o hook os chamam).
+- **Base UI (Dialog/Sheet, Tooltip).** O `render` do `Popup`/`Backdrop` recebe uma função `(props, state) => <m.div
+  {...(props as HTMLMotionProps<"div">)} initial={…} animate={state.open ? … : …} />`. O Base UI só espera a saída antes
+  de desmontar se ela tiver **opacidade** (a Motion a roda pela Web Animations API, que o `getAnimations()` vê); saída só
+  de `transform` desmonta na hora (para isso há o desmonte manual com `actionsRef`, handbook "Animation" em
+  `node_modules/@base-ui/react/docs/react/handbook/animation.md`). **Sem `keepMounted`** no portal: o popup montaria
+  depois da hidratação, com ids `_r_`, e o `e2e/hydration.spec.ts` reprovaria. O tooltip anima só a entrada.
+- **CSS e Motion não dividem propriedade.** O Motion escreve `transform` e `opacity` no `style` a cada quadro; uma
+  `transition` de CSS na mesma propriedade corre atrás de cada quadro e atrasa tudo. Elemento com Motion não tem
+  `transition-all` nem `transition` de `transform`/`opacity`, nem classes `data-starting-style`/`data-ending-style` ou
+  `animate-in` do tw-animate-css.
+- **Testes** (`test/motion.tsx`): `MotionTree` (o `MotionProvider` com `reducedMotion="never"`, para o Motion não reduzir
+  pelo estado global dele), `stubReducedMotion(reduce)`, `recordStyle` (os valores do `style` quadro a quadro: o ramo
+  normal tem valor no meio, o reduzido pula direto ao fim), `styleOnInsert` (o `style` no instante em que o elemento entra
+  no DOM, antes do primeiro quadro), `translateOf`, `scaleOf` e `wait` (dentro de `act`). O jsdom não tem Web Animations:
+  o Motion anima em JS pelo `requestAnimationFrame` (o Vitest liga o `pretendToBeVisual`), e o Base UI desmonta na hora
+  (não há `getAnimations`). O que só o Chromium vê (a saída esperada pelo Base UI, o `transform` calculado) fica no
+  `e2e/motion.spec.ts`.
+- **Capturas do processo visual** (`scripts/visual/capture.mjs`, §22): todo contexto com `reducedMotion: "reduce"`
+  (`CAPTURE_REDUCED_MOTION` de `scripts/visual/settle.mjs`, sem opção para desligar: o `newContext` do `capture.mjs` e o
+  contexto que o `audit.mjs` monta); o `settle` (que o `shoot` e o `audit.mjs` chamam) espera as fontes, o
+  `getAnimations()` e depois 200 ms sem escrita no `style` de nenhum elemento (`styleQuietScript`, até 3 s), mais os 300 ms.
+- **Guarda:** `src/app/motionUsage.test.ts`: só `m`, nada de `framer-motion` nem de `motion/react-client`; nos arquivos que
+  importam o Motion, nenhum número de duração ou mola e nenhuma curva fora de `src/lib/motion.ts`; o `RootLayout` com o
+  provider e um script só.
+- **ArcUI como referência, não dependência** (https://uiarc.dev/llms.txt; itens livres sob MIT): distribui itens do
+  registry do shadcn sobre Radix e CSS modules com tokens próprios, e não se instala aqui. O comportamento de movimento (o
+  que anima, a mola, o ramo reduzido) é portado para os nossos componentes (Base UI, Tailwind e `src/lib/motion.ts`), nunca
+  o estilo nem os valores dela; trecho de código copiado leva o aviso de copyright MIT num comentário. O que as branches C
+  a G vão olhar nela:
+  - Dialog: o véu em fade; o painel sobe uns pixels e cresce de perto de 1 numa mola sem sobra; fecha mais rápido e volta
+    de onde está; reduzido, só fade.
+  - Select: o valor novo entra na direção da lista (o de baixo sobe, o de cima desce); reduzido, troca com fade.
+  - Toast: entra subindo e crescendo; sai descendo com fade; arrasto para dispensar; reduzido, fades e sem arrasto.
+  - Switch e Segmented control: o knob e a pílula numa mola rápida; reduzido, na hora. Gatilho de popup não encolhe ao
+    apertar (responde com a cor).
+
+## Como adicionar uma biblioteca nova
+````
+
+E, no §22 (a linha das capturas), old_string:
+
+```markdown
+- **Um servidor e um navegador por vez**; cada CLI fecha o navegador ao fim de cada estado. As capturas rodam com
+  `reducedMotion: "reduce"` e esperam as animações terminarem.
+```
+
+new_string:
+
+```markdown
+- **Um servidor e um navegador por vez**; cada CLI fecha o navegador ao fim de cada estado. As capturas rodam sempre
+  com `reducedMotion: "reduce"` e esperam as animações e o `style` pararem (§23).
+```
+
+**`.context/ui-rules.md`** — old_string `- [ ] Registrado no \`ui-registry.md\`.` (a última linha do arquivo) → new_string:
+
+````markdown
+- [ ] Registrado no `ui-registry.md`.
+- [ ] Movimento (§9): curto, nada na carga nem na hidratação, o ramo reduzido testado e só os tokens.
+
+## 9. Movimento (Motion, desde 2026-11-27)
+
+Valores em `src/lib/motion.ts` (`ui-tokens.md §8`); a biblioteca e a integração com o Base UI no `library-docs.md §23`.
+
+- **Curto e nunca no caminho da passagem.** Nenhuma duração ou mola passa de 0,45 s (`MOTION_MAX_SECONDS`), a saída é
+  mais curta que a entrada, e nada espera uma animação para liberar um clique, um envio ou uma navegação (regra de ouro).
+- **Nada anima na carga nem na hidratação.** O que vem do servidor sai do HTML no lugar: o repouso fica no CSS e só a
+  troca anima (FLIP), ou o elemento usa `initial={false}`. `initial` com valores só em quem monta no cliente depois de uma
+  ação (o painel do Sheet, o tooltip, a camada de cor).
+- **Sempre respeita o movimento reduzido.** Todo efeito tem o ramo reduzido, pelo `usePrefersReducedMotion`: sem deslize,
+  sem escala, sem mola; no máximo um fade curto (`MOTION_DURATION.instant`) ou a troca na hora. O
+  `MotionConfig reducedMotion="user"` da raiz é a rede, não a regra.
+- **O que se move.** Só `transform` e `opacity`; a cor troca por uma camada com opacidade. Mola no que pode voltar no meio
+  (thumb, knob, aperto, painel); tween no fade. O `Button` encolhe para 0,97 ao apertar (`PRESS_SCALE`), menos o gatilho
+  de popup (`aria-haspopup`), que responde só com a cor.
+- **Um dono por propriedade.** Elemento que o Motion anima não tem `transition` de CSS na mesma propriedade (o CSS
+  correria atrás de cada quadro): troque `transition-all` por uma lista sem `transform` e tire as classes de entrada e
+  saída de CSS (`data-starting-style`, `animate-in`).
+- **Só `m`, só tokens.** `import * as m from "motion/react-m"`, dentro do `MotionProvider` (o `strict` recusa o `motion`
+  pronto); duração, curva e mola só pelos nomes de `src/lib/motion.ts`. Guarda: `src/app/motionUsage.test.ts`.
+- **Prova.** Teste de componente com a `MotionTree` e o `stubReducedMotion` (`test/motion.tsx`): os dois ramos, o primeiro
+  quadro, um valor no meio e o fim no lugar; o que o jsdom não vê (a saída que o Base UI espera, o `transform` calculado)
+  vai para o `e2e/motion.spec.ts`. As capturas do processo visual rodam com movimento reduzido e esperam as animações
+  (`library-docs.md §22` e §23).
+- **Referência de comportamento: a ArcUI** (https://uiarc.dev, MIT): o que anima e como reduz, nunca o estilo nem os
+  valores dela; trecho de código copiado leva o aviso de copyright MIT num comentário.
+````
+
+**`.context/ui-tokens.md`** — old_string `` `@theme inline`, mede o contraste em `themeContrast.test.ts` e documente aqui. `` → new_string:
+
+````markdown
+`@theme inline`, mede o contraste em `themeContrast.test.ts` e documente aqui.
+
+## 8. Movimento (Motion, desde 2026-11-27)
+
+A fonte única é `src/lib/motion.ts` (o guarda `src/app/motionUsage.test.ts` recusa número fora dela); as regras, no
+`ui-rules.md §9`.
+
+| Nome | Valor | Onde |
+|---|---|---|
+| `MOTION_MAX_SECONDS` | 0,45 s | teto de qualquer duração ou mola |
+| `MOTION_DURATION.instant` · `fast` · `exit` · `base` · `fade` | 0,1 · 0,15 · 0,18 · 0,2 · 0,4 s | fade do ramo reduzido · opacidade de entrada do painel · saída · tooltip, véu e padrão · cor do cartão do turno |
+| `MOTION_EASE.out` · `in` · `inOut` | `cubic-bezier(.2,.8,.2,1)` · `(.4,0,1,1)` · `(.65,0,.35,1)` | entrada · saída · o que muda na tela |
+| `MOTION_SPRING.press` · `knob` · `thumb` · `panel` | mola de 0,15 s sem sobra · 0,3 s, sobra 0,15 · 0,35 s, sobra 0,2 · 0,3 s sem sobra | aperto · knob do `ThemeSwitch` · thumb do `SectorPicker` · Sheet e gaveta |
+| `PRESS_SCALE` | 0,97 | aperto do `Button` |
+| deslocamentos dos presets | painel 40px · gaveta 105% · tooltip 4px e escala 0,96 | `sheetMotion`, `tooltipMotion` |
+````
+
+**`.claude/skills/handoff-visual/templates/global-constraints.md`** — as branches C a G fazem cada componente novo ou
+restilizado nascer com Motion (a decisão do dono); a linha entra no modelo que vai em todo plano e brief. old_string:
+
+```markdown
+  tooltip; ícones `aria-hidden`; `prefers-reduced-motion` desliga as animações.
+```
+
+new_string:
+
+```markdown
+  tooltip; ícones `aria-hidden`; `prefers-reduced-motion` desliga as animações.
+- Movimento: componente novo ou restilizado nasce com Motion (`ui-rules.md §9`, `library-docs.md §23`): só `m`
+  (`motion/react-m`) e os tokens de `src/lib/motion.ts`; nada anima na carga nem na hidratação; os dois ramos (normal e
+  movimento reduzido) testados com a `MotionTree` e o `stubReducedMotion` (`test/motion.tsx`). O comportamento vem da
+  variante da ArcUI listada no §23, nunca o estilo nem os valores dela.
+```
+
+**`.context/architecture.md`** — três trechos na entrada `### 2026-11-27 — Processo visual (PR B)` da T10:
+
+1. old_string:
+
+```markdown
+    - **PB-D9, divisão do plano:** o `check-names`, o hook e as ferramentas do registro ficaram com o redator da skill.
+```
+
+new_string:
+
+```markdown
+    - **PB-D9, divisão do plano:** o `check-names`, o hook e as ferramentas do registro ficaram com o redator da skill.
+    - **PB-D10 a PB-D15, Motion (emenda de 2026-11-27, spec §16):** `motion` 14.14.0 exata em `dependencies`; `LazyMotion` com `domAnimation` e `strict` (só `m`) e `MotionConfig reducedMotion="user"` no `MotionProvider`, só contexto, no `<body>` do `RootLayout`; durações, curvas, molas e presets em `src/lib/motion.ts`, com o guarda `src/app/motionUsage.test.ts`; o ramo reduzido de cada componente pelo `usePrefersReducedMotion` (que foi do dashboard para `src/lib`); Base UI pela função `render` com `state.open` e saída com opacidade, sem `keepMounted`; sem animação de layout (FLIP com `useSpring`, repouso no CSS); a ArcUI como referência de comportamento, não dependência. As capturas rodam sempre com movimento reduzido e esperam o `style` parar.
+```
+
+2. old_string:
+
+```markdown
+O processo: a skill `handoff-visual` (`.claude/skills/handoff-visual/`, com oito modelos).
+```
+
+new_string:
+
+```markdown
+O processo: a skill `handoff-visual` (`.claude/skills/handoff-visual/`, com oito modelos).
+  - Dependência nova, **exata**: `motion` 14.14.0 (`library-docs.md §23`).
+```
+
+3. old_string:
+
+```markdown
+  4. Rota nova de primeiro nível em `(app)` exige o espelho no slot; o guarda reprova o esquecimento.
+```
+
+new_string:
+
+```markdown
+  4. Rota nova de primeiro nível em `(app)` exige o espelho no slot; o guarda reprova o esquecimento.
+  5. O Motion pesa em toda página (o `m` com o `domAnimation`, cerca de 25 KB comprimidos segundo a doc do Motion); o `domMax` (layout e arrasto) ficou de fora, e o que desliza usa FLIP.
+```
+
+**`AGENTS.md`** — old_string:
+
+```markdown
+  séries, a cor pertence à entidade e **nunca é ciclada** (`ui-rules.md §4`)
+```
+
+new_string:
+
+```markdown
+  séries, a cor pertence à entidade e **nunca é ciclada** (`ui-rules.md §4`)
+- Movimento: curto, nunca na carga nem na hidratação, sempre com o ramo de movimento reduzido; só `m`
+  (`motion/react-m`) e os tokens de `src/lib/motion.ts` (`ui-rules.md §9`, `library-docs.md §23`)
+```
+
+**`.context/ui-registry.md`** — old_string:
+
+```markdown
+## 2. Componentes de aplicação — `src/components/<área>`
+
+### AppSidebar
+```
+
+new_string:
+
+```markdown
+## 2. Componentes de aplicação — `src/components/<área>`
+
+### MotionProvider
+- **Status:** ✅ pronto (2026-11-27)
+- **Local:** `src/components/motion/MotionProvider.tsx` (`"use client"`)
+- **Propósito:** a camada do Motion no app inteiro (`library-docs.md §23`).
+- **Como funciona:** só contexto, sem elemento nem script: `LazyMotion features={domAnimation} strict` (o `motion` pronto lança: só `m`, de `motion/react-m`) e `MotionConfig reducedMotion="user"` com a transição padrão `MOTION_DEFAULT_TRANSITION`. Fica no `<body>` do `RootLayout`, por fora do `TooltipProvider` e do `Toaster` (os portais herdam o contexto). Nos testes, a `MotionTree` (`test/motion.tsx`) põe o mesmo provider com `reducedMotion="never"`, e o ramo reduzido de cada componente vem do `usePrefersReducedMotion` com o `matchMedia` do `stubReducedMotion`.
+- **Usa:** `motion` 14.14.0 (`LazyMotion`, `domAnimation`, `MotionConfig`), `MOTION_DEFAULT_TRANSITION` (`src/lib/motion.ts`).
+- **Histórico:** 2026-11-27 — criado na emenda do Motion (M1).
+
+### AppSidebar
+```
+
+e old_string:
+
+```markdown
+- **Propósito:** saber se a pessoa pediu menos movimento, para desligar animação em JS (o recharts).
+```
+
+new_string:
+
+```markdown
+- **Propósito:** saber se a pessoa pediu menos movimento: desliga a animação do recharts e escolhe o ramo reduzido de cada componente com Motion (`library-docs.md §23`).
+```
+
+Run:
+
+```sh
+grep -c "^### " .context/ui-registry.md
+grep -n "^## 2[123]\. \|^## Como adicionar" .context/library-docs.md
+grep -n "^## 9\. \|^## 8\. " .context/ui-rules.md .context/ui-tokens.md
+bunx vitest run test/uiRegistryDoc.test.ts test/pendenciasDoc.test.ts test/skillHandoffVisual.test.ts
+```
+
+Expected: N + 1 (o N do Step 1); `## 21.`, `## 22.`, `## 23. Motion …` e `## Como adicionar …`, nesta ordem;
+`ui-rules.md:…:## 8. Checklist…`, `ui-rules.md:…:## 9. Movimento…` e `ui-tokens.md:…:## 8. Movimento…`; os três testes
+PASS.
+
+- [ ] **Step 18: Formatar, tipos, lint e os testes tocados**
+
+```sh
+bunx biome check --write src/lib/motion.ts src/lib/motion.test.ts src/components/motion/MotionProvider.tsx src/components/motion/MotionProvider.test.tsx test/motion.tsx src/app/motionUsage.test.ts src/app/layout.tsx scripts/visual/settle.mjs scripts/visual/capture.mjs scripts/visual/audit.mjs scripts/visual/measure.mjs test/visual/settle.test.ts
+bun run check-types
+bun run lint
+bunx vitest run src/lib/motion.test.ts src/components/motion/MotionProvider.test.tsx src/app/motionUsage.test.ts test/visual/settle.test.ts src/lib/usePrefersReducedMotion.test.tsx src/components/dashboard/StockTrendChart.test.tsx test/fontsConfig.test.ts src/app/robots.test.ts src/app/rawColors.test.ts test/uiRegistryDoc.test.ts test/pendenciasDoc.test.ts test/skillHandoffVisual.test.ts
+grep -rln "MotionProvider\|src/lib/motion\|settle.mjs" src test e2e
+```
+
+Expected: tipos e lint sem erro; todos PASS; o `grep` só acha os arquivos desta tarefa (nenhum teste antigo cita os nomes
+novos). Se o `check-types` recusar a mola de `MOTION_SPRING` num `useSpring` (M2) ou o `satisfies`, é a API do Motion
+14.14.0: conferir no `node_modules/motion` instalado e ajustar o tipo, sem mudar os valores.
+
+- [ ] **Step 19: Conferência manual pelo controlador no C1 (não rodar na tarefa)**
+
+No C1 Step 8, com o app de produção na 3202 e o estado semeado:
+
+```sh
+node scripts/visual/probe.mjs --screen=inicio --state=admin-escuro --width=1440 --app-only "matchMedia('(prefers-reduced-motion: reduce)').matches"
+# Expected: "APP true" (a captura está com movimento reduzido)
+node scripts/visual/capture.mjs app "/?setor=<id do ULD em .git/sdd/visual-db/state.json>" 1440x900 dark processo/avulsas/inicio-motion.png
+# Expected: "gravado processo/avulsas/inicio-motion.png (1440xH)", com H igual ao da conferência da T7
+```
+
+- [ ] **Step 20: Commit**
+
+Mensagem gravada com Write em `.git/sdd/processo/msg-task-M1.txt`:
+
+```text
+feat(motion): fundação do Motion (provider, tokens, guarda e capturas)
+
+motion 14.14.0 exata. MotionProvider no body do RootLayout, só contexto:
+LazyMotion com domAnimation e strict (só m) e MotionConfig com
+reducedMotion user e a transição padrão curta. Durações, curvas, molas e
+os presets do Sheet, do véu e do tooltip em src/lib/motion.ts; o guarda
+motionUsage.test.ts recusa o motion pronto, o framer-motion e número fora
+dos tokens. As capturas rodam sempre com movimento reduzido e esperam o
+style parar (settle.mjs), também no audit.mjs; o measure.mjs perde a
+opção morta. library-docs §23, ui-rules §9, ui-tokens §8 e a linha de
+movimento no modelo de Global Constraints da skill.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+`git add package.json bun.lock src/lib/motion.ts src/lib/motion.test.ts src/components/motion/MotionProvider.tsx src/components/motion/MotionProvider.test.tsx test/motion.tsx src/app/motionUsage.test.ts src/app/layout.tsx scripts/visual/settle.mjs scripts/visual/capture.mjs scripts/visual/audit.mjs scripts/visual/measure.mjs test/visual/settle.test.ts .context/library-docs.md .context/ui-rules.md .context/ui-tokens.md .context/architecture.md .context/ui-registry.md AGENTS.md .claude/skills/handoff-visual/templates/global-constraints.md && git status --short && git commit -F .git/sdd/processo/msg-task-M1.txt`
+Expected: o `pre-commit` passa; `git status` limpo depois; `node scripts/visual/registry-diff.mjs HEAD~1` sai com 0 (nenhum
+cabeçalho sumiu; o `### MotionProvider` aparece como NOVO).
+
+---
+
+### Task M2: Motion nos componentes que já se mexem
+
+**Spec:** §16.3 · **Redator:** emenda do Motion · **Depende de:** M1
+
+**Files:**
+- Create: `src/components/motion/PressButton.tsx`
+- Modify: `src/components/ui/button.tsx` (o elemento vira o `PressButton`; transições sem `transform`; aperto de CSS só no `<Link>` cru)
+- Modify: `src/components/app-shell/ThemeSwitch.tsx` (o knob: FLIP com `useSpring`)
+- Modify: `src/components/passagens/SectorPicker.tsx` (o thumb: FLIP com `useSpring`; o `--i` fica)
+- Modify: `src/components/ui/sheet.tsx` (véu e painel pelo Motion; prop `motionKind`)
+- Modify: `src/components/ui/sidebar.tsx` (a gaveta: `motionKind="drawer"`, sem as classes de transição)
+- Create: `src/components/passagens/SectorColorFade.tsx`
+- Modify: `src/components/passagens/MyShiftCard.tsx` (o `Shell`: `relative isolate` e a camada; sem `transition-colors`)
+- Modify: `src/components/ui/tooltip.tsx` (entrada pelo Motion; sem as classes do tw-animate-css)
+- Create: `e2e/motion.spec.ts`
+- Modify: `src/app/motionUsage.test.ts` (a lista dos arquivos que usam o Motion)
+- Modify: `.context/ui-registry.md` (entradas `PressButton` e `SectorColorFade`; `Histórico` de `Button`, `ThemeSwitch`,
+  `SectorPicker`, `Sheet`, `Sidebar`, `Tooltip` e `MyShiftCard`), `.context/pendencias.md` (P87 com `Atualização`)
+- Test: `src/components/ui/button.test.tsx`, `src/components/ui/button.variants.test.ts`
+- Test: `src/components/app-shell/ThemeSwitch.test.tsx`
+- Test: `src/components/passagens/SectorPicker.test.tsx`
+- Test: `src/components/ui/sheet.test.tsx` (novo), `src/components/app-shell/AppSidebar.test.tsx`
+- Test: `src/components/passagens/SectorColorFade.test.tsx` (novo), `src/components/passagens/MyShiftCard.test.tsx`
+- Test: `src/components/ui/tooltip.test.tsx` (novo)
+
+Testes existentes que mudam (achados com `grep -rn "translate-y-px\|transition-\[left\]\|duration-\[350ms\]\|duration-\[450ms\]\|animate-in\|zoom-in-95\|data-starting-style\|motion-reduce\|active:scale" src test e2e --include=*.test.* --include=*.spec.ts`):
+`button.variants.test.ts:76` (`active:scale-[.97]`), `SectorPicker.test.tsx:123-124` (`motion-reduce:transition-none`,
+`transition-[left]`), `MyShiftCard.test.tsx:164-166` (`transition-colors`, `duration-[450ms]`, `motion-reduce:…`) e
+`AppSidebar.test.tsx:343-346` (`duration-[350ms]`, `motion-reduce:…`, `data-starting-style:translate-x-[-105%]`); mais o
+stub de `matchMedia` do `SectorPicker.test.tsx` (ganha os ouvintes) e a lista do `motionUsage.test.ts`. Os testes do `--i`
+do `SectorPicker` continuam como estão: o repouso do thumb segue no CSS. Os que só passam pelos componentes e não mudam
+rodam no Step 16 (`button.test.ts`, `touchTargets.test.tsx`, `MenuToggle.test.tsx`, `AppHeader.test.tsx`,
+`sidebar.test.tsx`, `RequestSheet.test.tsx`, `RequestDetail.test.tsx`, `ptBrLabels.test.tsx`, `HomeCards.test.tsx`,
+`themeContrast.test.ts`, `rawColors.test.ts`, `mutedBackground.test.ts`).
+
+**Interfaces:**
+- Consumes (M1): `MOTION_SPRING`, `PRESS_SCALE`, `COLOR_FADE`, `sheetMotion`, `overlayMotion`, `tooltipMotion`,
+  `SheetSide`, `SheetMotionKind` (`src/lib/motion.ts`); `usePrefersReducedMotion` (`src/lib/usePrefersReducedMotion.ts`);
+  `MotionTree`, `stubReducedMotion`, `wait`, `recordStyle`, `styleOnInsert`, `translateOf`, `scaleOf` (`test/motion.tsx`).
+  (T3): o `button.tsx` com `outline` e `ghost` em `bg-accent` e o `Histórico` do Button terminando em "… Guarda:
+  `src/app/mutedBackground.test.ts`.".
+- Produces:
+  - `PressButton(props: HTMLMotionProps<"button">)` (`src/components/motion/PressButton.tsx`).
+  - `SheetContent` ganha a prop `motionKind?: SheetMotionKind` (padrão `"sheet"`).
+  - `SectorColorFade({ color }: { color: SectorColor })`, `REMOUNT_WINDOW_MS`, `resetSectorColorMemory()`
+    (`src/components/passagens/SectorColorFade.tsx`).
+  - `data-slot="theme-switch-knob"` no knob e `data-press="motion"` em todo `Button`.
+
+- [ ] **Step 1: Ponto de partida**
+
+```sh
+git status --short
+grep -c "^### " .context/ui-registry.md
+grep -c "^#### " .context/pendencias.md
+```
+
+Expected: `git status` vazio; anote os dois números (no fim: cabeçalhos `###` + 2; `####` iguais).
+
+- [ ] **Step 2: Button — os testes que falham**
+
+`src/components/ui/button.variants.test.ts`, old_string:
+
+```ts
+  it("on-pastel usa tinta e texto fixos e encolhe ao apertar", () => {
+    const classes = classesOf({ variant: "on-pastel" });
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "bg-on-pastel",
+        "text-on-pastel-ink",
+        "active:scale-[.97]",
+      ]),
+    );
+  });
+```
+
+new_string:
+
+```ts
+  it("on-pastel usa tinta e texto fixos e, no <Link> cru, encolhe ao apertar pelo CSS", () => {
+    const classes = classesOf({ variant: "on-pastel" });
+    expect(classes).toEqual(
+      expect.arrayContaining([
+        "bg-on-pastel",
+        "text-on-pastel-ink",
+        "active:not-data-[press]:scale-[.97]",
+      ]),
+    );
+    expect(classes).not.toContain("active:scale-[.97]");
+  });
+
+  it("a base não transiciona o transform (é do Motion) e o aperto de CSS só vale sem data-press", () => {
+    const classes = classesOf({});
+    expect(classes).not.toContain("transition-all");
+    expect(classes).toContain(
+      "transition-[color,background-color,border-color,outline-color,box-shadow,opacity,translate,scale]",
+    );
+    expect(classes).toContain(
+      "active:not-aria-[haspopup]:not-data-[press]:translate-y-px",
+    );
+    expect(classes).not.toContain("active:not-aria-[haspopup]:translate-y-px");
+  });
+```
+
+`src/components/ui/button.test.tsx` inteiro (os três testes de antes ficam e entra o `describe` do aperto):
+
+```tsx
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { renderToString } from "react-dom/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { PRESS_SCALE } from "@/lib/motion";
+import {
+  MotionTree,
+  scaleOf,
+  stubReducedMotion,
+  wait,
+} from "../../../test/motion";
+import { Button } from "./button";
+
+describe("Button", () => {
+  it("renderiza o rótulo como botão acessível", () => {
+    render(<Button>Entregar turno</Button>);
+    expect(
+      screen.getByRole("button", { name: "Entregar turno" }),
+    ).toBeInTheDocument();
+  });
+
+  it("dispara onClick ao clicar", async () => {
+    const onClick = vi.fn();
+    render(<Button onClick={onClick}>Salvar</Button>);
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("desabilitado não dispara onClick", async () => {
+    const onClick = vi.fn();
+    render(
+      <Button disabled onClick={onClick}>
+        Salvar
+      </Button>,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Salvar" }));
+    expect(onClick).not.toHaveBeenCalled();
+  });
+});
+
+// O aperto (emenda do Motion): o elemento do Button é o PressButton, que encolhe para PRESS_SCALE na
+// mola `press`. O jsdom não tem Web Animations: o Motion anima em JS e escreve o `transform` no style.
+describe("Button — aperto (Motion)", () => {
+  let restoreMedia: () => void = () => {};
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+  });
+
+  function press(element: HTMLElement) {
+    fireEvent.pointerDown(element, { pointerType: "mouse", button: 0 });
+  }
+
+  function release(element: HTMLElement) {
+    fireEvent.pointerUp(element, { pointerType: "mouse", button: 0 });
+  }
+
+  it("no servidor é um <button> com data-press e sem estilo inline (nada anima na hidratação)", () => {
+    const html = renderToString(
+      <MotionTree>
+        <Button>Entregar turno</Button>
+      </MotionTree>,
+    );
+    expect(html).toMatch(/^<button[^>]*data-press="motion"/);
+    expect(html).not.toContain("style=");
+  });
+
+  it("todo Button marca data-press (o aperto de CSS do buttonVariants fica só para o <Link> cru)", () => {
+    render(<Button>Salvar</Button>);
+    expect(screen.getByRole("button", { name: "Salvar" })).toHaveAttribute(
+      "data-press",
+      "motion",
+    );
+  });
+
+  it("apertado encolhe para PRESS_SCALE e volta ao soltar", async () => {
+    restoreMedia = stubReducedMotion(false);
+    render(
+      <MotionTree>
+        <Button>Entregar turno</Button>
+      </MotionTree>,
+    );
+    const button = screen.getByRole("button", { name: "Entregar turno" });
+
+    press(button);
+    await waitFor(() =>
+      expect(scaleOf(button.style.transform)).toBe(PRESS_SCALE),
+    );
+    release(button);
+    await waitFor(() => expect(button.style.transform).toBe("none"));
+  });
+
+  it("com movimento reduzido não encolhe, e o clique continua valendo", async () => {
+    restoreMedia = stubReducedMotion(true);
+    const onClick = vi.fn();
+    render(
+      <MotionTree>
+        <Button onClick={onClick}>Salvar</Button>
+      </MotionTree>,
+    );
+    const button = screen.getByRole("button", { name: "Salvar" });
+
+    press(button);
+    await wait(250);
+    expect(button.style.transform).toBe("");
+    release(button);
+    fireEvent.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("gatilho de popup (aria-haspopup) não encolhe: responde só com a cor", async () => {
+    restoreMedia = stubReducedMotion(false);
+    render(
+      <MotionTree>
+        <Button aria-haspopup="menu">Mais ações</Button>
+      </MotionTree>,
+    );
+    const button = screen.getByRole("button", { name: "Mais ações" });
+
+    press(button);
+    await wait(250);
+    expect(button.style.transform).toBe("");
+    release(button);
+  });
+});
+```
+
+Run: `bunx vitest run src/components/ui/button.test.tsx src/components/ui/button.variants.test.ts`
+Expected: FAIL: os três testes de `data-press` ("expected … to have attribute data-press" e o `toMatch` do HTML), o aperto
+(o `waitFor` estoura com `scaleOf("")` = `null`) e os dois do `buttonVariants` (classe ausente). Os três testes de antes,
+o reduzido e o do popup passam.
+
+- [ ] **Step 3: Button — o `PressButton` e o `button.tsx`**
+
+`src/components/motion/PressButton.tsx`:
+
+```tsx
+"use client";
+
+import type { HTMLMotionProps } from "motion/react";
+import * as m from "motion/react-m";
+
+import { MOTION_SPRING, PRESS_SCALE } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+const PRESS = { scale: PRESS_SCALE };
+
+// O elemento de todo `Button` (src/components/ui/button.tsx, pela prop `render` do Base UI): um
+// <button> do Motion que encolhe ao apertar (PRESS_SCALE, mola `press`) e volta ao soltar. Não encolhe
+// com movimento reduzido nem quando abre um popup (`aria-haspopup`): o popup se posiciona contra o
+// tamanho do gatilho, que responde só com a cor. `data-press` desliga o aperto de CSS do
+// `buttonVariants`, que fica só para o <Link> cru. Sem valor inicial: o HTML do servidor é um <button>
+// sem estilo, e o `button.tsx` continua sem "use client" (o `buttonVariants` serve Server Components).
+export function PressButton(props: HTMLMotionProps<"button">) {
+  const reduce = usePrefersReducedMotion();
+  const popup = props["aria-haspopup"];
+  const anchorsPopup =
+    popup !== undefined && popup !== false && popup !== "false";
+  return (
+    <m.button
+      data-press="motion"
+      whileTap={reduce || anchorsPopup ? undefined : PRESS}
+      transition={MOTION_SPRING.press}
+      {...props}
+    />
+  );
+}
+```
+
+`src/components/ui/button.tsx` (ferramenta Edit), quatro trechos:
+
+1. old_string:
+
+```tsx
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
+```
+
+new_string:
+
+```tsx
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
+import { cva, type VariantProps } from "class-variance-authority";
+import { cn } from "cn";
+
+import { PressButton } from "@/components/motion/PressButton";
+```
+
+2. old_string:
+
+```tsx
+// em todas menos o `outline` (no CSS gerado ele vem depois do `border-input` e
+// apagava a borda do outline num <Link> cru).
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border bg-clip-padding whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none
+```
+
+new_string:
+
+```tsx
+// em todas menos o `outline` (no CSS gerado ele vem depois do `border-input` e
+// apagava a borda do outline num <Link> cru).
+// Aperto (emenda do Motion, ui-rules §9): o elemento do Button é o PressButton,
+// que encolhe pela mola do Motion e marca `data-press`. O aperto de CSS
+// (`translate-y-px` aqui, `scale-[.97]` no `on-pastel`) leva `not-data-[press]`
+// e só vale no `buttonVariants` cru num <Link>. A base lista as transições sem
+// o `transform`, que é do Motion: o CSS correria atrás de cada quadro.
+const buttonVariants = cva(
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border bg-clip-padding whitespace-nowrap transition-[color,background-color,border-color,outline-color,box-shadow,opacity,translate,scale] outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:not-data-[press]:translate-y-px disabled:pointer-events-none
+```
+
+(o old_string é o começo da string da base, até `disabled:pointer-events-none`; o resto da linha não muda.)
+
+3. old_string:
+
+```tsx
+          "border-transparent bg-on-pastel text-on-pastel-ink focus-visible:ring-0! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-on-pastel active:scale-[.97] [transition-property:background-color,color,scale]",
+```
+
+new_string:
+
+```tsx
+          "border-transparent bg-on-pastel text-on-pastel-ink focus-visible:ring-0! focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-on-pastel active:not-data-[press]:scale-[.97] [transition-property:background-color,color,scale]",
+```
+
+4. old_string:
+
+```tsx
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    />
+```
+
+new_string:
+
+```tsx
+    <ButtonPrimitive
+      data-slot="button"
+      className={cn(buttonVariants({ variant, size, className }))}
+      render={<PressButton />}
+      {...props}
+    />
+```
+
+Run: `bunx vitest run src/components/ui/button.test.tsx src/components/ui/button.variants.test.ts src/components/ui/button.test.ts`
+Expected: PASS (os três arquivos).
+
+- [ ] **Step 4: ThemeSwitch — os testes que falham**
+
+`src/components/app-shell/ThemeSwitch.test.tsx`. old_string (o import do Testing Library):
+
+```tsx
+import { act, fireEvent, render, screen } from "@testing-library/react";
+```
+
+new_string:
+
+```tsx
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+```
+
+old_string:
+
+```tsx
+import { guardConsoleError } from "../../../test/consoleErrorGuard";
+```
+
+new_string:
+
+```tsx
+import { guardConsoleError } from "../../../test/consoleErrorGuard";
+import {
+  MotionTree,
+  recordStyle,
+  stubReducedMotion,
+  translateOf,
+} from "../../../test/motion";
+```
+
+E, no fim do arquivo, depois do `});` que fecha o `describe("ThemeSwitch", …)` (old_string = as últimas linhas do arquivo):
+
+```tsx
+    await act(async () => root?.unmount());
+    container.remove();
+  });
+});
+```
+
+new_string:
+
+```tsx
+    await act(async () => root?.unmount());
+    container.remove();
+  });
+});
+
+// O deslize (emenda do Motion): o repouso continua no CSS; no clique o knob parte de onde estava e a
+// mola o leva ao lado novo. O jsdom não calcula layout: o offsetLeft do knob segue o tema do <html>,
+// como o CSS faz (`left-1` = 4px no claro, `dark:left-9` = 36px no escuro).
+describe("ThemeSwitch — o knob desliza na troca (Motion)", () => {
+  const offsetLeft = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "offsetLeft",
+  );
+  let restoreMedia: () => void = () => {};
+
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, "offsetLeft", {
+      configurable: true,
+      get(this: HTMLElement) {
+        if (this.dataset.slot !== "theme-switch-knob") return 0;
+        return document.documentElement.classList.contains("dark") ? 36 : 4;
+      },
+    });
+  });
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+    if (offsetLeft)
+      Object.defineProperty(HTMLElement.prototype, "offsetLeft", offsetLeft);
+  });
+
+  function knob(): HTMLElement {
+    const element = document.querySelector<HTMLElement>(
+      "[data-slot=theme-switch-knob]",
+    );
+    if (!element) throw new Error("knob ausente");
+    return element;
+  }
+
+  const shifts = (seen: string[]) =>
+    seen.slice(1).map((value) => translateOf(value, "X")?.value ?? 0);
+
+  it("parado (no servidor, na hidratação e montado) o knob não tem deslocamento: a posição é do CSS", () => {
+    restoreMedia = stubReducedMotion(false);
+    expect(renderToString(<MotionTree>{tree()}</MotionTree>)).toMatch(
+      /data-slot="theme-switch-knob"[^>]*style="transform:none"/,
+    );
+    render(<MotionTree>{tree()}</MotionTree>);
+    expect(knob().style.transform).toBe("none");
+  });
+
+  it("do escuro para o claro: o knob parte 32px à direita (onde estava) e a mola o leva a 0", async () => {
+    restoreMedia = stubReducedMotion(false);
+    render(<MotionTree>{tree()}</MotionTree>);
+
+    const seen = await recordStyle(knob(), "transform", 500, () =>
+      fireEvent.click(getSwitch()),
+    );
+
+    expect(getSwitch()).toHaveAttribute("aria-checked", "false");
+    const moved = shifts(seen);
+    expect(moved[0]).toBeGreaterThan(24);
+    expect(moved[0]).toBeLessThanOrEqual(32);
+    expect(moved.some((value) => value > 0 && value < 24)).toBe(true);
+    await waitFor(() => expect(knob().style.transform).toBe("none"));
+  });
+
+  it("do claro para o escuro: o knob parte 32px à esquerda", async () => {
+    boot("light");
+    restoreMedia = stubReducedMotion(false);
+    render(<MotionTree>{tree()}</MotionTree>);
+
+    const seen = await recordStyle(knob(), "transform", 500, () =>
+      fireEvent.click(getSwitch()),
+    );
+
+    expect(getSwitch()).toHaveAttribute("aria-checked", "true");
+    const moved = shifts(seen);
+    expect(moved[0]).toBeLessThan(-24);
+    expect(moved[0]).toBeGreaterThanOrEqual(-32);
+    await waitFor(() => expect(knob().style.transform).toBe("none"));
+  });
+
+  it("com movimento reduzido a troca é na hora: o knob nunca ganha deslocamento", async () => {
+    restoreMedia = stubReducedMotion(true);
+    render(<MotionTree>{tree()}</MotionTree>);
+
+    const seen = await recordStyle(knob(), "transform", 300, () =>
+      fireEvent.click(getSwitch()),
+    );
+
+    expect(seen).toEqual(["none"]);
+    expect(getSwitch()).toHaveAttribute("aria-checked", "false");
+  });
+});
+```
+
+Run: `bunx vitest run src/components/app-shell/ThemeSwitch.test.tsx`
+Expected: FAIL nos quatro testes novos ("knob ausente" e o `toMatch` do HTML); os nove de antes passam.
+
+- [ ] **Step 5: ThemeSwitch — o knob com Motion**
+
+`src/components/app-shell/ThemeSwitch.tsx` inteiro:
+
+```tsx
+"use client";
+
+import { Moon, Sun } from "lucide-react";
+import { useSpring } from "motion/react";
+import * as m from "motion/react-m";
+import { useRef } from "react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { MOTION_SPRING } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+import { useTheme } from "@/lib/useTheme";
+
+// Switch estilo Apple (spec §4.2): trilho 76x44 em `card`, knob de 36px em `primary` com ícone de 16px.
+// No escuro o knob fica à direita com a Lua; no claro, à esquerda com o Sol. A posição de repouso e o
+// ícone vêm do CSS (`dark:`), que o script do <head> (src/lib/theme.ts) decide ANTES da primeira
+// pintura: quem usa o claro não vê o knob deslizar a cada carga nem na hidratação. O deslize é só da
+// troca (Motion, FLIP): no clique o CSS já põe o knob no lado novo; ele volta para onde estava (x = a
+// diferença dos `offsetLeft`, mais o x de um deslize em curso) e a mola `MOTION_SPRING.knob` o leva a
+// 0. Com movimento reduzido, troca na hora. O `aria-checked` e o rótulo do tooltip vêm do `useTheme`,
+// cujo snapshot do servidor é "escuro" (igual ao HTML) e que relê o navegador logo depois de hidratar.
+export function ThemeSwitch() {
+  const { theme, setTheme } = useTheme();
+  const isDark = theme === "dark";
+  const reduce = usePrefersReducedMotion();
+  const knob = useRef<HTMLSpanElement>(null);
+  const x = useSpring(0, MOTION_SPRING.knob);
+
+  function toggle() {
+    const element = knob.current;
+    const before = element ? element.offsetLeft + x.get() : 0;
+    setTheme(isDark ? "light" : "dark");
+    if (reduce || !element) return;
+    const from = before - element.offsetLeft;
+    if (from === 0) return;
+    x.jump(from);
+    x.set(0);
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isDark}
+            aria-label="Tema escuro"
+            onClick={toggle}
+            className="relative h-11 w-19 shrink-0 rounded-full bg-card outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        }
+      >
+        <m.span
+          ref={knob}
+          aria-hidden="true"
+          data-slot="theme-switch-knob"
+          style={{ x }}
+          className="absolute top-1 left-1 grid size-9 place-items-center rounded-full bg-primary text-primary-foreground dark:left-9"
+        >
+          <Moon
+            aria-hidden="true"
+            strokeWidth={2.2}
+            className="hidden size-4 dark:block"
+          />
+          <Sun
+            aria-hidden="true"
+            strokeWidth={2.2}
+            className="size-4 dark:hidden"
+          />
+        </m.span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {isDark ? "Mudar para o tema claro" : "Mudar para o tema escuro"}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+```
+
+Run: `bunx vitest run src/components/app-shell/ThemeSwitch.test.tsx`
+Expected: PASS (13 testes; o `afterEach` de antes confere que nenhum `console.error` apareceu).
+
+- [ ] **Step 6: SectorPicker — os testes que mudam e os que falham**
+
+`src/components/passagens/SectorPicker.test.tsx`, quatro trechos:
+
+1. old_string:
+
+```tsx
+import { redirect } from "next/navigation";
+import { Component, type ReactNode } from "react";
+```
+
+new_string:
+
+```tsx
+import { redirect } from "next/navigation";
+import { Component, type ReactNode } from "react";
+import { renderToString } from "react-dom/server";
+```
+
+e old_string:
+
+```tsx
+import { SectorPicker } from "./SectorPicker";
+```
+
+new_string:
+
+```tsx
+import {
+  MotionTree,
+  recordStyle,
+  stubReducedMotion,
+  translateOf,
+} from "../../../test/motion";
+import { SectorPicker } from "./SectorPicker";
+```
+
+2. old_string:
+
+```tsx
+  it("o thumb desliza sem animação para quem pede menos movimento", () => {
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    const thumb = document.querySelector("[data-slot=sector-picker-thumb]");
+    expect(thumb).toHaveClass("motion-reduce:transition-none");
+    expect(thumb).toHaveClass("transition-[left]");
+    // A sombra é o token da Task 1, nunca rgba() no .tsx.
+    expect(thumb).toHaveClass("shadow-thumb", "bg-thumb");
+  });
+```
+
+new_string:
+
+```tsx
+  it("o thumb não tem transição de CSS (o deslize é do Motion) e usa os tokens de fundo e sombra", () => {
+    render(
+      <SectorPicker sectors={[ULD, CARGA]} selectedId={ULD.id} path="/" />,
+    );
+
+    const thumb = document.querySelector("[data-slot=sector-picker-thumb]");
+    expect(thumb?.className).not.toMatch(/transition|duration-|ease-\[/);
+    // A sombra é o token da Task 1, nunca rgba() no .tsx.
+    expect(thumb).toHaveClass("shadow-thumb", "bg-thumb");
+  });
+```
+
+3. old_string:
+
+```tsx
+      const matchMedia = vi.fn((query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+      }));
+```
+
+new_string:
+
+```tsx
+      // Com os ouvintes: o usePrefersReducedMotion do thumb e o Motion também leem o matchMedia.
+      const matchMedia = vi.fn((query: string) => ({
+        matches: query === "(prefers-reduced-motion: reduce)",
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }));
+```
+
+4. No fim do arquivo, old_string:
+
+```tsx
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).toHaveClass("max-md:h-11");
+    }
+  });
+});
+```
+
+new_string:
+
+```tsx
+    for (const item of screen.getAllByRole("radio")) {
+      expect(item).toHaveClass("max-md:h-11");
+    }
+  });
+});
+
+// O deslize do thumb (emenda do Motion): o repouso continua no CSS (`--i`, `--n`); na troca o thumb
+// volta para onde estava (x = a diferença de índice vezes a largura dele) e a mola o leva a 0. O jsdom
+// não mede: o thumb tem 100px.
+describe("SectorPicker — o thumb desliza (Motion)", () => {
+  const offsetWidth = Object.getOwnPropertyDescriptor(
+    HTMLElement.prototype,
+    "offsetWidth",
+  );
+  let restoreMedia: () => void = () => {};
+
+  beforeEach(() => {
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.dataset.slot === "sector-picker-thumb" ? 100 : 0;
+      },
+    });
+  });
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+    if (offsetWidth)
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", offsetWidth);
+  });
+
+  function picker(selectedId: string) {
+    return (
+      <MotionTree>
+        <SectorPicker
+          sectors={[ULD, CARGA, OPERACOES]}
+          selectedId={selectedId}
+          path="/"
+        />
+      </MotionTree>
+    );
+  }
+
+  function thumb(): HTMLElement {
+    const element = document.querySelector<HTMLElement>(
+      "[data-slot=sector-picker-thumb]",
+    );
+    if (!element) throw new Error("thumb ausente");
+    return element;
+  }
+
+  it("no servidor o thumb sai no lugar do CSS, sem deslocamento (nada anima na hidratação)", () => {
+    const html = renderToString(picker(OPERACOES.id));
+    expect(html).toMatch(/data-slot="sector-picker-thumb"[^>]*--i:2/);
+    expect(html).toMatch(
+      /data-slot="sector-picker-thumb"[^>]*transform:none/,
+    );
+  });
+
+  it("trocar de setor: o CSS já põe o thumb no novo, ele parte de onde estava (-100px) e a mola o leva a 0", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(picker(ULD.id));
+
+    const seen = await recordStyle(thumb(), "transform", 500, () =>
+      rerender(picker(CARGA.id)),
+    );
+
+    expect(thumb().style.getPropertyValue("--i")).toBe("1");
+    const moved = seen.slice(1).map((value) => translateOf(value, "X")?.value ?? 0);
+    expect(moved[0]).toBeLessThanOrEqual(-80);
+    expect(moved.some((value) => value > -80 && value < 0)).toBe(true);
+    await waitFor(() => expect(thumb().style.transform).toBe("none"));
+  });
+
+  it("com movimento reduzido o thumb vai direto: nunca ganha deslocamento", async () => {
+    restoreMedia = stubReducedMotion(true);
+    const { rerender } = render(picker(ULD.id));
+
+    const seen = await recordStyle(thumb(), "transform", 300, () =>
+      rerender(picker(OPERACOES.id)),
+    );
+
+    expect(seen).toEqual(["none"]);
+    expect(thumb().style.getPropertyValue("--i")).toBe("2");
+  });
+
+  it("o mesmo setor de novo não mexe o thumb", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(picker(CARGA.id));
+
+    const seen = await recordStyle(thumb(), "transform", 200, () =>
+      rerender(picker(CARGA.id)),
+    );
+
+    expect(seen).toEqual(["none"]);
+  });
+});
+```
+
+Run: `bunx vitest run src/components/passagens/SectorPicker.test.tsx`
+Expected: FAIL nos quatro testes novos (o HTML do servidor não tem `transform:none`; o deslize não acontece: `moved[0]` é
+0, não ≤ −80; no reduzido e no "mesmo setor" o `style.transform` do `<span>` de hoje é `""`, não `"none"`) e no "não tem
+transição de CSS" (a classe `transition-[left]` ainda está lá); os demais de antes passam.
+
+- [ ] **Step 7: SectorPicker — o thumb com Motion**
+
+`src/components/passagens/SectorPicker.tsx` inteiro:
+
+```tsx
+"use client";
+
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
+import { cn } from "cn";
+import { type MotionStyle, useSpring } from "motion/react";
+import * as m from "motion/react-m";
+import { unstable_rethrow } from "next/navigation";
+import {
+  type CSSProperties,
+  useEffect,
+  useLayoutEffect,
+  useOptimistic,
+  useRef,
+  useTransition,
+} from "react";
+import { toast } from "sonner";
+
+import { chooseSectorAction } from "@/app/(app)/actions";
+import { INTERNAL_ERROR_MESSAGE } from "@/features/admin/result";
+import type { SectorChoice } from "@/features/admin/sectors";
+import { ALL_SECTORS } from "@/features/handovers/limits";
+import type { SectorPickerPath } from "@/features/handovers/urls";
+import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
+import { MOTION_SPRING } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+// "Todos os setores" não é um setor: não tem cor, então não tem bolinha.
+type PickerOption = {
+  id: string;
+  name: string;
+  // Texto visível; o nome acessível (aria-label) segue sendo `name`.
+  label: string;
+  color: SectorColor | null;
+};
+
+// Largura mínima do segmento, só com mais de 4 opções (o protótipo foi feito
+// para 4: até 4, os segmentos dividem o trilho e, no celular, cabem nos 100%):
+// 6.5rem (104px) nas classes abaixo (o Tailwind não aceita constante em classe
+// arbitrária). Cabe "Operações" em Satoshi 15px/700 com a bolinha e o respiro
+// de 6px (o padding do botão do protótipo); o nome maior trunca com
+// reticências. O trilho cresce até N * 104px (+ o padding de 4px de cada lado)
+// antes de começar a rolar.
+const MAX_WITHOUT_SCROLL = 4;
+
+// Escolha de setor do admin: seletor deslizante (segmented control) que grava o
+// cookie e navega pela Server Action (F3-15). Clicar no setor já selecionado
+// não faz nada. `query` é o query canônico dos filtros da tela (sem o setor): o
+// servidor o reinterpreta e o leva ao setor novo (P45); sem ele, vai só o setor.
+export function SectorPicker({
+  sectors,
+  selectedId,
+  path,
+  allowAll = false,
+  query,
+}: {
+  sectors: readonly SectorChoice[];
+  selectedId: string | typeof ALL_SECTORS;
+  path: SectorPickerPath;
+  allowAll?: boolean;
+  query?: string;
+}) {
+  const [pending, startTransition] = useTransition();
+  // O thumb vai ao setor novo na hora; se a action falhar, a transição acaba e
+  // o valor volta sozinho ao `selectedId` que o servidor mandou.
+  const [shownId, setShownId] = useOptimistic<string>(selectedId);
+  const options: readonly PickerOption[] = allowAll
+    ? [
+        ...sectors.map((sector) => ({ ...sector, label: sector.name })),
+        // Visível "Todos" (o grupo já se chama "Setor"; "Todos os setores"
+        // truncava). O aria-label mantém "Todos os setores" e contém o texto
+        // visível (WCAG 2.5.3), então o leitor de tela não perde o contexto.
+        {
+          id: ALL_SECTORS,
+          name: "Todos os setores",
+          label: "Todos",
+          color: null,
+        },
+      ]
+    : sectors.map((sector) => ({ ...sector, label: sector.name }));
+  const count = options.length;
+  const scrolls = count > MAX_WITHOUT_SCROLL;
+  const index = options.findIndex((option) => option.id === shownId);
+  const thumbIndex = Math.max(index, 0);
+
+  // O deslize do thumb (Motion, FLIP; library-docs §23). O repouso é do CSS
+  // (`left: calc(i * 100% / N)` pelo `--i`), igual no servidor, na hidratação
+  // e no pixel. Na troca, antes da pintura, o thumb volta para onde estava
+  // (x = a diferença de índice vezes a largura dele, mais o x de um deslize em
+  // curso) e a mola `MOTION_SPRING.thumb` o leva a 0. Com movimento reduzido,
+  // vai direto.
+  const reduceMotion = usePrefersReducedMotion();
+  const thumbRef = useRef<HTMLSpanElement>(null);
+  const lastThumbIndex = useRef(thumbIndex);
+  const thumbX = useSpring(0, MOTION_SPRING.thumb);
+  useLayoutEffect(() => {
+    const from = lastThumbIndex.current;
+    lastThumbIndex.current = thumbIndex;
+    if (from === thumbIndex) return;
+    const width = thumbRef.current?.offsetWidth ?? 0;
+    if (reduceMotion || width === 0) {
+      thumbX.jump(0);
+      return;
+    }
+    thumbX.jump(thumbX.get() + (from - thumbIndex) * width);
+    thumbX.set(0);
+  }, [thumbIndex, reduceMotion, thumbX]);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  // Com o trilho rolando (celular), a opção marcada entra na tela ao montar e a
+  // cada troca. Rola só o contêiner na horizontal (scrollIntoView também rolaria
+  // a janela na vertical); sem animação para quem pede menos movimento.
+  useEffect(() => {
+    if (!scrolls || index < 0) return;
+    const checked = trackRef.current?.querySelector<HTMLElement>(
+      '[role="radio"][aria-checked="true"]',
+    );
+    const group = checked?.closest<HTMLElement>('[role="radiogroup"]');
+    if (!checked || !group || typeof group.scrollTo !== "function") return;
+    if (group.scrollWidth <= group.clientWidth) return;
+    const reduce =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const box = checked.getBoundingClientRect();
+    const rail = group.getBoundingClientRect();
+    // Centraliza a opção marcada no trilho visível.
+    const left =
+      group.scrollLeft +
+      (box.left - rail.left) -
+      (group.clientWidth - box.width) / 2;
+    group.scrollTo({
+      left: Math.max(0, left),
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [index, scrolls]);
+
+  function choose(sectorId: string) {
+    if (sectorId === selectedId) return;
+    startTransition(async () => {
+      setShownId(sectorId);
+      try {
+        const result = await chooseSectorAction(
+          query === undefined ? { sectorId, path } : { sectorId, path, query },
+        );
+        if (!result.ok) toast.error(result.message);
+      } catch (error) {
+        // O sucesso da action é um redirect, que chega aqui como exceção.
+        unstable_rethrow(error);
+        toast.error(INTERNAL_ERROR_MESSAGE);
+      }
+    });
+  }
+
+  return (
+    <RadioGroup
+      aria-label="Setor"
+      value={shownId}
+      onValueChange={(value) => choose(value)}
+      disabled={pending}
+      style={{ "--n": count } as CSSProperties}
+      className="flex h-12 w-[min(100%,max(30rem,calc(var(--n)*6.5rem+0.5rem)))] overflow-x-auto rounded-full bg-seg p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      <div
+        ref={trackRef}
+        className={cn(
+          "relative flex flex-1 shrink-0",
+          scrolls ? "min-w-[max(100%,calc(var(--n)*6.5rem))]" : "min-w-0",
+        )}
+      >
+        <m.span
+          ref={thumbRef}
+          aria-hidden="true"
+          data-slot="sector-picker-thumb"
+          style={{ "--i": thumbIndex, x: thumbX } as MotionStyle}
+          className={cn(
+            "pointer-events-none absolute inset-y-0 left-[calc(var(--i)*100%/var(--n))] w-[calc(100%/var(--n))] rounded-full bg-thumb shadow-thumb",
+            index < 0 && "opacity-0",
+          )}
+        />
+        {options.map((option) => (
+          <Radio.Root
+            key={option.id}
+            value={option.id}
+            aria-label={option.name}
+            className={cn(
+              "relative z-10 flex flex-1 cursor-pointer items-center justify-center gap-[7px] rounded-full px-1.5 font-heading text-[15px] leading-[normal] font-medium text-foreground outline-none transition-colors duration-[250ms] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset aria-checked:font-bold aria-checked:text-thumb-foreground aria-disabled:cursor-default motion-reduce:transition-none max-md:-my-0.5 max-md:h-11",
+              scrolls ? "min-w-[6.5rem]" : "min-w-0",
+              pending && "opacity-60",
+            )}
+          >
+            {option.color !== null && (
+              <span
+                aria-hidden="true"
+                data-sector-dot=""
+                className={cn(
+                  "size-2 flex-none rounded-full",
+                  SECTOR_COLOR_BG[option.color],
+                )}
+              />
+            )}
+            <span className="truncate" title={option.name}>
+              {option.label}
+            </span>
+          </Radio.Root>
+        ))}
+      </div>
+    </RadioGroup>
+  );
+}
+```
+
+(Muda só: os imports, o bloco do deslize antes do `trackRef`, e o thumb, que vira `m.span` com o `ref`, o `x` no `style` e
+sem `transition-[left] duration-[400ms] ease-[…] motion-reduce:transition-none`. O efeito da rolagem fica igual, com a
+própria leitura do `matchMedia`.)
+
+Run: `bunx vitest run src/components/passagens/SectorPicker.test.tsx`
+Expected: PASS (todos, inclusive os do `--i` e da rolagem, sem mudança).
+
+- [ ] **Step 8: Sheet e a gaveta — os testes que falham**
+
+`src/components/ui/sheet.test.tsx` (novo):
+
+```tsx
+import { render, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+
+import type { SheetMotionKind, SheetSide } from "@/lib/motion";
+import {
+  MotionTree,
+  stubReducedMotion,
+  styleOnInsert,
+  translateOf,
+} from "../../../test/motion";
+import { Sheet, SheetContent, SheetTitle } from "./sheet";
+
+// Véu e painel pelo Motion (emenda do Motion). O primeiro quadro é lido no instante em que o elemento
+// entra no DOM; depois, o fim no lugar. A saída (que o Base UI espera pela opacidade) só se prova no
+// Chromium: e2e/motion.spec.ts (o jsdom não tem getAnimations e desmonta na hora).
+
+const POPUP = '[data-slot="sheet-content"]';
+const OVERLAY = '[data-slot="sheet-overlay"]';
+
+function renderSheet(side: SheetSide, motionKind: SheetMotionKind = "sheet") {
+  return render(
+    <MotionTree>
+      <Sheet open>
+        <SheetContent side={side} motionKind={motionKind}>
+          <SheetTitle>Detalhe</SheetTitle>
+        </SheetContent>
+      </Sheet>
+    </MotionTree>,
+  );
+}
+
+function element(selector: string): HTMLElement {
+  const found = document.querySelector<HTMLElement>(selector);
+  if (!found) throw new Error(`${selector} ausente`);
+  return found;
+}
+
+describe("Sheet — entrada (Motion)", () => {
+  let restoreMedia: () => void = () => {};
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+  });
+
+  it.each([
+    ["right", "X", 40],
+    ["left", "X", -40],
+    ["top", "Y", -40],
+    ["bottom", "Y", 40],
+  ] as const)("à %s: o painel chega de 40px com fade e para no lugar", async (side, axis, from) => {
+    restoreMedia = stubReducedMotion(false);
+    const first = styleOnInsert(POPUP, ["transform", "opacity"]);
+    renderSheet(side);
+
+    const start = await first;
+    expect(translateOf(start.transform ?? "", axis)).toEqual({
+      value: from,
+      unit: "px",
+    });
+    expect(start.opacity).toBe("0");
+    await waitFor(() => {
+      expect(element(POPUP).style.transform).toBe("none");
+      expect(element(POPUP).style.opacity).toBe("1");
+    });
+  });
+
+  it("a gaveta vem da borda (−105%), opaca, e para no lugar", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const first = styleOnInsert(POPUP, ["transform", "opacity"]);
+    renderSheet("left", "drawer");
+
+    const start = await first;
+    expect(translateOf(start.transform ?? "", "X")).toEqual({
+      value: -105,
+      unit: "%",
+    });
+    expect(start.opacity).toBe("1");
+    await waitFor(() => expect(element(POPUP).style.transform).toBe("none"));
+  });
+
+  it("o véu entra em fade", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const first = styleOnInsert(OVERLAY, ["opacity"]);
+    renderSheet("right");
+
+    expect((await first).opacity).toBe("0");
+    await waitFor(() => expect(element(OVERLAY).style.opacity).toBe("1"));
+  });
+
+  it.each([
+    "sheet",
+    "drawer",
+  ] as const)("com movimento reduzido (%s): só o fade, sem deslocamento", async (kind) => {
+    restoreMedia = stubReducedMotion(true);
+    const first = styleOnInsert(POPUP, ["transform", "opacity"]);
+    renderSheet("left", kind);
+
+    expect(await first).toEqual({ transform: "", opacity: "0" });
+    await waitFor(() => expect(element(POPUP).style.opacity).toBe("1"));
+    expect(element(POPUP).style.transform).toBe("");
+  });
+});
+```
+
+`src/components/app-shell/AppSidebar.test.tsx`, old_string:
+
+```tsx
+    expect(panel?.className ?? "").not.toMatch(/rgba?\(/);
+    expect(panelClasses).toContain("duration-[350ms]");
+    expect(panelClasses).toContain("motion-reduce:transition-none");
+    expect(panelClasses).toContain(
+      "data-[side=left]:data-starting-style:translate-x-[-105%]",
+    );
+```
+
+new_string:
+
+```tsx
+    expect(panel?.className ?? "").not.toMatch(/rgba?\(/);
+    // O deslize é do Motion (SheetContent motionKind="drawer"): da borda
+    // (−105%), opaca, sem transição nem estado inicial de CSS (os dois
+    // correriam atrás do Motion). Sem a MotionTree, fica no primeiro quadro.
+    expect(panel?.style.transform).toBe("translateX(-105%)");
+    expect(panel?.style.opacity).toBe("1");
+    expect(panel?.className ?? "").not.toMatch(
+      /duration-|ease-\[|data-starting-style|data-ending-style|motion-reduce/,
+    );
+```
+
+Run: `bunx vitest run src/components/ui/sheet.test.tsx src/components/app-shell/AppSidebar.test.tsx`
+Expected: FAIL: o `sheet.test.tsx` nos valores (o `style` do primeiro quadro vem vazio: `translateOf("")` é `null`; o
+Vitest não confere tipo, e o `motionKind` ainda vai parar no DOM); o do `AppSidebar` com "expected '' to be
+'translateX(-105%)'".
+
+- [ ] **Step 9: Sheet e a gaveta — o Motion**
+
+`src/components/ui/sheet.tsx` inteiro:
+
+```tsx
+"use client";
+
+import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
+import { cn } from "cn";
+import { XIcon } from "lucide-react";
+import type { HTMLMotionProps } from "motion/react";
+import * as m from "motion/react-m";
+import type * as React from "react";
+import { Button } from "@/components/ui/button";
+import {
+  overlayMotion,
+  type SheetMotionKind,
+  type SheetSide,
+  sheetMotion,
+} from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+function Sheet({ ...props }: SheetPrimitive.Root.Props) {
+  return <SheetPrimitive.Root data-slot="sheet" {...props} />;
+}
+
+function SheetTrigger({ ...props }: SheetPrimitive.Trigger.Props) {
+  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />;
+}
+
+function SheetClose({ ...props }: SheetPrimitive.Close.Props) {
+  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />;
+}
+
+function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
+  return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
+}
+
+// O véu e o painel são do Motion (emenda de 2026-11-27, library-docs §23): o `render` do Base UI
+// recebe o estado, e o `m.div` vai ao alvo aberto ou fechado (presets de src/lib/motion.ts). A saída
+// leva opacidade: é por ela que o Base UI espera a animação antes de desmontar. Com movimento
+// reduzido, só um fade curto. Sem classes de transição de CSS: elas correriam atrás do Motion.
+function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
+  const reduce = usePrefersReducedMotion();
+  const preset = overlayMotion(reduce);
+  return (
+    <SheetPrimitive.Backdrop
+      data-slot="sheet-overlay"
+      className={cn(
+        "fixed inset-0 z-50 bg-black/10 supports-backdrop-filter:backdrop-blur-xs",
+        className,
+      )}
+      {...props}
+      render={(backdropProps, state) => (
+        <m.div
+          {...(backdropProps as HTMLMotionProps<"div">)}
+          initial={preset.initial}
+          animate={state.open ? preset.open : preset.closed}
+        />
+      )}
+    />
+  );
+}
+
+function SheetContent({
+  className,
+  children,
+  side = "right",
+  showCloseButton = true,
+  overlayClassName,
+  motionKind = "sheet",
+  ...props
+}: SheetPrimitive.Popup.Props & {
+  side?: SheetSide;
+  showCloseButton?: boolean;
+  overlayClassName?: string;
+  // `sheet`: o painel chega de perto (40px) com fade; `drawer`: a gaveta do menu vem da borda (105%).
+  motionKind?: SheetMotionKind;
+}) {
+  const reduce = usePrefersReducedMotion();
+  const preset = sheetMotion(side, motionKind, reduce);
+  return (
+    <SheetPortal>
+      <SheetOverlay className={overlayClassName} />
+      <SheetPrimitive.Popup
+        data-slot="sheet-content"
+        data-side={side}
+        className={cn(
+          "fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground shadow-lg data-[side=bottom]:inset-x-0 data-[side=bottom]:bottom-0 data-[side=bottom]:h-auto data-[side=bottom]:border-t data-[side=left]:inset-y-0 data-[side=left]:left-0 data-[side=left]:h-full data-[side=left]:w-3/4 data-[side=left]:border-r data-[side=right]:inset-y-0 data-[side=right]:right-0 data-[side=right]:h-full data-[side=right]:w-3/4 data-[side=right]:border-l data-[side=top]:inset-x-0 data-[side=top]:top-0 data-[side=top]:h-auto data-[side=top]:border-b data-[side=left]:sm:max-w-sm data-[side=right]:sm:max-w-sm",
+          className,
+        )}
+        {...props}
+        render={(popupProps, state) => (
+          <m.div
+            {...(popupProps as HTMLMotionProps<"div">)}
+            initial={preset.initial}
+            animate={state.open ? preset.open : preset.closed}
+          />
+        )}
+      >
+        {children}
+        {showCloseButton && (
+          <SheetPrimitive.Close
+            data-slot="sheet-close"
+            render={
+              <Button
+                variant="ghost"
+                className="absolute top-3 right-3"
+                size="icon-sm"
+              />
+            }
+          >
+            <XIcon />
+            <span className="sr-only">Fechar</span>
+          </SheetPrimitive.Close>
+        )}
+      </SheetPrimitive.Popup>
+    </SheetPortal>
+  );
+}
+
+function SheetHeader({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-header"
+      className={cn("flex flex-col gap-0.5 p-4", className)}
+      {...props}
+    />
+  );
+}
+
+function SheetFooter({ className, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="sheet-footer"
+      className={cn("mt-auto flex flex-col gap-2 p-4", className)}
+      {...props}
+    />
+  );
+}
+
+function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
+  return (
+    <SheetPrimitive.Title
+      data-slot="sheet-title"
+      className={cn(
+        "font-heading text-base font-medium text-foreground",
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+function SheetDescription({
+  className,
+  ...props
+}: SheetPrimitive.Description.Props) {
+  return (
+    <SheetPrimitive.Description
+      data-slot="sheet-description"
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  );
+}
+
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+};
+```
+
+`src/components/ui/sidebar.tsx` (ferramenta Edit), old_string:
+
+```tsx
+          data-mobile="true"
+          className="bg-sidebar p-0 text-sidebar-foreground duration-[350ms] ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none data-[side=left]:w-(--sidebar-width) data-[side=left]:border-r-0 data-[side=left]:shadow-drawer data-[side=left]:sm:max-w-none data-[side=left]:data-starting-style:translate-x-[-105%] data-[side=left]:data-ending-style:translate-x-[-105%] data-starting-style:opacity-100 data-ending-style:opacity-100 [&>button]:hidden"
+```
+
+new_string:
+
+```tsx
+          data-mobile="true"
+          // A gaveta entra da borda pela mola do Motion e sai com fade
+          // (sheetMotion "drawer", src/lib/motion.ts); sem transição de CSS.
+          motionKind="drawer"
+          className="bg-sidebar p-0 text-sidebar-foreground data-[side=left]:w-(--sidebar-width) data-[side=left]:border-r-0 data-[side=left]:shadow-drawer data-[side=left]:sm:max-w-none [&>button]:hidden"
+```
+
+Run: `bunx vitest run src/components/ui/sheet.test.tsx src/components/app-shell/AppSidebar.test.tsx src/components/ui/sidebar.test.tsx src/components/solicitacoes/RequestSheet.test.tsx src/components/ui/ptBrLabels.test.tsx`
+Expected: PASS (todos).
+
+- [ ] **Step 10: A cor do cartão — os testes que falham**
+
+`src/components/passagens/SectorColorFade.test.tsx` (novo):
+
+```tsx
+import { render, waitFor } from "@testing-library/react";
+import { renderToString } from "react-dom/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
+import { MotionTree, stubReducedMotion, wait } from "../../../test/motion";
+import {
+  REMOUNT_WINDOW_MS,
+  resetSectorColorMemory,
+  SectorColorFade,
+} from "./SectorColorFade";
+
+// A troca de cor do cartão do turno (emenda do Motion): a cor de antes, por cima da nova, some. A
+// troca de setor remonta o cartão (P86, P87): a remontagem logo depois de um cartão sair também vale.
+
+const LAYER = '[data-slot="sector-color-fade"]';
+const layer = () => document.querySelector<HTMLElement>(LAYER);
+
+// `id` muda a key: o cartão remonta, como na troca de setor.
+function Card({ color, id = "a" }: { color: SectorColor; id?: string }) {
+  return (
+    <MotionTree>
+      <div key={id} data-testid="cartao">
+        <SectorColorFade color={color} />
+      </div>
+    </MotionTree>
+  );
+}
+
+describe("SectorColorFade", () => {
+  let restoreMedia: () => void = () => {};
+
+  beforeEach(() => {
+    resetSectorColorMemory();
+  });
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+    vi.restoreAllMocks();
+  });
+
+  it("não existe no HTML do servidor nem no primeiro render (nada anima na carga)", () => {
+    expect(renderToString(<Card color="lilac" />)).toBe(
+      '<div data-testid="cartao"></div>',
+    );
+    restoreMedia = stubReducedMotion(false);
+    render(<Card color="lilac" />);
+    expect(layer()).toBeNull();
+  });
+
+  it("a mesma cor de novo não cria camada", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(<Card color="lilac" />);
+    rerender(<Card color="lilac" />);
+    await wait(50);
+    expect(layer()).toBeNull();
+  });
+
+  it("trocar a cor no mesmo cartão: a camada tem a cor de antes, opaca, por baixo do conteúdo, e some até sair do DOM", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(<Card color="lilac" />);
+    rerender(<Card color="peach" />);
+
+    const fade = layer();
+    expect(fade).toHaveClass(
+      SECTOR_COLOR_BG.lilac,
+      "pointer-events-none",
+      "absolute",
+      "inset-0",
+      "-z-10",
+    );
+    expect(fade).toHaveAttribute("aria-hidden", "true");
+    expect(fade?.style.opacity).toBe("1");
+    await waitFor(() => expect(layer()).toBeNull());
+  });
+
+  it("o cartão que monta logo depois de outro sair (a troca de setor remonta) parte da cor do que saiu", async () => {
+    restoreMedia = stubReducedMotion(false);
+    const { rerender } = render(<Card color="lilac" id="a" />);
+    rerender(<Card color="sky" id="b" />);
+
+    expect(layer()).toHaveClass(SECTOR_COLOR_BG.lilac);
+    await waitFor(() => expect(layer()).toBeNull());
+  });
+
+  it(`depois de ${REMOUNT_WINDOW_MS} ms a cor do cartão que saiu não vale mais`, () => {
+    restoreMedia = stubReducedMotion(false);
+    const now = vi.spyOn(Date, "now").mockReturnValue(1_000);
+    const { unmount } = render(<Card color="lilac" />);
+    unmount();
+    now.mockReturnValue(1_000 + REMOUNT_WINDOW_MS + 1);
+    render(<Card color="peach" />);
+    expect(layer()).toBeNull();
+  });
+
+  it("com movimento reduzido a cor troca na hora: nenhuma camada, nem na troca nem na remontagem", async () => {
+    restoreMedia = stubReducedMotion(true);
+    const { rerender } = render(<Card color="lilac" id="a" />);
+    rerender(<Card color="peach" id="a" />);
+    expect(layer()).toBeNull();
+    rerender(<Card color="sky" id="b" />);
+    expect(layer()).toBeNull();
+    await wait(50);
+    expect(layer()).toBeNull();
+  });
+});
+```
+
+`src/components/passagens/MyShiftCard.test.tsx`, quatro trechos:
+
+1. old_string:
+
+```tsx
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+```
+
+new_string:
+
+```tsx
+import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "vitest";
+```
+
+2. old_string:
+
+```tsx
+import { MyShiftCard } from "./MyShiftCard";
+```
+
+new_string:
+
+```tsx
+import { MotionTree, stubReducedMotion } from "../../../test/motion";
+import { MyShiftCard } from "./MyShiftCard";
+import { resetSectorColorMemory } from "./SectorColorFade";
+```
+
+3. old_string (o começo do `describe`):
+
+```tsx
+describe("MyShiftCard", () => {
+```
+
+new_string:
+
+```tsx
+describe("MyShiftCard", () => {
+  // A camada de cor lembra o último cartão da aba: cada teste começa sem memória.
+  beforeEach(() => {
+    resetSectorColorMemory();
+  });
+
+```
+
+4. old_string:
+
+```tsx
+  it("o cartão leva a cor do setor, a tinta de pastel e o crossfade que respeita movimento reduzido", () => {
+    const { container } = renderCard(START, { sectorColor: "peach" });
+
+    const card = cardOf(container);
+    expect(card).toHaveClass(
+      SECTOR_COLOR_BG.peach,
+      "text-on-pastel",
+      "transition-colors",
+      "duration-[450ms]",
+      "motion-reduce:transition-none",
+    );
+  });
+```
+
+new_string:
+
+```tsx
+  it("o cartão leva a cor do setor e a tinta de pastel; a troca de cor é a camada do SectorColorFade, sem transição de CSS", () => {
+    const { container } = renderCard(START, { sectorColor: "peach" });
+
+    const card = cardOf(container);
+    expect(card).toHaveClass(
+      SECTOR_COLOR_BG.peach,
+      "text-on-pastel",
+      "relative",
+      "isolate",
+    );
+    expect(card.className).not.toMatch(/transition|duration-/);
+    // Parado (na carga e na hidratação) não há camada.
+    expect(card.querySelector('[data-slot="sector-color-fade"]')).toBeNull();
+  });
+
+  it("trocar o setor: a cor de antes aparece por cima da nova, dentro do cartão, e some (Motion)", async () => {
+    const restore = stubReducedMotion(false);
+    try {
+      const card = (sectorColor: "lilac" | "peach") => (
+        <MotionTree>
+          <MyShiftCard
+            state={START}
+            sectorId={SECTOR_ID}
+            sectorName="ULD"
+            sectorColor={sectorColor}
+            canManageCatalog={false}
+            sectorParam={null}
+          />
+        </MotionTree>
+      );
+      const { container, rerender } = render(card("lilac"));
+      rerender(card("peach"));
+
+      const shell = cardOf(container);
+      expect(shell).toHaveClass(SECTOR_COLOR_BG.peach);
+      expect(
+        shell.querySelector('[data-slot="sector-color-fade"]'),
+      ).toHaveClass(SECTOR_COLOR_BG.lilac);
+      await waitFor(() =>
+        expect(
+          shell.querySelector('[data-slot="sector-color-fade"]'),
+        ).toBeNull(),
+      );
+    } finally {
+      restore();
+    }
+  });
+```
+
+Run: `bunx vitest run src/components/passagens/SectorColorFade.test.tsx src/components/passagens/MyShiftCard.test.tsx`
+Expected: FAIL: o `SectorColorFade.test.tsx` no import ("Failed to load url ./SectorColorFade") e o `MyShiftCard.test.tsx`
+também no import do `resetSectorColorMemory`.
+
+- [ ] **Step 11: A cor do cartão — o `SectorColorFade` e o `MyShiftCard`**
+
+`src/components/passagens/SectorColorFade.tsx`:
+
+```tsx
+"use client";
+
+import { cn } from "cn";
+import * as m from "motion/react-m";
+import { useLayoutEffect, useRef, useState } from "react";
+
+import { SECTOR_COLOR_BG, type SectorColor } from "@/features/sectors/colors";
+import { COLOR_FADE } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+/** Por quanto tempo a cor de um cartão que saiu vale para o próximo que montar, em ms. */
+export const REMOUNT_WINDOW_MS = 2000;
+
+// A cor do último cartão desta aba e quando ele saiu. A troca de setor remonta o cartão (P86, P87): a
+// cor de antes não sobrevive dentro do componente. Só os efeitos (no cliente) leem e escrevem; o
+// servidor nunca toca nela.
+let memory: { color: SectorColor; leftAt: number } | null = null;
+
+/** Esquece a cor do último cartão (os testes chamam antes de cada caso). */
+export function resetSectorColorMemory(): void {
+  memory = null;
+}
+
+// A troca de cor do cartão do turno (MyShiftCard) quando o admin muda de setor (emenda do Motion). O
+// cartão já pinta a cor nova pela classe, no servidor; esta camada, por baixo do conteúdo (`-z-10`
+// dentro do cartão `relative isolate`), mostra a cor de antes e some em COLOR_FADE, e sai do DOM ao
+// terminar. Vale para a troca no mesmo cartão e para o cartão que monta logo depois de outro sair (até
+// REMOUNT_WINDOW_MS). No primeiro render não existe: não está no HTML do servidor nem anima na
+// hidratação. Com movimento reduzido, a cor troca na hora (como o `motion-reduce` de antes).
+export function SectorColorFade({ color }: { color: SectorColor }) {
+  const reduce = usePrefersReducedMotion();
+  const shown = useRef<SectorColor | null>(null);
+  const [fading, setFading] = useState<{
+    color: SectorColor;
+    id: number;
+  } | null>(null);
+
+  // Efeito de layout: decide antes da pintura (a cor nova não pisca sem a camada por cima).
+  useLayoutEffect(() => {
+    const remembered =
+      memory !== null && Date.now() - memory.leftAt <= REMOUNT_WINDOW_MS
+        ? memory.color
+        : null;
+    const previous = shown.current ?? remembered;
+    shown.current = color;
+    memory = null;
+    if (previous === null || previous === color || reduce) return;
+    setFading((current) => ({ color: previous, id: (current?.id ?? 0) + 1 }));
+  }, [color, reduce]);
+
+  // Ao sair (desmontar, ou esconder na Activity), deixa a cor para o próximo cartão. A limpeza de um
+  // efeito de layout roda antes dos efeitos do cartão novo no mesmo commit.
+  useLayoutEffect(
+    () => () => {
+      if (shown.current !== null) {
+        memory = { color: shown.current, leftAt: Date.now() };
+      }
+    },
+    [],
+  );
+
+  if (fading === null) return null;
+  return (
+    <m.span
+      key={fading.id}
+      aria-hidden="true"
+      data-slot="sector-color-fade"
+      initial={{ opacity: 1 }}
+      animate={{ opacity: 0 }}
+      transition={COLOR_FADE}
+      onAnimationComplete={() => setFading(null)}
+      className={cn(
+        "pointer-events-none absolute inset-0 -z-10",
+        SECTOR_COLOR_BG[fading.color],
+      )}
+    />
+  );
+}
+```
+
+`src/components/passagens/MyShiftCard.tsx` (ferramenta Edit), dois trechos:
+
+1. old_string:
+
+```tsx
+import { ShiftProgressBar } from "./ShiftProgressBar";
+```
+
+new_string:
+
+```tsx
+import { SectorColorFade } from "./SectorColorFade";
+import { ShiftProgressBar } from "./ShiftProgressBar";
+```
+
+2. old_string:
+
+```tsx
+    <Card
+      variant="feature"
+      className={cn(
+        "gap-[22px] text-on-pastel transition-colors duration-[450ms] motion-reduce:transition-none",
+        SECTOR_COLOR_BG[color],
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+```
+
+new_string:
+
+```tsx
+    <Card
+      variant="feature"
+      className={cn(
+        "relative isolate gap-[22px] text-on-pastel",
+        SECTOR_COLOR_BG[color],
+      )}
+    >
+      {/* A troca de cor (Motion): a cor de antes por baixo do conteúdo, sumindo. O `isolate` prende o `-z-10` dela no cartão. */}
+      <SectorColorFade color={color} />
+      <div className="flex items-center justify-between gap-3">
+```
+
+Run: `bunx vitest run src/components/passagens/SectorColorFade.test.tsx src/components/passagens/MyShiftCard.test.tsx src/components/passagens/HomeCards.test.tsx`
+Expected: PASS (os três arquivos).
+
+- [ ] **Step 12: Tooltip — teste que falha, implementação e verde**
+
+`src/components/ui/tooltip.test.tsx` (novo):
+
+```tsx
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+
+import {
+  MotionTree,
+  scaleOf,
+  stubReducedMotion,
+  styleOnInsert,
+  translateOf,
+} from "../../../test/motion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./tooltip";
+
+// A entrada do tooltip pelo Motion (emenda do Motion): sai do gatilho (4px) crescendo de 0,96; no
+// reduzido, só um fade. O primeiro quadro é lido no instante em que o popup entra no DOM.
+
+const POPUP = '[data-slot="tooltip-content"]';
+
+function hover(element: HTMLElement) {
+  fireEvent.pointerEnter(element, { pointerType: "mouse" });
+  fireEvent.mouseEnter(element);
+  fireEvent.pointerMove(element, { pointerType: "mouse" });
+  fireEvent.mouseMove(element);
+}
+
+function renderTooltip(side: "top" | "bottom" | "left" | "right") {
+  render(
+    <MotionTree>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger render={<button type="button" />}>
+            Gatilho
+          </TooltipTrigger>
+          <TooltipContent side={side}>Dica</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </MotionTree>,
+  );
+  return screen.getByRole("button", { name: "Gatilho" });
+}
+
+function popup(): HTMLElement {
+  const element = document.querySelector<HTMLElement>(POPUP);
+  if (!element) throw new Error("tooltip ausente");
+  return element;
+}
+
+describe("TooltipContent — entrada (Motion)", () => {
+  let restoreMedia: () => void = () => {};
+
+  afterEach(() => {
+    restoreMedia();
+    restoreMedia = () => {};
+  });
+
+  it.each([
+    ["top", "Y", 4],
+    ["bottom", "Y", -4],
+    ["left", "X", 4],
+    ["right", "X", -4],
+  ] as const)("à %s: entra saindo do gatilho e crescendo, até parar no lugar", async (side, axis, from) => {
+    restoreMedia = stubReducedMotion(false);
+    const trigger = renderTooltip(side);
+    const first = styleOnInsert(POPUP, ["transform", "opacity"]);
+    hover(trigger);
+
+    const start = await first;
+    expect(translateOf(start.transform ?? "", axis)).toEqual({
+      value: from,
+      unit: "px",
+    });
+    expect(scaleOf(start.transform ?? "")).toBe(0.96);
+    expect(start.opacity).toBe("0");
+    await waitFor(() => {
+      expect(popup().style.transform).toBe("none");
+      expect(popup().style.opacity).toBe("1");
+    });
+    expect(popup()).toHaveTextContent("Dica");
+  });
+
+  it("com movimento reduzido: só o fade, sem deslocamento nem escala", async () => {
+    restoreMedia = stubReducedMotion(true);
+    const trigger = renderTooltip("top");
+    const first = styleOnInsert(POPUP, ["transform", "opacity"]);
+    hover(trigger);
+
+    expect(await first).toEqual({ transform: "", opacity: "0" });
+    await waitFor(() => expect(popup().style.opacity).toBe("1"));
+    expect(popup().style.transform).toBe("");
+  });
+
+  it("não usa as animações de CSS do tw-animate-css (correriam junto com o Motion)", async () => {
+    restoreMedia = stubReducedMotion(false);
+    hover(renderTooltip("top"));
+    await screen.findByText("Dica");
+    expect(popup().className).not.toMatch(/animate-|fade-|zoom-|slide-in/);
+  });
+});
+```
+
+Run: `bunx vitest run src/components/ui/tooltip.test.tsx`
+Expected: FAIL (o `style` do primeiro quadro vem vazio; as classes `animate-in` etc. ainda estão lá).
+
+`src/components/ui/tooltip.tsx` inteiro:
+
+```tsx
+"use client";
+
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
+import { cn } from "cn";
+import type { HTMLMotionProps } from "motion/react";
+import * as m from "motion/react-m";
+
+import { tooltipMotion } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/usePrefersReducedMotion";
+
+function TooltipProvider({
+  delay = 0,
+  ...props
+}: TooltipPrimitive.Provider.Props) {
+  return (
+    <TooltipPrimitive.Provider
+      data-slot="tooltip-provider"
+      delay={delay}
+      {...props}
+    />
+  );
+}
+
+function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
+  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
+}
+
+function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
+  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+}
+
+// A entrada é do Motion (emenda de 2026-11-27, library-docs §23): o tooltip sai do gatilho (4px, do
+// lado do `side`) crescendo de 0,96; com movimento reduzido, só um fade curto. Fecha na hora: sem
+// animação de saída, o Base UI desmonta assim que fecha. Sem as classes `animate-in`/`slide-in-*` do
+// tw-animate-css: a animação de CSS correria junto com a do Motion.
+function TooltipContent({
+  className,
+  side = "top",
+  sideOffset = 4,
+  align = "center",
+  alignOffset = 0,
+  children,
+  ...props
+}: TooltipPrimitive.Popup.Props &
+  Pick<
+    TooltipPrimitive.Positioner.Props,
+    "align" | "alignOffset" | "side" | "sideOffset"
+  >) {
+  const reduce = usePrefersReducedMotion();
+  return (
+    <TooltipPrimitive.Portal>
+      <TooltipPrimitive.Positioner
+        align={align}
+        alignOffset={alignOffset}
+        side={side}
+        sideOffset={sideOffset}
+        className="isolate z-50"
+      >
+        <TooltipPrimitive.Popup
+          data-slot="tooltip-content"
+          className={cn(
+            "z-50 inline-flex w-fit max-w-xs origin-(--transform-origin) items-center gap-1.5 rounded-md bg-foreground px-3 py-1.5 text-xs text-background has-data-[slot=kbd]:pr-1.5 **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm",
+            className,
+          )}
+          {...props}
+          render={(popupProps, state) => {
+            const preset = tooltipMotion(state.side, reduce);
+            return (
+              <m.div
+                {...(popupProps as HTMLMotionProps<"div">)}
+                initial={preset.initial}
+                animate={preset.animate}
+              />
+            );
+          }}
+        >
+          {children}
+          <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%-2px)] rotate-45 rounded-[2px] bg-foreground fill-foreground data-[side=bottom]:top-1 data-[side=inline-end]:top-1/2! data-[side=inline-end]:-left-1 data-[side=inline-end]:-translate-y-1/2 data-[side=inline-start]:top-1/2! data-[side=inline-start]:-right-1 data-[side=inline-start]:-translate-y-1/2 data-[side=left]:top-1/2! data-[side=left]:-right-1 data-[side=left]:-translate-y-1/2 data-[side=right]:top-1/2! data-[side=right]:-left-1 data-[side=right]:-translate-y-1/2 data-[side=top]:-bottom-2.5" />
+        </TooltipPrimitive.Popup>
+      </TooltipPrimitive.Positioner>
+    </TooltipPrimitive.Portal>
+  );
+}
+
+export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+```
+
+Run: `bunx vitest run src/components/ui/tooltip.test.tsx src/components/app-shell/ThemeSwitch.test.tsx src/components/app-shell/MenuToggle.test.tsx src/components/app-shell/AppHeader.test.tsx`
+Expected: PASS (os quatro arquivos).
+
+- [ ] **Step 13: O guarda conhece os componentes que se mexem**
+
+`src/app/motionUsage.test.ts`, old_string:
+
+```ts
+  it("os arquivos que usam o Motion: a fundação (M1)", () => {
+    expect(motionFiles).toEqual(
+      expect.arrayContaining([
+        "components/motion/MotionProvider.tsx",
+        "lib/motion.ts",
+      ]),
+    );
+  });
+```
+
+new_string:
+
+```ts
+  it("os componentes que se mexem usam o Motion (M1 e M2)", () => {
+    expect(motionFiles).toEqual(
+      expect.arrayContaining([
+        "components/app-shell/ThemeSwitch.tsx",
+        "components/motion/MotionProvider.tsx",
+        "components/motion/PressButton.tsx",
+        "components/passagens/SectorColorFade.tsx",
+        "components/passagens/SectorPicker.tsx",
+        "components/ui/sheet.tsx",
+        "components/ui/tooltip.tsx",
+        "lib/motion.ts",
+      ]),
+    );
+  });
+```
+
+Run: `bunx vitest run src/app/motionUsage.test.ts`
+Expected: PASS (nenhum dos arquivos novos tem número ou curva fora dos tokens).
+
+- [ ] **Step 14: `e2e/motion.spec.ts` (roda no portão do C2, não aqui)**
+
+```ts
+import { expect, type Page } from "@playwright/test";
+import type { Pool } from "pg";
+
+import type { Db } from "@/db/types";
+
+import { insertSector, openE2eDb } from "./db";
+import { seedSector, signUpAdmin, test, unique } from "./helpers";
+
+// Prova do Motion no Chromium (emenda do Motion do PR B, library-docs §23). O jsdom não tem a Web
+// Animations API: lá o Base UI desmonta na hora e não há `transform` calculado. Aqui: o aperto do
+// botão, a gaveta que entra da borda e ainda está no DOM depois do Escape (o Base UI esperou o fade),
+// o ramo de movimento reduzido e a camada de cor na troca de setor (que remonta o cartão). Celular
+// (390x844): o menu é a gaveta.
+test.use({ viewport: { width: 390, height: 844 } });
+
+let pool: Pool;
+let db: Db;
+test.beforeAll(() => {
+  ({ pool, db } = openE2eDb());
+});
+test.afterAll(async () => {
+  await pool.end();
+});
+
+const DRAWER = '[data-slot="sidebar"][data-mobile="true"]';
+const FADE = '[data-slot="sector-color-fade"]';
+const PRESSED = "matrix(0.97, 0, 0, 0.97, 0, 0)";
+
+type Watched = { __motionWatch?: Promise<string> };
+
+/** Arma a observação: resolve com o `transform` calculado ou a classe do primeiro `selector` que entrar no DOM. */
+async function watchInsert(
+  page: Page,
+  selector: string,
+  read: "transform" | "className",
+): Promise<void> {
+  await page.evaluate(
+    ({ target, what }) => {
+      (window as Watched).__motionWatch = new Promise<string>((resolve) => {
+        const observer = new MutationObserver(() => {
+          const element = document.querySelector(target);
+          if (!element) return;
+          observer.disconnect();
+          resolve(
+            what === "transform"
+              ? getComputedStyle(element).transform
+              : element.className,
+          );
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      });
+    },
+    { target: selector, what: read },
+  );
+}
+
+function watched(page: Page): Promise<string> {
+  return page.evaluate(
+    () =>
+      (window as Watched).__motionWatch ??
+      Promise.reject(new Error("observação não armada")),
+  );
+}
+
+function transformOf(page: Page, selector: string): Promise<string | null> {
+  return page.evaluate((target) => {
+    const element = document.querySelector(target);
+    return element ? getComputedStyle(element).transform : null;
+  }, selector);
+}
+
+test("o botão encolhe ao apertar, a gaveta entra da borda pela mola e sai antes de desmontar", async ({
+  page,
+}) => {
+  await signUpAdmin(page, db, "Bruno Teste");
+  await page.goto("/");
+  const toggle = page.getByRole("button", { name: "Alternar menu" });
+
+  await toggle.hover();
+  await page.mouse.down();
+  await expect
+    .poll(() =>
+      toggle.evaluate((element) => getComputedStyle(element).transform),
+    )
+    .toBe(PRESSED);
+
+  await watchInsert(page, DRAWER, "transform");
+  await page.mouse.up();
+  // No instante em que monta, a gaveta está fora da tela (−105% de 280px), não no lugar.
+  expect(await watched(page)).not.toBe("none");
+  await expect(page.locator(DRAWER)).toBeVisible();
+  await expect.poll(() => transformOf(page, DRAWER)).toBe("none");
+
+  await page.keyboard.press("Escape");
+  // Quatro quadros depois do Escape a gaveta ainda está no DOM, já mais transparente: o Base UI
+  // esperou o fade da saída (sem opacidade na saída, ela desmontaria na hora).
+  const leaving = await page.evaluate(async (target) => {
+    for (let frame = 0; frame < 4; frame++) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    const element = document.querySelector(target);
+    return element ? Number(getComputedStyle(element).opacity) : null;
+  }, DRAWER);
+  expect(leaving, "a gaveta desmontou sem a animação de saída").not.toBeNull();
+  expect(leaving).toBeLessThan(1);
+  await expect(page.locator(DRAWER)).toHaveCount(0);
+});
+
+test("com movimento reduzido: o botão não encolhe e a gaveta aparece sem deslizar", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await signUpAdmin(page, db, "Carla Teste");
+  await page.goto("/");
+  const toggle = page.getByRole("button", { name: "Alternar menu" });
+
+  await toggle.hover();
+  await page.mouse.down();
+  await page.waitForTimeout(250);
+  expect(
+    await toggle.evaluate((element) => getComputedStyle(element).transform),
+  ).toBe("none");
+
+  await watchInsert(page, DRAWER, "transform");
+  await page.mouse.up();
+  expect(await watched(page)).toBe("none");
+  await expect(page.locator(DRAWER)).toBeVisible();
+});
+
+test("trocar de setor no Início: a cor de antes fica por cima do cartão do turno e some", async ({
+  page,
+}) => {
+  const before = await seedSector(db); // lilás (a cor padrão do fixture)
+  const after = await insertSector(db, `Setor ${unique()}`, {
+    color: "peach",
+  });
+  await signUpAdmin(page, db, "Diego Teste");
+  await page.goto(`/?setor=${before.sector.id}`);
+  await expect(
+    page.getByRole("heading", { name: "Passagem do meu turno" }),
+  ).toBeVisible();
+
+  await watchInsert(page, FADE, "className");
+  await page.getByRole("radio", { name: after.name }).click();
+  expect(await watched(page)).toContain("bg-sector-lilac");
+  await expect(page).toHaveURL(new RegExp(`setor=${after.id}`));
+  await expect(page.locator(FADE)).toHaveCount(0);
+});
+```
+
+Sem rodar aqui (E2E só no portão). Conferência: `bunx biome check --write e2e/motion.spec.ts` e o `check-types` do Step 16
+cobrem a sintaxe e os tipos.
+
+- [ ] **Step 15: Registro e a P87**
+
+`.context/ui-registry.md` (ferramenta Edit; os cabeçalhos existentes não mudam):
+
+- Button, old_string `` `on-pastel` (`bg-on-pastel text-on-pastel-ink`, `active:scale-[.97]`: primário dentro de card `` → new_string
+  `` `on-pastel` (`bg-on-pastel text-on-pastel-ink`, aperto pelo Motion; no `<Link>` cru, `active:not-data-[press]:scale-[.97]`: primário dentro de card ``;
+  old_string `- **Usa:** tokens \`primary\`, \`input\`, \`accent\`, \`card\`, \`ring\`, \`destructive\`, \`on-pastel*\`.` → new_string
+  `- **Usa:** \`PressButton\` (Motion); tokens \`primary\`, \`input\`, \`accent\`, \`card\`, \`ring\`, \`destructive\`, \`on-pastel*\`.`;
+  e old_string `o hover sumia dentro de cartão, diálogo e Sheet. Guarda: \`src/app/mutedBackground.test.ts\`.` (o fim do
+  Histórico depois da T3) → new_string:
+
+  ```markdown
+  o hover sumia dentro de cartão, diálogo e Sheet. Guarda: `src/app/mutedBackground.test.ts`. 2026-11-27 — Emenda do Motion (M2): o elemento passa a ser o `PressButton` (`render`), que encolhe para 0,97 ao apertar (mola `press`) e não encolhe com movimento reduzido nem em gatilho de popup (`aria-haspopup`); a base troca `transition-all` por `transition-[color,background-color,border-color,outline-color,box-shadow,opacity,translate,scale]` (o CSS não pode transicionar o `transform` que o Motion anima), e o aperto de CSS (`translate-y-px` da base e o `scale-[.97]` do `on-pastel`) ganha `not-data-[press]`: só vale no `buttonVariants` cru num `<Link>`.
+  ```
+
+- Sidebar, old_string `e desliza 350ms com \`cubic-bezier(.2,.8,.2,1)\` (\`motion-reduce\` desliga).` → new_string
+  `e entra pelo Motion (\`SheetContent motionKind="drawer"\`: da borda, −105%, opaca, pela mola \`panel\`; sai em 0,18 s com fade; com movimento reduzido, só um fade curto).`;
+  e old_string `o \`default\` de \`SidebarMenuButton\` não mudou.` → new_string:
+
+  ```markdown
+  o `default` de `SidebarMenuButton` não mudou. 2026-11-27 — Emenda do Motion (M2): a gaveta perde `duration-[350ms]`, a curva, o `motion-reduce` e os `data-starting-style`/`data-ending-style` e passa a `motionKind="drawer"`; a saída ganhou fade (o Base UI só espera a saída pela opacidade). Prova da saída: `e2e/motion.spec.ts`.
+  ```
+
+- Sheet, a entrada inteira. old_string:
+
+  ```markdown
+  - **Como funciona:** `@base-ui/react/dialog`; `side` = `top|right|bottom|left`; `SheetHeader`,
+    `SheetTitle`, `SheetDescription`, `SheetFooter`, `SheetClose`. O botão de fechar usa
+    `Button size="icon-sm"` (44px no celular).
+  - **Usa:** `Button`; tokens `background`, `border`.
+  - **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar". 2026-11-27 — visual novo (Task 9): `SheetContent` aceita `overlayClassName` (o padrão `bg-black/10` + blur continua para os outros Sheets); só a gaveta do menu usa.
+  ```
+
+  new_string:
+
+  ```markdown
+  - **Como funciona:** `@base-ui/react/dialog`; `side` = `top|right|bottom|left`; `SheetHeader`,
+    `SheetTitle`, `SheetDescription`, `SheetFooter`, `SheetClose`. O botão de fechar usa
+    `Button size="icon-sm"` (44px no celular). Véu e painel são `m.div` pelo `render` do Base UI (função com `state.open`): o painel chega de 40px (`motionKind="sheet"`, o padrão) ou da borda, −105%, opaco (`"drawer"`), pela mola `panel`, com fade de 0,15 s; sai em 0,18 s com fade (é pela opacidade que o Base UI espera antes de desmontar); o véu entra e sai em fade. Com movimento reduzido, só um fade de 0,1 s. Presets: `sheetMotion` e `overlayMotion` (`src/lib/motion.ts`).
+  - **Usa:** `Button`, `motion/react-m`, `sheetMotion`, `overlayMotion`, `usePrefersReducedMotion`; tokens `background`, `border`.
+  - **Histórico:** 2026-11-20 — `shadcn add`; o `sr-only` do botão de fechar passa a "Fechar". 2026-11-27 — visual novo (Task 9): `SheetContent` aceita `overlayClassName` (o padrão `bg-black/10` + blur continua para os outros Sheets); só a gaveta do menu usa. 2026-11-27 — Emenda do Motion (M2): entrada e saída pelo Motion; saem `transition duration-200 ease-in-out` e os `data-starting-style`/`data-ending-style` (do painel e do véu); prop nova `motionKind`.
+  ```
+
+- Tooltip, a entrada inteira. old_string:
+
+  ```markdown
+  - **Como funciona:** `@base-ui/react/tooltip`; `TooltipProvider` uma vez no layout raiz
+    (sem ele o Base UI lança erro); `TooltipTrigger render={<Button … />}`.
+  - **Usa:** tokens `foreground`, `background`.
+  - **Histórico:** 2026-11-20 — `shadcn add`, sem alteração.
+
+  ### Sonner (Toaster)
+  ```
+
+  new_string:
+
+  ```markdown
+  - **Como funciona:** `@base-ui/react/tooltip`; `TooltipProvider` uma vez no layout raiz
+    (sem ele o Base UI lança erro); `TooltipTrigger render={<Button … />}`. A entrada é do Motion (`m.div` pelo `render`, com o `state.side`): sai do gatilho (4px) crescendo de 0,96, em 0,2 s; com movimento reduzido, só um fade de 0,1 s; fecha na hora (preset `tooltipMotion`).
+  - **Usa:** `motion/react-m`, `tooltipMotion`, `usePrefersReducedMotion`; tokens `foreground`, `background`.
+  - **Histórico:** 2026-11-20 — `shadcn add`, sem alteração. 2026-11-27 — Emenda do Motion (M2): a entrada passa ao Motion; saem as classes do tw-animate-css (`animate-in`, `fade-in-0`, `zoom-in-95`, `slide-in-from-*`, `animate-out`), e a saída (antes um fade de CSS) é imediata.
+
+  ### Sonner (Toaster)
+  ```
+
+- MotionProvider → PressButton: old_string:
+
+  ```markdown
+  - **Histórico:** 2026-11-27 — criado na emenda do Motion (M1).
+
+  ### AppSidebar
+  ```
+
+  new_string:
+
+  ```markdown
+  - **Histórico:** 2026-11-27 — criado na emenda do Motion (M1).
+
+  ### PressButton
+  - **Status:** ✅ pronto (2026-11-27)
+  - **Local:** `src/components/motion/PressButton.tsx` (`"use client"`)
+  - **Propósito:** o elemento de todo `Button` (pela prop `render` do Base UI): o aperto com escala.
+  - **Como funciona:** `m.button` com `whileTap={{ scale: PRESS_SCALE }}` (0,97) na mola `MOTION_SPRING.press` e `data-press="motion"`, que desliga o aperto de CSS do `buttonVariants` (o do `<Link>` cru). Não encolhe com movimento reduzido (`usePrefersReducedMotion`) nem quando abre um popup (`aria-haspopup`): o popup se posiciona contra o tamanho do gatilho, que responde só com a cor. Sem valor inicial (o HTML do servidor é um `<button>` sem estilo); o `button.tsx` continua sem `"use client"` (o `buttonVariants` serve Server Components) e passa `<PressButton />` como elemento.
+  - **Usa:** `motion/react-m`, `MOTION_SPRING`, `PRESS_SCALE`, `usePrefersReducedMotion`.
+  - **Histórico:** 2026-11-27 — criado na emenda do Motion (M2).
+
+  ### AppSidebar
+  ```
+
+- ThemeSwitch, old_string `e \`transition: left .3s cubic-bezier(.2,.8,.2,1)\` (desligada em \`motion-reduce\`).` → new_string
+  `e o deslize é só da troca, pelo Motion: no clique o CSS já põe o knob no lado novo, ele volta para onde estava (FLIP pelo \`offsetLeft\`) e a mola \`MOTION_SPRING.knob\` (\`useSpring\`) o leva a 0; com movimento reduzido, troca na hora; na carga e na hidratação nada desliza.`;
+  old_string `- **Usa:** \`useTheme\` (\`src/lib/useTheme.ts\`), \`Tooltip*\`; tokens \`card\`, \`primary\`, \`primary-foreground\`, \`ring\`.` →
+  new_string `- **Usa:** \`useTheme\` (\`src/lib/useTheme.ts\`), \`Tooltip*\`, \`useSpring\` e \`m.span\` (Motion), \`MOTION_SPRING.knob\`, \`usePrefersReducedMotion\`; tokens \`card\`, \`primary\`, \`primary-foreground\`, \`ring\`.`;
+  e old_string `o \`ThemeProvider\` foi removido (o script do \`next-themes\` duplicava conteúdo).` → new_string:
+
+  ```markdown
+  o `ThemeProvider` foi removido (o script do `next-themes` duplicava conteúdo). 2026-11-27 — Emenda do Motion (M2): o knob vira `m.span` (`data-slot="theme-switch-knob"`) e perde `transition-[left] duration-300 ease-[…] motion-reduce:transition-none`; o deslize da troca é FLIP com `useSpring`.
+  ```
+
+- SectorPicker, old_string
+  `fica em \`left: calc(i * 100% / N)\` por variáveis CSS (\`--i\`, \`--n\`) e desliza em \`.4s cubic-bezier(.3,1.25,.4,1)\`; \`motion-reduce:transition-none\` tira o deslize.` →
+  new_string
+  `fica em \`left: calc(i * 100% / N)\` por variáveis CSS (\`--i\`, \`--n\`), o repouso igual no servidor, na hidratação e no pixel; o deslize é do Motion (FLIP: na troca o thumb volta para onde estava, x = a diferença de índice vezes a largura dele, e a mola \`MOTION_SPRING.thumb\` o leva a 0, com um pouco de sobra como a curva do protótipo); com movimento reduzido vai direto.`;
+  old_string `- **Usa:** \`RadioGroup\`, \`Radio\` (\`@base-ui/react\`), \`SECTOR_COLOR_BG\`,` → new_string
+  `- **Usa:** \`RadioGroup\`, \`Radio\` (\`@base-ui/react\`), \`useSpring\` e \`m.span\` (Motion), \`MOTION_SPRING.thumb\`, \`usePrefersReducedMotion\`, \`SECTOR_COLOR_BG\`,`;
+  e old_string `o \`left\` calculado afirmado e o caso de menos movimento separado da chamada do Base UI.` → new_string:
+
+  ```markdown
+  o `left` calculado afirmado e o caso de menos movimento separado da chamada do Base UI. 2026-11-27 — Emenda do Motion (M2): o thumb vira `m.span` e perde `transition-[left] duration-[400ms] ease-[cubic-bezier(.3,1.25,.4,1)] motion-reduce:transition-none`; o `--i` e a posição de repouso não mudam; o stub de `matchMedia` do teste ganhou os ouvintes.
+  ```
+
+- MyShiftCard, old_string `(\`SECTOR_COLOR_BG[sectorColor]\`; crossfade de .45 s, desligado com \`prefers-reduced-motion\`)` → new_string
+  `(\`SECTOR_COLOR_BG[sectorColor]\`; a troca de cor é o \`SectorColorFade\`: a cor de antes some em 0,4 s, também quando o cartão remonta, e troca na hora com movimento reduzido)`;
+  old_string `- **Usa:** \`Card\`, \`buttonVariants\`, \`UserAvatar\`, \`AvatarStack\`, \`ShiftProgressBar\`,` → new_string
+  `- **Usa:** \`Card\`, \`buttonVariants\`, \`UserAvatar\`, \`AvatarStack\`, \`ShiftProgressBar\`, \`SectorColorFade\`,`;
+  e old_string `da pilha só com quem confirmou e do avatar com "outra pessoa".` → new_string:
+
+  ```markdown
+  da pilha só com quem confirmou e do avatar com "outra pessoa". 2026-11-27 — Emenda do Motion (M2): o `Shell` troca `transition-colors duration-[450ms] motion-reduce:transition-none` por `relative isolate` e a camada `SectorColorFade` (o crossfade de antes não rodava porque a troca de setor remonta o cartão, P87).
+  ```
+
+- SectorColorFade (nova), old_string:
+
+  ```markdown
+
+  ### ShiftProgressBar
+  ```
+
+  new_string:
+
+  ```markdown
+
+  ### SectorColorFade
+  - **Status:** ✅ pronto (2026-11-27)
+  - **Local:** `src/components/passagens/SectorColorFade.tsx` (`"use client"`)
+  - **Propósito:** a troca de cor do `MyShiftCard` quando o admin muda de setor.
+  - **Como funciona:** o cartão já pinta a cor nova pela classe (servidor); esta camada (`absolute inset-0 -z-10`, `aria-hidden`, dentro do cartão `relative isolate`, por baixo do conteúdo) mostra a cor de antes e some em `COLOR_FADE` (0,4 s, só opacidade), e sai do DOM ao terminar. Decide num efeito de layout (antes da pintura). A troca de setor remonta o cartão: a cor do último cartão fica numa memória do módulo por até `REMOUNT_WINDOW_MS` (2 s), escrita na limpeza do efeito de layout (que roda antes dos efeitos do cartão novo); só o cliente toca nela, e `resetSectorColorMemory()` a zera nos testes. No primeiro render não existe (nada no HTML do servidor nem na hidratação); com movimento reduzido, a cor troca na hora.
+  - **Usa:** `motion/react-m`, `SECTOR_COLOR_BG`, `COLOR_FADE`, `usePrefersReducedMotion`.
+  - **Histórico:** 2026-11-27 — criado na emenda do Motion (M2): substitui o `transition-colors duration-[450ms]` do cartão.
+
+  ### ShiftProgressBar
+  ```
+
+`.context/pendencias.md` (ferramenta Edit), a P87. old_string:
+
+```markdown
+**Correção:** — (opção: conferir as duas no navegador; se o crossfade não roda, tirar a promessa da spec e do registro, ou manter o nó do cartão entre as trocas)
+**Registrado em:** 2026-11-27
+```
+
+new_string:
+
+```markdown
+**Correção:** — (opção: conferir as duas no navegador; se o crossfade não roda, tirar a promessa da spec e do registro, ou manter o nó do cartão entre as trocas)
+**Registrado em:** 2026-11-27
+**Atualização (2026-11-27):** a troca de cor do cartão passou ao Motion na emenda do PR B (`SectorColorFade`): uma camada com a cor de antes some em 0,4 s, também quando o cartão remonta (a cor do último cartão vale por até 2 s), e troca na hora com movimento reduzido. Provada em `SectorColorFade.test.tsx` (troca no mesmo cartão e remontagem) e no Chromium (`e2e/motion.spec.ts`). Continua aberta: a transição de cor na troca de tema não foi conferida.
+```
+
+Run:
+
+```sh
+grep -c "^### " .context/ui-registry.md
+grep -c "^#### " .context/pendencias.md
+bunx vitest run test/uiRegistryDoc.test.ts test/pendenciasDoc.test.ts
+```
+
+Expected: `###` = o número do Step 1 + 2; `####` igual ao do Step 1; os dois testes PASS (o `uiRegistryDoc` exige o
+`SectorColorFade` no catálogo: a entrada nova cobre).
+
+- [ ] **Step 16: Formatar, tipos, lint e todos os testes tocados**
+
+```sh
+bunx biome check --write src/components/motion/PressButton.tsx src/components/ui/button.tsx src/components/ui/button.test.tsx src/components/ui/button.variants.test.ts src/components/app-shell/ThemeSwitch.tsx src/components/app-shell/ThemeSwitch.test.tsx src/components/passagens/SectorPicker.tsx src/components/passagens/SectorPicker.test.tsx src/components/ui/sheet.tsx src/components/ui/sheet.test.tsx src/components/ui/sidebar.tsx src/components/app-shell/AppSidebar.test.tsx src/components/passagens/SectorColorFade.tsx src/components/passagens/SectorColorFade.test.tsx src/components/passagens/MyShiftCard.tsx src/components/passagens/MyShiftCard.test.tsx src/components/ui/tooltip.tsx src/components/ui/tooltip.test.tsx src/app/motionUsage.test.ts e2e/motion.spec.ts
+bun run check-types
+bun run lint
+bunx vitest run src/components/ui/button.test.tsx src/components/ui/button.variants.test.ts src/components/ui/button.test.ts src/components/ui/touchTargets.test.tsx src/components/app-shell/ThemeSwitch.test.tsx src/components/app-shell/MenuToggle.test.tsx src/components/app-shell/AppHeader.test.tsx src/components/passagens/SectorPicker.test.tsx src/components/ui/sheet.test.tsx src/components/ui/sidebar.test.tsx src/components/app-shell/AppSidebar.test.tsx src/components/solicitacoes/RequestSheet.test.tsx src/components/solicitacoes/RequestDetail.test.tsx src/components/ui/ptBrLabels.test.tsx src/components/passagens/SectorColorFade.test.tsx src/components/passagens/MyShiftCard.test.tsx src/components/passagens/HomeCards.test.tsx src/components/ui/tooltip.test.tsx src/app/motionUsage.test.ts src/app/themeContrast.test.ts src/app/rawColors.test.ts src/app/mutedBackground.test.ts test/uiRegistryDoc.test.ts test/pendenciasDoc.test.ts
+grep -rln "PressButton\|SectorColorFade\|motionKind\|theme-switch-knob" src test e2e
+```
+
+Expected: tipos e lint sem erro; todos PASS; o `grep` só acha os arquivos desta tarefa (e o `button.tsx`, o `sidebar.tsx` e
+o `MyShiftCard.tsx`, que os usam). Se um teste de animação estourar o tempo do `waitFor`, confira primeiro se a `MotionTree`
+envolve a árvore (sem ela o `m` fica parado no `initial`) e se o stub de `matchMedia` foi armado antes do `render`.
+
+- [ ] **Step 17: Conferência pelo controlador (não rodar na tarefa)**
+
+- **C1 Step 4 (pares do Início, com o Motion aplicado):** cada par dentro da faixa do §15.2, como sem a emenda. Em repouso
+  nada mudou (thumb e knob no CSS com `transform: none`, Sheet e gaveta com `transform: none` e opacidade 1, `isolate` no
+  cartão). Um par fora da faixa: `sbs`/`measure` no elemento e
+  `node scripts/visual/probe.mjs --screen=inicio --state=<estado> --width=<L> --app-only "getComputedStyle(document.querySelector('[data-slot=sector-picker-thumb]')).transform"`
+  → `APP "none"`.
+- **C2 Step 1 (portão):** o `bun run test:e2e` inclui o `e2e/motion.spec.ts` (3 cenários, 3 cadastros) e o
+  `e2e/hydration.spec.ts` (o `MotionProvider` na raiz não pode criar id `_r_` nem divergência).
+
+- [ ] **Step 18: Commit**
+
+Mensagem gravada com Write em `.git/sdd/processo/msg-task-M2.txt`:
+
+```text
+feat(motion): os componentes que já se mexiam passam ao Motion
+
+O Button encolhe ao apertar (PressButton; nunca em gatilho de popup), o
+knob do tema e o thumb do seletor de setor deslizam pela mola na troca
+(FLIP, o repouso segue no CSS), o Sheet e a gaveta entram pela mola e
+saem com fade, a troca de cor do cartão do turno é uma camada que se
+apaga (também quando o cartão remonta) e o tooltip entra saindo do
+gatilho. Todos com o ramo de movimento reduzido testado e nada animando
+na hidratação. e2e/motion.spec.ts prova no Chromium a saída da gaveta,
+o ramo reduzido e a camada de cor. P87 com Atualização.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+```
+
+`git add src/components/motion/PressButton.tsx src/components/ui/button.tsx src/components/ui/button.test.tsx src/components/ui/button.variants.test.ts src/components/app-shell/ThemeSwitch.tsx src/components/app-shell/ThemeSwitch.test.tsx src/components/passagens/SectorPicker.tsx src/components/passagens/SectorPicker.test.tsx src/components/ui/sheet.tsx src/components/ui/sheet.test.tsx src/components/ui/sidebar.tsx src/components/app-shell/AppSidebar.test.tsx src/components/passagens/SectorColorFade.tsx src/components/passagens/SectorColorFade.test.tsx src/components/passagens/MyShiftCard.tsx src/components/passagens/MyShiftCard.test.tsx src/components/ui/tooltip.tsx src/components/ui/tooltip.test.tsx src/app/motionUsage.test.ts e2e/motion.spec.ts .context/ui-registry.md .context/pendencias.md && git status --short && git commit -F .git/sdd/processo/msg-task-M2.txt`
+Expected: o `pre-commit` passa; `git status` limpo; `node scripts/visual/registry-diff.mjs HEAD~1` sai com 0 (NOVO:
+`PressButton`, `SectorColorFade`; nenhum SUMIU).
+
+---
+
 ### Task C1: Prova (controlador)
 
-**Spec:** §13, §15 · **Redator:** R3 (texto) / controlador · **Depende de:** T1 a T10 e a emenda do Motion ·
+**Spec:** §13, §15, §16.6 · **Redator:** R3 (texto) / controlador · **Depende de:** T1 a T10, M1 e M2 ·
 **Commit:** nenhum (resultado em `.git/sdd/processo/pixel.md`)
 
 **Files** (todos fora do git, em `.git/sdd/processo/`): Create `proto.config.mjs`, `tabela-pixel.mjs`, `hover.js`,
@@ -15324,7 +19463,7 @@ Expected: o `pre-commit` passa (`check-names: nada da lista …`).
   `<estado>-<largura><sufixo>`, `{ pct, size, natural: { app, proto }, regions: { cartao }, … }`, `pct` em porcento, como
   no PR A), o JSON do `interact.mjs` (`{ state, width, expect, app: { failed, samples, notes }, proto, at }`), o hook
   (C0 Step 5), a sentinela da lista (C0 Step 2) e as conferências manuais das tarefas (T1 Step 14, T5 Step 24, T7
-  Step 27, T8 Step 20).
+  Step 27, T8 Step 20, M1 Step 19, M2 Step 17).
 - Produces: `.git/sdd/processo/pixel.md` (a tabela da spec §15.2 e as provas de §13.4 a §13.8), lido pelo C2 e pela revisão.
 
 Regras deste passo: um servidor e um navegador por vez; os comandos longos rodam em segundo plano (`run_in_background`)
@@ -15518,7 +19657,8 @@ Run: `node .git/sdd/processo/tabela-pixel.mjs; echo "código: $?"`
 Expected: a tabela com os 19 pares, todos `✓`, `Todos os pares na faixa.` e `código: 0`. Par fora da faixa: investigue
 com `node scripts/visual/measure.mjs --screen=inicio --state=<estado> --width=<L> --out=processo` e `node scripts/visual/sbs.mjs` antes
 de aceitar (spec §14: texto diferente entre os lados é defeito da cópia ou do seed); o que mudar no código sai como
-`fix(visual): …` com teste, e os pares rodam de novo.
+`fix(visual): …` com teste, e os pares rodam de novo. Os pares rodam com o Motion já aplicado (M1 e M2, spec §16.6): em
+repouso nada mudou, e um par fora da faixa passa também pela sonda do `transform` da M2 Step 17 (`APP "none"`).
 
 - [ ] **Step 5: A falha de rede (spec §13.4)**
 
@@ -15600,8 +19740,8 @@ para as telas que o PR A não recapturou, `.git/sdd/visual/legibilidade/audit.js
 
 - [ ] **Step 8: As conferências manuais das tarefas**
 
-As linhas das conferências manuais da T5 (Step 24), da T7 (Step 27) e da T8 (Step 20) que os Steps 1 a 7 não cobriram;
-cada `Expected` é o do passo de origem. Ainda com o banco e o `next start` de pé:
+As linhas das conferências manuais da T5 (Step 24), da T7 (Step 27), da T8 (Step 20) e da M1 (Step 19) que os Steps 1 a
+7 não cobriram; cada `Expected` é o do passo de origem. Ainda com o banco e o `next start` de pé:
 
 ```sh
 # T5 Step 24: idempotência, recusas e --setor
@@ -15623,6 +19763,9 @@ node scripts/visual/measure.mjs --screen=inicio --state=admin-escuro --width=144
 node scripts/visual/sheet.mjs conta --dir=processo/legibilidade
 node scripts/visual/sbs.mjs admin-escuro-390 0 0 390 120 3 --dir=processo/pares
 node scripts/visual/crop.mjs conta-escuro-390.png 0 0 390 300 --dir=processo/legibilidade
+# M1 Step 19: a captura com movimento reduzido e a espera do style
+node scripts/visual/probe.mjs --screen=inicio --state=admin-escuro --width=1440 --app-only "matchMedia('(prefers-reduced-motion: reduce)').matches"
+node scripts/visual/capture.mjs app "/?setor=<id do ULD em .git/sdd/visual-db/state.json>" 1440x900 dark processo/avulsas/inicio-motion.png
 git status --short                                          # vazio: nada fora de .git/sdd
 ```
 
@@ -15676,7 +19819,7 @@ Windows. Pessoas e textos do `scripts/visual/vocabulary.mjs`.
 ## Legibilidade das telas tocadas (§13.6)
 <as telas, os temas, a comparação com o PR A>
 
-## Conferências das ferramentas (T5, T7, T8)
+## Conferências das ferramentas (T5, T7, T8, M1)
 <cada linha do Step 8 e se bateu com o Expected de origem>
 
 ## Texto plantado (§13.7) e diff da branch (§13.8)
@@ -15729,8 +19872,11 @@ git ls-files '*.test.ts' '*.test.tsx' | wc -l
 ```
 
 Expected: tudo verde; a soma dos arquivos das seis partes do Vitest é igual ao último número (352 antes desta branch, mais
-os arquivos de teste novos dela); o E2E inclui o `hydration.spec.ts`, as Solicitações (b) e (e) e o "Página não
-encontrada". Anote os totais (arquivos e testes do Vitest, cenários do E2E): entram nos documentos abaixo.
+os arquivos de teste novos dela, entre eles os sete da emenda: `motion.test.ts`, `MotionProvider.test.tsx`,
+`motionUsage.test.ts`, `settle.test.ts`, `sheet.test.tsx`, `SectorColorFade.test.tsx` e `tooltip.test.tsx`; o
+`usePrefersReducedMotion.test.tsx` só mudou de pasta); o E2E inclui o `hydration.spec.ts` (o `MotionProvider` na raiz não
+cria id `_r_` nem divergência), o `motion.spec.ts` (3 cenários), as Solicitações (b) e (e) e o "Página não encontrada".
+Anote os totais (arquivos e testes do Vitest, cenários do E2E): entram nos documentos abaixo.
 
 - [ ] **Step 2: `pendencias.md`**
 
@@ -15821,7 +19967,7 @@ visual (PR B)").
 - ✅ Ferramentas visuais permanentes em `scripts/visual/` (banco 54332, app 3202, pessoas e textos inventados, cópias do protótipo, captura, diferença, pares, medida, sonda, interação com falha de rede, auditoria, recortes e registro), com `pixelmatch` 7.2.0 e `pngjs` 7.0.0 exatas e os testes puros em `test/visual/` (2026-11-27)
 - ✅ `check-names` no `pre-commit` local e no portão (`--range=main...HEAD`), sem imprimir o termo (2026-11-27)
 - ✅ Skill `handoff-visual` com os oito modelos (2026-11-27)
-- ✅ <a linha da emenda do Motion, escrita pela emenda>
+- ✅ Motion (`motion` 14.14.0 exata): a fundação (`MotionProvider` no `RootLayout`, tokens em `src/lib/motion.ts`, guarda `src/app/motionUsage.test.ts`, capturas sempre com movimento reduzido e espera do `style`) e os componentes que já se mexiam (`Button`, `ThemeSwitch`, `SectorPicker`, `Sheet` e gaveta, cor do `MyShiftCard`, `Tooltip`), com os dois ramos provados por teste e `e2e/motion.spec.ts`; P87 com `Atualização` (2026-11-27)
 - ✅ Prova: os pares do Início pelas ferramentas permanentes (o maior, <par> com <N>%, dentro da faixa da spec §15.2), a falha de rede injetada, os três hovers com fundo diferente do pai e o texto plantado recusado pelo hook (`.git/sdd/processo/pixel.md`, fora do git) (2026-11-27)
 - ✅ Testes: Vitest <N> testes em <M> arquivos (em seis partes); E2E com <K> cenários. Verificado: `check-types`, `lint`, `test`, `test:e2e` (<K> passed) e `build` verdes (2026-11-27)
 - ⬜ PR da `chore/processo-visual` e o merge pelo dono
@@ -15830,23 +19976,23 @@ visual (PR B)").
 4. No fim de `## Histórico`:
 
 ```markdown
-- **2026-11-27** — Processo visual (PR B): o 404 do `next dev` corrigido pelo espelho do slot `@detalhe`, as ferramentas visuais permanentes em `scripts/visual/`, as guardas de nomes, de hidratação e do `bg-muted`, e a skill `handoff-visual`; P81 e P83 resolvidas, P44 e P62 com `Atualização`. Plano em `docs/superpowers/plans/2026-11-27-processo-visual.md`.
+- **2026-11-27** — Processo visual (PR B): o 404 do `next dev` corrigido pelo espelho do slot `@detalhe`, as ferramentas visuais permanentes em `scripts/visual/`, as guardas de nomes, de hidratação e do `bg-muted`, a skill `handoff-visual` e o Motion (a fundação e os componentes que já se mexiam); P81 e P83 resolvidas, P44, P62 e P87 com `Atualização`. Plano em `docs/superpowers/plans/2026-11-27-processo-visual.md`.
 ```
 
 - [ ] **Step 5: `architecture.md`, o fecho da entrada do PR B**
 
 Ferramenta Edit: no fim da entrada `### 2026-11-27 — Processo visual (PR B)` (T10), acrescente as duas linhas abaixo.
-`old_string` = a última linha que a T10 escreveu (a última do arquivo):
+`old_string` = a última linha do arquivo, o trade-off 5 que a M1 escreveu depois do 4 da T10:
 
 ```markdown
-  4. Rota nova de primeiro nível em `(app)` exige o espelho no slot; o guarda reprova o esquecimento.
+  5. O Motion pesa em toda página (o `m` com o `domAnimation`, cerca de 25 KB comprimidos segundo a doc do Motion); o `domMax` (layout e arrasto) ficou de fora, e o que desliza usa FLIP.
 ```
 
 `new_string` = a mesma linha e, logo abaixo:
 
 ```markdown
 - **Desvios registrados:** <os desvios das tarefas, dos relatórios e do C1, cada um com o porquê; "nenhum" se não houve>.
-- **Verificado:** `check-types`, `lint`, `test` (<N> testes em <M> arquivos, em seis partes), `build` e `test:e2e` (<K> passed) verdes em 2026-11-27. Os pares do Início pelas ferramentas permanentes ficaram dentro da faixa da spec §15.2 (o maior, <par> com <N>%), a falha de rede injetada derrubou a Server Action do "Agora não" e o cartão ficou na tela, os três hovers dentro de cartão mudam o fundo, e o hook recusou o texto plantado. P81 e P83 resolvidas; P44 e P62 com `Atualização`.
+- **Verificado:** `check-types`, `lint`, `test` (<N> testes em <M> arquivos, em seis partes), `build` e `test:e2e` (<K> passed) verdes em 2026-11-27. Os pares do Início pelas ferramentas permanentes ficaram dentro da faixa da spec §15.2 (o maior, <par> com <N>%), a falha de rede injetada derrubou a Server Action do "Agora não" e o cartão ficou na tela, os três hovers dentro de cartão mudam o fundo, e o hook recusou o texto plantado. O Motion: os dois ramos de cada componente nos testes, e no Chromium (`e2e/motion.spec.ts`) o aperto, a saída da gaveta esperada pelo Base UI e a camada de cor. P81 e P83 resolvidas; P44, P62 e P87 com `Atualização`.
 ```
 
 - [ ] **Step 6: `memory.md`**
@@ -15861,7 +20007,9 @@ Ferramenta Edit:
   segmento (o `next dev` volta a servir `/entrar`, `/convite`, `/redefinir-senha` e `/privacidade`; P81), o guarda que
   roda o validador de rotas do Next (`src/app/routeStructure.test.ts`), o `e2e/hydration.spec.ts`, o `bg-muted` → `bg-accent`
   com o guarda (P83), as ferramentas visuais permanentes em `scripts/visual/` (`library-docs.md §22`), o `check-names`
-  no `pre-commit` e a skill `/handoff-visual` com os oito modelos. Decisões no `architecture.md §10` ("Processo visual (PR B)").
+  no `pre-commit`, a skill `/handoff-visual` com os oito modelos e o Motion (`motion` 14.14.0: a fundação e os
+  componentes que já se mexiam; `library-docs.md §23`, `ui-rules.md §9`). Decisões no `architecture.md §10` ("Processo
+  visual (PR B)").
 - **A próxima branch:** C, Passagens (`feat/visual-passagens`), criada da `main` atualizada depois do merge. Comece por
   `/handoff-visual`: ela lê o roteiro (`.git/sdd/roadmap/roteiro.md`), o mapa (`map-passagens.md`) e o ledger, nessa ordem.
 - **A verificação visual agora é do repositório:** `bun run visual:db`, `. scripts/visual/env.sh`, `visual:seed`,
@@ -15881,7 +20029,9 @@ Ferramenta Edit:
 **Processo visual (PR B, 2026-11-27).** O `next dev` serve as páginas de entrada de novo (o espelho do slot `@detalhe`).
 A verificação visual das telas do Claude Design mora em `scripts/visual/` (banco 54332, app 3202, pessoas e textos
 inventados, pares, auditoria e as guardas), descrita no `library-docs.md §22`, e o processo inteiro está na skill
-`/handoff-visual`. O `pre-commit` local recusa qualquer termo da lista de nomes.
+`/handoff-visual`. O `pre-commit` local recusa qualquer termo da lista de nomes. O movimento é do Motion (`m` de
+`motion/react-m`, tokens em `src/lib/motion.ts`, sempre com o ramo reduzido): componente novo ou restilizado das
+branches C a G nasce com ele, olhando a variante da ArcUI (`library-docs.md §23`).
 ```
 
 4. Em `## O que está esperando`, o primeiro item vira `- **Processo visual:** o merge do PR B (ver "Estado para a próxima sessão").`
@@ -15951,13 +20101,13 @@ Expected: `código: 0`; `código: 0`; nenhuma linha e `código: 1` (o `grep` nã
 - [ ] **Step 9: O PR**
 
 Corpo em `.git/sdd/processo/pr-body.md` (ferramenta Write), a partir de `.claude/skills/handoff-visual/templates/pr-body.md`,
-com: o resumo (o 404, as ferramentas, as três guardas, a skill), as decisões PB-D1 a PB-D9, os desvios, a tabela do
-`pixel.md` (PR A → PR B), o plano de teste com os totais do Step 1, as pendências (P81 e P83 fechadas; P44 e P62 com
-`Atualização`; as novas) e a linha final de atribuição do modelo. Depois:
+com: o resumo (o 404, as ferramentas, as três guardas, a skill, o Motion), as decisões PB-D1 a PB-D15, os desvios, a
+tabela do `pixel.md` (PR A → PR B), o plano de teste com os totais do Step 1, as pendências (P81 e P83 fechadas; P44, P62
+e P87 com `Atualização`; as novas) e a linha final de atribuição do modelo. Depois:
 
 ```sh
 git push -u origin chore/processo-visual
-gh pr create --base main --head chore/processo-visual --title "chore: processo visual (404 do next dev, ferramentas, guardas e skill)" --body-file .git/sdd/processo/pr-body.md
+gh pr create --base main --head chore/processo-visual --title "chore: processo visual (404 do next dev, ferramentas, guardas, skill e Motion)" --body-file .git/sdd/processo/pr-body.md
 gh pr checks --watch
 ```
 
@@ -15967,6 +20117,7 @@ dele**.
 - [ ] **Step 10: Depois do merge (fora do git)**
 
 No roteiro `.git/sdd/roadmap/roteiro.md`: no §2.1, a linha **B** ganha "feito em <data>, PR #<n>" com o que nasceu de fato
-(o espelho do slot, `scripts/visual/`, as três guardas, a skill) e as pendências que fechou; no §3, as ferramentas e a
-skill entram como peças compartilhadas que já existem; no §6 e no §7, a nota de que o processo e as ferramentas agora
+(o espelho do slot, `scripts/visual/`, as três guardas, a skill, o Motion) e as pendências que fechou; no §3, as
+ferramentas, a skill e a fundação do Motion (`MotionProvider`, `src/lib/motion.ts`, `PressButton`) entram como peças
+compartilhadas que já existem; no §6 e no §7, a nota de que o processo e as ferramentas agora
 são a skill `/handoff-visual` e o `library-docs.md §22`. Linha final no ledger: `PR B mergeado; roteiro §2 e §3 em dia`.

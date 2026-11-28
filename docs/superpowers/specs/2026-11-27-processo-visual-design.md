@@ -25,15 +25,13 @@ Deixar pronto, uma vez, o que as cinco branches de tela seguintes (C a G) repeti
 4. **O processo vira uma skill** (`.claude/skills/handoff-visual/`), com os modelos de brief, de contrato e de PR.
 
 Nenhuma tela muda de layout. As únicas mudanças visíveis no app são os hovers e estados que hoje somem dentro de
-cartões (§9).
+cartões (§9) e, pela emenda do Motion (§16), o movimento dos componentes que já se mexiam; em repouso, nada muda.
 
 ## 2. Decisões
 
 **Do dono:**
 - **T3 (a):** o PR B entra antes da branch de Passagens. O lote 0 inteiro foi aceito como recomendado.
-- **Motion:** decidido em 2026-11-27 (fundação na branch B). **Fica fora desta versão da spec:** o ledger da branch manda
-  que entre por emenda depois deste passo de spec e plano. Esta spec só antecipa o que as ferramentas precisam para ele
-  (PB-D6).
+- **Motion:** decidido em 2026-11-27 (fundação e componentes que já se mexem nesta branch). Entrou por emenda: §16.
 
 **Desta spec (engenharia; vão ao dono como ciência):**
 
@@ -60,9 +58,9 @@ cartões (§9).
 - A skill `handoff-visual` com os oito modelos (§10).
 - `AGENTS.md`, `library-docs.md`, `architecture.md`, `pendencias.md`, `ui-registry.md` e `progress-tracker.md` (§11).
 - A prova: os pares do Início reproduzidos pelas ferramentas permanentes, a falha de rede e o texto plantado (§13).
+- A emenda do Motion: a fundação e os componentes que já se mexem (§16).
 
 **Fora:**
-- **Motion** (emenda depois deste passo).
 - Teste de screenshot no CI: as ferramentas nunca rodam no CI (só os testes puros delas, no Vitest).
 - Proteção da `main` (P62): configuração do repositório, decisão do dono.
 - Qualquer tela nova ou mudança de layout.
@@ -618,7 +616,7 @@ para agentes (`writing-for-agents`), **sem nenhum nome de protótipo**.
 | Falso positivo do `check-names` com nomes fictícios | linhas `!` na lista; o relatório aponta a linha |
 | O hook travar commits sem a lista | mensagem com o caminho da lista e o `visual:hooks --remove` |
 | Memória (1 a 3 GB livres) | um servidor e um navegador por vez; Vitest por arquivo; build e E2E só no portão |
-| A emenda do Motion mexer nos mesmos arquivos (`Button`, `Sheet`) | ela vem depois deste plano, em série, e reroda os pares do Início pelas ferramentas deste PR |
+| A emenda do Motion mexer nos mesmos arquivos (`Button`, `Sheet`) | ela entra no plano depois da T10 (M1 e M2), em série, e o C1 reroda os pares do Início pelas ferramentas deste PR já com ela (§16.7) |
 
 ## 15. Critério de pronto
 
@@ -653,3 +651,110 @@ para agentes (`writing-for-agents`), **sem nenhum nome de protótipo**.
    `src/lib`, `test`), `bun run test:e2e` e `bun run build` verdes; `git ls-files` sem fonte, protótipo ou screenshot;
    `git status` limpo.
 7. **Documentos** do §11 feitos, com as pendências na seção certa.
+
+## 16. Motion (emenda de 2026-11-27)
+
+**Origem:** a decisão do dono "Motion nos componentes" (2026-11-27, fora do git em `.git/sdd/roadmap/decisions.md`), com a
+ArcUI (https://uiarc.dev, itens livres sob MIT) como referência e a forma por conta do Claude. O PB-D6 (§2) continua e ganha
+a espera do `style` (§16.2, regra 6).
+
+O que a pesquisa da emenda mudou no desenho (vai ao dono como ciência, com o §16.1):
+
+- O `domAnimation` não traz `layout` nem `layoutId` (só o `domMax`): o thumb do `SectorPicker` e o knob do `ThemeSwitch`
+  deslizam por FLIP com `useSpring`; o repouso continua no CSS, como hoje, e só a troca anima.
+- O Base UI só espera a saída de um popup se ela tiver opacidade (o Motion a roda pela Web Animations API, que o
+  `getAnimations()` vê): a gaveta, que hoje só desliza, passa a sair com fade. Sem `keepMounted`: o popup montaria depois
+  da hidratação, com ids `_r_`, e o guarda do §8 reprovaria.
+- O `useReducedMotion` do Motion lê o `matchMedia` uma vez por módulo: o ramo reduzido de cada componente vem do
+  `usePrefersReducedMotion` do projeto, e o `MotionConfig reducedMotion="user"` da raiz fica como rede.
+- A troca de setor remonta o cartão do turno (P86, P87): a camada de cor lembra a cor do último cartão por até 2 s, senão o
+  crossfade nunca rodaria.
+- O jsdom não tem `Element.animate` nem `getAnimations`: lá o Motion anima em JS e o Base UI desmonta na hora. A saída
+  esperada pelo Base UI só se prova no Chromium (`e2e/motion.spec.ts`).
+
+### 16.1 Decisões (engenharia; vão ao dono como ciência)
+
+| # | Decisão | Por quê |
+|---|---|---|
+| PB-D10 | **`motion` 14.14.0, exata** (2026-11-13), em `dependencies`; `LazyMotion features={domAnimation} strict` e só `m` (`import * as m from "motion/react-m"`) | o `m` com o `domAnimation` pesa cerca de um terço do `motion` pronto, e o `strict` lança se alguém usar o `motion` pronto; o `domMax` (layout e arrasto) dobraria o peso e nada daqui precisa dele |
+| PB-D11 | `MotionConfig reducedMotion="user"` e a transição padrão curta num **provider client só de contexto** (`src/components/motion/MotionProvider.tsx`) no `<body>` do `RootLayout`, por fora do `TooltipProvider` e do `Toaster`; **nenhum `<script>`** | a lição do `next-themes` (`library-docs.md §18`): o que fica acima dos `Suspense` não renderiza script; os portais herdam o contexto |
+| PB-D12 | durações, curvas, molas e os presets por componente (`sheetMotion`, `overlayMotion`, `tooltipMotion`) num módulo puro, **`src/lib/motion.ts`**; guarda **`src/app/motionUsage.test.ts`** | um lugar só para os números; o guarda recusa número solto, o `motion` pronto e o `framer-motion` |
+| PB-D13 | o ramo reduzido de cada componente vem do **`usePrefersReducedMotion`** (sai de `src/components/dashboard/` para `src/lib/`, num refactor à parte); o `MotionConfig "user"` é a rede | o hook relê o `matchMedia` a cada render (testável por stub); o do Motion lê uma vez por módulo e avisa no console |
+| PB-D14 | **Base UI + Motion pela função `render`** do `Popup`/`Backdrop`, com `state.open`; a saída sempre leva opacidade; **sem `keepMounted`**. Sem animação de layout: o que desliza usa **FLIP com `useSpring`** e o repouso fica no CSS | o Base UI espera a saída pela opacidade (Web Animations); popup montado depois da hidratação teria ids `_r_` (§8); repouso no CSS deixa o pixel e o HTML do servidor iguais aos de hoje |
+| PB-D15 | a ArcUI é **referência de comportamento, não dependência**: nada dela é instalado; trecho de código copiado leva o aviso de copyright MIT num comentário | ela usa Radix e CSS modules com tokens próprios (dois primitivos lado a lado, fora dos guardas de token e contraste) |
+
+Nenhum trecho de código da ArcUI entra nesta emenda (as páginas dela só descrevem o comportamento): nenhum aviso MIT no
+código, e os valores (durações, molas, deslocamentos) são nossos.
+
+### 16.2 Regras (vão para o `ui-rules.md §9`)
+
+1. **Curto e nunca no caminho da passagem:** nenhuma duração ou mola passa de 0,45 s; a saída é mais curta que a entrada;
+   nada espera uma animação para liberar um clique, um envio ou uma navegação (regra de ouro).
+2. **Nada anima na carga nem na hidratação:** o que vem do servidor sai do HTML no lugar (repouso no CSS com `x = 0`, ou
+   `initial={false}`); valor em `initial` só em quem monta no cliente depois de uma ação.
+3. **Sempre respeita o movimento reduzido:** sem deslize, escala nem mola; no máximo um fade de 0,1 s, ou a troca na hora.
+4. **Só `transform` e `opacity`;** a cor troca por uma camada com opacidade. Mola no que pode voltar no meio; tween no fade.
+5. **Um dono por propriedade:** elemento que o Motion anima não tem `transition` de CSS na mesma propriedade.
+6. **As capturas do processo visual rodam com movimento reduzido e esperam as animações:** todo contexto do Playwright em
+   `reducedMotion: "reduce"`, sem opção para desligar (o `newContext` do `capture.mjs`, que o `openApp`, o `openProto` e o
+   `openState` usam, e o contexto que o `audit.mjs` monta, pela mesma constante `CAPTURE_REDUCED_MOTION` de
+   `scripts/visual/settle.mjs`); o `settle` do `capture.mjs` (que o `shoot` e o `audit.mjs` chamam) espera o
+   `getAnimations()` (CSS e Web Animations) e depois 200 ms sem escrita no `style` de nenhum elemento (as molas e cores que
+   o Motion anima em JS), até 3 s, mais os 300 ms de antes.
+
+### 16.3 Os componentes que já se mexem
+
+| Componente | O que anima | Normal | Movimento reduzido | Prova |
+|---|---|---|---|---|
+| `Button` (o elemento vira `PressButton`) | aperto | escala 0,97 na mola `press` (0,15 s); nunca no gatilho de popup (`aria-haspopup`), que responde só com a cor | sem escala | `button.test.tsx`, `e2e/motion.spec.ts` |
+| `ThemeSwitch` | knob | repouso no CSS (`left-1`, `dark:left-9`); no clique, FLIP pelo `offsetLeft` e mola `knob` (0,3 s, sobra 0,15) | troca na hora | `ThemeSwitch.test.tsx` |
+| `SectorPicker` | thumb | repouso no CSS (`--i`, `--n`, como hoje); na troca, FLIP pela largura do thumb e mola `thumb` (0,35 s, sobra 0,2, como a curva do protótipo) | vai direto | `SectorPicker.test.tsx` |
+| `Sheet` e a gaveta do menu | painel e véu | painel chega de 40px (a gaveta, da borda: −105%, opaca) pela mola `panel`, com fade de 0,15 s; sai em 0,18 s com fade; véu em fade | fade de 0,1 s | `sheet.test.tsx`, `AppSidebar.test.tsx`, `e2e/motion.spec.ts` |
+| `MyShiftCard` (camada `SectorColorFade`) | troca de cor do setor | a cor de antes por baixo do conteúdo some em 0,4 s, também quando o cartão remonta (até 2 s) | troca na hora | `SectorColorFade.test.tsx`, `MyShiftCard.test.tsx`, `e2e/motion.spec.ts` |
+| `Tooltip` | entrada | sai do gatilho (4px) crescendo de 0,96, em 0,2 s; fecha na hora | fade de 0,1 s | `tooltip.test.tsx` |
+
+Em repouso todo elemento fica onde o CSS o põe (`transform: none`, opacidade 1): os pares do Início continuam dentro da faixa
+do §15.2. O `button.tsx` continua sem `"use client"` (o `buttonVariants` é chamado em Server Components) e passa o
+`PressButton` (client) como elemento pelo `render`; o `<Link>` cru com `buttonVariants` continua com o aperto de CSS
+(`not-data-[press]`), sem Motion.
+
+### 16.4 Documentos
+
+- `library-docs.md §23` (nova): versão, `LazyMotion` e `m`, provider, hidratação, ramo reduzido, Base UI, CSS × Motion,
+  testes, capturas, guarda e a ArcUI (com o que as branches C a G vão olhar nela). No §22, a linha das capturas aponta o
+  §23.
+- `ui-rules.md §9` (nova) e um item no checklist do §8; `ui-tokens.md §8` (nova); `AGENTS.md`, uma linha em "Regras que
+  nunca mudam"; `architecture.md`, PB-D10 a PB-D15 na entrada do PR B, a dependência e um trade-off (o peso).
+- A skill `handoff-visual`: uma linha de movimento no modelo `templates/global-constraints.md`, para as branches C a G
+  fazerem cada componente novo ou restilizado nascer com Motion, olhando a variante da ArcUI.
+- `ui-registry.md`: entradas novas `MotionProvider`, `PressButton` e `SectorColorFade`; `Histórico` datado em `Button`,
+  `ThemeSwitch`, `SectorPicker`, `Sheet`, `Sidebar`, `Tooltip`, `MyShiftCard` e `usePrefersReducedMotion`.
+- `pendencias.md`: a P87 ganha `Atualização` (o crossfade passa a rodar, também na remontagem) e continua aberta (a
+  transição na troca de tema não foi conferida).
+
+### 16.5 Testes (somam ao §12)
+
+| Arquivo | Cobre |
+|---|---|
+| `src/lib/motion.test.ts` | tokens no teto, saída mais curta, curvas válidas, aperto, presets por lado e tipo, ramo reduzido sem deslize, módulo só com tipos do Motion |
+| `src/components/motion/MotionProvider.test.tsx` | só contexto (o HTML é o dos filhos), `reducedMotion: "user"` e a transição padrão, features carregadas, `strict` |
+| `src/app/motionUsage.test.ts` | as regras (positivos e negativos), a varredura de `src/`, os arquivos que usam o Motion e o `RootLayout` com o provider e um script só |
+| `test/visual/settle.test.ts` | o veredito do silêncio (limite, escrita recente, estouro), o script montado e rodado numa página falsa, a recusa de números ruins |
+| `button.test.tsx`, `button.variants.test.ts`, `ThemeSwitch.test.tsx`, `SectorPicker.test.tsx`, `sheet.test.tsx`, `AppSidebar.test.tsx`, `SectorColorFade.test.tsx`, `MyShiftCard.test.tsx`, `tooltip.test.tsx` | o HTML do servidor sem animação, o primeiro quadro, o valor no meio (ramo normal) e o pulo direto (ramo reduzido), o fim no lugar |
+| `e2e/motion.spec.ts` | no Chromium: o aperto (`matrix(0.97…)`), a gaveta que entra da borda e ainda está no DOM depois do Escape, o ramo reduzido, e a camada de cor na troca de setor |
+
+### 16.6 Critério de pronto (soma ao §15)
+
+1. `"motion": "14.14.0"` no `package.json` (sem `^`) e o `bun.lock` junto.
+2. Os testes do §16.5 verdes; o `e2e/motion.spec.ts` e o `e2e/hydration.spec.ts` verdes no portão.
+3. Os pares do Início (C1) dentro da faixa do §15.2 com o Motion já aplicado.
+
+### 16.7 Riscos
+
+| Risco | Mitigação |
+|---|---|
+| O Motion mexer no pixel em repouso | repouso no CSS e `transform: none`; capturas com movimento reduzido; pares do C1 depois da emenda |
+| O Base UI desmontar antes da saída | a saída leva opacidade; o `e2e/motion.spec.ts` confere a gaveta ainda no DOM depois do Escape |
+| Peso em toda página | `LazyMotion` + `m` + `domAnimation`, nada de `domMax` (cerca de 25 KB comprimidos, pela doc do Motion) |
+| A API do Motion mudar numa atualização | versão exata; os testes de componente e o E2E pegam; a API da 14.14.0 foi conferida na doc e se confirma no `check-types` da M1 e da M2 |
+| CSS e Motion na mesma propriedade (a animação "arrasta") | regra 5, as classes de transição saíram dos componentes do §16.3, e o `Button` lista as transições sem `transform` |
