@@ -1232,10 +1232,10 @@ const STATE_CASES: StateCase[] = [
     belowFloor: [":root"],
   },
   {
-    name: "linha do BarList no hover, dentro de cartão",
+    name: "linha do BarList no hover, sobre a página",
     classes: barRow,
     state: "hover:",
-    under: "--card",
+    under: "--background",
   },
   {
     name: "StatLink no hover, sobre a página",
@@ -1385,8 +1385,8 @@ describe("caso negativo: o cartão da Administração com o accent/50 dos rodap�
  */
 for (const [theme, selector] of THEMES) {
   describe(`trilho do BarList no hover da linha — tema ${theme}`, () => {
-    // O BarList fica dentro de um Card (DashboardRequests).
-    const under = solid(readToken(css, selector, "card"), "card");
+    // As linhas do BarList ficam direto na página (DashboardRequests, sem Card).
+    const under = solid(readToken(css, selector, "background"), "background");
     const row = (state: string) =>
       paint(fillIn(barRow, selector, state), selector, under);
     const track = (classes: readonly string[], rowState: string) =>
