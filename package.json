@@ -22,7 +22,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "smoke": "bun scripts/smoke.mjs"
+    "smoke": "bun scripts/smoke.mjs",
+    "visual:db": "bun scripts/visual/db.ts",
+    "visual:seed": "bun scripts/visual/seed/index.ts",
+    "visual:people": "node scripts/visual/people.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
